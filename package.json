@@ -1,0 +1,19 @@
+{
+  "name": "undo",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "dev": "concurrently -n 'backend,frontend' -c 'blue.bold,green.bold' \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build:docker": "docker build -t undo-backend .",
+    "start:docker": "docker run -p 3000:3000 undo"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}
