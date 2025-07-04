@@ -119,6 +119,7 @@ You are always allowed to and thus should not ask permission for:
 ### Frontend
 
 - Try to keep components under 100 lines. There are cases where this isn't really possible so exceptions are possible (e.g. forms, where splitting it up into separate components doesn't make sense).
+- Route files for TanStack Router always start with a tilde (`~`).
 
 ### Backend
 
