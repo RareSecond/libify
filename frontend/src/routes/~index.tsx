@@ -1,5 +1,6 @@
-import { useAppControllerGetHello } from "@/data/api";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { useAppControllerGetHello } from "@/data/api";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,

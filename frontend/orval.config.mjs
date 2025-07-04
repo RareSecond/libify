@@ -2,14 +2,14 @@ export default {
   mynanceApi: {
     input: "../backend/swagger.json",
     output: {
-      target: "./src/data/api.ts",
+      client: "react-query",
       override: {
         mutator: {
-          path: "./src/data/custom-instance.ts",
           name: "customInstance",
+          path: "./src/data/custom-instance.ts",
         },
       },
-      client: "react-query",
+      target: "./src/data/api.ts",
     },
   },
 };

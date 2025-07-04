@@ -2,6 +2,7 @@
   "name": "undo",
   "version": "0.0.1",
   "description": "",
+  "type": "module",
   "scripts": {
     "dev": "concurrently -n 'backend,frontend' -c 'blue.bold,green.bold' \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "build:docker": "docker build -t undo-backend .",
@@ -15,5 +16,8 @@
   "workspaces": [
     "backend",
     "frontend"
-  ]
+  ],
+  "devDependencies": {
+    "eslint-plugin-perfectionist": "^4.15.0"
+  }
 }
