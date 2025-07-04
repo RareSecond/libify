@@ -12,5 +12,5 @@ function RouteComponent() {
     return <div>Loading...</div>;
   }
 
-  return <div>{data}</div>;
+  return <div className="text-2xl font-bold">{data}</div>;
 }
