@@ -6,7 +6,7 @@ import { plainToInstance } from 'class-transformer';
 import { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
-import { UserDto } from './dto/auth.dto';
+import { UserDto } from './dto/user.dto';
 
 interface AuthenticatedRequest extends Request {
   user: User;
