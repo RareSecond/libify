@@ -3,6 +3,8 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  Logger,
+  Param,
   Post,
   Query,
   Req,
@@ -21,6 +23,7 @@ import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
 import { LibrarySyncService } from './library-sync.service';
+import { SpotifyService } from './spotify.service';
 import { TrackService } from './track.service';
 
 interface AuthenticatedRequest extends Request {
@@ -32,10 +35,13 @@ interface AuthenticatedRequest extends Request {
 @Controller('library')
 @UseGuards(JwtAuthGuard)
 export class LibraryController {
+  private readonly logger = new Logger(LibraryController.name);
+
   constructor(
     private librarySyncService: LibrarySyncService,
     private authService: AuthService,
     private trackService: TrackService,
+    private spotifyService: SpotifyService,
   ) {}
 
   @ApiOperation({ summary: 'Get library sync status' })
@@ -58,6 +64,45 @@ export class LibraryController {
     @Query() query: GetTracksQueryDto,
   ): Promise<PaginatedTracksDto> {
     return this.trackService.getUserTracks(req.user.id, query);
+  }
+
+  @ApiOperation({ summary: 'Play a track on Spotify' })
+  @ApiResponse({ description: 'Track started playing', status: 200 })
+  @ApiResponse({ description: 'Unauthorized', status: 401 })
+  @ApiResponse({ description: 'Bad request', status: 400 })
+  @Post('tracks/:trackId/play')
+  async playTrack(@Req() req: AuthenticatedRequest, @Param('trackId') trackId: string) {
+    try {
+      // Get the track to get the Spotify ID
+      const track = await this.trackService.getTrackById(req.user.id, trackId);
+      if (!track) {
+        throw new HttpException('Track not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Get Spotify access token
+      const accessToken = await this.authService.getSpotifyAccessToken(req.user.id);
+      if (!accessToken) {
+        throw new HttpException(
+          'Spotify access token not found. Please re-authenticate.',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // Play the track
+      const trackUri = `spotify:track:${track.spotifyId}`;
+      await this.spotifyService.playTrack(accessToken, trackUri);
+
+      return { message: 'Track started playing', trackId: track.id };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error('Failed to play track', error);
+      throw new HttpException(
+        error.message || 'Failed to play track',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   @ApiOperation({ summary: 'Sync user library from Spotify' })

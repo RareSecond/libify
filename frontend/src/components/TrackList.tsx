@@ -1,9 +1,10 @@
 import { Badge, Center, Group, Image, Loader, Pagination, Paper, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { Clock, Music, Search, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { useLibraryControllerGetTracks } from '../data/api';
+import { useLibraryControllerGetTracks, useLibraryControllerPlayTrack } from '../data/api';
 
 export function TrackList() {
   const [page, setPage] = useState(1);
@@ -11,6 +12,7 @@ export function TrackList() {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<string>('addedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [playingTrackId, setPlayingTrackId] = useState<null | string>(null);
   
   const [debouncedSearch] = useDebouncedValue(search, 300);
   
@@ -21,6 +23,28 @@ export function TrackList() {
     sortBy: sortBy as 'addedAt' | 'album' | 'artist' | 'lastPlayedAt' | 'rating' | 'title' | 'totalPlayCount',
     sortOrder,
   });
+
+  const playTrackMutation = useLibraryControllerPlayTrack();
+
+  const handlePlayTrack = async (trackId: string, trackTitle: string) => {
+    try {
+      setPlayingTrackId(trackId);
+      await playTrackMutation.mutateAsync({ trackId });
+      notifications.show({
+        color: 'green',
+        message: trackTitle,
+        title: 'Now playing',
+      });
+    } catch (error) {
+      notifications.show({
+        color: 'red',
+        message: (error as any).response?.data?.message || 'Please make sure Spotify is open on one of your devices',
+        title: 'Failed to play track',
+      });
+    } finally {
+      setPlayingTrackId(null);
+    }
+  };
 
   // Reset to page 1 when search changes
   useEffect(() => {
@@ -139,22 +163,32 @@ export function TrackList() {
                 </Table.Thead>
                 <Table.Tbody>
                   {data?.tracks.map((track: any) => (
-                    <Table.Tr key={track.id}>
+                    <Table.Tr 
+                      className="hover:bg-gray-50"
+                      key={track.id}
+                      onClick={() => handlePlayTrack(track.id, track.title)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <Table.Td>
-                        {track.albumArt ? (
-                          <Image
-                            alt={track.album || track.title}
-                            fallbackSrc="/placeholder-album.svg"
-                            h={40}
-                            radius="sm"
-                            src={track.albumArt}
-                            w={40}
-                          />
-                        ) : (
-                          <Center bg="gray.2" h={40} w={40} style={{ borderRadius: '4px' }}>
-                            <Music color="gray" size={20} />
-                          </Center>
-                        )}
+                        <Group gap="xs">
+                          {track.albumArt ? (
+                            <Image
+                              alt={track.album || track.title}
+                              fallbackSrc="/placeholder-album.svg"
+                              h={40}
+                              radius="sm"
+                              src={track.albumArt}
+                              w={40}
+                            />
+                          ) : (
+                            <Center bg="gray.2" h={40} style={{ borderRadius: '4px' }} w={40}>
+                              <Music color="gray" size={20} />
+                            </Center>
+                          )}
+                          {playingTrackId === track.id && (
+                            <Loader color="green" size="sm" />
+                          )}
+                        </Group>
                       </Table.Td>
                       <Table.Td>
                         <Text fw={500} lineClamp={1}>

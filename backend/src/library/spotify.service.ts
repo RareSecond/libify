@@ -57,6 +57,26 @@ export class SpotifyService {
     return allTracks;
   }
 
+  async getAvailableDevices(accessToken: string): Promise<Array<{
+    id: string;
+    is_active: boolean;
+    is_private_session: boolean;
+    is_restricted: boolean;
+    name: string;
+    type: string;
+    volume_percent: number;
+  }>> {
+    try {
+      const response = await this.spotifyApi.get('/me/player/devices', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return response.data.devices || [];
+    } catch (error) {
+      this.logger.error('Failed to fetch available devices', error);
+      return [];
+    }
+  }
+
   async getCurrentlyPlaying(accessToken: string): Promise<null | { progress_ms: number; track: SpotifyTrackData; }> {
     try {
       const response = await this.spotifyApi.get('/me/player/currently-playing', {
@@ -129,6 +149,35 @@ export class SpotifyService {
       return response.data;
     } catch (error) {
       this.logger.error('Failed to fetch user library tracks', error);
+      throw error;
+    }
+  }
+
+  async playTrack(accessToken: string, trackUri: string, deviceId?: string): Promise<void> {
+    try {
+      // If no device ID provided, get the first available device
+      let targetDeviceId = deviceId;
+      if (!targetDeviceId) {
+        const devices = await this.getAvailableDevices(accessToken);
+        if (devices.length === 0) {
+          throw new Error('No Spotify devices available. Please open Spotify on one of your devices.');
+        }
+        // Prefer active device, otherwise use the first available
+        const activeDevice = devices.find(d => d.is_active);
+        targetDeviceId = activeDevice?.id || devices[0].id;
+      }
+
+      await this.spotifyApi.put('/me/player/play', {
+        device_id: targetDeviceId,
+        uris: [trackUri],
+      }, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { device_id: targetDeviceId },
+      });
+
+      this.logger.log(`Started playing track ${trackUri} on device ${targetDeviceId}`);
+    } catch (error) {
+      this.logger.error('Failed to play track', error);
       throw error;
     }
   }

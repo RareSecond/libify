@@ -1,4 +1,5 @@
 import { Button, Center, Loader, MantineProvider } from "@mantine/core";
+import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 
@@ -63,6 +64,7 @@ function AuthWrapper() {
 function RootComponent() {
   return (
     <MantineProvider>
+      <Notifications position="top-right" />
       <QueryClientProvider client={queryClient}>
         <AuthWrapper />
       </QueryClientProvider>

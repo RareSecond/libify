@@ -221,6 +221,44 @@
         ]
       }
     },
+    "/library/tracks/{trackId}/play": {
+      "post": {
+        "operationId": "LibraryController_playTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Track started playing"
+          },
+          "201": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Play a track on Spotify",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync": {
       "post": {
         "operationId": "LibraryController_syncLibrary",
