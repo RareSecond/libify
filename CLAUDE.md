@@ -108,13 +108,12 @@ You are always allowed to and thus should not ask permission for:
 
 ### General
 
-- When being asked a question, don't go out of your way to do more than was asked. You are expected to be used by experienced developers that will guide you architecturally but will use you to improve their speed. If a task is too broad, always ask extra questions so that you can split up the work into multiple smaller pieces.
-- Never create your own to do list.
 - When adding Frontend routes, you can assume that the route tree generation of TanStack Router automatically happens in the background.
 - When adding Backend routes, you can assume that the API client generation automatically happens in the background.
 - Never use export default, unless it's required (e.g. by an external library). Always use named exports.
 - There should be no types shared between Backend and Frontend. All types that are shared, will come from the generated types by Orval.
-- Use absolute imports with path aliases where configured
+- Use absolute imports with path aliases where configured.
+- Never run the scripts to start the services. Assume the project is always running.
 
 ### Frontend
 
