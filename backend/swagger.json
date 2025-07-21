@@ -105,6 +105,122 @@
         ]
       }
     },
+    "/library/tracks": {
+      "get": {
+        "operationId": "LibraryController_getTracks",
+        "parameters": [
+          {
+            "name": "minRating",
+            "required": false,
+            "in": "query",
+            "description": "Filter by minimum rating",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search query for title, artist or album",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "artist",
+                "album",
+                "addedAt",
+                "lastPlayedAt",
+                "totalPlayCount",
+                "rating"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "tagIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by tag IDs",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of user tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedTracksDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user tracks",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync": {
       "post": {
         "operationId": "LibraryController_syncLibrary",
@@ -207,6 +323,117 @@
           "id",
           "provider",
           "updatedAt"
+        ]
+      },
+      "TagDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "TrackDto": {
+        "type": "object",
+        "properties": {
+          "addedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "album": {
+            "type": "string"
+          },
+          "albumArt": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Duration in milliseconds"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastPlayedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ratedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "maximum": 5,
+            "minimum": 1
+          },
+          "spotifyId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagDto"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "totalPlayCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "addedAt",
+          "artist",
+          "duration",
+          "id",
+          "spotifyId",
+          "tags",
+          "title",
+          "totalPlayCount"
+        ]
+      },
+      "PaginatedTracksDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackDto"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "total",
+          "totalPages",
+          "tracks"
         ]
       }
     }

@@ -22,8 +22,8 @@ export function UserProfile() {
         method: "POST",
       });
       window.location.href = "/";
-    } catch (error) {
-      console.error("Logout failed:", error);
+    } catch {
+      // Logout failed - page will be refreshed anyway
     }
   };
 

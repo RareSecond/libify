@@ -10,85 +10,104 @@
 
 // Import Routes
 
-import { Route as rootRoute } from "./routes/~__root";
-import { Route as IndexImport } from "./routes/~index";
-import { Route as AuthSuccessImport } from "./routes/~auth/~success";
+import { Route as rootRoute } from './routes/~__root'
+import { Route as TracksImport } from './routes/~tracks'
+import { Route as IndexImport } from './routes/~index'
+import { Route as AuthSuccessImport } from './routes/~auth/~success'
 
 // Create/Update Routes
 
-const IndexRoute = IndexImport.update({
-  id: "/",
-  path: "/",
+const TracksRoute = TracksImport.update({
+  id: '/tracks',
+  path: '/tracks',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
+
+const IndexRoute = IndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AuthSuccessRoute = AuthSuccessImport.update({
-  id: "/auth/success",
-  path: "/auth/success",
+  id: '/auth/success',
+  path: '/auth/success',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 // Populate the FileRoutesByPath interface
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/auth/success": {
-      id: "/auth/success";
-      path: "/auth/success";
-      fullPath: "/auth/success";
-      preLoaderRoute: typeof AuthSuccessImport;
-      parentRoute: typeof rootRoute;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/tracks': {
+      id: '/tracks'
+      path: '/tracks'
+      fullPath: '/tracks'
+      preLoaderRoute: typeof TracksImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/success': {
+      id: '/auth/success'
+      path: '/auth/success'
+      fullPath: '/auth/success'
+      preLoaderRoute: typeof AuthSuccessImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/auth/success": typeof AuthSuccessRoute;
+  '/': typeof IndexRoute
+  '/tracks': typeof TracksRoute
+  '/auth/success': typeof AuthSuccessRoute
 }
 
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/auth/success": typeof AuthSuccessRoute;
+  '/': typeof IndexRoute
+  '/tracks': typeof TracksRoute
+  '/auth/success': typeof AuthSuccessRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  "/": typeof IndexRoute;
-  "/auth/success": typeof AuthSuccessRoute;
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/tracks': typeof TracksRoute
+  '/auth/success': typeof AuthSuccessRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/auth/success";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/auth/success";
-  id: "__root__" | "/" | "/auth/success";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/tracks' | '/auth/success'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/tracks' | '/auth/success'
+  id: '__root__' | '/' | '/tracks' | '/auth/success'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AuthSuccessRoute: typeof AuthSuccessRoute;
+  IndexRoute: typeof IndexRoute
+  TracksRoute: typeof TracksRoute
+  AuthSuccessRoute: typeof AuthSuccessRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TracksRoute: TracksRoute,
   AuthSuccessRoute: AuthSuccessRoute,
-};
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {
@@ -97,11 +116,15 @@ export const routeTree = rootRoute
       "filePath": "~__root.tsx",
       "children": [
         "/",
+        "/tracks",
         "/auth/success"
       ]
     },
     "/": {
       "filePath": "~index.tsx"
+    },
+    "/tracks": {
+      "filePath": "~tracks.tsx"
     },
     "/auth/success": {
       "filePath": "~auth/~success.tsx"

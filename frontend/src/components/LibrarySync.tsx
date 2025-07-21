@@ -1,29 +1,28 @@
-import { Button, Card, Group, Progress, Stack, Text, Badge, Alert } from "@mantine/core";
-import { RefreshCw, Music, AlertCircle, CheckCircle } from "lucide-react";
-import { useState } from "react";
+import { Alert, Badge, Button, Card, Group, Progress, Stack, Text } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
-
-interface SyncStatus {
-  totalTracks: number;
-  lastSync: string | null;
-}
+import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
+import { useState } from "react";
 
 interface SyncResult {
   message: string;
   result: {
-    totalTracks: number;
-    newTracks: number;
-    updatedTracks: number;
     errors: string[];
+    newTracks: number;
+    totalTracks: number;
+    updatedTracks: number;
   };
 }
 
+interface SyncStatus {
+  lastSync: null | string;
+  totalTracks: number;
+}
+
 export function LibrarySync() {
-  const [syncProgress, setSyncProgress] = useState<number | null>(null);
+  const [syncProgress, setSyncProgress] = useState<null | number>(null);
 
   // Query for sync status
   const { data: syncStatus, refetch: refetchStatus } = useQuery<SyncStatus>({
-    queryKey: ['library-sync-status'],
     queryFn: async () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/library/sync/status`, {
         credentials: 'include',
@@ -31,6 +30,7 @@ export function LibrarySync() {
       if (!response.ok) throw new Error('Failed to fetch sync status');
       return response.json();
     },
+    queryKey: ['library-sync-status'],
   });
 
   // Mutation for syncing library
@@ -38,8 +38,8 @@ export function LibrarySync() {
     mutationFn: async () => {
       setSyncProgress(0);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/library/sync`, {
-        method: 'POST',
         credentials: 'include',
+        method: 'POST',
       });
       if (!response.ok) {
         const error = await response.json();
@@ -47,17 +47,17 @@ export function LibrarySync() {
       }
       return response.json();
     },
+    onError: () => {
+      setSyncProgress(null);
+    },
     onSuccess: () => {
       setSyncProgress(100);
       refetchStatus();
       setTimeout(() => setSyncProgress(null), 2000);
     },
-    onError: () => {
-      setSyncProgress(null);
-    },
   });
 
-  const formatLastSync = (lastSync: string | null) => {
+  const formatLastSync = (lastSync: null | string) => {
     if (!lastSync) return 'Never';
     const date = new Date(lastSync);
     const now = new Date();
@@ -75,18 +75,18 @@ export function LibrarySync() {
   return (
     <Card padding="lg" radius="md" shadow="sm" withBorder>
       <Stack gap="md">
-        <Group justify="space-between" align="center">
+        <Group align="center" justify="space-between">
           <div>
-            <Text size="lg" fw={500}>Library Sync</Text>
-            <Text size="sm" color="dimmed">
+            <Text fw={500} size="lg">Library Sync</Text>
+            <Text color="dimmed" size="sm">
               Keep your Spotify library in sync
             </Text>
           </div>
           <Badge
+            color="blue"
             leftSection={<Music size={14} />}
             size="lg"
             variant="light"
-            color="blue"
           >
             {syncStatus?.totalTracks || 0} tracks
           </Badge>
@@ -94,8 +94,8 @@ export function LibrarySync() {
 
         {syncStatus && (
           <Group gap="xs">
-            <Text size="sm" color="dimmed">Last synced:</Text>
-            <Text size="sm" fw={500}>
+            <Text color="dimmed" size="sm">Last synced:</Text>
+            <Text fw={500} size="sm">
               {formatLastSync(syncStatus.lastSync)}
             </Text>
           </Group>
@@ -103,18 +103,18 @@ export function LibrarySync() {
 
         {syncProgress !== null && (
           <Progress
-            value={syncProgress}
             animated
-            striped={syncProgress < 100}
             color="green"
+            striped={syncProgress < 100}
+            value={syncProgress}
           />
         )}
 
         {syncLibraryMutation.isError && (
           <Alert
+            color="red"
             icon={<AlertCircle size={16} />}
             title="Sync Failed"
-            color="red"
             variant="light"
           >
             {syncLibraryMutation.error?.message || 'An error occurred while syncing'}
@@ -123,9 +123,9 @@ export function LibrarySync() {
 
         {syncLibraryMutation.isSuccess && syncLibraryMutation.data && (
           <Alert
+            color="green"
             icon={<CheckCircle size={16} />}
             title="Sync Complete"
-            color="green"
             variant="light"
           >
             <Stack gap="xs">
@@ -143,7 +143,7 @@ export function LibrarySync() {
                 </Text>
               )}
               {syncLibraryMutation.data.result.errors.length > 0 && (
-                <Text size="sm" color="red">
+                <Text color="red" size="sm">
                   • {syncLibraryMutation.data.result.errors.length} errors occurred
                 </Text>
               )}
@@ -152,11 +152,11 @@ export function LibrarySync() {
         )}
 
         <Button
-          leftSection={<RefreshCw size={16} />}
-          onClick={() => syncLibraryMutation.mutate()}
-          loading={syncLibraryMutation.isPending}
           disabled={syncProgress !== null && syncProgress < 100}
           fullWidth
+          leftSection={<RefreshCw size={16} />}
+          loading={syncLibraryMutation.isPending}
+          onClick={() => syncLibraryMutation.mutate()}
         >
           {syncLibraryMutation.isPending ? 'Syncing...' : 'Sync Now'}
         </Button>

@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: { sub: number | string }) {
     // Ensure the ID is a string (handle legacy tokens with numeric IDs)
     const userId = String(payload.sub);
     

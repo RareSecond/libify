@@ -4,14 +4,28 @@ import {
   HttpException,
   HttpStatus,
   Post,
-  Request,
+  Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { User } from '@prisma/client';
+import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
 import { LibrarySyncService } from './library-sync.service';
+import { TrackService } from './track.service';
+
+interface AuthenticatedRequest extends Request {
+  user: User;
+}
 
 @ApiBearerAuth()
 @ApiTags('library')
@@ -21,14 +35,29 @@ export class LibraryController {
   constructor(
     private librarySyncService: LibrarySyncService,
     private authService: AuthService,
+    private trackService: TrackService,
   ) {}
 
   @ApiOperation({ summary: 'Get library sync status' })
   @ApiResponse({ description: 'Sync status retrieved', status: 200 })
   @Get('sync/status')
-  async getSyncStatus(@Request() req) {
+  async getSyncStatus(@Req() req: AuthenticatedRequest) {
     const status = await this.librarySyncService.getSyncStatus(req.user.id);
     return status;
+  }
+
+  @ApiOperation({ summary: 'Get user tracks' })
+  @ApiResponse({
+    description: 'Paginated list of user tracks',
+    status: 200,
+    type: PaginatedTracksDto,
+  })
+  @Get('tracks')
+  async getTracks(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: GetTracksQueryDto,
+  ): Promise<PaginatedTracksDto> {
+    return this.trackService.getUserTracks(req.user.id, query);
   }
 
   @ApiOperation({ summary: 'Sync user library from Spotify' })
@@ -36,11 +65,13 @@ export class LibraryController {
   @ApiResponse({ description: 'Unauthorized', status: 401 })
   @ApiResponse({ description: 'Internal server error', status: 500 })
   @Post('sync')
-  async syncLibrary(@Request() req) {
+  async syncLibrary(@Req() req: AuthenticatedRequest) {
     try {
       // Get fresh access token
-      const accessToken = await this.authService.getSpotifyAccessToken(req.user.id);
-      
+      const accessToken = await this.authService.getSpotifyAccessToken(
+        req.user.id,
+      );
+
       if (!accessToken) {
         throw new HttpException(
           'Spotify access token not found. Please re-authenticate.',
@@ -72,10 +103,12 @@ export class LibraryController {
   @ApiResponse({ description: 'Recently played tracks synced', status: 200 })
   @ApiResponse({ description: 'Unauthorized', status: 401 })
   @Post('sync/recent')
-  async syncRecentlyPlayed(@Request() req) {
+  async syncRecentlyPlayed(@Req() req: AuthenticatedRequest) {
     try {
-      const accessToken = await this.authService.getSpotifyAccessToken(req.user.id);
-      
+      const accessToken = await this.authService.getSpotifyAccessToken(
+        req.user.id,
+      );
+
       if (!accessToken) {
         throw new HttpException(
           'Spotify access token not found. Please re-authenticate.',
@@ -83,7 +116,10 @@ export class LibraryController {
         );
       }
 
-      await this.librarySyncService.syncRecentlyPlayed(req.user.id, accessToken);
+      await this.librarySyncService.syncRecentlyPlayed(
+        req.user.id,
+        accessToken,
+      );
 
       return {
         message: 'Recently played tracks synced successfully',
@@ -99,3 +135,4 @@ export class LibraryController {
     }
   }
 }
+
