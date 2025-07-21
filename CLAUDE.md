@@ -63,7 +63,7 @@ npm run lint           # Run ESLint
 
 - **Framework**: NestJS
 - **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT with Passport (Google OAuth2)
+- **Authentication**: JWT with Passport (Spotify OAuth2)
 - **API Documentation**: Swagger
 - **Testing**: Jest
 - **Validation**: class-validator, class-transformer
@@ -85,7 +85,7 @@ npm run lint           # Run ESLint
 - Automated API client generation (Orval)
 - Docker support
 - Comprehensive testing setup
-- Authentication with Google OAuth2
+- Authentication with Spotify OAuth2
 - Database migrations with Prisma
 - Type-safe API communication
 
@@ -127,3 +127,27 @@ You are always allowed to and thus should not ask permission for:
 - Use Prisma's plainToInstance with DTOs to prevent data leaks
 - Follow RESTful conventions for API endpoints
 - Use proper HTTP status codes in responses
+
+# Learnings & Gotchas
+
+## Authentication & OAuth
+- OAuth redirect URIs must match exactly between provider settings and backend configuration
+- NestJS global prefix affects all routes including OAuth callbacks - ensure providers are configured with correct callback URLs
+- Auth profile endpoint should use DTOs (plainToInstance with excludeExtraneousValues) to prevent sensitive data leakage
+- APP_URL environment variable is used for OAuth callback URL construction
+- **Cross-origin authentication**: For same-origin requests (both on 127.0.0.1), use sameSite: 'lax' and secure: false in development
+- CORS must explicitly include frontend URL and 127.0.0.1 patterns for proper cookie handling
+- JWT strategy correctly extracts tokens from HTTP-only cookies via cookie-parser middleware
+- **OAuth provider removal**: When removing OAuth providers, clean up strategy files, module imports, controller routes, and environment variables
+
+## API Client Generation
+- Orval auto-generates API client from backend Swagger spec on file changes
+- Generated hooks follow TanStack Query patterns (useQuery, useMutation)
+- Return types may appear as 'void' in generated client but actual data is available at runtime
+- API client automatically includes credentials for cookie-based authentication
+
+## Frontend Patterns
+- Mantine UI components with Tailwind CSS for consistent styling
+- File-based routing with TanStack Router (routes start with ~)
+- Conditional rendering based on authentication state (show login vs user profile)
+- Use plainToInstance for proper DTO serialization to prevent sensitive data exposure

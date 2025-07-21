@@ -28,8 +28,10 @@ async function bootstrap() {
     credentials: true,
     origin: [
       /^http:\/\/localhost:\d+$/,
+      /^http:\/\/127\.0\.0\.1:\d+$/,
       /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
-    ],
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
   });
   app.use(cookieParser());
   await app.listen(process.env.PORT ?? 3000);

@@ -8,7 +8,12 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id         Int     @id @default(autoincrement())
+  email      String  @unique
+  name       String?
+  provider   String  // 'spotify'
+  providerId String  // ID from OAuth provider
+  spotifyId  String? // Spotify-specific ID
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
