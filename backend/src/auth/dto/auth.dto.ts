@@ -1,6 +1,20 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsDateString, IsEmail, IsOptional, IsString } from 'class-validator';
 
+export class AuthResponseDto {
+  @Expose()
+  access_token: string;
+
+  @Expose()
+  @Transform(({ obj }) => obj.user)
+  user: UserDto;
+}
+
+export class LogoutResponseDto {
+  @Expose()
+  message: string;
+}
+
 export class UserDto {
   @Expose()
   @IsDateString()
@@ -27,18 +41,4 @@ export class UserDto {
   @IsDateString()
   @IsOptional()
   updatedAt: Date;
-}
-
-export class AuthResponseDto {
-  @Expose()
-  access_token: string;
-
-  @Expose()
-  @Transform(({ obj }) => obj.user)
-  user: UserDto;
-}
-
-export class LogoutResponseDto {
-  @Expose()
-  message: string;
 }

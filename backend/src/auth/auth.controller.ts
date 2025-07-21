@@ -26,7 +26,6 @@ export class AuthController {
     });
   }
 
-
   @Post('logout')
   async logout(@Res() res: Response) {
     res.clearCookie('jwt', {
@@ -52,7 +51,7 @@ export class AuthController {
   ) {
     const user = req.user;
     const loginResult = await this.authService.login(user);
-    
+
     // Set JWT as HTTP-only cookie
     res.cookie('jwt', loginResult.access_token, {
       httpOnly: true,

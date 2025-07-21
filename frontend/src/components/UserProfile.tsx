@@ -18,12 +18,12 @@ export function UserProfile() {
   const handleLogout = async () => {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-        credentials: 'include',
-        method: 'POST',
+        credentials: "include",
+        method: "POST",
       });
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -68,7 +68,7 @@ export function UserProfile() {
 
         <Group>
           <Badge
-            color={user.provider === 'spotify' ? 'green' : 'blue'}
+            color={user.provider === "spotify" ? "green" : "blue"}
             leftSection={<Calendar size={12} />}
             variant="light"
           >

@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "concurrently -n 'backend,frontend' -c 'blue.bold,green.bold' \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "build:docker": "docker build -t undo-backend .",
-    "start:docker": "docker run -p 3000:3000 undo"
+    "start:docker": "docker run -p 3000:3000 undo",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "prettier:check": "npm run prettier:check --workspaces --if-present",
+    "prettier:fix": "npm run prettier:fix --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "cq": "npm run typecheck && npm run lint && npm run prettier:check && npm run test",
+    "cq:local": "npm run typecheck && npm run lint && npm run prettier:fix"
   },
   "author": "",
   "license": "ISC",

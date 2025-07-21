@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "concurrently -n \"orval,vite,tsc\" -c \"blue,green,yellow\" \"orval --watch\" \"vite --clearScreen false\" \"tsc --project tsconfig.app.json --noEmit --incremental --preserveWatchOutput --pretty --watch\"",
     "build": "orval && vite build",
-    "lint": "eslint .",
+    "typecheck": "tsc --project tsconfig.app.json --noEmit",
+    "lint": "eslint . --fix",
+    "prettier:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "prettier:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
     "preview": "vite preview"
   },
   "dependencies": {

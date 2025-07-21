@@ -18,7 +18,7 @@ export class SpotifyStrategy extends PassportStrategy(Strategy, 'spotify') {
   async validate(accessToken: string, refreshToken: string, profile: any) {
     const { displayName, emails, id } = profile;
     const email = emails?.[0]?.value;
-    
+
     if (!email) {
       throw new Error('Email not found in Spotify profile');
     }

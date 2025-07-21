@@ -8,7 +8,11 @@ import { DatabaseModule } from './database/database.module';
 
 @Module({
   controllers: [AppController],
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    AuthModule,
+  ],
   providers: [AppService],
 })
 export class AppModule {}
