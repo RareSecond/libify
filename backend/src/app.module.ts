@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
+import { LibraryModule } from './library/library.module';
 
 @Module({
   controllers: [AppController],
@@ -12,6 +13,7 @@ import { DatabaseModule } from './database/database.module';
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     AuthModule,
+    LibraryModule,
   ],
   providers: [AppService],
 })

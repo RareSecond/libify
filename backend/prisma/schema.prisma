@@ -8,19 +8,22 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  name         String?
-  provider     String         // 'spotify'
-  providerId   String         // ID from OAuth provider
-  spotifyId    String?        // Spotify-specific ID
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                  String         @id @default(uuid())
+  email               String         @unique
+  name                String?
+  provider            String         // 'spotify'
+  providerId          String         // ID from OAuth provider
+  spotifyId           String?        // Spotify-specific ID
+  spotifyAccessToken  String?        // Spotify access token
+  spotifyRefreshToken String?        // Spotify refresh token
+  tokenExpiresAt      DateTime?      // Token expiration time
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
   
   // Relations
-  userTracks   UserTrack[]
-  tags         Tag[]
-  playlists    SmartPlaylist[]
+  userTracks          UserTrack[]
+  tags                Tag[]
+  playlists           SmartPlaylist[]
 }
 
 // Shared Spotify track data - single source of truth

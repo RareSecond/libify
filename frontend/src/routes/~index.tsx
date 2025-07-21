@@ -1,7 +1,8 @@
-import { Button } from "@mantine/core";
+import { Button, Container, Stack } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { UserProfile } from "@/components/UserProfile";
+import { LibrarySync } from "@/components/LibrarySync";
 import {
   useAppControllerGetHello,
   useAuthControllerGetProfile,
@@ -30,10 +31,15 @@ function RouteComponent() {
   // Show user profile if logged in
   if (profile && !profileError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-6">
-        <div className="text-2xl font-bold">{data}</div>
-        <UserProfile />
-      </div>
+      <Container size="lg" className="py-8">
+        <Stack gap="xl" align="center">
+          <div className="text-3xl font-bold">{data}</div>
+          <Stack gap="lg" className="w-full max-w-2xl">
+            <UserProfile />
+            <LibrarySync />
+          </Stack>
+        </Stack>
+      </Container>
     );
   }
 
