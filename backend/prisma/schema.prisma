@@ -8,12 +8,114 @@ datasource db {
 }
 
 model User {
-  id         Int     @id @default(autoincrement())
-  email      String  @unique
-  name       String?
-  provider   String  // 'spotify'
-  providerId String  // ID from OAuth provider
-  spotifyId  String? // Spotify-specific ID
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String         @id @default(uuid())
+  email        String         @unique
+  name         String?
+  provider     String         // 'spotify'
+  providerId   String         // ID from OAuth provider
+  spotifyId    String?        // Spotify-specific ID
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  // Relations
+  userTracks   UserTrack[]
+  tags         Tag[]
+  playlists    SmartPlaylist[]
+}
+
+// Shared Spotify track data - single source of truth
+model SpotifyTrack {
+  id              String   @id @default(uuid())
+  spotifyId       String   @unique // Spotify track ID
+  title           String
+  artist          String
+  album           String?
+  albumArt        String?  // URL to album artwork
+  duration        Int      // Duration in milliseconds
+  lastUpdated     DateTime @default(now()) // When we last synced with Spotify
+  
+  // Relations
+  userTracks      UserTrack[]
+  
+  @@index([spotifyId])
+}
+
+// User-specific track data (when added, play count, etc.)
+model UserTrack {
+  id              String   @id @default(uuid())
+  userId          String
+  spotifyTrackId  String
+  addedAt         DateTime @default(now())
+  lastPlayedAt    DateTime?
+  totalPlayCount  Int      @default(0)
+  rating          Int?     // 1-5 stars (nullable since not all tracks are rated)
+  ratedAt         DateTime?
+  
+  // Relations
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spotifyTrack    SpotifyTrack  @relation(fields: [spotifyTrackId], references: [id])
+  tags            TrackTag[]
+  playHistory     PlayHistory[]
+  
+  @@unique([userId, spotifyTrackId])
+  @@index([userId])
+  @@index([spotifyTrackId])
+  @@index([rating])
+}
+
+model Tag {
+  id        String     @id @default(uuid())
+  name      String
+  color     String?    // Hex color for UI display
+  userId    String
+  createdAt DateTime   @default(now())
+  
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks    TrackTag[]
+  
+  @@unique([name, userId])
+  @@index([userId])
+}
+
+model TrackTag {
+  userTrackId String
+  tagId       String
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userTrack   UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([userTrackId, tagId])
+  @@index([tagId])
+}
+
+model PlayHistory {
+  id              String   @id @default(uuid())
+  userTrackId     String
+  playedAt        DateTime @default(now())
+  duration        Int?     // How long the track was played (milliseconds)
+  
+  // Relations
+  userTrack       UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
+  
+  @@index([userTrackId, playedAt])
+}
+
+model SmartPlaylist {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  criteria    Json     // Store complex criteria as JSON
+  isActive    Boolean  @default(true)
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
 }
