@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Music } from "lucide-react";
+import { Music, Volume2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
@@ -39,7 +39,7 @@ export function TracksTable({
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
   const playTrackMutation = useLibraryControllerPlayTrack();
-  const { playTrackList } = useSpotifyPlayer();
+  const { playTrackList, currentTrack, isPlaying } = useSpotifyPlayer();
 
   const handlePlayTrack = async (trackId: string, trackTitle: string, spotifyId?: string) => {
     try {
@@ -100,34 +100,57 @@ export function TracksTable({
   const columns = useMemo<ColumnDef<TrackDto>[]>(
     () => [
       {
-        cell: ({ row }) => (
-          <Group gap="xs" wrap="nowrap">
-            {row.original.albumArt ? (
-              <Box
-                h={36}
-                style={{
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-                w={36}
-              >
-                <Image
-                  alt={row.original.album || row.original.title}
-                  fallbackSrc="/placeholder-album.svg"
-                  fit="cover"
+        cell: ({ row }) => {
+          const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
+          return (
+            <Group gap="xs" wrap="nowrap">
+              {row.original.albumArt ? (
+                <Box
                   h={36}
-                  src={row.original.albumArt}
-                  style={{ objectFit: "cover" }}
+                  style={{
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
                   w={36}
-                />
-              </Box>
-            ) : (
-              <Center bg="gray.2" h={36} style={{ borderRadius: "4px" }} w={36}>
-                <Music color="gray" size={18} />
-              </Center>
-            )}
-          </Group>
-        ),
+                >
+                  <Image
+                    alt={row.original.album || row.original.title}
+                    fallbackSrc="/placeholder-album.svg"
+                    fit="cover"
+                    h={36}
+                    src={row.original.albumArt}
+                    style={{ objectFit: "cover" }}
+                    w={36}
+                  />
+                  {isCurrentTrack && isPlaying && (
+                    <Center
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.6)",
+                        color: "white",
+                      }}
+                    >
+                      <Volume2 size={20} />
+                    </Center>
+                  )}
+                </Box>
+              ) : (
+                <Center bg="gray.2" h={36} style={{ borderRadius: "4px" }} w={36}>
+                  {isCurrentTrack && isPlaying ? (
+                    <Volume2 size={18} />
+                  ) : (
+                    <Music color="gray" size={18} />
+                  )}
+                </Center>
+              )}
+            </Group>
+          );
+        },
         enableSorting: false,
         header: "",
         id: "albumArt",
@@ -135,11 +158,19 @@ export function TracksTable({
       },
       {
         accessorKey: "title",
-        cell: ({ getValue }) => (
-          <Text fw={500} lineClamp={1} size="sm">
-            {getValue() as string}
-          </Text>
-        ),
+        cell: ({ getValue, row }) => {
+          const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
+          return (
+            <Text 
+              fw={500} 
+              lineClamp={1} 
+              size="sm"
+              c={isCurrentTrack && isPlaying ? "blue" : undefined}
+            >
+              {getValue() as string}
+            </Text>
+          );
+        },
         header: "Title",
         id: "title",
         size: 200,
@@ -228,7 +259,7 @@ export function TracksTable({
         size: 150,
       },
     ],
-    [onRefetch]
+    [onRefetch, currentTrack, isPlaying]
   );
 
   const table = useReactTable({
@@ -322,22 +353,28 @@ export function TracksTable({
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {table.getRowModel().rows.map((row) => (
-            <Table.Tr
-              className="hover:bg-gray-50"
-              key={row.id}
-              onClick={() =>
-                handlePlayTrack(row.original.id, row.original.title, row.original.spotifyId)
-              }
-              style={{ cursor: "pointer" }}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <Table.Td key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </Table.Td>
-              ))}
-            </Table.Tr>
-          ))}
+          {table.getRowModel().rows.map((row) => {
+            const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
+            return (
+              <Table.Tr
+                className="hover:bg-gray-50"
+                key={row.id}
+                onClick={() =>
+                  handlePlayTrack(row.original.id, row.original.title, row.original.spotifyId)
+                }
+                style={{ 
+                  cursor: "pointer",
+                  backgroundColor: isCurrentTrack && isPlaying ? "rgba(0, 123, 255, 0.05)" : undefined,
+                }}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <Table.Td key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </Table.Td>
+                ))}
+              </Table.Tr>
+            );
+          })}
         </Table.Tbody>
       </Table>
     </div>
