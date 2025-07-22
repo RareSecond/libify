@@ -85,6 +85,198 @@
         ]
       }
     },
+    "/library/tracks/{trackId}/tags": {
+      "post": {
+        "operationId": "LibraryController_addTagToTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTagToTrackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tag added to track"
+          },
+          "201": {
+            "description": ""
+          },
+          "404": {
+            "description": "Track or tag not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a tag to a track",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/tags": {
+      "post": {
+        "operationId": "LibraryController_createTag",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tag created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new tag",
+        "tags": [
+          "library"
+        ]
+      },
+      "get": {
+        "operationId": "LibraryController_getTags",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all user tags",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/tags/{tagId}": {
+      "delete": {
+        "operationId": "LibraryController_deleteTag",
+        "parameters": [
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "204": {
+            "description": "Tag deleted"
+          },
+          "404": {
+            "description": "Tag not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a tag",
+        "tags": [
+          "library"
+        ]
+      },
+      "put": {
+        "operationId": "LibraryController_updateTag",
+        "parameters": [
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tag updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tag not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a tag",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/status": {
       "get": {
         "operationId": "LibraryController_getSyncStatus",
@@ -259,6 +451,46 @@
         ]
       }
     },
+    "/library/tracks/{trackId}/tags/{tagId}": {
+      "delete": {
+        "operationId": "LibraryController_removeTagFromTrack",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tag removed from track"
+          },
+          "404": {
+            "description": "Track not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a tag from a track",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync": {
       "post": {
         "operationId": "LibraryController_syncLibrary",
@@ -361,6 +593,59 @@
           "id",
           "provider",
           "updatedAt"
+        ]
+      },
+      "AddTagToTrackDto": {
+        "type": "object",
+        "properties": {
+          "tagId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tag ID to add to the track"
+          }
+        },
+        "required": [
+          "tagId"
+        ]
+      },
+      "CreateTagDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "pattern": "^#?([0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|[0-9A-F]{8})$",
+            "description": "Tag color in hex format"
+          },
+          "name": {
+            "type": "string",
+            "description": "Tag name"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "TagResponseDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "name"
         ]
       },
       "TagDto": {
@@ -473,6 +758,20 @@
           "totalPages",
           "tracks"
         ]
+      },
+      "UpdateTagDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "pattern": "^#?([0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|[0-9A-F]{8})$",
+            "description": "Tag color in hex format"
+          },
+          "name": {
+            "type": "string",
+            "description": "Tag name"
+          }
+        }
       }
     }
   }

@@ -1,11 +1,14 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
   Logger,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -21,9 +24,11 @@ import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AddTagToTrackDto, CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
 import { LibrarySyncService } from './library-sync.service';
 import { SpotifyService } from './spotify.service';
+import { TagService } from './tag.service';
 import { TrackService } from './track.service';
 
 interface AuthenticatedRequest extends Request {
@@ -42,7 +47,42 @@ export class LibraryController {
     private authService: AuthService,
     private trackService: TrackService,
     private spotifyService: SpotifyService,
+    private tagService: TagService,
   ) {}
+
+  @ApiOperation({ summary: 'Add a tag to a track' })
+  @ApiResponse({ description: 'Tag added to track', status: 200 })
+  @ApiResponse({ description: 'Track or tag not found', status: 404 })
+  @Post('tracks/:trackId/tags')
+  async addTagToTrack(
+    @Req() req: AuthenticatedRequest,
+    @Param('trackId') trackId: string,
+    @Body() addTagDto: AddTagToTrackDto,
+  ): Promise<{ message: string }> {
+    await this.tagService.addTagToTrack(req.user.id, trackId, addTagDto.tagId);
+    return { message: 'Tag added to track' };
+  }
+
+  @ApiOperation({ summary: 'Create a new tag' })
+  @ApiResponse({ description: 'Tag created', status: 201, type: TagResponseDto })
+  @Post('tags')
+  async createTag(
+    @Req() req: AuthenticatedRequest,
+    @Body() createTagDto: CreateTagDto,
+  ): Promise<TagResponseDto> {
+    return this.tagService.createTag(req.user.id, createTagDto);
+  }
+
+  @ApiOperation({ summary: 'Delete a tag' })
+  @ApiResponse({ description: 'Tag deleted', status: 204 })
+  @ApiResponse({ description: 'Tag not found', status: 404 })
+  @Delete('tags/:tagId')
+  async deleteTag(
+    @Req() req: AuthenticatedRequest,
+    @Param('tagId') tagId: string,
+  ): Promise<void> {
+    await this.tagService.deleteTag(req.user.id, tagId);
+  }
 
   @ApiOperation({ summary: 'Get library sync status' })
   @ApiResponse({ description: 'Sync status retrieved', status: 200 })
@@ -51,6 +91,15 @@ export class LibraryController {
     const status = await this.librarySyncService.getSyncStatus(req.user.id);
     return status;
   }
+
+  @ApiOperation({ summary: 'Get all user tags' })
+  @ApiResponse({ description: 'List of tags', status: 200, type: [TagResponseDto] })
+  @Get('tags')
+  async getTags(@Req() req: AuthenticatedRequest): Promise<TagResponseDto[]> {
+    return this.tagService.getUserTags(req.user.id);
+  }
+
+  // Tag management endpoints
 
   @ApiOperation({ summary: 'Get user tracks' })
   @ApiResponse({
@@ -103,6 +152,19 @@ export class LibraryController {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  @ApiOperation({ summary: 'Remove a tag from a track' })
+  @ApiResponse({ description: 'Tag removed from track', status: 200 })
+  @ApiResponse({ description: 'Track not found', status: 404 })
+  @Delete('tracks/:trackId/tags/:tagId')
+  async removeTagFromTrack(
+    @Req() req: AuthenticatedRequest,
+    @Param('trackId') trackId: string,
+    @Param('tagId') tagId: string,
+  ): Promise<{ message: string }> {
+    await this.tagService.removeTagFromTrack(req.user.id, trackId, tagId);
+    return { message: 'Tag removed from track' };
   }
 
   @ApiOperation({ summary: 'Sync user library from Spotify' })
@@ -178,6 +240,18 @@ export class LibraryController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @ApiOperation({ summary: 'Update a tag' })
+  @ApiResponse({ description: 'Tag updated', status: 200, type: TagResponseDto })
+  @ApiResponse({ description: 'Tag not found', status: 404 })
+  @Put('tags/:tagId')
+  async updateTag(
+    @Req() req: AuthenticatedRequest,
+    @Param('tagId') tagId: string,
+    @Body() updateTagDto: UpdateTagDto,
+  ): Promise<TagResponseDto> {
+    return this.tagService.updateTag(req.user.id, tagId, updateTagDto);
   }
 }
 

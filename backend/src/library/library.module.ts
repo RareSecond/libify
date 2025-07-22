@@ -5,12 +5,13 @@ import { DatabaseModule } from '../database/database.module';
 import { LibrarySyncService } from './library-sync.service';
 import { LibraryController } from './library.controller';
 import { SpotifyService } from './spotify.service';
+import { TagService } from './tag.service';
 import { TrackService } from './track.service';
 
 @Module({
   controllers: [LibraryController],
   exports: [SpotifyService, LibrarySyncService],
   imports: [DatabaseModule, AuthModule],
-  providers: [SpotifyService, LibrarySyncService, TrackService],
+  providers: [SpotifyService, LibrarySyncService, TrackService, TagService],
 })
 export class LibraryModule {}

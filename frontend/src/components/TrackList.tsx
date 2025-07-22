@@ -1,10 +1,12 @@
-import { Badge, Center, Group, Image, Loader, Pagination, Paper, Select, Stack, Table, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Center, Group, Image, Loader, Modal, Pagination, Paper, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { Clock, Music, Search, Star } from 'lucide-react';
+import { Clock, Music, Search, Star, Tag } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useLibraryControllerGetTracks, useLibraryControllerPlayTrack } from '../data/api';
+import { InlineTagEditor } from './InlineTagEditor';
+import { TagManager } from './TagManager';
 
 export function TrackList() {
   const [page, setPage] = useState(1);
@@ -13,10 +15,11 @@ export function TrackList() {
   const [sortBy, setSortBy] = useState<string>('addedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [playingTrackId, setPlayingTrackId] = useState<null | string>(null);
+  const [showTagManager, setShowTagManager] = useState(false);
   
   const [debouncedSearch] = useDebouncedValue(search, 300);
   
-  const { data, error, isLoading } = useLibraryControllerGetTracks({
+  const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
     page,
     pageSize,
     search: debouncedSearch || undefined,
@@ -38,7 +41,7 @@ export function TrackList() {
     } catch (error) {
       notifications.show({
         color: 'red',
-        message: (error as any).response?.data?.message || 'Please make sure Spotify is open on one of your devices',
+        message: (error as Error & { response?: { data?: { message?: string } } }).response?.data?.message || 'Please make sure Spotify is open on one of your devices',
         title: 'Failed to play track',
       });
     } finally {
@@ -90,13 +93,22 @@ export function TrackList() {
     <Stack gap="md">
       <Paper p="md" shadow="xs">
         <Group justify="space-between" mb="md">
-          <TextInput
-            leftSection={<Search size={16} />}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            placeholder="Search tracks..."
-            value={search}
-            w={300}
-          />
+          <Group>
+            <TextInput
+              leftSection={<Search size={16} />}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              placeholder="Search tracks..."
+              value={search}
+              w={300}
+            />
+            <ActionIcon
+              onClick={() => setShowTagManager(true)}
+              size="lg"
+              variant="light"
+            >
+              <Tag size={20} />
+            </ActionIcon>
+          </Group>
           
           <Group>
             <Select
@@ -162,7 +174,7 @@ export function TrackList() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {data?.tracks.map((track: any) => (
+                  {data?.tracks.map((track) => (
                     <Table.Tr 
                       className="hover:bg-gray-50"
                       key={track.id}
@@ -215,18 +227,11 @@ export function TrackList() {
                       </Table.Td>
                       <Table.Td>{renderRating(track.rating)}</Table.Td>
                       <Table.Td>
-                        <Group gap={4}>
-                          {track.tags.map((tag: any) => (
-                            <Badge
-                              color={tag.color || 'gray'}
-                              key={tag.id}
-                              size="xs"
-                              variant="light"
-                            >
-                              {tag.name}
-                            </Badge>
-                          ))}
-                        </Group>
+                        <InlineTagEditor
+                          onTagsChange={refetch}
+                          trackId={track.id}
+                          trackTags={track.tags}
+                        />
                       </Table.Td>
                     </Table.Tr>
                   ))}
@@ -248,6 +253,17 @@ export function TrackList() {
           </>
         )}
       </Paper>
+
+      <Modal
+        onClose={() => setShowTagManager(false)}
+        opened={showTagManager}
+        size="md"
+        title="Manage Tags"
+      >
+        <TagManager
+          onTagsChange={refetch}
+        />
+      </Modal>
     </Stack>
   );
 }
