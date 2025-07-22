@@ -1,52 +1,27 @@
 import {
   ActionIcon,
-  Box,
   Center,
   Group,
-  Image,
-  Loader,
   Modal,
   Pagination,
   Paper,
   Select,
   Stack,
-  Table,
   Text,
   TextInput,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { Music, Search, Tag } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Search, Tag } from "lucide-react";
+import { useState } from "react";
 
 import {
-  TrackDto,
   useLibraryControllerGetTracks,
-  useLibraryControllerPlayTrack,
 } from "../data/api";
-import { useColumnOrder } from "../hooks/useColumnOrder";
 import { Route } from "../routes/~tracks";
-import { InlineTagEditor } from "./InlineTagEditor";
-import { RatingSelector } from "./RatingSelector";
 import { TagManager } from "./TagManager";
+import { TracksTable } from "./TracksTable";
 
-const formatDuration = (ms: number) => {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
-
-const formatDate = (date: null | string | undefined) => {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString();
-};
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -58,7 +33,6 @@ export function TrackList() {
     sortOrder = "desc",
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
-  const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
 
   const [debouncedSearch] = useDebouncedValue(search, 300);
 
@@ -77,27 +51,6 @@ export function TrackList() {
     sortOrder,
   });
 
-  const playTrackMutation = useLibraryControllerPlayTrack();
-
-  const handlePlayTrack = async (trackId: string, trackTitle: string) => {
-    try {
-      await playTrackMutation.mutateAsync({ trackId });
-      notifications.show({
-        color: "green",
-        message: trackTitle,
-        title: "Now playing",
-      });
-    } catch (error) {
-      notifications.show({
-        color: "red",
-        message:
-          (error as Error & { response?: { data?: { message?: string } } })
-            .response?.data?.message ||
-          "Please make sure Spotify is open on one of your devices",
-        title: "Failed to play track",
-      });
-    }
-  };
 
   const updateSearch = (
     newSearch: Partial<{
@@ -127,198 +80,6 @@ export function TrackList() {
     });
   };
 
-  const defaultColumnOrder = [
-    "albumArt",
-    "title",
-    "artist",
-    "album",
-    "duration",
-    "totalPlayCount",
-    "lastPlayedAt",
-    "rating",
-    "tags",
-  ];
-
-  const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
-
-  const columns = useMemo<ColumnDef<TrackDto>[]>(
-    () => [
-      {
-        cell: ({ row }) => (
-          <Group gap="xs" wrap="nowrap">
-            {row.original.albumArt ? (
-              <Box
-                h={36}
-                style={{
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-                w={36}
-              >
-                <Image
-                  alt={row.original.album || row.original.title}
-                  fallbackSrc="/placeholder-album.svg"
-                  fit="cover"
-                  h={36}
-                  src={row.original.albumArt}
-                  style={{ objectFit: "cover" }}
-                  w={36}
-                />
-              </Box>
-            ) : (
-              <Center bg="gray.2" h={36} style={{ borderRadius: "4px" }} w={36}>
-                <Music color="gray" size={18} />
-              </Center>
-            )}
-          </Group>
-        ),
-        enableSorting: false,
-        header: "",
-        id: "albumArt",
-        size: 50,
-      },
-      {
-        accessorKey: "title",
-        cell: ({ getValue }) => (
-          <Text fw={500} lineClamp={1} size="sm">
-            {getValue() as string}
-          </Text>
-        ),
-        header: "Title",
-        id: "title",
-        size: 200,
-      },
-      {
-        accessorKey: "artist",
-        cell: ({ getValue }) => (
-          <Text lineClamp={1} size="sm">
-            {getValue() as string}
-          </Text>
-        ),
-        header: "Artist",
-        id: "artist",
-        size: 150,
-      },
-      {
-        accessorKey: "album",
-        cell: ({ getValue }) => (
-          <Text c="dimmed" lineClamp={1} size="sm">
-            {(getValue() as string) || "-"}
-          </Text>
-        ),
-        header: "Album",
-        id: "album",
-        size: 150,
-      },
-      {
-        accessorKey: "duration",
-        cell: ({ getValue }) => (
-          <Text c="dimmed" size="sm">
-            {formatDuration(getValue() as number)}
-          </Text>
-        ),
-        header: "Duration",
-        id: "duration",
-        size: 80,
-      },
-      {
-        accessorKey: "totalPlayCount",
-        cell: ({ getValue }) => (
-          <Text size="sm" ta="center">
-            {getValue() as number}
-          </Text>
-        ),
-        header: "Plays",
-        id: "totalPlayCount",
-        size: 60,
-      },
-      {
-        accessorKey: "lastPlayedAt",
-        cell: ({ getValue }) => (
-          <Text c="dimmed" size="xs">
-            {formatDate(getValue() as string | undefined)}
-          </Text>
-        ),
-        header: "Last Played",
-        id: "lastPlayedAt",
-        size: 100,
-      },
-      {
-        accessorKey: "rating",
-        cell: ({ row }) => (
-          <RatingSelector
-            onRatingChange={refetch}
-            rating={row.original.rating ?? null}
-            trackId={row.original.id}
-          />
-        ),
-        enableSorting: false,
-        header: "Rating",
-        id: "rating",
-        size: 120,
-      },
-      {
-        accessorKey: "tags",
-        cell: ({ row }) => (
-          <InlineTagEditor
-            onTagsChange={refetch}
-            trackId={row.original.id}
-            trackTags={row.original.tags}
-          />
-        ),
-        enableSorting: false,
-        header: "Tags",
-        id: "tags",
-        size: 150,
-      },
-    ],
-    [refetch]
-  );
-
-  const table = useReactTable({
-    columnResizeMode: "onChange",
-    columns,
-    data: data?.tracks || [],
-    getCoreRowModel: getCoreRowModel(),
-    onColumnOrderChange: setColumnOrder,
-    state: {
-      columnOrder,
-    },
-  });
-
-  const handleDragStart = (e: React.DragEvent, column: string) => {
-    setDraggedColumn(column);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragEnd = () => {
-    setDraggedColumn(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDragEnter = (e: React.DragEvent, targetColumn: string) => {
-    e.preventDefault();
-    if (!draggedColumn || draggedColumn === targetColumn) return;
-
-    const newColumnOrder = [...columnOrder];
-    const draggedIndex = newColumnOrder.indexOf(draggedColumn);
-    const targetIndex = newColumnOrder.indexOf(targetColumn);
-
-    if (draggedIndex !== -1 && targetIndex !== -1) {
-      // Remove dragged column and insert at target position
-      newColumnOrder.splice(draggedIndex, 1);
-      newColumnOrder.splice(targetIndex, 0, draggedColumn);
-      setColumnOrder(newColumnOrder);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
 
   if (error) {
     return (
@@ -398,92 +159,26 @@ export function TrackList() {
           </Group>
         </Group>
 
-        {isLoading ? (
-          <Center h={400}>
-            <Loader size="lg" />
+        <Text c="dimmed" mb="xs" size="sm">
+          {data?.total || 0} tracks in library
+        </Text>
+
+        <TracksTable 
+          isLoading={isLoading}
+          onRefetch={refetch}
+          tracks={data?.tracks || []}
+        />
+
+        {data && data.totalPages > 1 && (
+          <Center mt="lg">
+            <Pagination
+              boundaries={1}
+              onChange={(newPage) => updateSearch({ page: newPage })}
+              siblings={1}
+              total={data.totalPages}
+              value={page}
+            />
           </Center>
-        ) : (
-          <>
-            <Text c="dimmed" mb="xs" size="sm">
-              {data?.total || 0} tracks in library
-            </Text>
-
-            <div className="overflow-x-auto">
-              <Table
-                highlightOnHover
-                horizontalSpacing="xs"
-                striped
-                verticalSpacing={6}
-                withTableBorder
-              >
-                <Table.Thead>
-                  <Table.Tr>
-                    {table.getFlatHeaders().map((header) => (
-                      <Table.Th
-                        draggable
-                        key={header.id}
-                        onDragEnd={handleDragEnd}
-                        onDragEnter={(e) =>
-                          handleDragEnter(e, header.column.id)
-                        }
-                        onDragOver={handleDragOver}
-                        onDragStart={(e) =>
-                          handleDragStart(e, header.column.id)
-                        }
-                        onDrop={handleDrop}
-                        style={{
-                          cursor: draggedColumn ? "grabbing" : "grab",
-                          opacity: draggedColumn === header.column.id ? 0.5 : 1,
-                          position: "relative",
-                          transition: "opacity 0.2s",
-                          userSelect: "none",
-                          width: header.getSize(),
-                        }}
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </Table.Th>
-                    ))}
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {table.getRowModel().rows.map((row) => (
-                    <Table.Tr
-                      className="hover:bg-gray-50"
-                      key={row.id}
-                      onClick={() =>
-                        handlePlayTrack(row.original.id, row.original.title)
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <Table.Td key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </Table.Td>
-                      ))}
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </div>
-
-            {data && data.totalPages > 1 && (
-              <Center mt="lg">
-                <Pagination
-                  boundaries={1}
-                  onChange={(newPage) => updateSearch({ page: newPage })}
-                  siblings={1}
-                  total={data.totalPages}
-                  value={page}
-                />
-              </Center>
-            )}
-          </>
         )}
       </Paper>
 
