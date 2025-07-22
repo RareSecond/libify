@@ -591,17 +591,55 @@
     "/library/albums": {
       "get": {
         "operationId": "LibraryController_getAlbums",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "List of albums",
+            "description": "Paginated list of albums",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AlbumDto"
-                  }
+                  "$ref": "#/components/schemas/PaginatedAlbumsDto"
                 }
               }
             }
@@ -1135,6 +1173,41 @@
           "avgRating",
           "firstAdded",
           "lastPlayed"
+        ]
+      },
+      "PaginatedAlbumsDto": {
+        "type": "object",
+        "properties": {
+          "albums": {
+            "description": "List of albums",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlbumDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of albums"
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of items per page"
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages"
+          }
+        },
+        "required": [
+          "albums",
+          "total",
+          "page",
+          "pageSize",
+          "totalPages"
         ]
       },
       "PlaylistRuleDto": {

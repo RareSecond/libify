@@ -24,7 +24,7 @@ import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AlbumDto } from './dto/album.dto';
+import { PaginatedAlbumsDto } from './dto/album.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import { AddTagToTrackDto, CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
@@ -275,10 +275,23 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Get all albums in user library' })
-  @ApiResponse({ description: 'List of albums', status: 200, type: [AlbumDto] })
+  @ApiResponse({ description: 'Paginated list of albums', status: 200, type: PaginatedAlbumsDto })
   @Get('albums')
-  async getAlbums(@Req() req: AuthenticatedRequest): Promise<AlbumDto[]> {
-    return this.trackService.getUserAlbums(req.user.id);
+  async getAlbums(
+    @Req() req: AuthenticatedRequest,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: 'name' | 'artist' | 'trackCount' | 'totalPlayCount' | 'avgRating' | 'lastPlayed',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ): Promise<PaginatedAlbumsDto> {
+    return this.trackService.getUserAlbums(req.user.id, {
+      page: page || 1,
+      pageSize: pageSize || 24,
+      search,
+      sortBy: sortBy || 'name',
+      sortOrder: sortOrder || 'asc',
+    });
   }
 }
 

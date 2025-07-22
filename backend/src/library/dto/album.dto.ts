@@ -38,3 +38,25 @@ export class AlbumDto {
   @Expose()
   lastPlayed: Date | null;
 }
+
+export class PaginatedAlbumsDto {
+  @ApiProperty({ description: 'List of albums' })
+  @Expose()
+  albums: AlbumDto[];
+
+  @ApiProperty({ description: 'Total number of albums' })
+  @Expose()
+  total: number;
+
+  @ApiProperty({ description: 'Current page number' })
+  @Expose()
+  page: number;
+
+  @ApiProperty({ description: 'Number of items per page' })
+  @Expose()
+  pageSize: number;
+
+  @ApiProperty({ description: 'Total number of pages' })
+  @Expose()
+  totalPages: number;
+}

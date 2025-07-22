@@ -6,6 +6,7 @@ import {
   Group,
   Image,
   Loader,
+  Pagination,
   Stack,
   Text,
   TextInput,
@@ -15,7 +16,6 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { useNavigate } from '@tanstack/react-router';
 import { Music, Play, Search, Star } from 'lucide-react';
-import { useMemo } from 'react';
 
 import { useLibraryControllerGetAlbums } from '../data/api';
 import { Route } from '../routes/~albums';
@@ -36,75 +36,38 @@ const formatDate = (date: null | string | undefined) => {
 };
 
 export function AlbumsOverview() {
-  const { data: albums, isLoading, error } = useLibraryControllerGetAlbums();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { search = '', sortBy = 'name', sortOrder = 'asc' } = Route.useSearch();
+  const { search = '', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 24 } = Route.useSearch();
   
   const [debouncedSearch] = useDebouncedValue(search, 300);
 
-  const updateSearch = (newSearch: Partial<{ search?: string; sortBy?: typeof sortBy; sortOrder?: typeof sortOrder }>) => {
+  const { data, isLoading, error } = useLibraryControllerGetAlbums({
+    page,
+    pageSize,
+    search: debouncedSearch || '',
+    sortBy,
+    sortOrder,
+  });
+
+  const updateSearch = (newSearch: Partial<{ 
+    search?: string; 
+    sortBy?: typeof sortBy; 
+    sortOrder?: typeof sortOrder;
+    page?: number;
+    pageSize?: number;
+  }>) => {
     navigate({
       search: (prev) => ({
         ...prev,
         ...newSearch,
+        // Reset to page 1 when search changes
+        ...(newSearch.search !== undefined && newSearch.page === undefined
+          ? { page: 1 }
+          : {}),
       }),
     });
   };
 
-  const filteredAndSortedAlbums = useMemo(() => {
-    if (!albums) return [];
-    
-    // Filter
-    let filtered = albums;
-    if (debouncedSearch) {
-      const searchLower = debouncedSearch.toLowerCase();
-      filtered = albums.filter(album => 
-        album.name.toLowerCase().includes(searchLower) ||
-        album.artist.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    // Sort
-    const sorted = [...filtered].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
-      
-      switch (sortBy) {
-        case 'name':
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-          break;
-        case 'artist':
-          aVal = a.artist.toLowerCase();
-          bVal = b.artist.toLowerCase();
-          break;
-        case 'trackCount':
-          aVal = a.trackCount;
-          bVal = b.trackCount;
-          break;
-        case 'totalPlayCount':
-          aVal = a.totalPlayCount;
-          bVal = b.totalPlayCount;
-          break;
-        case 'avgRating':
-          aVal = a.avgRating || 0;
-          bVal = b.avgRating || 0;
-          break;
-        case 'lastPlayed':
-          aVal = a.lastPlayed ? new Date(a.lastPlayed).getTime() : 0;
-          bVal = b.lastPlayed ? new Date(b.lastPlayed).getTime() : 0;
-          break;
-      }
-      
-      if (sortOrder === 'asc') {
-        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      } else {
-        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-      }
-    });
-    
-    return sorted;
-  }, [albums, debouncedSearch, sortBy, sortOrder]);
 
   if (error) {
     return (
@@ -127,7 +90,7 @@ export function AlbumsOverview() {
       <Group justify="space-between">
         <Title order={2}>My Albums</Title>
         <Text c="dimmed">
-          {filteredAndSortedAlbums.length} albums
+          {data?.total || 0} albums
         </Text>
       </Group>
 
@@ -165,10 +128,18 @@ export function AlbumsOverview() {
           value={sortOrder}
           w={120}
         />
+        
+        <Select
+          data={['12', '24', '48', '96']}
+          label="Page size"
+          onChange={(value) => updateSearch({ page: 1, pageSize: parseInt(value || '24') })}
+          value={pageSize.toString()}
+          w={100}
+        />
       </Group>
 
       <Grid>
-        {filteredAndSortedAlbums.map((album) => (
+        {data?.albums.map((album) => (
           <Grid.Col key={`${album.name}-${album.artist}`} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
             <Card h="100%" p="md" radius="md" shadow="sm" withBorder>
               <Card.Section mb="md">
@@ -239,7 +210,7 @@ export function AlbumsOverview() {
         ))}
       </Grid>
 
-      {filteredAndSortedAlbums.length === 0 && (
+      {(!data?.albums || data.albums.length === 0) && (
         <Center h={200}>
           <Stack align="center" gap="md">
             <Music size={48} style={{ opacity: 0.5 }} />
@@ -247,6 +218,18 @@ export function AlbumsOverview() {
               {debouncedSearch ? 'No albums found matching your search' : 'No albums in your library yet'}
             </Text>
           </Stack>
+        </Center>
+      )}
+
+      {data && data.totalPages > 1 && (
+        <Center mt="lg">
+          <Pagination
+            boundaries={1}
+            onChange={(newPage) => updateSearch({ page: newPage })}
+            siblings={1}
+            total={data.totalPages}
+            value={page}
+          />
         </Center>
       )}
     </Stack>

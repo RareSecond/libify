@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 
 import { DatabaseService } from '../database/database.service';
-import { AlbumDto } from './dto/album.dto';
+import { AlbumDto, PaginatedAlbumsDto } from './dto/album.dto';
 import { GetTracksQueryDto, PaginatedTracksDto, TrackDto } from './dto/track.dto';
 
 @Injectable()
@@ -190,7 +190,16 @@ export class TrackService {
     return updated.rating;
   }
 
-  async getUserAlbums(userId: string): Promise<AlbumDto[]> {
+  async getUserAlbums(
+    userId: string, 
+    options: { 
+      page: number; 
+      pageSize: number;
+      search?: string;
+      sortBy: 'name' | 'artist' | 'trackCount' | 'totalPlayCount' | 'avgRating' | 'lastPlayed';
+      sortOrder: 'asc' | 'desc';
+    }
+  ): Promise<PaginatedAlbumsDto> {
     // Get all unique albums with aggregated data
     const tracks = await this.databaseService.userTrack.findMany({
       where: { 
@@ -253,11 +262,73 @@ export class TrackService {
     });
 
     // Convert map to array and format
-    const albums = Array.from(albumsMap.values()).map(album => ({
+    let allAlbums = Array.from(albumsMap.values()).map(album => ({
       ...album,
       avgRating: album.ratedCount > 0 ? Math.round(album.avgRating * 10) / 10 : null,
     }));
 
-    return plainToInstance(AlbumDto, albums, { excludeExtraneousValues: true });
+    // Apply search filter
+    if (options.search) {
+      const searchLower = options.search.toLowerCase();
+      allAlbums = allAlbums.filter(album => 
+        album.name.toLowerCase().includes(searchLower) ||
+        album.artist.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply sorting
+    allAlbums.sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      
+      switch (options.sortBy) {
+        case 'name':
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case 'artist':
+          aVal = a.artist.toLowerCase();
+          bVal = b.artist.toLowerCase();
+          break;
+        case 'trackCount':
+          aVal = a.trackCount;
+          bVal = b.trackCount;
+          break;
+        case 'totalPlayCount':
+          aVal = a.totalPlayCount;
+          bVal = b.totalPlayCount;
+          break;
+        case 'avgRating':
+          aVal = a.avgRating || 0;
+          bVal = b.avgRating || 0;
+          break;
+        case 'lastPlayed':
+          aVal = a.lastPlayed ? new Date(a.lastPlayed).getTime() : 0;
+          bVal = b.lastPlayed ? new Date(b.lastPlayed).getTime() : 0;
+          break;
+      }
+      
+      if (options.sortOrder === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+
+    // Apply pagination
+    const total = allAlbums.length;
+    const totalPages = Math.ceil(total / options.pageSize);
+    const skip = (options.page - 1) * options.pageSize;
+    const paginatedAlbums = allAlbums.slice(skip, skip + options.pageSize);
+
+    const albumDtos = plainToInstance(AlbumDto, paginatedAlbums, { excludeExtraneousValues: true });
+
+    return plainToInstance(PaginatedAlbumsDto, {
+      albums: albumDtos,
+      total,
+      page: options.page,
+      pageSize: options.pageSize,
+      totalPages,
+    }, { excludeExtraneousValues: true });
   }
 }

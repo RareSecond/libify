@@ -8,6 +8,8 @@ const albumsSearchSchema = z.object({
   search: z.string().optional().default(''),
   sortBy: z.enum(['name', 'artist', 'trackCount', 'totalPlayCount', 'avgRating', 'lastPlayed']).optional().default('name'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
+  page: z.number().optional().default(1),
+  pageSize: z.number().optional().default(24),
 });
 
 export const Route = createFileRoute('/albums')({
