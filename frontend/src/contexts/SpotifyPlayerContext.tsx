@@ -12,6 +12,7 @@ interface SpotifyPlayerContextType {
   nextTrack: () => Promise<void>;
   pause: () => Promise<void>;
   play: (uri?: string) => Promise<void>;
+  playTrackList: (trackUris: string[], startIndex?: number) => Promise<void>;
   player: null | SpotifyPlayer;
   position: number;
   previousTrack: () => Promise<void>;
@@ -19,6 +20,8 @@ interface SpotifyPlayerContextType {
   seek: (position: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   volume: number;
+  currentTrackList: string[];
+  currentTrackIndex: number;
 }
 
 const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(null);
@@ -36,6 +39,8 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(0.5);
   const [isReady, setIsReady] = useState(false);
+  const [currentTrackList, setCurrentTrackList] = useState<string[]>([]);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
 
   const { data: user } = useAuthControllerGetProfile();
 
@@ -142,7 +147,7 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     if (!player || !deviceId) return;
 
     if (uri) {
-      // Play specific track
+      // Play specific track and reset track list to just this track
       const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
         body: JSON.stringify({ uris: [uri] }),
         headers: {
@@ -154,10 +159,37 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
       
       if (!response.ok) {
         console.error('Failed to play track:', response.statusText);
+      } else {
+        // Update track list to just contain this track
+        setCurrentTrackList([uri]);
+        setCurrentTrackIndex(0);
       }
     } else {
       // Resume current track
       await player.resume();
+    }
+  };
+
+  const playTrackList = async (trackUris: string[], startIndex: number = 0) => {
+    if (!player || !deviceId || trackUris.length === 0) return;
+
+    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      body: JSON.stringify({ 
+        uris: trackUris,
+        offset: { position: startIndex }
+      }),
+      headers: {
+        Authorization: `Bearer ${await getAccessToken()}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'PUT',
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to play track list:', response.statusText);
+    } else {
+      setCurrentTrackList(trackUris);
+      setCurrentTrackIndex(startIndex);
     }
   };
 
@@ -174,13 +206,57 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
   };
 
   const nextTrack = async () => {
-    if (player) {
+    if (!player || currentTrackList.length === 0) return;
+
+    const nextIndex = currentTrackIndex + 1;
+    
+    if (nextIndex < currentTrackList.length) {
+      // Play next track in our list
+      const nextUri = currentTrackList[nextIndex];
+      const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+        body: JSON.stringify({ uris: [nextUri] }),
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json',
+        },
+        method: 'PUT',
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to play next track:', response.statusText);
+      } else {
+        setCurrentTrackIndex(nextIndex);
+      }
+    } else {
+      // Try Spotify's native next (in case there's a queue)
       await player.nextTrack();
     }
   };
 
   const previousTrack = async () => {
-    if (player) {
+    if (!player || currentTrackList.length === 0) return;
+
+    const prevIndex = currentTrackIndex - 1;
+    
+    if (prevIndex >= 0) {
+      // Play previous track in our list
+      const prevUri = currentTrackList[prevIndex];
+      const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+        body: JSON.stringify({ uris: [prevUri] }),
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json',
+        },
+        method: 'PUT',
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to play previous track:', response.statusText);
+      } else {
+        setCurrentTrackIndex(prevIndex);
+      }
+    } else {
+      // Try Spotify's native previous
       await player.previousTrack();
     }
   };
@@ -214,6 +290,7 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     nextTrack,
     pause,
     play,
+    playTrackList,
     player,
     position,
     previousTrack,
@@ -221,6 +298,8 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     seek,
     setVolume,
     volume,
+    currentTrackList,
+    currentTrackIndex,
   };
 
   return (

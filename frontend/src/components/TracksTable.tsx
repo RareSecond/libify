@@ -39,20 +39,31 @@ export function TracksTable({
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
   const playTrackMutation = useLibraryControllerPlayTrack();
-  const { play } = useSpotifyPlayer();
+  const { playTrackList } = useSpotifyPlayer();
 
   const handlePlayTrack = async (trackId: string, trackTitle: string, spotifyId?: string) => {
     try {
-      if (spotifyId) {
-        // Use Spotify Web Playback SDK
-        await play(`spotify:track:${spotifyId}`);
-        notifications.show({
-          color: "green",
-          message: trackTitle,
-          title: "Now playing",
-        });
+      if (spotifyId && tracks.length > 0) {
+        // Build list of all track URIs
+        const trackUris = tracks
+          .filter(track => track.spotifyId)
+          .map(track => `spotify:track:${track.spotifyId}`);
+        
+        if (trackUris.length > 0) {
+          // Find the index of the clicked track in the filtered list
+          const clickedTrackUri = `spotify:track:${spotifyId}`;
+          const trackIndex = trackUris.findIndex(uri => uri === clickedTrackUri);
+          
+          // Play the entire track list starting from the clicked track
+          await playTrackList(trackUris, trackIndex >= 0 ? trackIndex : 0);
+          notifications.show({
+            color: "green",
+            message: trackTitle,
+            title: "Now playing",
+          });
+        }
       } else {
-        // Fallback to backend API
+        // Fallback to backend API for single track
         await playTrackMutation.mutateAsync({ trackId });
         notifications.show({
           color: "green",
