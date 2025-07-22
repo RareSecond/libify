@@ -545,6 +545,48 @@
           "library"
         ]
       }
+    },
+    "/library/tracks/{trackId}/rating": {
+      "put": {
+        "operationId": "LibraryController_updateTrackRating",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRatingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rating updated"
+          },
+          "404": {
+            "description": "Track not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update track rating",
+        "tags": [
+          "library"
+        ]
+      }
     }
   },
   "info": {
@@ -772,6 +814,21 @@
             "description": "Tag name"
           }
         }
+      },
+      "UpdateRatingDto": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Rating value (1-5)",
+            "example": 5
+          }
+        },
+        "required": [
+          "rating"
+        ]
       }
     }
   }

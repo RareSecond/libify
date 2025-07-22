@@ -1,11 +1,12 @@
 import { ActionIcon, Center, Group, Image, Loader, Modal, Pagination, Paper, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { Clock, Music, Search, Star, Tag } from 'lucide-react';
+import { Clock, Music, Search, Tag } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useLibraryControllerGetTracks, useLibraryControllerPlayTrack } from '../data/api';
 import { InlineTagEditor } from './InlineTagEditor';
+import { RatingSelector } from './RatingSelector';
 import { TagManager } from './TagManager';
 
 export function TrackList() {
@@ -63,22 +64,6 @@ export function TrackList() {
   const formatDate = (date: null | string | undefined) => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString();
-  };
-
-  const renderRating = (rating: null | number | undefined) => {
-    if (!rating) return <Text c="dimmed" size="sm">-</Text>;
-    return (
-      <Group gap={2}>
-        {[...Array(5)].map((_, i) => (
-          <Star
-            color={i < rating ? 'gold' : 'gray'}
-            fill={i < rating ? 'gold' : 'transparent'}
-            key={i}
-            size={14}
-          />
-        ))}
-      </Group>
-    );
   };
 
   if (error) {
@@ -225,7 +210,13 @@ export function TrackList() {
                       <Table.Td>
                         <Text size="sm">{formatDate(track.lastPlayedAt)}</Text>
                       </Table.Td>
-                      <Table.Td>{renderRating(track.rating)}</Table.Td>
+                      <Table.Td>
+                        <RatingSelector
+                          onRatingChange={refetch}
+                          rating={track.rating ?? null}
+                          trackId={track.id}
+                        />
+                      </Table.Td>
                       <Table.Td>
                         <InlineTagEditor
                           onTagsChange={refetch}

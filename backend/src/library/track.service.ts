@@ -167,4 +167,25 @@ export class TrackService {
       tracks: trackDtos,
     }, { excludeExtraneousValues: true });
   }
+
+
+  async updateTrackRating(userId: string, trackId: string, rating: number): Promise<number> {
+    const track = await this.databaseService.userTrack.findFirst({
+      where: { id: trackId, userId },
+    });
+
+    if (!track) {
+      throw new Error('Track not found');
+    }
+
+    const updated = await this.databaseService.userTrack.update({
+      data: {
+        ratedAt: new Date(),
+        rating,
+      },
+      where: { id: trackId },
+    });
+
+    return updated.rating;
+  }
 }

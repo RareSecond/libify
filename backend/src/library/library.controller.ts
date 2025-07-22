@@ -24,6 +24,7 @@ import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdateRatingDto } from './dto/rating.dto';
 import { AddTagToTrackDto, CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
 import { LibrarySyncService } from './library-sync.service';
@@ -167,6 +168,7 @@ export class LibraryController {
     return { message: 'Tag removed from track' };
   }
 
+
   @ApiOperation({ summary: 'Sync user library from Spotify' })
   @ApiResponse({ description: 'Library sync completed', status: 200 })
   @ApiResponse({ description: 'Unauthorized', status: 401 })
@@ -252,6 +254,23 @@ export class LibraryController {
     @Body() updateTagDto: UpdateTagDto,
   ): Promise<TagResponseDto> {
     return this.tagService.updateTag(req.user.id, tagId, updateTagDto);
+  }
+
+  @ApiOperation({ summary: 'Update track rating' })
+  @ApiResponse({ description: 'Rating updated', status: 200 })
+  @ApiResponse({ description: 'Track not found', status: 404 })
+  @Put('tracks/:trackId/rating')
+  async updateTrackRating(
+    @Req() req: AuthenticatedRequest,
+    @Param('trackId') trackId: string,
+    @Body() updateRatingDto: UpdateRatingDto,
+  ): Promise<{ message: string; rating: number }> {
+    const rating = await this.trackService.updateTrackRating(
+      req.user.id,
+      trackId,
+      updateRatingDto.rating,
+    );
+    return { message: 'Rating updated', rating };
   }
 }
 
