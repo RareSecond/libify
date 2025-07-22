@@ -51,7 +51,7 @@ model UserTrack {
   addedAt         DateTime @default(now())
   lastPlayedAt    DateTime?
   totalPlayCount  Int      @default(0)
-  rating          Int?     // 1-5 stars (nullable since not all tracks are rated)
+  rating          Float?   // 0.5-5 stars in 0.5 increments (nullable since not all tracks are rated)
   ratedAt         DateTime?
   
   // Relations

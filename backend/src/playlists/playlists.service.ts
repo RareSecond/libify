@@ -109,7 +109,7 @@ export class PlaylistsService {
       albumArt: track.spotifyTrack.albumArt,
       artist: track.spotifyTrack.artist,
       duration: track.spotifyTrack.duration,
-      id: track.spotifyTrackId,
+      id: track.id,
       lastPlayedAt: track.lastPlayedAt?.toISOString(),
       ratedAt: track.ratedAt?.toISOString(),
       rating: track.rating,

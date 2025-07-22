@@ -333,8 +333,10 @@ export function PlaylistEditor({
       };
 
       if (field === PlaylistRuleDtoField.rating) {
-        props.min = 1;
+        props.min = 0.5;
         props.max = 5;
+        props.step = 0.5;
+        props.decimalScale = 1;
       } else {
         props.min = 0;
       }
