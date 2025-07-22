@@ -22,6 +22,20 @@
         ]
       }
     },
+    "/auth/token": {
+      "get": {
+        "operationId": "AuthController_getAccessToken",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/auth/profile": {
       "get": {
         "operationId": "AuthController_getProfile",
@@ -49,20 +63,6 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/auth/token": {
-      "get": {
-        "operationId": "AuthController_getAccessToken",
-        "parameters": [],
-        "responses": {
-          "200": {
             "description": ""
           }
         },

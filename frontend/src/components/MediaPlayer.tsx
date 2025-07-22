@@ -11,6 +11,7 @@ import {
 import {
   Pause,
   Play,
+  Shuffle,
   SkipBack,
   SkipForward,
   Volume2,
@@ -32,6 +33,7 @@ export function MediaPlayer() {
     duration,
     isPlaying,
     isReady,
+    isShuffled,
     nextTrack,
     pause,
     position,
@@ -39,6 +41,7 @@ export function MediaPlayer() {
     resume,
     seek,
     setVolume,
+    toggleShuffle,
     volume,
   } = useSpotifyPlayer();
 
@@ -110,6 +113,16 @@ export function MediaPlayer() {
         {/* Playback Controls */}
         <Stack align="center" gap="sm" style={{ flex: 1, maxWidth: 500 }}>
           <Group gap="xs">
+            <ActionIcon
+              color={isShuffled ? "blue" : undefined}
+              disabled={!isReady}
+              onClick={toggleShuffle}
+              size="lg"
+              variant={isShuffled ? "filled" : "subtle"}
+            >
+              <Shuffle size={20} />
+            </ActionIcon>
+
             <ActionIcon
               disabled={!isReady}
               onClick={previousTrack}

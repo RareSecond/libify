@@ -21,7 +21,9 @@ interface SpotifyPlayerContextType {
   duration: number;
   isPlaying: boolean;
   isReady: boolean;
+  isShuffled: boolean;
   nextTrack: () => Promise<void>;
+  originalTrackList: string[];
   pause: () => Promise<void>;
   play: (uri?: string) => Promise<void>;
   player: null | SpotifyPlayer;
@@ -31,6 +33,7 @@ interface SpotifyPlayerContextType {
   resume: () => Promise<void>;
   seek: (position: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
+  toggleShuffle: () => void;
   volume: number;
 }
 
@@ -55,6 +58,8 @@ export function SpotifyPlayerProvider({
   const [isReady, setIsReady] = useState(false);
   const [currentTrackList, setCurrentTrackList] = useState<string[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [originalTrackList, setOriginalTrackList] = useState<string[]>([]);
+  const [isShuffled, setIsShuffled] = useState(false);
 
   const { data: user } = useAuthControllerGetProfile();
 
@@ -215,6 +220,8 @@ export function SpotifyPlayerProvider({
     } else {
       setCurrentTrackList(trackUris);
       setCurrentTrackIndex(startIndex);
+      setOriginalTrackList(trackUris);
+      setIsShuffled(false);
     }
   };
 
@@ -314,6 +321,42 @@ export function SpotifyPlayerProvider({
     return data.accessToken;
   };
 
+  // Fisher-Yates shuffle algorithm for true randomness
+  const shuffleArray = (array: string[]): string[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const toggleShuffle = () => {
+    if (!currentTrackList.length) return;
+
+    if (isShuffled) {
+      // Restore original order
+      const currentTrackUri = currentTrackList[currentTrackIndex];
+      const newIndex = originalTrackList.indexOf(currentTrackUri);
+      setCurrentTrackList(originalTrackList);
+      setCurrentTrackIndex(newIndex >= 0 ? newIndex : 0);
+      setIsShuffled(false);
+    } else {
+      // Shuffle the tracks
+      const currentTrackUri = currentTrackList[currentTrackIndex];
+      
+      // Create shuffled array with current track at the beginning
+      const remainingTracks = currentTrackList.filter((_, index) => index !== currentTrackIndex);
+      const shuffledRemaining = shuffleArray(remainingTracks);
+      const shuffledList = [currentTrackUri, ...shuffledRemaining];
+      
+      setOriginalTrackList(currentTrackList);
+      setCurrentTrackList(shuffledList);
+      setCurrentTrackIndex(0);
+      setIsShuffled(true);
+    }
+  };
+
   const contextValue: SpotifyPlayerContextType = {
     currentTrack,
     currentTrackIndex,
@@ -322,7 +365,9 @@ export function SpotifyPlayerProvider({
     duration,
     isPlaying,
     isReady,
+    isShuffled,
     nextTrack,
+    originalTrackList,
     pause,
     play,
     player,
@@ -332,6 +377,7 @@ export function SpotifyPlayerProvider({
     resume,
     seek,
     setVolume,
+    toggleShuffle,
     volume,
   };
 
