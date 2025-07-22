@@ -159,8 +159,10 @@ export function TrackList() {
         </Text>
 
         <TracksTable
+          contextType="library"
           isLoading={isLoading}
           onRefetch={refetch}
+          search={debouncedSearch}
           tracks={data?.tracks || []}
         />
 

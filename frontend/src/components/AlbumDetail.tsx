@@ -13,7 +13,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Music, Play, Star } from "lucide-react";
 
-import { TrackDto, useLibraryControllerGetTracks } from "../data/api";
+import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
 import { TracksTable } from "./TracksTable";
 
 interface AlbumDetailProps {
@@ -35,13 +35,9 @@ const formatDuration = (ms: number) => {
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
 
-  // For now, use the regular tracks API with search filter
-  // This will be replaced when the album-specific endpoint is generated
-  const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
-    page: 1,
-    pageSize: 100,
-    search: album,
-  });
+  // Use the album-specific endpoint
+  const { data, error, isLoading, refetch } =
+    useLibraryControllerGetAlbumTracks(artist, album);
 
   if (error) {
     return (
@@ -59,11 +55,10 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
     );
   }
 
-  // Filter tracks to only show ones from this specific album and artist
-  const tracks = (data?.tracks || []).filter(
-    (track: TrackDto) => track.album === album && track.artist === artist,
-  );
+  // data is now directly an array of tracks from the album
+  const tracks: TrackDto[] = data || [];
   const albumArt = tracks[0]?.albumArt;
+  const albumId = `${artist}|${album}`;
   const totalDuration = tracks.reduce(
     (sum: number, track: TrackDto) => sum + track.duration,
     0,
@@ -73,10 +68,14 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
     0,
   );
   const avgRating =
-    tracks
-      .filter((t: TrackDto) => t.rating)
-      .reduce((sum: number, track: TrackDto) => sum + (track.rating || 0), 0) /
-      tracks.filter((t: TrackDto) => t.rating).length || null;
+    tracks.length > 0 && tracks.filter((t: TrackDto) => t.rating).length > 0
+      ? tracks
+          .filter((t: TrackDto) => t.rating)
+          .reduce(
+            (sum: number, track: TrackDto) => sum + (track.rating || 0),
+            0,
+          ) / tracks.filter((t: TrackDto) => t.rating).length
+      : null;
 
   return (
     <Stack gap="md">
@@ -151,7 +150,13 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
           Album Tracks
         </Text>
 
-        <TracksTable isLoading={false} onRefetch={refetch} tracks={tracks} />
+        <TracksTable
+          contextId={albumId}
+          contextType="album"
+          isLoading={false}
+          onRefetch={refetch}
+          tracks={tracks}
+        />
       </Paper>
     </Stack>
   );

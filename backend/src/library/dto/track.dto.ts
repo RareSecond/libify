@@ -33,12 +33,12 @@ export class GetTracksQueryDto {
   @ApiPropertyOptional({
     default: 20,
     description: 'Page size',
-    maximum: 100,
+    maximum: 1000,
     minimum: 1,
   })
   @IsInt()
   @IsOptional()
-  @Max(100)
+  @Max(1000)
   @Min(1)
   @Type(() => Number)
   pageSize?: number = 20;

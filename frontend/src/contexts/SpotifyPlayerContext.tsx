@@ -13,7 +13,14 @@ import {
   SpotifyTrack,
 } from "../types/spotify";
 
+interface PlayContext {
+  contextId?: string;
+  contextType?: "album" | "artist" | "library" | "playlist";
+  search?: string;
+}
+
 interface SpotifyPlayerContextType {
+  currentContext: null | PlayContext;
   currentTrack: null | SpotifyTrack;
   currentTrackIndex: number;
   currentTrackList: string[];
@@ -27,13 +34,17 @@ interface SpotifyPlayerContextType {
   pause: () => Promise<void>;
   play: (uri?: string) => Promise<void>;
   player: null | SpotifyPlayer;
-  playTrackList: (trackUris: string[], startIndex?: number) => Promise<void>;
+  playTrackList: (
+    trackUris: string[],
+    startIndex?: number,
+    context?: PlayContext,
+  ) => Promise<void>;
   position: number;
   previousTrack: () => Promise<void>;
   resume: () => Promise<void>;
   seek: (position: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
-  toggleShuffle: () => void;
+  toggleShuffle: () => Promise<void>;
   volume: number;
 }
 
@@ -60,6 +71,9 @@ export function SpotifyPlayerProvider({
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [originalTrackList, setOriginalTrackList] = useState<string[]>([]);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [currentContext, setCurrentContext] = useState<null | PlayContext>(
+    null,
+  );
 
   const { data: user } = useAuthControllerGetProfile();
 
@@ -81,16 +95,16 @@ export function SpotifyPlayerProvider({
       });
 
       // Error handling
-      spotifyPlayer.addListener("initialization_error", ({ message }) => {
-        console.error("Failed to initialize:", message);
+      spotifyPlayer.addListener("initialization_error", () => {
+        // Handle initialization error silently
       });
 
-      spotifyPlayer.addListener("authentication_error", ({ message }) => {
-        console.error("Failed to authenticate:", message);
+      spotifyPlayer.addListener("authentication_error", () => {
+        // Handle authentication error silently
       });
 
-      spotifyPlayer.addListener("account_error", ({ message }) => {
-        console.error("Failed to validate Spotify account:", message);
+      spotifyPlayer.addListener("account_error", () => {
+        // Handle account validation error silently
       });
 
       // Playback status updates
@@ -108,14 +122,14 @@ export function SpotifyPlayerProvider({
 
       // Ready
       spotifyPlayer.addListener("ready", ({ device_id }) => {
-        console.log("Ready with Device ID", device_id);
+        // Device ready
         setDeviceId(device_id);
         setIsReady(true);
       });
 
       // Not Ready
-      spotifyPlayer.addListener("not_ready", ({ device_id }) => {
-        console.log("Device ID has gone offline", device_id);
+      spotifyPlayer.addListener("not_ready", () => {
+        // Device offline
         setIsReady(false);
       });
 
@@ -127,7 +141,9 @@ export function SpotifyPlayerProvider({
     const checkAndInitialize = () => {
       if (window.Spotify) {
         initializePlayer();
-      } else if ((window as any).spotifySDKReady) {
+      } else if (
+        (window as unknown as { spotifySDKReady?: boolean }).spotifySDKReady
+      ) {
         // SDK loaded but Spotify object not available yet, retry
         setTimeout(checkAndInitialize, 100);
       }
@@ -185,7 +201,7 @@ export function SpotifyPlayerProvider({
       );
 
       if (!response.ok) {
-        console.error("Failed to play track:", response.statusText);
+        // Failed to play track
       } else {
         // Update track list to just contain this track
         setCurrentTrackList([uri]);
@@ -197,7 +213,11 @@ export function SpotifyPlayerProvider({
     }
   };
 
-  const playTrackList = async (trackUris: string[], startIndex = 0) => {
+  const playTrackList = async (
+    trackUris: string[],
+    startIndex = 0,
+    context?: PlayContext,
+  ) => {
     if (!player || !deviceId || trackUris.length === 0) return;
 
     const response = await fetch(
@@ -216,12 +236,13 @@ export function SpotifyPlayerProvider({
     );
 
     if (!response.ok) {
-      console.error("Failed to play track list:", response.statusText);
+      // Failed to play track list
     } else {
       setCurrentTrackList(trackUris);
       setCurrentTrackIndex(startIndex);
       setOriginalTrackList(trackUris);
       setIsShuffled(false);
+      setCurrentContext(context || null);
     }
   };
 
@@ -258,7 +279,7 @@ export function SpotifyPlayerProvider({
       );
 
       if (!response.ok) {
-        console.error("Failed to play next track:", response.statusText);
+        // Failed to play next track
       } else {
         setCurrentTrackIndex(nextIndex);
       }
@@ -289,7 +310,7 @@ export function SpotifyPlayerProvider({
       );
 
       if (!response.ok) {
-        console.error("Failed to play previous track:", response.statusText);
+        // Failed to play previous track
       } else {
         setCurrentTrackIndex(prevIndex);
       }
@@ -331,7 +352,112 @@ export function SpotifyPlayerProvider({
     return shuffled;
   };
 
-  const toggleShuffle = () => {
+  const fetchAllTracksForContext = async (): Promise<string[]> => {
+    if (!currentContext || !currentContext.contextType) {
+      return currentTrackList;
+    }
+
+    try {
+      let allTracks: string[] = [];
+      const baseUrl = `${import.meta.env.VITE_API_URL}/library`;
+
+      switch (currentContext.contextType) {
+        case "album": {
+          if (currentContext.contextId) {
+            // Album endpoint expects both artist and album in the URL
+            const [artist, album] = currentContext.contextId.split("|");
+            if (!artist || !album) {
+              return currentTrackList;
+            }
+
+            const url = `${baseUrl}/albums/${encodeURIComponent(artist)}/${encodeURIComponent(album)}/tracks`;
+            const response = await fetch(url, { credentials: "include" });
+
+            if (!response.ok) {
+              return currentTrackList;
+            }
+
+            const data = await response.json();
+
+            // The response is an array of tracks
+            allTracks = Array.isArray(data)
+              ? data
+                  .filter((track: { spotifyId?: string }) => track.spotifyId)
+                  .map(
+                    (track: { spotifyId: string }) =>
+                      `spotify:track:${track.spotifyId}`,
+                  )
+              : [];
+          }
+          break;
+        }
+
+        case "artist": {
+          if (currentContext.contextId) {
+            const url = `${baseUrl}/artists/${encodeURIComponent(currentContext.contextId)}/tracks`;
+            const response = await fetch(url, { credentials: "include" });
+
+            if (!response.ok) {
+              return currentTrackList;
+            }
+
+            const data = await response.json();
+
+            // The response is an array of tracks
+            allTracks = Array.isArray(data)
+              ? data
+                  .filter((track: { spotifyId?: string }) => track.spotifyId)
+                  .map(
+                    (track: { spotifyId: string }) =>
+                      `spotify:track:${track.spotifyId}`,
+                  )
+              : [];
+          }
+          break;
+        }
+
+        case "library": {
+          // For library, fetch all tracks (up to 1000)
+          const searchParams = new URLSearchParams({
+            page: "1",
+            pageSize: "1000",
+            sortBy: "addedAt",
+            sortOrder: "desc",
+          });
+
+          // Add search parameter if present
+          if (currentContext.search) {
+            searchParams.append("search", currentContext.search);
+          }
+
+          const response = await fetch(
+            `${baseUrl}/tracks?${searchParams.toString()}`,
+            { credentials: "include" },
+          );
+
+          if (!response.ok) {
+            // Failed to fetch library tracks
+            return currentTrackList;
+          }
+
+          const data = await response.json();
+          allTracks = data.tracks
+            .filter((track: { spotifyId?: string }) => track.spotifyId)
+            .map(
+              (track: { spotifyId: string }) =>
+                `spotify:track:${track.spotifyId}`,
+            );
+          break;
+        }
+      }
+
+      return allTracks.length > 0 ? allTracks : currentTrackList;
+    } catch {
+      return currentTrackList;
+    }
+  };
+
+  const toggleShuffle = async () => {
     if (!currentTrackList.length) return;
 
     if (isShuffled) {
@@ -342,15 +468,32 @@ export function SpotifyPlayerProvider({
       setCurrentTrackIndex(newIndex >= 0 ? newIndex : 0);
       setIsShuffled(false);
     } else {
+      // Fetch all tracks from context if needed
+      let tracksToShuffle = currentTrackList;
+
+      if (currentContext && currentContext.contextType) {
+        const allTracks = await fetchAllTracksForContext();
+
+        if (allTracks.length > currentTrackList.length) {
+          tracksToShuffle = allTracks;
+          setOriginalTrackList(allTracks);
+        } else {
+          setOriginalTrackList(currentTrackList);
+        }
+      } else {
+        setOriginalTrackList(currentTrackList);
+      }
+
       // Shuffle the tracks
       const currentTrackUri = currentTrackList[currentTrackIndex];
-      
+
       // Create shuffled array with current track at the beginning
-      const remainingTracks = currentTrackList.filter((_, index) => index !== currentTrackIndex);
+      const remainingTracks = tracksToShuffle.filter(
+        (uri) => uri !== currentTrackUri,
+      );
       const shuffledRemaining = shuffleArray(remainingTracks);
       const shuffledList = [currentTrackUri, ...shuffledRemaining];
-      
-      setOriginalTrackList(currentTrackList);
+
       setCurrentTrackList(shuffledList);
       setCurrentTrackIndex(0);
       setIsShuffled(true);
@@ -358,6 +501,7 @@ export function SpotifyPlayerProvider({
   };
 
   const contextValue: SpotifyPlayerContextType = {
+    currentContext,
     currentTrack,
     currentTrackIndex,
     currentTrackList,

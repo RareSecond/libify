@@ -40,5 +40,7 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
     );
   }
 
-  return <TracksTable tracks={tracks} />;
+  return (
+    <TracksTable contextId={artist} contextType="artist" tracks={tracks} />
+  );
 }

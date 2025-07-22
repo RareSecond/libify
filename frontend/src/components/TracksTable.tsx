@@ -16,8 +16,11 @@ import { InlineTagEditor } from "./InlineTagEditor";
 import { RatingSelector } from "./RatingSelector";
 
 interface TracksTableProps {
+  contextId?: string;
+  contextType?: "album" | "artist" | "library" | "playlist";
   isLoading?: boolean;
   onRefetch?: () => void;
+  search?: string;
   tracks: TrackDto[];
 }
 
@@ -33,8 +36,11 @@ const formatDate = (date: null | string | undefined) => {
 };
 
 export function TracksTable({
+  contextId,
+  contextType,
   isLoading,
   onRefetch,
+  search,
   tracks,
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
@@ -61,7 +67,14 @@ export function TracksTable({
           );
 
           // Play the entire track list starting from the clicked track
-          await playTrackList(trackUris, trackIndex >= 0 ? trackIndex : 0);
+          const context = contextType
+            ? { contextId, contextType, search }
+            : undefined;
+          await playTrackList(
+            trackUris,
+            trackIndex >= 0 ? trackIndex : 0,
+            context,
+          );
           notifications.show({
             color: "green",
             message: trackTitle,
