@@ -17,17 +17,36 @@ import {
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useNavigate } from "@tanstack/react-router";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { Music, Search, Tag } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
+  TrackDto,
   useLibraryControllerGetTracks,
   useLibraryControllerPlayTrack,
 } from "../data/api";
+import { useColumnOrder } from "../hooks/useColumnOrder";
 import { Route } from "../routes/~tracks";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { RatingSelector } from "./RatingSelector";
 import { TagManager } from "./TagManager";
+
+const formatDuration = (ms: number) => {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+const formatDate = (date: null | string | undefined) => {
+  if (!date) return "-";
+  return new Date(date).toLocaleDateString();
+};
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -39,6 +58,7 @@ export function TrackList() {
     sortOrder = "desc",
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
 
   const [debouncedSearch] = useDebouncedValue(search, 300);
 
@@ -107,15 +127,192 @@ export function TrackList() {
     });
   };
 
-  const formatDuration = (ms: number) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const defaultColumnOrder = [
+    'albumArt',
+    'title',
+    'artist',
+    'album',
+    'duration',
+    'totalPlayCount',
+    'lastPlayedAt',
+    'rating',
+    'tags',
+  ];
+
+  const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
+
+  const columns = useMemo<ColumnDef<TrackDto>[]>(() => [
+    {
+      cell: ({ row }) => (
+        <Group gap="xs" wrap="nowrap">
+          {row.original.albumArt ? (
+            <Box
+              h={36}
+              style={{
+                borderRadius: "4px",
+                overflow: "hidden",
+              }}
+              w={36}
+            >
+              <Image
+                alt={row.original.album || row.original.title}
+                fallbackSrc="/placeholder-album.svg"
+                fit="cover"
+                h={36}
+                src={row.original.albumArt}
+                style={{ objectFit: "cover" }}
+                w={36}
+              />
+            </Box>
+          ) : (
+            <Center
+              bg="gray.2"
+              h={36}
+              style={{ borderRadius: "4px" }}
+              w={36}
+            >
+              <Music color="gray" size={18} />
+            </Center>
+          )}
+        </Group>
+      ),
+      enableSorting: false,
+      header: '',
+      id: 'albumArt',
+      size: 50,
+    },
+    {
+      accessorKey: 'title',
+      cell: ({ getValue }) => (
+        <Text fw={500} lineClamp={1} size="sm">
+          {getValue() as string}
+        </Text>
+      ),
+      header: 'Title',
+      id: 'title',
+      size: 200,
+    },
+    {
+      accessorKey: 'artist',
+      cell: ({ getValue }) => (
+        <Text lineClamp={1} size="sm">
+          {getValue() as string}
+        </Text>
+      ),
+      header: 'Artist',
+      id: 'artist',
+      size: 150,
+    },
+    {
+      accessorKey: 'album',
+      cell: ({ getValue }) => (
+        <Text c="dimmed" lineClamp={1} size="sm">
+          {(getValue() as string) || '-'}
+        </Text>
+      ),
+      header: 'Album',
+      id: 'album',
+      size: 150,
+    },
+    {
+      accessorKey: 'duration',
+      cell: ({ getValue }) => (
+        <Text c="dimmed" size="sm">
+          {formatDuration(getValue() as number)}
+        </Text>
+      ),
+      header: 'Duration',
+      id: 'duration',
+      size: 80,
+    },
+    {
+      accessorKey: 'totalPlayCount',
+      cell: ({ getValue }) => (
+        <Text size="sm" ta="center">
+          {getValue() as number}
+        </Text>
+      ),
+      header: 'Plays',
+      id: 'totalPlayCount',
+      size: 60,
+    },
+    {
+      accessorKey: 'lastPlayedAt',
+      cell: ({ getValue }) => (
+        <Text c="dimmed" size="xs">
+          {formatDate(getValue() as string | undefined)}
+        </Text>
+      ),
+      header: 'Last Played',
+      id: 'lastPlayedAt',
+      size: 100,
+    },
+    {
+      accessorKey: 'rating',
+      cell: ({ row }) => (
+        <RatingSelector
+          onRatingChange={refetch}
+          rating={row.original.rating ?? null}
+          trackId={row.original.id}
+        />
+      ),
+      enableSorting: false,
+      header: 'Rating',
+      id: 'rating',
+      size: 120,
+    },
+    {
+      accessorKey: 'tags',
+      cell: ({ row }) => (
+        <InlineTagEditor
+          onTagsChange={refetch}
+          trackId={row.original.id}
+          trackTags={row.original.tags}
+        />
+      ),
+      enableSorting: false,
+      header: 'Tags',
+      id: 'tags',
+      size: 150,
+    },
+  ], [refetch]);
+
+  const table = useReactTable({
+    columnResizeMode: 'onChange',
+    columns,
+    data: data?.tracks || [],
+    getCoreRowModel: getCoreRowModel(),
+    onColumnOrderChange: setColumnOrder,
+    state: {
+      columnOrder,
+    },
+  });
+
+  const handleDragStart = (column: string) => {
+    setDraggedColumn(column);
   };
 
-  const formatDate = (date: null | string | undefined) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString();
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetColumn: string) => {
+    e.preventDefault();
+    if (!draggedColumn || draggedColumn === targetColumn) return;
+
+    const newColumnOrder = [...columnOrder];
+    const draggedIndex = newColumnOrder.indexOf(draggedColumn);
+    const targetIndex = newColumnOrder.indexOf(targetColumn);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      newColumnOrder.splice(draggedIndex, 1);
+      newColumnOrder.splice(targetIndex, 0, draggedColumn);
+      setColumnOrder(newColumnOrder);
+    }
   };
 
   if (error) {
@@ -216,102 +413,45 @@ export function TrackList() {
               >
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th w={50}></Table.Th>
-                    <Table.Th miw={200}>Title</Table.Th>
-                    <Table.Th miw={150}>Artist</Table.Th>
-                    <Table.Th miw={150}>Album</Table.Th>
-                    <Table.Th w={80}>Duration</Table.Th>
-                    <Table.Th w={60}>Plays</Table.Th>
-                    <Table.Th w={100}>Last Played</Table.Th>
-                    <Table.Th miw={120}>Rating</Table.Th>
-                    <Table.Th miw={150}>Tags</Table.Th>
+                    {table.getFlatHeaders().map((header) => (
+                      <Table.Th
+                        draggable
+                        key={header.id}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDragStart={() => handleDragStart(header.column.id)}
+                        onDrop={(e) => handleDrop(e, header.column.id)}
+                        style={{
+                          cursor: 'grab',
+                          position: 'relative',
+                          userSelect: 'none',
+                          width: header.getSize(),
+                        }}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </Table.Th>
+                    ))}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {data?.tracks.map((track) => (
+                  {table.getRowModel().rows.map((row) => (
                     <Table.Tr
                       className="hover:bg-gray-50"
-                      key={track.id}
-                      onClick={() => handlePlayTrack(track.id, track.title)}
+                      key={row.id}
+                      onClick={() => handlePlayTrack(row.original.id, row.original.title)}
                       style={{ cursor: "pointer" }}
                     >
-                      <Table.Td>
-                        <Group gap="xs" wrap="nowrap">
-                          {track.albumArt ? (
-                            <Box
-                              h={36}
-                              style={{
-                                borderRadius: "4px",
-                                overflow: "hidden",
-                              }}
-                              w={36}
-                            >
-                              <Image
-                                alt={track.album || track.title}
-                                fallbackSrc="/placeholder-album.svg"
-                                fit="cover"
-                                h={36}
-                                src={track.albumArt}
-                                style={{ objectFit: "cover" }}
-                                w={36}
-                              />
-                            </Box>
-                          ) : (
-                            <Center
-                              bg="gray.2"
-                              h={36}
-                              style={{ borderRadius: "4px" }}
-                              w={36}
-                            >
-                              <Music color="gray" size={18} />
-                            </Center>
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Td key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
                           )}
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text fw={500} lineClamp={1} size="sm">
-                          {track.title}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text lineClamp={1} size="sm">
-                          {track.artist}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text c="dimmed" lineClamp={1} size="sm">
-                          {track.album || "-"}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text c="dimmed" size="sm">
-                          {formatDuration(track.duration)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" ta="center">
-                          {track.totalPlayCount}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text c="dimmed" size="xs">
-                          {formatDate(track.lastPlayedAt)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <RatingSelector
-                          onRatingChange={refetch}
-                          rating={track.rating ?? null}
-                          trackId={track.id}
-                        />
-                      </Table.Td>
-                      <Table.Td>
-                        <InlineTagEditor
-                          onTagsChange={refetch}
-                          trackId={track.id}
-                          trackTags={track.tags}
-                        />
-                      </Table.Td>
+                        </Table.Td>
+                      ))}
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
