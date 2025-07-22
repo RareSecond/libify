@@ -5,9 +5,9 @@ import { PlaylistsController } from './playlists.controller';
 import { PlaylistsService } from './playlists.service';
 
 @Module({
-  imports: [DatabaseModule],
   controllers: [PlaylistsController],
-  providers: [PlaylistsService],
   exports: [PlaylistsService],
+  imports: [DatabaseModule],
+  providers: [PlaylistsService],
 })
 export class PlaylistsModule {}

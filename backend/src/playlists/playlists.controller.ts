@@ -18,9 +18,9 @@ interface AuthenticatedRequest extends Request {
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
-  @Post()
   @ApiOperation({ summary: 'Create a new smart playlist' })
   @ApiResponse({ status: 201, type: SmartPlaylistDto })
+  @Post()
   async create(
     @Req() req: AuthenticatedRequest,
     @Body() createDto: CreateSmartPlaylistDto,
@@ -32,16 +32,16 @@ export class PlaylistsController {
     };
   }
 
-  @Get()
   @ApiOperation({ summary: 'Get all smart playlists' })
   @ApiResponse({ status: 200, type: [SmartPlaylistWithTracksDto] })
+  @Get()
   async findAll(@Req() req: AuthenticatedRequest): Promise<SmartPlaylistWithTracksDto[]> {
     return this.playlistsService.findAll(req.user.id);
   }
 
-  @Get(':id')
   @ApiOperation({ summary: 'Get a smart playlist by ID' })
   @ApiResponse({ status: 200, type: SmartPlaylistWithTracksDto })
+  @Get(':id')
   async findOne(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -49,35 +49,10 @@ export class PlaylistsController {
     return this.playlistsService.findOne(req.user.id, id);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Update a smart playlist' })
-  @ApiResponse({ status: 200, type: SmartPlaylistDto })
-  async update(
-    @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
-    @Body() updateDto: UpdateSmartPlaylistDto,
-  ): Promise<SmartPlaylistDto> {
-    const playlist = await this.playlistsService.update(req.user.id, id, updateDto);
-    return {
-      ...playlist,
-      criteria: playlist.criteria as any,
-    };
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a smart playlist' })
-  @ApiResponse({ status: 204 })
-  async remove(
-    @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
-  ): Promise<void> {
-    await this.playlistsService.remove(req.user.id, id);
-  }
-
-  @Get(':id/tracks')
   @ApiOperation({ summary: 'Get tracks for a smart playlist' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @Get(':id/tracks')
   async getTracks(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -90,5 +65,30 @@ export class PlaylistsController {
       page ? parseInt(page) : 1,
       pageSize ? parseInt(pageSize) : 20,
     );
+  }
+
+  @ApiOperation({ summary: 'Delete a smart playlist' })
+  @ApiResponse({ status: 204 })
+  @Delete(':id')
+  async remove(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.playlistsService.remove(req.user.id, id);
+  }
+
+  @ApiOperation({ summary: 'Update a smart playlist' })
+  @ApiResponse({ status: 200, type: SmartPlaylistDto })
+  @Put(':id')
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() updateDto: UpdateSmartPlaylistDto,
+  ): Promise<SmartPlaylistDto> {
+    const playlist = await this.playlistsService.update(req.user.id, id, updateDto);
+    return {
+      ...playlist,
+      criteria: playlist.criteria as any,
+    };
   }
 }

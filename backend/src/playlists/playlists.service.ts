@@ -11,19 +11,19 @@ export class PlaylistsService {
   async create(userId: string, createDto: CreateSmartPlaylistDto) {
     return this.prisma.smartPlaylist.create({
       data: {
-        userId,
-        name: createDto.name,
-        description: createDto.description,
         criteria: createDto.criteria as unknown as Prisma.JsonObject,
+        description: createDto.description,
         isActive: createDto.isActive ?? true,
+        name: createDto.name,
+        userId,
       },
     });
   }
 
   async findAll(userId: string) {
     const playlists = await this.prisma.smartPlaylist.findMany({
-      where: { userId },
       orderBy: { createdAt: 'desc' },
+      where: { userId },
     });
 
     // Count tracks for each playlist
@@ -59,28 +59,6 @@ export class PlaylistsService {
     };
   }
 
-  async update(userId: string, playlistId: string, updateDto: UpdateSmartPlaylistDto) {
-    const existing = await this.findOne(userId, playlistId);
-
-    return this.prisma.smartPlaylist.update({
-      where: { id: playlistId },
-      data: {
-        name: updateDto.name ?? existing.name,
-        description: updateDto.description ?? existing.description,
-        criteria: updateDto.criteria ? (updateDto.criteria as unknown as Prisma.JsonObject) : (existing.criteria as unknown as Prisma.JsonObject),
-        isActive: updateDto.isActive ?? existing.isActive,
-        lastUpdated: new Date(),
-      },
-    });
-  }
-
-  async remove(userId: string, playlistId: string) {
-    await this.findOne(userId, playlistId); // Check ownership
-    await this.prisma.smartPlaylist.delete({
-      where: { id: playlistId },
-    });
-  }
-
   async getTracks(userId: string, playlistId: string, page = 1, pageSize = 20) {
     const playlist = await this.findOne(userId, playlistId);
     const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
@@ -93,10 +71,6 @@ export class PlaylistsService {
 
     const [tracks, total] = await Promise.all([
       this.prisma.userTrack.findMany({
-        where,
-        orderBy,
-        skip,
-        take,
         include: {
           spotifyTrack: true,
           tags: {
@@ -105,148 +79,65 @@ export class PlaylistsService {
             },
           },
         },
+        orderBy,
+        skip,
+        take,
+        where,
       }),
       this.prisma.userTrack.count({ where }),
     ]);
 
     const formattedTracks = tracks.map((track) => ({
-      id: track.spotifyTrackId,
-      spotifyId: track.spotifyTrack.spotifyId,
-      title: track.spotifyTrack.title,
-      artist: track.spotifyTrack.artist,
+      addedAt: track.addedAt.toISOString(),
       album: track.spotifyTrack.album,
       albumArt: track.spotifyTrack.albumArt,
+      artist: track.spotifyTrack.artist,
       duration: track.spotifyTrack.duration,
-      addedAt: track.addedAt.toISOString(),
+      id: track.spotifyTrackId,
       lastPlayedAt: track.lastPlayedAt?.toISOString(),
-      totalPlayCount: track.totalPlayCount,
-      rating: track.rating,
       ratedAt: track.ratedAt?.toISOString(),
+      rating: track.rating,
+      spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((tt) => ({
+        color: tt.tag.color,
         id: tt.tag.id,
         name: tt.tag.name,
-        color: tt.tag.color,
       })),
+      title: track.spotifyTrack.title,
+      totalPlayCount: track.totalPlayCount,
     }));
 
     const totalToReturn = criteria.limit ? Math.min(total, criteria.limit) : total;
 
     return {
-      tracks: formattedTracks,
-      total: totalToReturn,
       page,
       pageSize: take,
+      total: totalToReturn,
       totalPages: Math.ceil(totalToReturn / pageSize),
+      tracks: formattedTracks,
     };
   }
 
-  private async getTrackCount(userId: string, criteria: PlaylistCriteriaDto): Promise<number> {
-    const where = this.buildWhereClause(userId, criteria);
-    const count = await this.prisma.userTrack.count({ where });
-    return criteria.limit ? Math.min(count, criteria.limit) : count;
+  async remove(userId: string, playlistId: string) {
+    await this.findOne(userId, playlistId); // Check ownership
+    await this.prisma.smartPlaylist.delete({
+      where: { id: playlistId },
+    });
   }
 
-  private buildWhereClause(userId: string, criteria: PlaylistCriteriaDto): Prisma.UserTrackWhereInput {
-    const baseWhere: Prisma.UserTrackWhereInput = { userId };
+  async update(userId: string, playlistId: string, updateDto: UpdateSmartPlaylistDto) {
+    const existing = await this.findOne(userId, playlistId);
 
-    if (!criteria.rules || criteria.rules.length === 0) {
-      return baseWhere;
-    }
-
-    const ruleConditions = criteria.rules.map((rule) => this.buildRuleCondition(rule));
-
-    if (criteria.logic === 'or') {
-      return {
-        ...baseWhere,
-        OR: ruleConditions,
-      };
-    } else {
-      return {
-        ...baseWhere,
-        AND: ruleConditions,
-      };
-    }
-  }
-
-  private buildRuleCondition(rule: any): Prisma.UserTrackWhereInput {
-    switch (rule.field) {
-      case PlaylistRuleField.TITLE:
-        return this.buildStringCondition('spotifyTrack.title', rule);
-      
-      case PlaylistRuleField.ARTIST:
-        return this.buildStringCondition('spotifyTrack.artist', rule);
-      
-      case PlaylistRuleField.ALBUM:
-        return this.buildStringCondition('spotifyTrack.album', rule);
-      
-      case PlaylistRuleField.RATING:
-        return this.buildNumberCondition('rating', rule);
-      
-      case PlaylistRuleField.PLAY_COUNT:
-        return this.buildNumberCondition('totalPlayCount', rule);
-      
-      case PlaylistRuleField.DURATION:
-        return {
-          spotifyTrack: this.buildNumberCondition('duration', rule),
-        };
-      
-      case PlaylistRuleField.LAST_PLAYED:
-        return this.buildDateCondition('lastPlayedAt', rule);
-      
-      case PlaylistRuleField.DATE_ADDED:
-        return this.buildDateCondition('addedAt', rule);
-      
-      case PlaylistRuleField.TAG:
-        return this.buildTagCondition(rule);
-      
-      default:
-        return {};
-    }
-  }
-
-  private buildStringCondition(field: string, rule: any): any {
-    const [parent, child] = field.split('.');
-    const condition: any = {};
-
-    switch (rule.operator) {
-      case PlaylistRuleOperator.CONTAINS:
-        condition[child || parent] = { contains: rule.value, mode: 'insensitive' };
-        break;
-      case PlaylistRuleOperator.NOT_CONTAINS:
-        condition[child || parent] = { NOT: { contains: rule.value, mode: 'insensitive' } };
-        break;
-      case PlaylistRuleOperator.EQUALS:
-        condition[child || parent] = rule.value;
-        break;
-      case PlaylistRuleOperator.NOT_EQUALS:
-        condition[child || parent] = { not: rule.value };
-        break;
-      case PlaylistRuleOperator.STARTS_WITH:
-        condition[child || parent] = { startsWith: rule.value, mode: 'insensitive' };
-        break;
-      case PlaylistRuleOperator.ENDS_WITH:
-        condition[child || parent] = { endsWith: rule.value, mode: 'insensitive' };
-        break;
-    }
-
-    return child ? { [parent]: condition } : condition;
-  }
-
-  private buildNumberCondition(field: string, rule: any): any {
-    const value = rule.numberValue ?? parseInt(rule.value);
-    
-    switch (rule.operator) {
-      case PlaylistRuleOperator.EQUALS:
-        return { [field]: value };
-      case PlaylistRuleOperator.NOT_EQUALS:
-        return { [field]: { not: value } };
-      case PlaylistRuleOperator.GREATER_THAN:
-        return { [field]: { gt: value } };
-      case PlaylistRuleOperator.LESS_THAN:
-        return { [field]: { lt: value } };
-      default:
-        return {};
-    }
+    return this.prisma.smartPlaylist.update({
+      data: {
+        criteria: updateDto.criteria ? (updateDto.criteria as unknown as Prisma.JsonObject) : (existing.criteria as unknown as Prisma.JsonObject),
+        description: updateDto.description ?? existing.description,
+        isActive: updateDto.isActive ?? existing.isActive,
+        lastUpdated: new Date(),
+        name: updateDto.name ?? existing.name,
+      },
+      where: { id: playlistId },
+    });
   }
 
   private buildDateCondition(field: string, rule: any): any {
@@ -263,6 +154,116 @@ export class PlaylistsService {
     }
 
     return {};
+  }
+
+  private buildNumberCondition(field: string, rule: any): any {
+    const value = rule.numberValue ?? parseInt(rule.value);
+    
+    switch (rule.operator) {
+      case PlaylistRuleOperator.EQUALS:
+        return { [field]: value };
+      case PlaylistRuleOperator.GREATER_THAN:
+        return { [field]: { gt: value } };
+      case PlaylistRuleOperator.LESS_THAN:
+        return { [field]: { lt: value } };
+      case PlaylistRuleOperator.NOT_EQUALS:
+        return { [field]: { not: value } };
+      default:
+        return {};
+    }
+  }
+
+  private buildOrderBy(criteria: PlaylistCriteriaDto): any {
+    if (!criteria.orderBy) {
+      return { addedAt: 'desc' };
+    }
+
+    const direction = criteria.orderDirection || 'desc';
+
+    switch (criteria.orderBy) {
+      case 'album':
+        return { spotifyTrack: { album: direction } };
+      case 'artist':
+        return { spotifyTrack: { artist: direction } };
+      case 'dateAdded':
+        return { addedAt: direction };
+      case 'duration':
+        return { spotifyTrack: { duration: direction } };
+      case 'lastPlayed':
+        return { lastPlayedAt: direction };
+      case 'playCount':
+        return { totalPlayCount: direction };
+      case 'rating':
+        return { rating: direction };
+      case 'title':
+        return { spotifyTrack: { title: direction } };
+      default:
+        return { addedAt: 'desc' };
+    }
+  }
+
+  private buildRuleCondition(rule: any): Prisma.UserTrackWhereInput {
+    switch (rule.field) {
+      case PlaylistRuleField.ALBUM:
+        return this.buildStringCondition('spotifyTrack.album', rule);
+      
+      case PlaylistRuleField.ARTIST:
+        return this.buildStringCondition('spotifyTrack.artist', rule);
+      
+      case PlaylistRuleField.DATE_ADDED:
+        return this.buildDateCondition('addedAt', rule);
+      
+      case PlaylistRuleField.DURATION:
+        return {
+          spotifyTrack: this.buildNumberCondition('duration', rule),
+        };
+      
+      case PlaylistRuleField.LAST_PLAYED:
+        return this.buildDateCondition('lastPlayedAt', rule);
+      
+      case PlaylistRuleField.PLAY_COUNT:
+        return this.buildNumberCondition('totalPlayCount', rule);
+      
+      case PlaylistRuleField.RATING:
+        return this.buildNumberCondition('rating', rule);
+      
+      case PlaylistRuleField.TAG:
+        return this.buildTagCondition(rule);
+      
+      case PlaylistRuleField.TITLE:
+        return this.buildStringCondition('spotifyTrack.title', rule);
+      
+      default:
+        return {};
+    }
+  }
+
+  private buildStringCondition(field: string, rule: any): any {
+    const [parent, child] = field.split('.');
+    const condition: any = {};
+
+    switch (rule.operator) {
+      case PlaylistRuleOperator.CONTAINS:
+        condition[child || parent] = { contains: rule.value, mode: 'insensitive' };
+        break;
+      case PlaylistRuleOperator.ENDS_WITH:
+        condition[child || parent] = { endsWith: rule.value, mode: 'insensitive' };
+        break;
+      case PlaylistRuleOperator.EQUALS:
+        condition[child || parent] = rule.value;
+        break;
+      case PlaylistRuleOperator.NOT_CONTAINS:
+        condition[child || parent] = { NOT: { contains: rule.value, mode: 'insensitive' } };
+        break;
+      case PlaylistRuleOperator.NOT_EQUALS:
+        condition[child || parent] = { not: rule.value };
+        break;
+      case PlaylistRuleOperator.STARTS_WITH:
+        condition[child || parent] = { mode: 'insensitive', startsWith: rule.value };
+        break;
+    }
+
+    return child ? { [parent]: condition } : condition;
   }
 
   private buildTagCondition(rule: any): Prisma.UserTrackWhereInput {
@@ -293,32 +294,31 @@ export class PlaylistsService {
     return {};
   }
 
-  private buildOrderBy(criteria: PlaylistCriteriaDto): any {
-    if (!criteria.orderBy) {
-      return { addedAt: 'desc' };
+  private buildWhereClause(userId: string, criteria: PlaylistCriteriaDto): Prisma.UserTrackWhereInput {
+    const baseWhere: Prisma.UserTrackWhereInput = { userId };
+
+    if (!criteria.rules || criteria.rules.length === 0) {
+      return baseWhere;
     }
 
-    const direction = criteria.orderDirection || 'desc';
+    const ruleConditions = criteria.rules.map((rule) => this.buildRuleCondition(rule));
 
-    switch (criteria.orderBy) {
-      case 'title':
-        return { spotifyTrack: { title: direction } };
-      case 'artist':
-        return { spotifyTrack: { artist: direction } };
-      case 'album':
-        return { spotifyTrack: { album: direction } };
-      case 'duration':
-        return { spotifyTrack: { duration: direction } };
-      case 'rating':
-        return { rating: direction };
-      case 'playCount':
-        return { totalPlayCount: direction };
-      case 'lastPlayed':
-        return { lastPlayedAt: direction };
-      case 'dateAdded':
-        return { addedAt: direction };
-      default:
-        return { addedAt: 'desc' };
+    if (criteria.logic === 'or') {
+      return {
+        ...baseWhere,
+        OR: ruleConditions,
+      };
+    } else {
+      return {
+        ...baseWhere,
+        AND: ruleConditions,
+      };
     }
+  }
+
+  private async getTrackCount(userId: string, criteria: PlaylistCriteriaDto): Promise<number> {
+    const where = this.buildWhereClause(userId, criteria);
+    const count = await this.prisma.userTrack.count({ where });
+    return criteria.limit ? Math.min(count, criteria.limit) : count;
   }
 }

@@ -86,6 +86,39 @@ export class LibraryController {
     await this.tagService.deleteTag(req.user.id, tagId);
   }
 
+  @ApiOperation({ summary: 'Get all albums in user library' })
+  @ApiResponse({ description: 'Paginated list of albums', status: 200, type: PaginatedAlbumsDto })
+  @Get('albums')
+  async getAlbums(
+    @Req() req: AuthenticatedRequest,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: 'artist' | 'avgRating' | 'lastPlayed' | 'name' | 'totalPlayCount' | 'trackCount',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ): Promise<PaginatedAlbumsDto> {
+    return this.trackService.getUserAlbums(req.user.id, {
+      page: page || 1,
+      pageSize: pageSize || 24,
+      search,
+      sortBy: sortBy || 'name',
+      sortOrder: sortOrder || 'asc',
+    });
+  }
+
+  @ApiOperation({ summary: 'Get tracks from a specific album' })
+  @ApiResponse({ description: 'List of tracks from the album', status: 200 })
+  @Get('albums/:artist/:album/tracks')
+  async getAlbumTracks(
+    @Req() req: AuthenticatedRequest,
+    @Param('artist') artist: string,
+    @Param('album') album: string,
+  ) {
+    return this.trackService.getAlbumTracks(req.user.id, decodeURIComponent(artist), decodeURIComponent(album));
+  }
+
+  // Tag management endpoints
+
   @ApiOperation({ summary: 'Get library sync status' })
   @ApiResponse({ description: 'Sync status retrieved', status: 200 })
   @Get('sync/status')
@@ -101,8 +134,6 @@ export class LibraryController {
     return this.tagService.getUserTags(req.user.id);
   }
 
-  // Tag management endpoints
-
   @ApiOperation({ summary: 'Get user tracks' })
   @ApiResponse({
     description: 'Paginated list of user tracks',
@@ -116,6 +147,7 @@ export class LibraryController {
   ): Promise<PaginatedTracksDto> {
     return this.trackService.getUserTracks(req.user.id, query);
   }
+
 
   @ApiOperation({ summary: 'Play a track on Spotify' })
   @ApiResponse({ description: 'Track started playing', status: 200 })
@@ -168,7 +200,6 @@ export class LibraryController {
     await this.tagService.removeTagFromTrack(req.user.id, trackId, tagId);
     return { message: 'Tag removed from track' };
   }
-
 
   @ApiOperation({ summary: 'Sync user library from Spotify' })
   @ApiResponse({ description: 'Library sync completed', status: 200 })
@@ -272,37 +303,6 @@ export class LibraryController {
       updateRatingDto.rating,
     );
     return { message: 'Rating updated', rating };
-  }
-
-  @ApiOperation({ summary: 'Get all albums in user library' })
-  @ApiResponse({ description: 'Paginated list of albums', status: 200, type: PaginatedAlbumsDto })
-  @Get('albums')
-  async getAlbums(
-    @Req() req: AuthenticatedRequest,
-    @Query('page') page?: number,
-    @Query('pageSize') pageSize?: number,
-    @Query('search') search?: string,
-    @Query('sortBy') sortBy?: 'name' | 'artist' | 'trackCount' | 'totalPlayCount' | 'avgRating' | 'lastPlayed',
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
-  ): Promise<PaginatedAlbumsDto> {
-    return this.trackService.getUserAlbums(req.user.id, {
-      page: page || 1,
-      pageSize: pageSize || 24,
-      search,
-      sortBy: sortBy || 'name',
-      sortOrder: sortOrder || 'asc',
-    });
-  }
-
-  @ApiOperation({ summary: 'Get tracks from a specific album' })
-  @ApiResponse({ description: 'List of tracks from the album', status: 200 })
-  @Get('albums/:artist/:album/tracks')
-  async getAlbumTracks(
-    @Req() req: AuthenticatedRequest,
-    @Param('artist') artist: string,
-    @Param('album') album: string,
-  ) {
-    return this.trackService.getAlbumTracks(req.user.id, decodeURIComponent(artist), decodeURIComponent(album));
   }
 }
 

@@ -2,21 +2,29 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
 export class AlbumDto {
-  @ApiProperty({ description: 'Album name' })
+  @ApiProperty({ description: 'Album artwork URL', nullable: true })
   @Expose()
-  name: string;
+  albumArt: null | string;
 
   @ApiProperty({ description: 'Album artist' })
   @Expose()
   artist: string;
 
-  @ApiProperty({ description: 'Album artwork URL', nullable: true })
+  @ApiProperty({ description: 'Average rating of rated tracks', nullable: true })
   @Expose()
-  albumArt: string | null;
+  avgRating: null | number;
 
-  @ApiProperty({ description: 'Number of tracks from this album in library' })
+  @ApiProperty({ description: 'Date when first track from album was added' })
   @Expose()
-  trackCount: number;
+  firstAdded: Date;
+
+  @ApiProperty({ description: 'Date when any track from album was last played', nullable: true })
+  @Expose()
+  lastPlayed: Date | null;
+
+  @ApiProperty({ description: 'Album name' })
+  @Expose()
+  name: string;
 
   @ApiProperty({ description: 'Total duration of all tracks in milliseconds' })
   @Expose()
@@ -26,27 +34,15 @@ export class AlbumDto {
   @Expose()
   totalPlayCount: number;
 
-  @ApiProperty({ description: 'Average rating of rated tracks', nullable: true })
+  @ApiProperty({ description: 'Number of tracks from this album in library' })
   @Expose()
-  avgRating: number | null;
-
-  @ApiProperty({ description: 'Date when first track from album was added' })
-  @Expose()
-  firstAdded: Date;
-
-  @ApiProperty({ description: 'Date when any track from album was last played', nullable: true })
-  @Expose()
-  lastPlayed: Date | null;
+  trackCount: number;
 }
 
 export class PaginatedAlbumsDto {
   @ApiProperty({ description: 'List of albums' })
   @Expose()
   albums: AlbumDto[];
-
-  @ApiProperty({ description: 'Total number of albums' })
-  @Expose()
-  total: number;
 
   @ApiProperty({ description: 'Current page number' })
   @Expose()
@@ -55,6 +51,10 @@ export class PaginatedAlbumsDto {
   @ApiProperty({ description: 'Number of items per page' })
   @Expose()
   pageSize: number;
+
+  @ApiProperty({ description: 'Total number of albums' })
+  @Expose()
+  total: number;
 
   @ApiProperty({ description: 'Total number of pages' })
   @Expose()

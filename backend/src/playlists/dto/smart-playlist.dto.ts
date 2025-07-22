@@ -11,30 +11,15 @@ import {
 } from 'class-validator';
 
 export enum PlaylistRuleField {
-  TITLE = 'title',
-  ARTIST = 'artist',
   ALBUM = 'album',
-  RATING = 'rating',
-  PLAY_COUNT = 'playCount',
-  LAST_PLAYED = 'lastPlayed',
+  ARTIST = 'artist',
   DATE_ADDED = 'dateAdded',
-  TAG = 'tag',
   DURATION = 'duration',
-}
-
-export enum PlaylistRuleOperator {
-  CONTAINS = 'contains',
-  NOT_CONTAINS = 'notContains',
-  EQUALS = 'equals',
-  NOT_EQUALS = 'notEquals',
-  GREATER_THAN = 'greaterThan',
-  LESS_THAN = 'lessThan',
-  STARTS_WITH = 'startsWith',
-  ENDS_WITH = 'endsWith',
-  IN_LAST = 'inLast', // For date fields
-  NOT_IN_LAST = 'notInLast',
-  HAS_TAG = 'hasTag',
-  NOT_HAS_TAG = 'notHasTag',
+  LAST_PLAYED = 'lastPlayed',
+  PLAY_COUNT = 'playCount',
+  RATING = 'rating',
+  TAG = 'tag',
+  TITLE = 'title',
 }
 
 export enum PlaylistRuleLogic {
@@ -42,115 +27,107 @@ export enum PlaylistRuleLogic {
   OR = 'or',
 }
 
-export class PlaylistRuleDto {
-  @ApiProperty({ enum: PlaylistRuleField })
-  @IsEnum(PlaylistRuleField)
-  field: PlaylistRuleField;
+export enum PlaylistRuleOperator {
+  CONTAINS = 'contains',
+  ENDS_WITH = 'endsWith',
+  EQUALS = 'equals',
+  GREATER_THAN = 'greaterThan',
+  HAS_TAG = 'hasTag',
+  IN_LAST = 'inLast', // For date fields
+  LESS_THAN = 'lessThan',
+  NOT_CONTAINS = 'notContains',
+  NOT_EQUALS = 'notEquals',
+  NOT_HAS_TAG = 'notHasTag',
+  NOT_IN_LAST = 'notInLast',
+  STARTS_WITH = 'startsWith',
+}
 
-  @ApiProperty({ enum: PlaylistRuleOperator })
-  @IsEnum(PlaylistRuleOperator)
-  operator: PlaylistRuleOperator;
+export class CreateSmartPlaylistDto {
+  @ApiProperty({ type: PlaylistCriteriaDto })
+  @Type(() => PlaylistCriteriaDto)
+  @ValidateNested()
+  criteria: PlaylistCriteriaDto;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean = true;
 
   @ApiProperty()
   @IsString()
+  name: string;
+}
+
+export class PlaylistCriteriaDto {
+  @ApiProperty({ description: 'Maximum number of tracks', required: false })
+  @IsNumber()
   @IsOptional()
-  value?: string;
+  limit?: number;
+
+  @ApiProperty({ default: PlaylistRuleLogic.AND, enum: PlaylistRuleLogic })
+  @IsEnum(PlaylistRuleLogic)
+  @IsOptional()
+  logic?: PlaylistRuleLogic = PlaylistRuleLogic.AND;
+
+  @ApiProperty({ description: 'Order by field', required: false })
+  @IsOptional()
+  @IsString()
+  orderBy?: string;
+
+  @ApiProperty({ description: 'Order direction', required: false })
+  @IsOptional()
+  @IsString()
+  orderDirection?: 'asc' | 'desc';
+
+  @ApiProperty({ type: [PlaylistRuleDto] })
+  @IsArray()
+  @Type(() => PlaylistRuleDto)
+  @ValidateNested({ each: true })
+  rules: PlaylistRuleDto[];
+}
+
+export class PlaylistRuleDto {
+  @ApiProperty({ description: 'For date rules - number of days' })
+  @IsNumber()
+  @IsOptional()
+  daysValue?: number;
+
+  @ApiProperty({ enum: PlaylistRuleField })
+  @IsEnum(PlaylistRuleField)
+  field: PlaylistRuleField;
 
   @ApiProperty()
   @IsNumber()
   @IsOptional()
   numberValue?: number;
 
-  @ApiProperty({ description: 'For date rules - number of days' })
-  @IsNumber()
-  @IsOptional()
-  daysValue?: number;
-}
+  @ApiProperty({ enum: PlaylistRuleOperator })
+  @IsEnum(PlaylistRuleOperator)
+  operator: PlaylistRuleOperator;
 
-export class PlaylistCriteriaDto {
-  @ApiProperty({ type: [PlaylistRuleDto] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PlaylistRuleDto)
-  rules: PlaylistRuleDto[];
-
-  @ApiProperty({ enum: PlaylistRuleLogic, default: PlaylistRuleLogic.AND })
-  @IsEnum(PlaylistRuleLogic)
-  @IsOptional()
-  logic?: PlaylistRuleLogic = PlaylistRuleLogic.AND;
-
-  @ApiProperty({ description: 'Maximum number of tracks', required: false })
-  @IsNumber()
-  @IsOptional()
-  limit?: number;
-
-  @ApiProperty({ description: 'Order by field', required: false })
-  @IsString()
-  @IsOptional()
-  orderBy?: string;
-
-  @ApiProperty({ description: 'Order direction', required: false })
-  @IsString()
-  @IsOptional()
-  orderDirection?: 'asc' | 'desc';
-}
-
-export class CreateSmartPlaylistDto {
   @ApiProperty()
+  @IsOptional()
   @IsString()
-  name: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiProperty({ type: PlaylistCriteriaDto })
-  @ValidateNested()
-  @Type(() => PlaylistCriteriaDto)
-  criteria: PlaylistCriteriaDto;
-
-  @ApiProperty({ default: true })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean = true;
-}
-
-export class UpdateSmartPlaylistDto {
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiProperty({ type: PlaylistCriteriaDto, required: false })
-  @ValidateNested()
-  @Type(() => PlaylistCriteriaDto)
-  @IsOptional()
-  criteria?: PlaylistCriteriaDto;
-
-  @ApiProperty({ required: false })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+  value?: string;
 }
 
 export class SmartPlaylistDto {
   @ApiProperty()
-  id: string;
+  createdAt: Date;
 
-  @ApiProperty()
-  name: string;
+  @ApiProperty({ type: PlaylistCriteriaDto })
+  criteria: PlaylistCriteriaDto;
 
   @ApiProperty({ required: false })
   description?: string;
 
-  @ApiProperty({ type: PlaylistCriteriaDto })
-  criteria: PlaylistCriteriaDto;
+  @ApiProperty()
+  id: string;
 
   @ApiProperty()
   isActive: boolean;
@@ -159,10 +136,33 @@ export class SmartPlaylistDto {
   lastUpdated: Date;
 
   @ApiProperty()
-  createdAt: Date;
+  name: string;
 }
 
 export class SmartPlaylistWithTracksDto extends SmartPlaylistDto {
   @ApiProperty()
   trackCount: number;
+}
+
+export class UpdateSmartPlaylistDto {
+  @ApiProperty({ required: false, type: PlaylistCriteriaDto })
+  @IsOptional()
+  @Type(() => PlaylistCriteriaDto)
+  @ValidateNested()
+  criteria?: PlaylistCriteriaDto;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  name?: string;
 }
