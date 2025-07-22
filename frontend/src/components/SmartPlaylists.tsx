@@ -144,14 +144,28 @@ export function SmartPlaylists() {
                     of:
                   </Text>
                   <Stack gap={4} mt={4}>
-                    {playlist.criteria.rules.slice(0, 3).map((rule, index) => (
-                      <Text key={index} size="sm">
-                        • {rule.field} {rule.operator}{" "}
-                        {rule.value ||
-                          rule.numberValue ||
-                          `${rule.daysValue} days`}
-                      </Text>
-                    ))}
+                    {playlist.criteria.rules.slice(0, 3).map((rule, index) => {
+                      const operatorsWithNoValue = [
+                        "isNull",
+                        "isNotNull",
+                        "hasAnyTag",
+                        "hasNoTags",
+                      ];
+                      const hasValue = !operatorsWithNoValue.includes(
+                        rule.operator,
+                      );
+
+                      return (
+                        <Text key={index} size="sm">
+                          • {rule.field} {rule.operator}
+                          {hasValue && " "}
+                          {hasValue &&
+                            (rule.value ||
+                              rule.numberValue ||
+                              `${rule.daysValue} days`)}
+                        </Text>
+                      );
+                    })}
                     {playlist.criteria.rules.length > 3 && (
                       <Text c="dimmed" size="sm">
                         + {playlist.criteria.rules.length - 3} more rules

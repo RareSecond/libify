@@ -18,8 +18,12 @@ export enum PlaylistRuleOperator {
   ENDS_WITH = 'endsWith',
   EQUALS = 'equals',
   GREATER_THAN = 'greaterThan',
+  HAS_ANY_TAG = 'hasAnyTag',
+  HAS_NO_TAGS = 'hasNoTags',
   HAS_TAG = 'hasTag',
   IN_LAST = 'inLast', // For date fields
+  IS_NOT_NULL = 'isNotNull',
+  IS_NULL = 'isNull',
   LESS_THAN = 'lessThan',
   NOT_CONTAINS = 'notContains',
   NOT_EQUALS = 'notEquals',

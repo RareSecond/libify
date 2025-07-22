@@ -89,10 +89,14 @@ const operatorsByField: Record<
     { label: "does not equal", value: PlaylistRuleDtoOperator.notEquals },
     { label: "greater than", value: PlaylistRuleDtoOperator.greaterThan },
     { label: "less than", value: PlaylistRuleDtoOperator.lessThan },
+    { label: "has no rating", value: PlaylistRuleDtoOperator.isNull },
+    { label: "has rating", value: PlaylistRuleDtoOperator.isNotNull },
   ],
   [PlaylistRuleDtoField.tag]: [
     { label: "has tag", value: PlaylistRuleDtoOperator.hasTag },
     { label: "does not have tag", value: PlaylistRuleDtoOperator.notHasTag },
+    { label: "has any tag", value: PlaylistRuleDtoOperator.hasAnyTag },
+    { label: "has no tags", value: PlaylistRuleDtoOperator.hasNoTags },
   ],
   [PlaylistRuleDtoField.title]: [
     { label: "contains", value: PlaylistRuleDtoOperator.contains },
@@ -171,7 +175,12 @@ export function PlaylistEditor({
     // Validate rules manually
     const errors: string[] = [];
     values.criteria.rules.forEach((rule, index) => {
-      if (rule.field === PlaylistRuleDtoField.tag && !rule.value) {
+      if (
+        rule.field === PlaylistRuleDtoField.tag &&
+        !rule.value &&
+        rule.operator !== PlaylistRuleDtoOperator.hasAnyTag &&
+        rule.operator !== PlaylistRuleDtoOperator.hasNoTags
+      ) {
         errors.push(`Rule ${index + 1}: Tag name is required`);
       }
       if (
@@ -183,7 +192,15 @@ export function PlaylistEditor({
       ) {
         errors.push(`Rule ${index + 1}: Days value is required`);
       }
+      // Check if value is required based on operator
+      const valueNotRequired =
+        rule.operator === PlaylistRuleDtoOperator.hasAnyTag ||
+        rule.operator === PlaylistRuleDtoOperator.hasNoTags ||
+        rule.operator === PlaylistRuleDtoOperator.isNotNull ||
+        rule.operator === PlaylistRuleDtoOperator.isNull;
+
       if (
+        !valueNotRequired &&
         [
           PlaylistRuleDtoField.duration as string,
           PlaylistRuleDtoField.playCount as string,
@@ -193,7 +210,9 @@ export function PlaylistEditor({
       ) {
         errors.push(`Rule ${index + 1}: Number value is required`);
       }
+
       if (
+        !valueNotRequired &&
         [
           PlaylistRuleDtoField.album as string,
           PlaylistRuleDtoField.artist as string,
@@ -260,6 +279,17 @@ export function PlaylistEditor({
 
   const getValueInput = (rule: PlaylistRuleDto, index: number) => {
     const field = rule.field;
+    const operator = rule.operator;
+
+    // Check if operator doesn't require a value
+    if (
+      operator === PlaylistRuleDtoOperator.hasAnyTag ||
+      operator === PlaylistRuleDtoOperator.hasNoTags ||
+      operator === PlaylistRuleDtoOperator.isNotNull ||
+      operator === PlaylistRuleDtoOperator.isNull
+    ) {
+      return null;
+    }
 
     if (field === PlaylistRuleDtoField.tag) {
       return (

@@ -181,17 +181,21 @@ export class PlaylistsService {
   }
 
   private buildNumberCondition(field: string, rule: any): any {
-    const value = rule.numberValue ?? parseInt(rule.value);
-
     switch (rule.operator) {
-      case PlaylistRuleOperator.EQUALS:
+      case PlaylistRuleOperator.EQUALS: {
+        const value = rule.numberValue ?? parseInt(rule.value);
         return { [field]: value };
+      }
       case PlaylistRuleOperator.GREATER_THAN:
-        return { [field]: { gt: value } };
+        return { [field]: { gt: rule.numberValue ?? parseInt(rule.value) } };
+      case PlaylistRuleOperator.IS_NOT_NULL:
+        return { [field]: { not: null } };
+      case PlaylistRuleOperator.IS_NULL:
+        return { [field]: null };
       case PlaylistRuleOperator.LESS_THAN:
-        return { [field]: { lt: value } };
+        return { [field]: { lt: rule.numberValue ?? parseInt(rule.value) } };
       case PlaylistRuleOperator.NOT_EQUALS:
-        return { [field]: { not: value } };
+        return { [field]: { not: rule.numberValue ?? parseInt(rule.value) } };
       default:
         return {};
     }
@@ -302,31 +306,46 @@ export class PlaylistsService {
   }
 
   private buildTagCondition(rule: any): Prisma.UserTrackWhereInput {
-    if (rule.operator === PlaylistRuleOperator.HAS_TAG) {
-      return {
-        tags: {
-          some: {
-            tag: {
-              name: rule.value,
+    switch (rule.operator) {
+      case PlaylistRuleOperator.HAS_ANY_TAG:
+        return {
+          tags: {
+            some: {},
+          },
+        };
+
+      case PlaylistRuleOperator.HAS_NO_TAGS:
+        return {
+          tags: {
+            none: {},
+          },
+        };
+
+      case PlaylistRuleOperator.HAS_TAG:
+        return {
+          tags: {
+            some: {
+              tag: {
+                name: rule.value,
+              },
             },
           },
-        },
-      };
-    }
+        };
 
-    if (rule.operator === PlaylistRuleOperator.NOT_HAS_TAG) {
-      return {
-        tags: {
-          none: {
-            tag: {
-              name: rule.value,
+      case PlaylistRuleOperator.NOT_HAS_TAG:
+        return {
+          tags: {
+            none: {
+              tag: {
+                name: rule.value,
+              },
             },
           },
-        },
-      };
-    }
+        };
 
-    return {};
+      default:
+        return {};
+    }
   }
 
   private buildWhereClause(
