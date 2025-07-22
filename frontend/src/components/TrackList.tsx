@@ -1,7 +1,7 @@
-import { ActionIcon, Center, Group, Image, Loader, Modal, Pagination, Paper, Select, Stack, Table, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Box, Center, Group, Image, Loader, Modal, Pagination, Paper, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { Clock, Music, Search, Tag } from 'lucide-react';
+import { Music, Search, Tag } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useLibraryControllerGetTracks, useLibraryControllerPlayTrack } from '../data/api';
@@ -15,7 +15,6 @@ export function TrackList() {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<string>('addedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [playingTrackId, setPlayingTrackId] = useState<null | string>(null);
   const [showTagManager, setShowTagManager] = useState(false);
   
   const [debouncedSearch] = useDebouncedValue(search, 300);
@@ -32,7 +31,6 @@ export function TrackList() {
 
   const handlePlayTrack = async (trackId: string, trackTitle: string) => {
     try {
-      setPlayingTrackId(trackId);
       await playTrackMutation.mutateAsync({ trackId });
       notifications.show({
         color: 'green',
@@ -45,8 +43,6 @@ export function TrackList() {
         message: (error as Error & { response?: { data?: { message?: string } } }).response?.data?.message || 'Please make sure Spotify is open on one of your devices',
         title: 'Failed to play track',
       });
-    } finally {
-      setPlayingTrackId(null);
     }
   };
 
@@ -75,9 +71,12 @@ export function TrackList() {
   }
 
   return (
-    <Stack gap="md">
-      <Paper p="md" shadow="xs">
-        <Group justify="space-between" mb="md">
+    <Stack gap="sm">
+      <div>
+        <Text fw={700} mb="xs" size="lg">My Library</Text>
+      </div>
+      <Paper p="sm" radius="md" shadow="xs">
+        <Group justify="space-between" mb="xs">
           <Group>
             <TextInput
               leftSection={<Search size={16} />}
@@ -144,18 +143,18 @@ export function TrackList() {
             </Text>
             
             <div className="overflow-x-auto">
-              <Table highlightOnHover>
+              <Table highlightOnHover horizontalSpacing="xs" striped verticalSpacing={6} withTableBorder>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th w={50}></Table.Th>
-                    <Table.Th>Title</Table.Th>
-                    <Table.Th>Artist</Table.Th>
-                    <Table.Th>Album</Table.Th>
-                    <Table.Th>Duration</Table.Th>
-                    <Table.Th>Plays</Table.Th>
-                    <Table.Th>Last Played</Table.Th>
-                    <Table.Th>Rating</Table.Th>
-                    <Table.Th>Tags</Table.Th>
+                    <Table.Th miw={200}>Title</Table.Th>
+                    <Table.Th miw={150}>Artist</Table.Th>
+                    <Table.Th miw={150}>Album</Table.Th>
+                    <Table.Th w={80}>Duration</Table.Th>
+                    <Table.Th w={60}>Plays</Table.Th>
+                    <Table.Th w={100}>Last Played</Table.Th>
+                    <Table.Th miw={120}>Rating</Table.Th>
+                    <Table.Th miw={150}>Tags</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -167,48 +166,45 @@ export function TrackList() {
                       style={{ cursor: 'pointer' }}
                     >
                       <Table.Td>
-                        <Group gap="xs">
+                        <Group gap="xs" wrap="nowrap">
                           {track.albumArt ? (
-                            <Image
-                              alt={track.album || track.title}
-                              fallbackSrc="/placeholder-album.svg"
-                              h={40}
-                              radius="sm"
-                              src={track.albumArt}
-                              w={40}
-                            />
+                            <Box h={36} style={{ borderRadius: '4px', overflow: 'hidden' }} w={36}>
+                              <Image
+                                alt={track.album || track.title}
+                                fallbackSrc="/placeholder-album.svg"
+                                fit="cover"
+                                h={36}
+                                src={track.albumArt}
+                                style={{ objectFit: 'cover' }}
+                                w={36}
+                              />
+                            </Box>
                           ) : (
-                            <Center bg="gray.2" h={40} style={{ borderRadius: '4px' }} w={40}>
-                              <Music color="gray" size={20} />
+                            <Center bg="gray.2" h={36} style={{ borderRadius: '4px' }} w={36}>
+                              <Music color="gray" size={18} />
                             </Center>
-                          )}
-                          {playingTrackId === track.id && (
-                            <Loader color="green" size="sm" />
                           )}
                         </Group>
                       </Table.Td>
                       <Table.Td>
-                        <Text fw={500} lineClamp={1}>
+                        <Text fw={500} lineClamp={1} size="sm">
                           {track.title}
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text lineClamp={1}>{track.artist}</Text>
+                        <Text lineClamp={1} size="sm">{track.artist}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text lineClamp={1}>{track.album || '-'}</Text>
+                        <Text c="dimmed" lineClamp={1} size="sm">{track.album || '-'}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Group gap={4}>
-                          <Clock size={14} />
-                          <Text size="sm">{formatDuration(track.duration)}</Text>
-                        </Group>
+                        <Text c="dimmed" size="sm">{formatDuration(track.duration)}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">{track.totalPlayCount}</Text>
+                        <Text size="sm" ta="center">{track.totalPlayCount}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm">{formatDate(track.lastPlayedAt)}</Text>
+                        <Text c="dimmed" size="xs">{formatDate(track.lastPlayedAt)}</Text>
                       </Table.Td>
                       <Table.Td>
                         <RatingSelector

@@ -38,20 +38,21 @@ export function RatingSelector({ onRatingChange, rating, trackId }: RatingSelect
 
 
   return (
-    <Group gap={2} onMouseLeave={() => setHoveredStar(null)}>
+    <Group gap={0} onMouseLeave={() => setHoveredStar(null)} wrap="nowrap">
       {[1, 2, 3, 4, 5].map((value) => (
         <ActionIcon
           disabled={isUpdating}
           key={value}
           onClick={(e) => handleRatingClick(e, value)}
           onMouseEnter={() => setHoveredStar(value)}
-          size="sm"
+          size={16}
+          style={{ marginLeft: value > 1 ? -4 : 0 }}
           variant="transparent"
         >
           <Star
             color={value <= (hoveredStar ?? rating ?? 0) ? 'gold' : 'gray'}
             fill={value <= (hoveredStar ?? rating ?? 0) ? 'gold' : 'transparent'}
-            size={16}
+            size={12}
           />
         </ActionIcon>
       ))}
