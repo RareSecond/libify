@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { LibraryModule } from './library/library.module';
+import { PlaylistsModule } from './playlists/playlists.module';
 
 @Module({
   controllers: [AppController],
@@ -14,6 +15,7 @@ import { LibraryModule } from './library/library.module';
     DatabaseModule,
     AuthModule,
     LibraryModule,
+    PlaylistsModule,
   ],
   providers: [AppService],
 })

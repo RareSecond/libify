@@ -12,7 +12,10 @@
 
 import { Route as rootRoute } from './routes/~__root'
 import { Route as TracksImport } from './routes/~tracks'
+import { Route as PlaylistsImport } from './routes/~playlists'
 import { Route as IndexImport } from './routes/~index'
+import { Route as PlaylistsIndexImport } from './routes/~playlists.index'
+import { Route as PlaylistsIdImport } from './routes/~playlists.$id'
 import { Route as AuthSuccessImport } from './routes/~auth/~success'
 
 // Create/Update Routes
@@ -23,10 +26,28 @@ const TracksRoute = TracksImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const PlaylistsRoute = PlaylistsImport.update({
+  id: '/playlists',
+  path: '/playlists',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const PlaylistsIndexRoute = PlaylistsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlaylistsRoute,
+} as any)
+
+const PlaylistsIdRoute = PlaylistsIdImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PlaylistsRoute,
 } as any)
 
 const AuthSuccessRoute = AuthSuccessImport.update({
@@ -46,6 +67,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/playlists': {
+      id: '/playlists'
+      path: '/playlists'
+      fullPath: '/playlists'
+      preLoaderRoute: typeof PlaylistsImport
+      parentRoute: typeof rootRoute
+    }
     '/tracks': {
       id: '/tracks'
       path: '/tracks'
@@ -60,47 +88,98 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSuccessImport
       parentRoute: typeof rootRoute
     }
+    '/playlists/$id': {
+      id: '/playlists/$id'
+      path: '/$id'
+      fullPath: '/playlists/$id'
+      preLoaderRoute: typeof PlaylistsIdImport
+      parentRoute: typeof PlaylistsImport
+    }
+    '/playlists/': {
+      id: '/playlists/'
+      path: '/'
+      fullPath: '/playlists/'
+      preLoaderRoute: typeof PlaylistsIndexImport
+      parentRoute: typeof PlaylistsImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface PlaylistsRouteChildren {
+  PlaylistsIdRoute: typeof PlaylistsIdRoute
+  PlaylistsIndexRoute: typeof PlaylistsIndexRoute
+}
+
+const PlaylistsRouteChildren: PlaylistsRouteChildren = {
+  PlaylistsIdRoute: PlaylistsIdRoute,
+  PlaylistsIndexRoute: PlaylistsIndexRoute,
+}
+
+const PlaylistsRouteWithChildren = PlaylistsRoute._addFileChildren(
+  PlaylistsRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/playlists': typeof PlaylistsRouteWithChildren
   '/tracks': typeof TracksRoute
   '/auth/success': typeof AuthSuccessRoute
+  '/playlists/$id': typeof PlaylistsIdRoute
+  '/playlists/': typeof PlaylistsIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/tracks': typeof TracksRoute
   '/auth/success': typeof AuthSuccessRoute
+  '/playlists/$id': typeof PlaylistsIdRoute
+  '/playlists': typeof PlaylistsIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/playlists': typeof PlaylistsRouteWithChildren
   '/tracks': typeof TracksRoute
   '/auth/success': typeof AuthSuccessRoute
+  '/playlists/$id': typeof PlaylistsIdRoute
+  '/playlists/': typeof PlaylistsIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/tracks' | '/auth/success'
+  fullPaths:
+    | '/'
+    | '/playlists'
+    | '/tracks'
+    | '/auth/success'
+    | '/playlists/$id'
+    | '/playlists/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/tracks' | '/auth/success'
-  id: '__root__' | '/' | '/tracks' | '/auth/success'
+  to: '/' | '/tracks' | '/auth/success' | '/playlists/$id' | '/playlists'
+  id:
+    | '__root__'
+    | '/'
+    | '/playlists'
+    | '/tracks'
+    | '/auth/success'
+    | '/playlists/$id'
+    | '/playlists/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PlaylistsRoute: typeof PlaylistsRouteWithChildren
   TracksRoute: typeof TracksRoute
   AuthSuccessRoute: typeof AuthSuccessRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PlaylistsRoute: PlaylistsRouteWithChildren,
   TracksRoute: TracksRoute,
   AuthSuccessRoute: AuthSuccessRoute,
 }
@@ -116,6 +195,7 @@ export const routeTree = rootRoute
       "filePath": "~__root.tsx",
       "children": [
         "/",
+        "/playlists",
         "/tracks",
         "/auth/success"
       ]
@@ -123,11 +203,26 @@ export const routeTree = rootRoute
     "/": {
       "filePath": "~index.tsx"
     },
+    "/playlists": {
+      "filePath": "~playlists.tsx",
+      "children": [
+        "/playlists/$id",
+        "/playlists/"
+      ]
+    },
     "/tracks": {
       "filePath": "~tracks.tsx"
     },
     "/auth/success": {
       "filePath": "~auth/~success.tsx"
+    },
+    "/playlists/$id": {
+      "filePath": "~playlists.$id.tsx",
+      "parent": "/playlists"
+    },
+    "/playlists/": {
+      "filePath": "~playlists.index.tsx",
+      "parent": "/playlists"
     }
   }
 }

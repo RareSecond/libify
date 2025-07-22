@@ -587,6 +587,226 @@
           "library"
         ]
       }
+    },
+    "/playlists": {
+      "post": {
+        "operationId": "PlaylistsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSmartPlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPlaylistDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new smart playlist",
+        "tags": [
+          "playlists"
+        ]
+      },
+      "get": {
+        "operationId": "PlaylistsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SmartPlaylistWithTracksDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all smart playlists",
+        "tags": [
+          "playlists"
+        ]
+      }
+    },
+    "/playlists/{id}": {
+      "get": {
+        "operationId": "PlaylistsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPlaylistWithTracksDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a smart playlist by ID",
+        "tags": [
+          "playlists"
+        ]
+      },
+      "put": {
+        "operationId": "PlaylistsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSmartPlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPlaylistDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a smart playlist",
+        "tags": [
+          "playlists"
+        ]
+      },
+      "delete": {
+        "operationId": "PlaylistsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a smart playlist",
+        "tags": [
+          "playlists"
+        ]
+      }
+    },
+    "/playlists/{id}/tracks": {
+      "get": {
+        "operationId": "PlaylistsController_getTracks",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tracks for a smart playlist",
+        "tags": [
+          "playlists"
+        ]
+      }
     }
   },
   "info": {
@@ -829,6 +1049,205 @@
         "required": [
           "rating"
         ]
+      },
+      "PlaylistRuleDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "enum": [
+              "title",
+              "artist",
+              "album",
+              "rating",
+              "playCount",
+              "lastPlayed",
+              "dateAdded",
+              "tag",
+              "duration"
+            ],
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "contains",
+              "notContains",
+              "equals",
+              "notEquals",
+              "greaterThan",
+              "lessThan",
+              "startsWith",
+              "endsWith",
+              "inLast",
+              "notInLast",
+              "hasTag",
+              "notHasTag"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "numberValue": {
+            "type": "number"
+          },
+          "daysValue": {
+            "type": "number",
+            "description": "For date rules - number of days"
+          }
+        },
+        "required": [
+          "field",
+          "operator"
+        ]
+      },
+      "PlaylistCriteriaDto": {
+        "type": "object",
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistRuleDto"
+            }
+          },
+          "logic": {
+            "default": "and",
+            "enum": [
+              "and",
+              "or"
+            ],
+            "type": "string"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of tracks"
+          },
+          "orderBy": {
+            "type": "string",
+            "description": "Order by field"
+          },
+          "orderDirection": {
+            "type": "object",
+            "description": "Order direction"
+          }
+        },
+        "required": [
+          "rules"
+        ]
+      },
+      "CreateSmartPlaylistDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/PlaylistCriteriaDto"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "name",
+          "criteria"
+        ]
+      },
+      "SmartPlaylistDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/PlaylistCriteriaDto"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "lastUpdated": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "criteria",
+          "isActive",
+          "lastUpdated",
+          "createdAt"
+        ]
+      },
+      "SmartPlaylistWithTracksDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/PlaylistCriteriaDto"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "lastUpdated": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "trackCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "criteria",
+          "isActive",
+          "lastUpdated",
+          "createdAt",
+          "trackCount"
+        ]
+      },
+      "UpdateSmartPlaylistDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/PlaylistCriteriaDto"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
       }
     }
   }
