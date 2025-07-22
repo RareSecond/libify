@@ -57,6 +57,20 @@
         ]
       }
     },
+    "/auth/token": {
+      "get": {
+        "operationId": "AuthController_getAccessToken",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/auth/spotify": {
       "get": {
         "operationId": "AuthController_spotifyAuth",

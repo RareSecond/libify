@@ -37,6 +37,13 @@ export class AuthController {
     res.json({ message: 'Logged out successfully' });
   }
 
+  @Get('token')
+  @UseGuards(AuthGuard('jwt'))
+  async getAccessToken(@Req() req: AuthenticatedRequest) {
+    const accessToken = await this.authService.getSpotifyAccessToken(req.user.id);
+    return { accessToken };
+  }
+
   @Get('spotify')
   @UseGuards(AuthGuard('spotify'))
   async spotifyAuth(@Req() _req: Request) {

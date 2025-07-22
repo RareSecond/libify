@@ -56,7 +56,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
         ))}
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main style={{ paddingBottom: '120px' }}>{children}</AppShell.Main>
     </AppShell>
   );
 }

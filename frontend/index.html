@@ -4,10 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Spotlib</title>
   </head>
   <body class="bg-dark-bg">
     <div id="root"></div>
+    <script>
+      // Define the callback before loading the SDK
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        // This will be called when the SDK is ready
+        window.spotifySDKReady = true;
+      };
+    </script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

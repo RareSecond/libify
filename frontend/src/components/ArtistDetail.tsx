@@ -8,7 +8,7 @@ interface ArtistDetailProps {
 }
 
 export function ArtistDetail({ artist }: ArtistDetailProps) {
-  const { data: tracks, error, isLoading } = useLibraryControllerGetArtistTracks(artist);
+  const { data: tracks = [], error, isLoading } = useLibraryControllerGetArtistTracks(artist);
 
   if (isLoading) {
     return (

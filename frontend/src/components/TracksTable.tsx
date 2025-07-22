@@ -9,6 +9,7 @@ import {
 import { Music } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { TrackDto, useLibraryControllerPlayTrack } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
 import { InlineTagEditor } from "./InlineTagEditor";
@@ -38,15 +39,27 @@ export function TracksTable({
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
   const playTrackMutation = useLibraryControllerPlayTrack();
+  const { play } = useSpotifyPlayer();
 
-  const handlePlayTrack = async (trackId: string, trackTitle: string) => {
+  const handlePlayTrack = async (trackId: string, trackTitle: string, spotifyId?: string) => {
     try {
-      await playTrackMutation.mutateAsync({ trackId });
-      notifications.show({
-        color: "green",
-        message: trackTitle,
-        title: "Now playing",
-      });
+      if (spotifyId) {
+        // Use Spotify Web Playback SDK
+        await play(`spotify:track:${spotifyId}`);
+        notifications.show({
+          color: "green",
+          message: trackTitle,
+          title: "Now playing",
+        });
+      } else {
+        // Fallback to backend API
+        await playTrackMutation.mutateAsync({ trackId });
+        notifications.show({
+          color: "green",
+          message: trackTitle,
+          title: "Now playing",
+        });
+      }
     } catch (error) {
       notifications.show({
         color: "red",
@@ -303,7 +316,7 @@ export function TracksTable({
               className="hover:bg-gray-50"
               key={row.id}
               onClick={() =>
-                handlePlayTrack(row.original.id, row.original.title)
+                handlePlayTrack(row.original.id, row.original.title, row.original.spotifyId)
               }
               style={{ cursor: "pointer" }}
             >

@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 
 import { AppShellLayout } from "../components/AppShell";
+import { MediaPlayer } from "../components/MediaPlayer";
+import { SpotifyPlayerProvider } from "../contexts/SpotifyPlayerContext";
 import { useAuthControllerGetProfile } from "../data/api";
 
 const queryClient = new QueryClient();
@@ -55,9 +57,12 @@ function AuthWrapper() {
 
   // Authenticated - show app with navigation
   return (
-    <AppShellLayout>
-      <Outlet />
-    </AppShellLayout>
+    <SpotifyPlayerProvider>
+      <AppShellLayout>
+        <Outlet />
+        <MediaPlayer />
+      </AppShellLayout>
+    </SpotifyPlayerProvider>
   );
 }
 
