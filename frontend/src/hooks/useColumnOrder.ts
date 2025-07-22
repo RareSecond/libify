@@ -16,7 +16,7 @@ export function useColumnOrder(defaultOrder: string[]) {
           return parsed;
         }
       }
-    } catch (error) {
+    } catch {
       // Silently fallback to default order
     }
     return defaultOrder;
@@ -25,7 +25,7 @@ export function useColumnOrder(defaultOrder: string[]) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(columnOrder));
-    } catch (error) {
+    } catch {
       // Unable to save to localStorage
     }
   }, [columnOrder]);

@@ -8,12 +8,12 @@ export const Route = createFileRoute('/albums/$artist/$album')({
 });
 
 function AlbumDetailPage() {
-  const { artist, album } = Route.useParams();
+  const { album, artist } = Route.useParams();
   
   return (
     <div className="max-w-7xl mx-auto p-4">
       <PageTitle title={album} />
-      <AlbumDetail artist={artist} album={album} />
+      <AlbumDetail album={album} artist={artist} />
     </div>
   );
 }

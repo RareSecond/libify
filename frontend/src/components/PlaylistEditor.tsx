@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Button, Group, NumberInput, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { ActionIcon, Box, Button, Group, NumberInput, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { Plus, Trash } from 'lucide-react';
@@ -16,77 +16,77 @@ import {
 } from '../data/api';
 
 interface PlaylistEditorProps {
-  playlist?: SmartPlaylistWithTracksDto | null;
-  onSave: () => void;
   onCancel: () => void;
+  onSave: () => void;
+  playlist?: null | SmartPlaylistWithTracksDto;
 }
 
 const fieldOptions = [
-  { value: PlaylistRuleDtoField.title, label: 'Title' },
-  { value: PlaylistRuleDtoField.artist, label: 'Artist' },
-  { value: PlaylistRuleDtoField.album, label: 'Album' },
-  { value: PlaylistRuleDtoField.rating, label: 'Rating' },
-  { value: PlaylistRuleDtoField.playCount, label: 'Play Count' },
-  { value: PlaylistRuleDtoField.lastPlayed, label: 'Last Played' },
-  { value: PlaylistRuleDtoField.dateAdded, label: 'Date Added' },
-  { value: PlaylistRuleDtoField.tag, label: 'Tag' },
-  { value: PlaylistRuleDtoField.duration, label: 'Duration (ms)' },
+  { label: 'Title', value: PlaylistRuleDtoField.title },
+  { label: 'Artist', value: PlaylistRuleDtoField.artist },
+  { label: 'Album', value: PlaylistRuleDtoField.album },
+  { label: 'Rating', value: PlaylistRuleDtoField.rating },
+  { label: 'Play Count', value: PlaylistRuleDtoField.playCount },
+  { label: 'Last Played', value: PlaylistRuleDtoField.lastPlayed },
+  { label: 'Date Added', value: PlaylistRuleDtoField.dateAdded },
+  { label: 'Tag', value: PlaylistRuleDtoField.tag },
+  { label: 'Duration (ms)', value: PlaylistRuleDtoField.duration },
 ];
 
-const operatorsByField: Record<string, Array<{ value: string; label: string }>> = {
-  [PlaylistRuleDtoField.title]: [
-    { value: PlaylistRuleDtoOperator.contains, label: 'contains' },
-    { value: PlaylistRuleDtoOperator.notContains, label: 'does not contain' },
-    { value: PlaylistRuleDtoOperator.equals, label: 'equals' },
-    { value: PlaylistRuleDtoOperator.notEquals, label: 'does not equal' },
-    { value: PlaylistRuleDtoOperator.startsWith, label: 'starts with' },
-    { value: PlaylistRuleDtoOperator.endsWith, label: 'ends with' },
+const operatorsByField: Record<string, Array<{ label: string; value: string; }>> = {
+  [PlaylistRuleDtoField.album]: [
+    { label: 'contains', value: PlaylistRuleDtoOperator.contains },
+    { label: 'does not contain', value: PlaylistRuleDtoOperator.notContains },
+    { label: 'equals', value: PlaylistRuleDtoOperator.equals },
+    { label: 'does not equal', value: PlaylistRuleDtoOperator.notEquals },
+    { label: 'starts with', value: PlaylistRuleDtoOperator.startsWith },
+    { label: 'ends with', value: PlaylistRuleDtoOperator.endsWith },
   ],
   [PlaylistRuleDtoField.artist]: [
-    { value: PlaylistRuleDtoOperator.contains, label: 'contains' },
-    { value: PlaylistRuleDtoOperator.notContains, label: 'does not contain' },
-    { value: PlaylistRuleDtoOperator.equals, label: 'equals' },
-    { value: PlaylistRuleDtoOperator.notEquals, label: 'does not equal' },
-    { value: PlaylistRuleDtoOperator.startsWith, label: 'starts with' },
-    { value: PlaylistRuleDtoOperator.endsWith, label: 'ends with' },
-  ],
-  [PlaylistRuleDtoField.album]: [
-    { value: PlaylistRuleDtoOperator.contains, label: 'contains' },
-    { value: PlaylistRuleDtoOperator.notContains, label: 'does not contain' },
-    { value: PlaylistRuleDtoOperator.equals, label: 'equals' },
-    { value: PlaylistRuleDtoOperator.notEquals, label: 'does not equal' },
-    { value: PlaylistRuleDtoOperator.startsWith, label: 'starts with' },
-    { value: PlaylistRuleDtoOperator.endsWith, label: 'ends with' },
-  ],
-  [PlaylistRuleDtoField.rating]: [
-    { value: PlaylistRuleDtoOperator.equals, label: 'equals' },
-    { value: PlaylistRuleDtoOperator.notEquals, label: 'does not equal' },
-    { value: PlaylistRuleDtoOperator.greaterThan, label: 'greater than' },
-    { value: PlaylistRuleDtoOperator.lessThan, label: 'less than' },
-  ],
-  [PlaylistRuleDtoField.playCount]: [
-    { value: PlaylistRuleDtoOperator.equals, label: 'equals' },
-    { value: PlaylistRuleDtoOperator.notEquals, label: 'does not equal' },
-    { value: PlaylistRuleDtoOperator.greaterThan, label: 'greater than' },
-    { value: PlaylistRuleDtoOperator.lessThan, label: 'less than' },
-  ],
-  [PlaylistRuleDtoField.duration]: [
-    { value: PlaylistRuleDtoOperator.equals, label: 'equals' },
-    { value: PlaylistRuleDtoOperator.notEquals, label: 'does not equal' },
-    { value: PlaylistRuleDtoOperator.greaterThan, label: 'greater than' },
-    { value: PlaylistRuleDtoOperator.lessThan, label: 'less than' },
-  ],
-  [PlaylistRuleDtoField.lastPlayed]: [
-    { value: PlaylistRuleDtoOperator.inLast, label: 'in the last' },
-    { value: PlaylistRuleDtoOperator.notInLast, label: 'not in the last' },
+    { label: 'contains', value: PlaylistRuleDtoOperator.contains },
+    { label: 'does not contain', value: PlaylistRuleDtoOperator.notContains },
+    { label: 'equals', value: PlaylistRuleDtoOperator.equals },
+    { label: 'does not equal', value: PlaylistRuleDtoOperator.notEquals },
+    { label: 'starts with', value: PlaylistRuleDtoOperator.startsWith },
+    { label: 'ends with', value: PlaylistRuleDtoOperator.endsWith },
   ],
   [PlaylistRuleDtoField.dateAdded]: [
-    { value: PlaylistRuleDtoOperator.inLast, label: 'in the last' },
-    { value: PlaylistRuleDtoOperator.notInLast, label: 'not in the last' },
+    { label: 'in the last', value: PlaylistRuleDtoOperator.inLast },
+    { label: 'not in the last', value: PlaylistRuleDtoOperator.notInLast },
+  ],
+  [PlaylistRuleDtoField.duration]: [
+    { label: 'equals', value: PlaylistRuleDtoOperator.equals },
+    { label: 'does not equal', value: PlaylistRuleDtoOperator.notEquals },
+    { label: 'greater than', value: PlaylistRuleDtoOperator.greaterThan },
+    { label: 'less than', value: PlaylistRuleDtoOperator.lessThan },
+  ],
+  [PlaylistRuleDtoField.lastPlayed]: [
+    { label: 'in the last', value: PlaylistRuleDtoOperator.inLast },
+    { label: 'not in the last', value: PlaylistRuleDtoOperator.notInLast },
+  ],
+  [PlaylistRuleDtoField.playCount]: [
+    { label: 'equals', value: PlaylistRuleDtoOperator.equals },
+    { label: 'does not equal', value: PlaylistRuleDtoOperator.notEquals },
+    { label: 'greater than', value: PlaylistRuleDtoOperator.greaterThan },
+    { label: 'less than', value: PlaylistRuleDtoOperator.lessThan },
+  ],
+  [PlaylistRuleDtoField.rating]: [
+    { label: 'equals', value: PlaylistRuleDtoOperator.equals },
+    { label: 'does not equal', value: PlaylistRuleDtoOperator.notEquals },
+    { label: 'greater than', value: PlaylistRuleDtoOperator.greaterThan },
+    { label: 'less than', value: PlaylistRuleDtoOperator.lessThan },
   ],
   [PlaylistRuleDtoField.tag]: [
-    { value: PlaylistRuleDtoOperator.hasTag, label: 'has tag' },
-    { value: PlaylistRuleDtoOperator.notHasTag, label: 'does not have tag' },
+    { label: 'has tag', value: PlaylistRuleDtoOperator.hasTag },
+    { label: 'does not have tag', value: PlaylistRuleDtoOperator.notHasTag },
+  ],
+  [PlaylistRuleDtoField.title]: [
+    { label: 'contains', value: PlaylistRuleDtoOperator.contains },
+    { label: 'does not contain', value: PlaylistRuleDtoOperator.notContains },
+    { label: 'equals', value: PlaylistRuleDtoOperator.equals },
+    { label: 'does not equal', value: PlaylistRuleDtoOperator.notEquals },
+    { label: 'starts with', value: PlaylistRuleDtoOperator.startsWith },
+    { label: 'ends with', value: PlaylistRuleDtoOperator.endsWith },
   ],
 };
 
@@ -97,35 +97,35 @@ const defaultRule: PlaylistRuleDto = {
 };
 
 interface FormValues {
-  name: string;
-  description: string;
   criteria: {
-    rules: PlaylistRuleDto[];
-    logic: PlaylistCriteriaDtoLogic;
     limit?: number;
+    logic: PlaylistCriteriaDtoLogic;
     orderBy: string;
     orderDirection: 'asc' | 'desc';
+    rules: PlaylistRuleDto[];
   };
+  description: string;
   isActive: boolean;
+  name: string;
 }
 
-export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorProps) {
+export function PlaylistEditor({ onCancel, onSave, playlist }: PlaylistEditorProps) {
   const createMutation = usePlaylistsControllerCreate();
   const updateMutation = usePlaylistsControllerUpdate();
   const { data: tags } = useLibraryControllerGetTags();
 
   const form = useForm<FormValues>({
     initialValues: {
-      name: '',
-      description: '',
       criteria: {
-        rules: [{ ...defaultRule }],
-        logic: PlaylistCriteriaDtoLogic.and,
         limit: undefined,
+        logic: PlaylistCriteriaDtoLogic.and,
         orderBy: 'addedAt',
         orderDirection: 'desc',
+        rules: [{ ...defaultRule }],
       },
+      description: '',
       isActive: true,
+      name: '',
     },
     validate: {
       name: (value) => (!value ? 'Name is required' : null),
@@ -135,16 +135,16 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
   useEffect(() => {
     if (playlist) {
       form.setValues({
-        name: playlist.name,
-        description: playlist.description || '',
         criteria: {
-          rules: playlist.criteria.rules || [{ ...defaultRule }],
-          logic: playlist.criteria.logic || PlaylistCriteriaDtoLogic.and,
           limit: playlist.criteria.limit,
+          logic: playlist.criteria.logic || PlaylistCriteriaDtoLogic.and,
           orderBy: playlist.criteria.orderBy || 'addedAt',
           orderDirection: (playlist.criteria.orderDirection || 'desc') as any,
+          rules: playlist.criteria.rules || [{ ...defaultRule }],
         },
+        description: playlist.description || '',
         isActive: playlist.isActive,
+        name: playlist.name,
       });
     }
   }, [playlist]);
@@ -156,13 +156,13 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
       if (rule.field === PlaylistRuleDtoField.tag && !rule.value) {
         errors.push(`Rule ${index + 1}: Tag name is required`);
       }
-      if ([PlaylistRuleDtoField.lastPlayed as string, PlaylistRuleDtoField.dateAdded as string].includes(rule.field as string) && !rule.daysValue) {
+      if ([PlaylistRuleDtoField.dateAdded as string, PlaylistRuleDtoField.lastPlayed as string].includes(rule.field as string) && !rule.daysValue) {
         errors.push(`Rule ${index + 1}: Days value is required`);
       }
-      if ([PlaylistRuleDtoField.rating as string, PlaylistRuleDtoField.playCount as string, PlaylistRuleDtoField.duration as string].includes(rule.field as string) && rule.numberValue === undefined) {
+      if ([PlaylistRuleDtoField.duration as string, PlaylistRuleDtoField.playCount as string, PlaylistRuleDtoField.rating as string].includes(rule.field as string) && rule.numberValue === undefined) {
         errors.push(`Rule ${index + 1}: Number value is required`);
       }
-      if ([PlaylistRuleDtoField.title as string, PlaylistRuleDtoField.artist as string, PlaylistRuleDtoField.album as string].includes(rule.field as string) && !rule.value) {
+      if ([PlaylistRuleDtoField.album as string, PlaylistRuleDtoField.artist as string, PlaylistRuleDtoField.title as string].includes(rule.field as string) && !rule.value) {
         errors.push(`Rule ${index + 1}: Value is required`);
       }
     });
@@ -178,19 +178,19 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
 
     try {
       const data = {
-        name: values.name,
-        description: values.description || undefined,
         criteria: {
           ...values.criteria,
           orderDirection: values.criteria.orderDirection as any,
         },
+        description: values.description || undefined,
         isActive: values.isActive,
+        name: values.name,
       };
 
       if (playlist) {
         await updateMutation.mutateAsync({
-          id: playlist.id,
           data,
+          id: playlist.id,
         });
         notifications.show({
           color: 'green',
@@ -204,7 +204,7 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
         });
       }
       onSave();
-    } catch (error) {
+    } catch {
       notifications.show({
         color: 'red',
         message: 'Failed to save playlist',
@@ -226,7 +226,7 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
     if (field === PlaylistRuleDtoField.tag) {
       return (
         <Select
-          data={tags?.map(tag => ({ value: tag.name, label: tag.name })) || []}
+          data={tags?.map(tag => ({ label: tag.name, value: tag.name })) || []}
           placeholder="Select tag"
           searchable
           {...form.getInputProps(`criteria.rules.${index}.value`)}
@@ -234,7 +234,7 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
       );
     }
 
-    if ([PlaylistRuleDtoField.lastPlayed as string, PlaylistRuleDtoField.dateAdded as string].includes(field as string)) {
+    if ([PlaylistRuleDtoField.dateAdded as string, PlaylistRuleDtoField.lastPlayed as string].includes(field as string)) {
       return (
         <NumberInput
           min={1}
@@ -245,7 +245,7 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
       );
     }
 
-    if ([PlaylistRuleDtoField.rating as string, PlaylistRuleDtoField.playCount as string, PlaylistRuleDtoField.duration as string].includes(field as string)) {
+    if ([PlaylistRuleDtoField.duration as string, PlaylistRuleDtoField.playCount as string, PlaylistRuleDtoField.rating as string].includes(field as string)) {
       const props: any = {
         placeholder: 'Number',
         ...form.getInputProps(`criteria.rules.${index}.numberValue`),
@@ -289,8 +289,8 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
           <Text fw={500} mb="xs">Rules</Text>
           <Select
             data={[
-              { value: PlaylistCriteriaDtoLogic.and, label: 'Match all of the following rules' },
-              { value: PlaylistCriteriaDtoLogic.or, label: 'Match any of the following rules' },
+              { label: 'Match all of the following rules', value: PlaylistCriteriaDtoLogic.and },
+              { label: 'Match any of the following rules', value: PlaylistCriteriaDtoLogic.or },
             ]}
             mb="md"
             {...form.getInputProps('criteria.logic')}
@@ -298,7 +298,7 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
 
           <Stack gap="sm">
             {form.values.criteria.rules.map((rule, index) => (
-              <Group key={index} align="flex-start">
+              <Group align="flex-start" key={index}>
                 <Select
                   data={fieldOptions}
                   placeholder="Field"
@@ -357,13 +357,13 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
 
           <Select
             data={[
-              { value: 'title', label: 'Title' },
-              { value: 'artist', label: 'Artist' },
-              { value: 'album', label: 'Album' },
-              { value: 'addedAt', label: 'Date Added' },
-              { value: 'lastPlayed', label: 'Last Played' },
-              { value: 'playCount', label: 'Play Count' },
-              { value: 'rating', label: 'Rating' },
+              { label: 'Title', value: 'title' },
+              { label: 'Artist', value: 'artist' },
+              { label: 'Album', value: 'album' },
+              { label: 'Date Added', value: 'addedAt' },
+              { label: 'Last Played', value: 'lastPlayed' },
+              { label: 'Play Count', value: 'playCount' },
+              { label: 'Rating', value: 'rating' },
             ]}
             label="Order by"
             {...form.getInputProps('criteria.orderBy')}
@@ -371,8 +371,8 @@ export function PlaylistEditor({ playlist, onSave, onCancel }: PlaylistEditorPro
 
           <Select
             data={[
-              { value: 'asc', label: 'Ascending' },
-              { value: 'desc', label: 'Descending' },
+              { label: 'Ascending', value: 'asc' },
+              { label: 'Descending', value: 'desc' },
             ]}
             label="Order"
             {...form.getInputProps('criteria.orderDirection')}

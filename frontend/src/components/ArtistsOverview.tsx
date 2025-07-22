@@ -15,10 +15,10 @@ import {
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Music, Play, Search, Star } from 'lucide-react';
+import { Music, Play, Search, Star, User } from 'lucide-react';
 
-import { useLibraryControllerGetAlbums } from '../data/api';
-import { Route } from '../routes/~albums.index';
+import { useLibraryControllerGetArtists } from '../data/api';
+import { Route } from '../routes/~artists.index';
 
 const formatDuration = (ms: number) => {
   const hours = Math.floor(ms / 3600000);
@@ -35,13 +35,13 @@ const formatDate = (date: null | string | undefined) => {
   return new Date(date).toLocaleDateString();
 };
 
-export function AlbumsOverview() {
+export function ArtistsOverview() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { page = 1, pageSize = 24, search = '', sortBy = 'name', sortOrder = 'asc' } = Route.useSearch();
   
   const [debouncedSearch] = useDebouncedValue(search, 300);
 
-  const { data, error, isLoading } = useLibraryControllerGetAlbums({
+  const { data, error, isLoading } = useLibraryControllerGetArtists({
     page,
     pageSize,
     search: debouncedSearch || '',
@@ -68,11 +68,10 @@ export function AlbumsOverview() {
     });
   };
 
-
   if (error) {
     return (
       <Center h={400}>
-        <Text c="red">Error loading albums: {error.message}</Text>
+        <Text c="red">Error loading artists: {error.message}</Text>
       </Center>
     );
   }
@@ -88,9 +87,9 @@ export function AlbumsOverview() {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Title order={2}>My Albums</Title>
+        <Title order={2}>My Artists</Title>
         <Text c="dimmed">
-          {data?.total || 0} albums
+          {data?.total || 0} artists
         </Text>
       </Group>
 
@@ -98,16 +97,16 @@ export function AlbumsOverview() {
         <TextInput
           leftSection={<Search size={16} />}
           onChange={(e) => updateSearch({ search: e.currentTarget.value })}
-          placeholder="Search albums or artists..."
+          placeholder="Search artists..."
           value={search}
           w={300}
         />
         
         <Select
           data={[
-            { label: 'Album Name', value: 'name' },
-            { label: 'Artist', value: 'artist' },
+            { label: 'Artist Name', value: 'name' },
             { label: 'Track Count', value: 'trackCount' },
+            { label: 'Album Count', value: 'albumCount' },
             { label: 'Play Count', value: 'totalPlayCount' },
             { label: 'Rating', value: 'avgRating' },
             { label: 'Last Played', value: 'lastPlayed' },
@@ -139,15 +138,12 @@ export function AlbumsOverview() {
       </Group>
 
       <Grid>
-        {data?.albums.map((album) => (
-          <Grid.Col key={`${album.name}-${album.artist}`} span={{ base: 12, lg: 3, md: 4, sm: 6 }}>
+        {data?.artists.map((artist) => (
+          <Grid.Col key={artist.name} span={{ base: 12, lg: 3, md: 4, sm: 6 }}>
             <Link
-              params={{ 
-                album: album.name, 
-                artist: album.artist 
-              }}
+              params={{ artist: artist.name }}
               style={{ textDecoration: 'none' }}
-              to="/albums/$artist/$album"
+              to="/artists/$artist"
             >
               <Card 
                 className="hover:shadow-lg hover:-translate-y-1" 
@@ -163,17 +159,17 @@ export function AlbumsOverview() {
               >
               <Card.Section mb="md">
                 <Box pos="relative">
-                  {album.albumArt ? (
+                  {artist.artistImage ? (
                     <Image
-                      alt={album.name}
+                      alt={artist.name}
                       fallbackSrc="/placeholder-album.svg"
                       h={200}
-                      src={album.albumArt}
+                      src={artist.artistImage}
                       style={{ objectFit: 'cover' }}
                     />
                   ) : (
                     <Center bg="gray.2" h={200}>
-                      <Music color="gray" size={48} />
+                      <User color="gray" size={48} />
                     </Center>
                   )}
                   <Box
@@ -186,7 +182,7 @@ export function AlbumsOverview() {
                     top={8}
                   >
                     <Text c="white" fw={600} size="xs">
-                      {album.trackCount} tracks
+                      {artist.trackCount} tracks
                     </Text>
                   </Box>
                 </Box>
@@ -195,33 +191,33 @@ export function AlbumsOverview() {
               <Stack gap="xs">
                 <div>
                   <Text fw={600} lineClamp={1} size="md">
-                    {album.name}
+                    {artist.name}
                   </Text>
                   <Text c="dimmed" lineClamp={1} size="sm">
-                    {album.artist}
+                    {artist.albumCount} albums
                   </Text>
                 </div>
 
                 <Group gap="xs" wrap="nowrap">
                   <Group gap={4}>
                     <Play size={14} />
-                    <Text size="xs">{album.totalPlayCount}</Text>
+                    <Text size="xs">{artist.totalPlayCount}</Text>
                   </Group>
                   
-                  {album.avgRating && (
+                  {artist.avgRating && (
                     <Group gap={4}>
                       <Star size={14} />
-                      <Text size="xs">{album.avgRating}</Text>
+                      <Text size="xs">{artist.avgRating}</Text>
                     </Group>
                   )}
                   
                   <Text c="dimmed" size="xs" style={{ marginLeft: 'auto' }}>
-                    {formatDuration(album.totalDuration)}
+                    {formatDuration(artist.totalDuration)}
                   </Text>
                 </Group>
 
                 <Text c="dimmed" size="xs">
-                  Last played: {formatDate(album.lastPlayed)}
+                  Last played: {formatDate(artist.lastPlayed)}
                 </Text>
               </Stack>
             </Card>
@@ -230,12 +226,12 @@ export function AlbumsOverview() {
         ))}
       </Grid>
 
-      {(!data?.albums || data.albums.length === 0) && (
+      {(!data?.artists || data.artists.length === 0) && (
         <Center h={200}>
           <Stack align="center" gap="md">
             <Music size={48} style={{ opacity: 0.5 }} />
             <Text c="dimmed" size="lg">
-              {debouncedSearch ? 'No albums found matching your search' : 'No albums in your library yet'}
+              {debouncedSearch ? 'No artists found matching your search' : 'No artists in your library yet'}
             </Text>
           </Stack>
         </Center>

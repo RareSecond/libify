@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { DatabaseService } from '../database/database.service';
-import { CreateSmartPlaylistDto, PlaylistCriteriaDto, PlaylistRuleField, PlaylistRuleOperator, UpdateSmartPlaylistDto } from './dto/smart-playlist.dto';
+import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
+import { PlaylistRuleField, PlaylistRuleOperator } from './dto/playlist-rule.dto';
+import { CreateSmartPlaylistDto, UpdateSmartPlaylistDto } from './dto/smart-playlist.dto';
 
 @Injectable()
 export class PlaylistsService {

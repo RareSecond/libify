@@ -25,6 +25,7 @@ import { Request } from 'express';
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginatedAlbumsDto } from './dto/album.dto';
+import { PaginatedArtistsDto } from './dto/artist.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import { AddTagToTrackDto, CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
@@ -115,6 +116,36 @@ export class LibraryController {
     @Param('album') album: string,
   ) {
     return this.trackService.getAlbumTracks(req.user.id, decodeURIComponent(artist), decodeURIComponent(album));
+  }
+
+  @ApiOperation({ summary: 'Get all artists in user library' })
+  @ApiResponse({ description: 'Paginated list of artists', status: 200, type: PaginatedArtistsDto })
+  @Get('artists')
+  async getArtists(
+    @Req() req: AuthenticatedRequest,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: 'albumCount' | 'avgRating' | 'lastPlayed' | 'name' | 'totalPlayCount' | 'trackCount',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ): Promise<PaginatedArtistsDto> {
+    return this.trackService.getUserArtists(req.user.id, {
+      page: page || 1,
+      pageSize: pageSize || 24,
+      search,
+      sortBy: sortBy || 'name',
+      sortOrder: sortOrder || 'asc',
+    });
+  }
+
+  @ApiOperation({ summary: 'Get tracks from a specific artist' })
+  @ApiResponse({ description: 'List of tracks from the artist', status: 200 })
+  @Get('artists/:artist/tracks')
+  async getArtistTracks(
+    @Req() req: AuthenticatedRequest,
+    @Param('artist') artist: string,
+  ) {
+    return this.trackService.getArtistTracks(req.user.id, decodeURIComponent(artist));
   }
 
   // Tag management endpoints

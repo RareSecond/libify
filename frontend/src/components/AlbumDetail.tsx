@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Center,
   Group,
@@ -8,17 +9,16 @@ import {
   Stack,
   Text,
   Title,
-  Box,
 } from '@mantine/core';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Music, Play, Star, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, Music, Play, Star } from 'lucide-react';
 
-import { useLibraryControllerGetTracks, TrackDto } from '../data/api';
+import { TrackDto, useLibraryControllerGetTracks } from '../data/api';
 import { TracksTable } from './TracksTable';
 
 interface AlbumDetailProps {
-  artist: string;
   album: string;
+  artist: string;
 }
 
 const formatDuration = (ms: number) => {
@@ -32,12 +32,12 @@ const formatDuration = (ms: number) => {
   return `${minutes}m ${seconds}s`;
 };
 
-export function AlbumDetail({ artist, album }: AlbumDetailProps) {
+export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
   
   // For now, use the regular tracks API with search filter
   // This will be replaced when the album-specific endpoint is generated
-  const { data, isLoading, error, refetch } = useLibraryControllerGetTracks({
+  const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
     page: 1,
     pageSize: 100,
     search: album,

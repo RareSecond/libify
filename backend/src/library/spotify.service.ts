@@ -136,6 +136,25 @@ export class SpotifyService {
     return allTracks;
   }
 
+  async searchArtist(accessToken: string, artistName: string): Promise<{ id: string; images: Array<{ url: string }>; name: string; } | null> {
+    try {
+      const response = await this.spotifyApi.get('/search', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: {
+          limit: 1,
+          q: artistName,
+          type: 'artist',
+        },
+      });
+      
+      const artists = response.data.artists?.items;
+      return artists && artists.length > 0 ? artists[0] : null;
+    } catch (error) {
+      this.logger.error(`Failed to search for artist: ${artistName}`, error);
+      return null;
+    }
+  }
+
   async getUserLibraryTracks(
     accessToken: string,
     limit = 50,

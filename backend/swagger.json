@@ -277,6 +277,208 @@
         ]
       }
     },
+    "/library/albums": {
+      "get": {
+        "operationId": "LibraryController_getAlbums",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of albums",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAlbumsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all albums in user library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/albums/{artist}/{album}/tracks": {
+      "get": {
+        "operationId": "LibraryController_getAlbumTracks",
+        "parameters": [
+          {
+            "name": "artist",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "album",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tracks from the album"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tracks from a specific album",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/artists": {
+      "get": {
+        "operationId": "LibraryController_getArtists",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of artists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedArtistsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all artists in user library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/artists/{artist}/tracks": {
+      "get": {
+        "operationId": "LibraryController_getArtistTracks",
+        "parameters": [
+          {
+            "name": "artist",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tracks from the artist"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tracks from a specific artist",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/status": {
       "get": {
         "operationId": "LibraryController_getSyncStatus",
@@ -588,111 +790,6 @@
         ]
       }
     },
-    "/library/albums": {
-      "get": {
-        "operationId": "LibraryController_getAlbums",
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "search",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "sortOrder",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated list of albums",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedAlbumsDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get all albums in user library",
-        "tags": [
-          "library"
-        ]
-      }
-    },
-    "/library/albums/{artist}/{album}/tracks": {
-      "get": {
-        "operationId": "LibraryController_getAlbumTracks",
-        "parameters": [
-          {
-            "name": "artist",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "album",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of tracks from the album"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get tracks from a specific album",
-        "tags": [
-          "library"
-        ]
-      }
-    },
     "/playlists": {
       "post": {
         "operationId": "PlaylistsController_create",
@@ -793,6 +890,36 @@
           "playlists"
         ]
       },
+      "delete": {
+        "operationId": "PlaylistsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a smart playlist",
+        "tags": [
+          "playlists"
+        ]
+      },
       "put": {
         "operationId": "PlaylistsController_update",
         "parameters": [
@@ -833,36 +960,6 @@
           }
         ],
         "summary": "Update a smart playlist",
-        "tags": [
-          "playlists"
-        ]
-      },
-      "delete": {
-        "operationId": "PlaylistsController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          },
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Delete a smart playlist",
         "tags": [
           "playlists"
         ]
@@ -1015,6 +1112,190 @@
           "name"
         ]
       },
+      "AlbumDto": {
+        "type": "object",
+        "properties": {
+          "albumArt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Album artwork URL"
+          },
+          "artist": {
+            "type": "string",
+            "description": "Album artist"
+          },
+          "avgRating": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average rating of rated tracks"
+          },
+          "firstAdded": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Date when first track from album was added"
+          },
+          "lastPlayed": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Date when any track from album was last played"
+          },
+          "name": {
+            "type": "string",
+            "description": "Album name"
+          },
+          "totalDuration": {
+            "type": "number",
+            "description": "Total duration of all tracks in milliseconds"
+          },
+          "totalPlayCount": {
+            "type": "number",
+            "description": "Total play count across all tracks"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks from this album in library"
+          }
+        },
+        "required": [
+          "albumArt",
+          "artist",
+          "avgRating",
+          "firstAdded",
+          "lastPlayed",
+          "name",
+          "totalDuration",
+          "totalPlayCount",
+          "trackCount"
+        ]
+      },
+      "PaginatedAlbumsDto": {
+        "type": "object",
+        "properties": {
+          "albums": {
+            "description": "List of albums",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlbumDto"
+            }
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of items per page"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of albums"
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages"
+          }
+        },
+        "required": [
+          "albums",
+          "page",
+          "pageSize",
+          "total",
+          "totalPages"
+        ]
+      },
+      "ArtistDto": {
+        "type": "object",
+        "properties": {
+          "albumCount": {
+            "type": "number",
+            "description": "Number of albums by this artist"
+          },
+          "artistImage": {
+            "type": "string",
+            "nullable": true,
+            "description": "Artist image URL"
+          },
+          "avgRating": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average rating across all rated tracks"
+          },
+          "firstAdded": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Date when first track was added"
+          },
+          "lastPlayed": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Date when any track was last played"
+          },
+          "name": {
+            "type": "string",
+            "description": "Artist name"
+          },
+          "totalDuration": {
+            "type": "number",
+            "description": "Total duration of all tracks in milliseconds"
+          },
+          "totalPlayCount": {
+            "type": "number",
+            "description": "Total play count across all tracks"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks by this artist"
+          }
+        },
+        "required": [
+          "albumCount",
+          "artistImage",
+          "avgRating",
+          "firstAdded",
+          "lastPlayed",
+          "name",
+          "totalDuration",
+          "totalPlayCount",
+          "trackCount"
+        ]
+      },
+      "PaginatedArtistsDto": {
+        "type": "object",
+        "properties": {
+          "artists": {
+            "description": "List of artists",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistDto"
+            }
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of items per page"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of artists"
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages"
+          }
+        },
+        "required": [
+          "artists",
+          "page",
+          "pageSize",
+          "total",
+          "totalPages"
+        ]
+      },
       "TagDto": {
         "type": "object",
         "properties": {
@@ -1155,141 +1436,49 @@
           "rating"
         ]
       },
-      "AlbumDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Album name"
-          },
-          "artist": {
-            "type": "string",
-            "description": "Album artist"
-          },
-          "albumArt": {
-            "type": "string",
-            "nullable": true,
-            "description": "Album artwork URL"
-          },
-          "trackCount": {
-            "type": "number",
-            "description": "Number of tracks from this album in library"
-          },
-          "totalDuration": {
-            "type": "number",
-            "description": "Total duration of all tracks in milliseconds"
-          },
-          "totalPlayCount": {
-            "type": "number",
-            "description": "Total play count across all tracks"
-          },
-          "avgRating": {
-            "type": "number",
-            "nullable": true,
-            "description": "Average rating of rated tracks"
-          },
-          "firstAdded": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Date when first track from album was added"
-          },
-          "lastPlayed": {
-            "format": "date-time",
-            "type": "string",
-            "nullable": true,
-            "description": "Date when any track from album was last played"
-          }
-        },
-        "required": [
-          "name",
-          "artist",
-          "albumArt",
-          "trackCount",
-          "totalDuration",
-          "totalPlayCount",
-          "avgRating",
-          "firstAdded",
-          "lastPlayed"
-        ]
-      },
-      "PaginatedAlbumsDto": {
-        "type": "object",
-        "properties": {
-          "albums": {
-            "description": "List of albums",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AlbumDto"
-            }
-          },
-          "total": {
-            "type": "number",
-            "description": "Total number of albums"
-          },
-          "page": {
-            "type": "number",
-            "description": "Current page number"
-          },
-          "pageSize": {
-            "type": "number",
-            "description": "Number of items per page"
-          },
-          "totalPages": {
-            "type": "number",
-            "description": "Total number of pages"
-          }
-        },
-        "required": [
-          "albums",
-          "total",
-          "page",
-          "pageSize",
-          "totalPages"
-        ]
-      },
       "PlaylistRuleDto": {
         "type": "object",
         "properties": {
+          "daysValue": {
+            "type": "number",
+            "description": "For date rules - number of days"
+          },
           "field": {
             "enum": [
-              "title",
-              "artist",
               "album",
-              "rating",
-              "playCount",
-              "lastPlayed",
+              "artist",
               "dateAdded",
+              "duration",
+              "lastPlayed",
+              "playCount",
+              "rating",
               "tag",
-              "duration"
+              "title"
             ],
-            "type": "string"
-          },
-          "operator": {
-            "enum": [
-              "contains",
-              "notContains",
-              "equals",
-              "notEquals",
-              "greaterThan",
-              "lessThan",
-              "startsWith",
-              "endsWith",
-              "inLast",
-              "notInLast",
-              "hasTag",
-              "notHasTag"
-            ],
-            "type": "string"
-          },
-          "value": {
             "type": "string"
           },
           "numberValue": {
             "type": "number"
           },
-          "daysValue": {
-            "type": "number",
-            "description": "For date rules - number of days"
+          "operator": {
+            "enum": [
+              "contains",
+              "endsWith",
+              "equals",
+              "greaterThan",
+              "hasTag",
+              "inLast",
+              "lessThan",
+              "notContains",
+              "notEquals",
+              "notHasTag",
+              "notInLast",
+              "startsWith"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
           }
         },
         "required": [
@@ -1300,23 +1489,16 @@
       "PlaylistCriteriaDto": {
         "type": "object",
         "properties": {
-          "rules": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PlaylistRuleDto"
-            }
+          "limit": {
+            "type": "number",
+            "description": "Limit number of tracks"
           },
           "logic": {
-            "default": "and",
             "enum": [
               "and",
               "or"
             ],
             "type": "string"
-          },
-          "limit": {
-            "type": "number",
-            "description": "Maximum number of tracks"
           },
           "orderBy": {
             "type": "string",
@@ -1325,48 +1507,56 @@
           "orderDirection": {
             "type": "object",
             "description": "Order direction"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistRuleDto"
+            }
           }
         },
         "required": [
+          "logic",
           "rules"
         ]
       },
       "CreateSmartPlaylistDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
+          "criteria": {
+            "$ref": "#/components/schemas/PlaylistCriteriaDto"
           },
           "description": {
             "type": "string"
           },
-          "criteria": {
-            "$ref": "#/components/schemas/PlaylistCriteriaDto"
-          },
           "isActive": {
             "type": "boolean",
             "default": true
+          },
+          "name": {
+            "type": "string"
           }
         },
         "required": [
-          "name",
-          "criteria"
+          "criteria",
+          "name"
         ]
       },
       "SmartPlaylistDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
+          "createdAt": {
+            "format": "date-time",
             "type": "string"
           },
           "criteria": {
             "$ref": "#/components/schemas/PlaylistCriteriaDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
           },
           "isActive": {
             "type": "boolean"
@@ -1375,34 +1565,34 @@
             "format": "date-time",
             "type": "string"
           },
-          "createdAt": {
-            "format": "date-time",
+          "name": {
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "name",
+          "createdAt",
           "criteria",
+          "id",
           "isActive",
           "lastUpdated",
-          "createdAt"
+          "name"
         ]
       },
       "SmartPlaylistWithTracksDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
+          "createdAt": {
+            "format": "date-time",
             "type": "string"
           },
           "criteria": {
             "$ref": "#/components/schemas/PlaylistCriteriaDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
           },
           "isActive": {
             "type": "boolean"
@@ -1411,8 +1601,7 @@
             "format": "date-time",
             "type": "string"
           },
-          "createdAt": {
-            "format": "date-time",
+          "name": {
             "type": "string"
           },
           "trackCount": {
@@ -1420,29 +1609,29 @@
           }
         },
         "required": [
-          "id",
-          "name",
+          "createdAt",
           "criteria",
+          "id",
           "isActive",
           "lastUpdated",
-          "createdAt",
+          "name",
           "trackCount"
         ]
       },
       "UpdateSmartPlaylistDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
+          "criteria": {
+            "$ref": "#/components/schemas/PlaylistCriteriaDto"
           },
           "description": {
             "type": "string"
           },
-          "criteria": {
-            "$ref": "#/components/schemas/PlaylistCriteriaDto"
-          },
           "isActive": {
             "type": "boolean"
+          },
+          "name": {
+            "type": "string"
           }
         }
       }

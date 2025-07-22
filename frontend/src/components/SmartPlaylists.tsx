@@ -9,8 +9,8 @@ import { SmartPlaylistWithTracksDto, usePlaylistsControllerFindAll, usePlaylists
 import { PlaylistEditor } from './PlaylistEditor';
 
 export function SmartPlaylists() {
-  const [opened, { open, close }] = useDisclosure(false);
-  const [editingPlaylist, setEditingPlaylist] = useState<SmartPlaylistWithTracksDto | null>(null);
+  const [opened, { close, open }] = useDisclosure(false);
+  const [editingPlaylist, setEditingPlaylist] = useState<null | SmartPlaylistWithTracksDto>(null);
   
   const { data: playlists, isLoading, refetch } = usePlaylistsControllerFindAll();
   const deleteMutation = usePlaylistsControllerRemove();
@@ -37,7 +37,7 @@ export function SmartPlaylists() {
         message: 'Playlist deleted successfully',
       });
       refetch();
-    } catch (error) {
+    } catch {
       notifications.show({
         color: 'red',
         message: 'Failed to delete playlist',
@@ -132,11 +132,11 @@ export function SmartPlaylists() {
                     {playlist.trackCount} tracks
                   </Text>
                   <Link
-                    to="/playlists/$id"
-                    params={{ id: playlist.id }}
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
+                    params={{ id: playlist.id }}
+                    to="/playlists/$id"
                   >
                     <Button
                       size="xs"
