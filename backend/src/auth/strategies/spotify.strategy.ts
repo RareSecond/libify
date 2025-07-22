@@ -28,7 +28,13 @@ export class SpotifyStrategy extends PassportStrategy(Strategy, 'spotify') {
     accessToken: string,
     refreshToken: string,
     params: { expires_in?: number },
-    profile: { _json?: { display_name?: string; email?: string; id?: string; }; displayName?: string; emails?: Array<{ value: string }>; id?: string; provider?: string },
+    profile: {
+      _json?: { display_name?: string; email?: string; id?: string };
+      displayName?: string;
+      emails?: Array<{ value: string }>;
+      id?: string;
+      provider?: string;
+    },
   ) {
     // Check if arguments are shifted (common passport issue)
     if (typeof params === 'object' && 'provider' in params) {
@@ -36,15 +42,18 @@ export class SpotifyStrategy extends PassportStrategy(Strategy, 'spotify') {
       profile = params as typeof profile;
       params = {};
     }
-    
+
     const expires_in = params?.expires_in || 3600;
-    
-    
+
     // Extract user data from profile
     const spotifyId = profile.id || profile._json?.id;
-    const email = profile.emails?.[0]?.value || profile._json?.email || `${spotifyId}@spotify.local`;
-    const name = profile.displayName || profile._json?.display_name || 'Spotify User';
-    
+    const email =
+      profile.emails?.[0]?.value ||
+      profile._json?.email ||
+      `${spotifyId}@spotify.local`;
+    const name =
+      profile.displayName || profile._json?.display_name || 'Spotify User';
+
     if (!spotifyId) {
       throw new Error('Unable to extract Spotify ID from profile');
     }

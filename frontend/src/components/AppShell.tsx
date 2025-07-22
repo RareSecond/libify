@@ -1,8 +1,8 @@
-import { AppShell, Burger, Group, NavLink, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { Link, useLocation } from '@tanstack/react-router';
-import { Disc, Home, Library, ListMusic, User } from 'lucide-react';
-import { ReactNode } from 'react';
+import { AppShell, Burger, Group, NavLink, Text } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { Link, useLocation } from "@tanstack/react-router";
+import { Disc, Home, Library, ListMusic, User } from "lucide-react";
+import { ReactNode } from "react";
 
 interface AppShellLayoutProps {
   children: ReactNode;
@@ -13,18 +13,18 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
   const location = useLocation();
 
   const navItems = [
-    { icon: Home, label: 'Home', to: '/' },
-    { icon: Library, label: 'My Library', to: '/tracks' },
-    { icon: Disc, label: 'Albums', to: '/albums' },
-    { icon: User, label: 'Artists', to: '/artists' },
-    { icon: ListMusic, label: 'Smart Playlists', to: '/playlists' },
+    { icon: Home, label: "Home", to: "/" },
+    { icon: Library, label: "My Library", to: "/tracks" },
+    { icon: Disc, label: "Albums", to: "/albums" },
+    { icon: User, label: "Artists", to: "/artists" },
+    { icon: ListMusic, label: "Smart Playlists", to: "/playlists" },
   ];
 
   return (
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        breakpoint: 'sm',
+        breakpoint: "sm",
         collapsed: { mobile: !opened },
         width: 300,
       }}
@@ -32,13 +32,10 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
     >
       <AppShell.Header>
         <Group h="100%" px="md">
-          <Burger
-            hiddenFrom="sm"
-            onClick={toggle}
-            opened={opened}
-            size="sm"
-          />
-          <Text fw={700} size="xl">Spotlib</Text>
+          <Burger hiddenFrom="sm" onClick={toggle} opened={opened} size="sm" />
+          <Text fw={700} size="xl">
+            Spotlib
+          </Text>
         </Group>
       </AppShell.Header>
 
@@ -56,7 +53,9 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
         ))}
       </AppShell.Navbar>
 
-      <AppShell.Main style={{ paddingBottom: '120px' }}>{children}</AppShell.Main>
+      <AppShell.Main style={{ paddingBottom: "120px" }}>
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 }

@@ -22,8 +22,10 @@ interface PlaylistTracksProps {
 
 export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const navigate = useNavigate();
-  const { data: playlist, isLoading: playlistLoading } = usePlaylistsControllerFindOne(playlistId);
-  const { data, error, isLoading, refetch } = usePlaylistsControllerGetTracks(playlistId);
+  const { data: playlist, isLoading: playlistLoading } =
+    usePlaylistsControllerFindOne(playlistId);
+  const { data, error, isLoading, refetch } =
+    usePlaylistsControllerGetTracks(playlistId);
 
   if (error) {
     return (
@@ -50,7 +52,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
           <Button
             leftSection={<ArrowLeft size={16} />}
             mb="xs"
-            onClick={() => navigate({ to: '/playlists' })}
+            onClick={() => navigate({ to: "/playlists" })}
             size="xs"
             variant="subtle"
           >
@@ -60,7 +62,9 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
             {playlist?.name}
           </Text>
           {playlist?.description && (
-            <Text c="dimmed" size="sm">{playlist.description}</Text>
+            <Text c="dimmed" size="sm">
+              {playlist.description}
+            </Text>
           )}
         </div>
       </Group>
@@ -70,11 +74,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
           {tracks.length} tracks
         </Text>
 
-        <TracksTable 
-          isLoading={false}
-          onRefetch={refetch}
-          tracks={tracks}
-        />
+        <TracksTable isLoading={false} onRefetch={refetch} tracks={tracks} />
       </Paper>
     </Stack>
   );

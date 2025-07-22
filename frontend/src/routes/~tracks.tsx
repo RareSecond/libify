@@ -1,18 +1,29 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { z } from 'zod';
+import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 
-import { PageTitle } from '../components/PageTitle';
-import { TrackList } from '../components/TrackList';
+import { PageTitle } from "../components/PageTitle";
+import { TrackList } from "../components/TrackList";
 
 const tracksSearchSchema = z.object({
   page: z.number().min(1).optional().catch(1),
   pageSize: z.number().min(1).max(100).optional().catch(20),
   search: z.string().optional(),
-  sortBy: z.enum(['title', 'artist', 'album', 'addedAt', 'lastPlayedAt', 'totalPlayCount', 'rating']).optional().catch('addedAt'),
-  sortOrder: z.enum(['asc', 'desc']).optional().catch('desc'),
+  sortBy: z
+    .enum([
+      "title",
+      "artist",
+      "album",
+      "addedAt",
+      "lastPlayedAt",
+      "totalPlayCount",
+      "rating",
+    ])
+    .optional()
+    .catch("addedAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().catch("desc"),
 });
 
-export const Route = createFileRoute('/tracks')({
+export const Route = createFileRoute("/tracks")({
   component: TracksPage,
   validateSearch: (search) => tracksSearchSchema.parse(search),
 });

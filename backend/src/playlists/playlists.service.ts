@@ -3,8 +3,14 @@ import { Prisma } from '@prisma/client';
 
 import { DatabaseService } from '../database/database.service';
 import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
-import { PlaylistRuleField, PlaylistRuleOperator } from './dto/playlist-rule.dto';
-import { CreateSmartPlaylistDto, UpdateSmartPlaylistDto } from './dto/smart-playlist.dto';
+import {
+  PlaylistRuleField,
+  PlaylistRuleOperator,
+} from './dto/playlist-rule.dto';
+import {
+  CreateSmartPlaylistDto,
+  UpdateSmartPlaylistDto,
+} from './dto/smart-playlist.dto';
 
 @Injectable()
 export class PlaylistsService {
@@ -31,7 +37,10 @@ export class PlaylistsService {
     // Count tracks for each playlist
     const playlistsWithCounts = await Promise.all(
       playlists.map(async (playlist) => {
-        const trackCount = await this.getTrackCount(userId, playlist.criteria as unknown as PlaylistCriteriaDto);
+        const trackCount = await this.getTrackCount(
+          userId,
+          playlist.criteria as unknown as PlaylistCriteriaDto,
+        );
         return {
           ...playlist,
           criteria: playlist.criteria as unknown as PlaylistCriteriaDto,
@@ -52,7 +61,10 @@ export class PlaylistsService {
       throw new NotFoundException('Playlist not found');
     }
 
-    const trackCount = await this.getTrackCount(userId, playlist.criteria as unknown as PlaylistCriteriaDto);
+    const trackCount = await this.getTrackCount(
+      userId,
+      playlist.criteria as unknown as PlaylistCriteriaDto,
+    );
 
     return {
       ...playlist,
@@ -69,7 +81,9 @@ export class PlaylistsService {
     const orderBy = this.buildOrderBy(criteria);
 
     const skip = (page - 1) * pageSize;
-    const take = criteria.limit ? Math.min(pageSize, criteria.limit - skip) : pageSize;
+    const take = criteria.limit
+      ? Math.min(pageSize, criteria.limit - skip)
+      : pageSize;
 
     const [tracks, total] = await Promise.all([
       this.prisma.userTrack.findMany({
@@ -109,7 +123,9 @@ export class PlaylistsService {
       totalPlayCount: track.totalPlayCount,
     }));
 
-    const totalToReturn = criteria.limit ? Math.min(total, criteria.limit) : total;
+    const totalToReturn = criteria.limit
+      ? Math.min(total, criteria.limit)
+      : total;
 
     return {
       page,
@@ -127,12 +143,18 @@ export class PlaylistsService {
     });
   }
 
-  async update(userId: string, playlistId: string, updateDto: UpdateSmartPlaylistDto) {
+  async update(
+    userId: string,
+    playlistId: string,
+    updateDto: UpdateSmartPlaylistDto,
+  ) {
     const existing = await this.findOne(userId, playlistId);
 
     return this.prisma.smartPlaylist.update({
       data: {
-        criteria: updateDto.criteria ? (updateDto.criteria as unknown as Prisma.JsonObject) : (existing.criteria as unknown as Prisma.JsonObject),
+        criteria: updateDto.criteria
+          ? (updateDto.criteria as unknown as Prisma.JsonObject)
+          : (existing.criteria as unknown as Prisma.JsonObject),
         description: updateDto.description ?? existing.description,
         isActive: updateDto.isActive ?? existing.isActive,
         lastUpdated: new Date(),
@@ -148,7 +170,7 @@ export class PlaylistsService {
       date.setDate(date.getDate() - rule.daysValue);
       return { [field]: { gte: date } };
     }
-    
+
     if (rule.operator === PlaylistRuleOperator.NOT_IN_LAST && rule.daysValue) {
       const date = new Date();
       date.setDate(date.getDate() - rule.daysValue);
@@ -160,7 +182,7 @@ export class PlaylistsService {
 
   private buildNumberCondition(field: string, rule: any): any {
     const value = rule.numberValue ?? parseInt(rule.value);
-    
+
     switch (rule.operator) {
       case PlaylistRuleOperator.EQUALS:
         return { [field]: value };
@@ -208,33 +230,33 @@ export class PlaylistsService {
     switch (rule.field) {
       case PlaylistRuleField.ALBUM:
         return this.buildStringCondition('spotifyTrack.album', rule);
-      
+
       case PlaylistRuleField.ARTIST:
         return this.buildStringCondition('spotifyTrack.artist', rule);
-      
+
       case PlaylistRuleField.DATE_ADDED:
         return this.buildDateCondition('addedAt', rule);
-      
+
       case PlaylistRuleField.DURATION:
         return {
           spotifyTrack: this.buildNumberCondition('duration', rule),
         };
-      
+
       case PlaylistRuleField.LAST_PLAYED:
         return this.buildDateCondition('lastPlayedAt', rule);
-      
+
       case PlaylistRuleField.PLAY_COUNT:
         return this.buildNumberCondition('totalPlayCount', rule);
-      
+
       case PlaylistRuleField.RATING:
         return this.buildNumberCondition('rating', rule);
-      
+
       case PlaylistRuleField.TAG:
         return this.buildTagCondition(rule);
-      
+
       case PlaylistRuleField.TITLE:
         return this.buildStringCondition('spotifyTrack.title', rule);
-      
+
       default:
         return {};
     }
@@ -246,22 +268,33 @@ export class PlaylistsService {
 
     switch (rule.operator) {
       case PlaylistRuleOperator.CONTAINS:
-        condition[child || parent] = { contains: rule.value, mode: 'insensitive' };
+        condition[child || parent] = {
+          contains: rule.value,
+          mode: 'insensitive',
+        };
         break;
       case PlaylistRuleOperator.ENDS_WITH:
-        condition[child || parent] = { endsWith: rule.value, mode: 'insensitive' };
+        condition[child || parent] = {
+          endsWith: rule.value,
+          mode: 'insensitive',
+        };
         break;
       case PlaylistRuleOperator.EQUALS:
         condition[child || parent] = rule.value;
         break;
       case PlaylistRuleOperator.NOT_CONTAINS:
-        condition[child || parent] = { NOT: { contains: rule.value, mode: 'insensitive' } };
+        condition[child || parent] = {
+          NOT: { contains: rule.value, mode: 'insensitive' },
+        };
         break;
       case PlaylistRuleOperator.NOT_EQUALS:
         condition[child || parent] = { not: rule.value };
         break;
       case PlaylistRuleOperator.STARTS_WITH:
-        condition[child || parent] = { mode: 'insensitive', startsWith: rule.value };
+        condition[child || parent] = {
+          mode: 'insensitive',
+          startsWith: rule.value,
+        };
         break;
     }
 
@@ -280,7 +313,7 @@ export class PlaylistsService {
         },
       };
     }
-    
+
     if (rule.operator === PlaylistRuleOperator.NOT_HAS_TAG) {
       return {
         tags: {
@@ -296,14 +329,19 @@ export class PlaylistsService {
     return {};
   }
 
-  private buildWhereClause(userId: string, criteria: PlaylistCriteriaDto): Prisma.UserTrackWhereInput {
+  private buildWhereClause(
+    userId: string,
+    criteria: PlaylistCriteriaDto,
+  ): Prisma.UserTrackWhereInput {
     const baseWhere: Prisma.UserTrackWhereInput = { userId };
 
     if (!criteria.rules || criteria.rules.length === 0) {
       return baseWhere;
     }
 
-    const ruleConditions = criteria.rules.map((rule) => this.buildRuleCondition(rule));
+    const ruleConditions = criteria.rules.map((rule) =>
+      this.buildRuleCondition(rule),
+    );
 
     if (criteria.logic === 'or') {
       return {
@@ -318,7 +356,10 @@ export class PlaylistsService {
     }
   }
 
-  private async getTrackCount(userId: string, criteria: PlaylistCriteriaDto): Promise<number> {
+  private async getTrackCount(
+    userId: string,
+    criteria: PlaylistCriteriaDto,
+  ): Promise<number> {
     const where = this.buildWhereClause(userId, criteria);
     const count = await this.prisma.userTrack.count({ where });
     return criteria.limit ? Math.min(count, criteria.limit) : count;

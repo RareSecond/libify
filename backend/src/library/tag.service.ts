@@ -8,7 +8,11 @@ import { CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
 export class TagService {
   constructor(private databaseService: DatabaseService) {}
 
-  async addTagToTrack(userId: string, trackId: string, tagId: string): Promise<void> {
+  async addTagToTrack(
+    userId: string,
+    trackId: string,
+    tagId: string,
+  ): Promise<void> {
     // Verify the track belongs to the user
     const track = await this.databaseService.userTrack.findFirst({
       where: { id: trackId, userId },
@@ -47,7 +51,10 @@ export class TagService {
     }
   }
 
-  async createTag(userId: string, createTagDto: CreateTagDto): Promise<TagResponseDto> {
+  async createTag(
+    userId: string,
+    createTagDto: CreateTagDto,
+  ): Promise<TagResponseDto> {
     const tag = await this.databaseService.tag.create({
       data: {
         ...createTagDto,
@@ -55,7 +62,9 @@ export class TagService {
       },
     });
 
-    return plainToInstance(TagResponseDto, tag, { excludeExtraneousValues: true });
+    return plainToInstance(TagResponseDto, tag, {
+      excludeExtraneousValues: true,
+    });
   }
 
   async deleteTag(userId: string, tagId: string): Promise<void> {
@@ -84,12 +93,16 @@ export class TagService {
       where: { userId },
     });
 
-    return tags.map(tag => 
-      plainToInstance(TagResponseDto, tag, { excludeExtraneousValues: true })
+    return tags.map((tag) =>
+      plainToInstance(TagResponseDto, tag, { excludeExtraneousValues: true }),
     );
   }
 
-  async removeTagFromTrack(userId: string, trackId: string, tagId: string): Promise<void> {
+  async removeTagFromTrack(
+    userId: string,
+    trackId: string,
+    tagId: string,
+  ): Promise<void> {
     // Verify the track belongs to the user
     const track = await this.databaseService.userTrack.findFirst({
       where: { id: trackId, userId },
@@ -107,7 +120,11 @@ export class TagService {
     });
   }
 
-  async updateTag(userId: string, tagId: string, updateTagDto: UpdateTagDto): Promise<TagResponseDto> {
+  async updateTag(
+    userId: string,
+    tagId: string,
+    updateTagDto: UpdateTagDto,
+  ): Promise<TagResponseDto> {
     const tag = await this.databaseService.tag.findFirst({
       where: { id: tagId, userId },
     });
@@ -121,6 +138,8 @@ export class TagService {
       where: { id: tagId },
     });
 
-    return plainToInstance(TagResponseDto, updatedTag, { excludeExtraneousValues: true });
+    return plainToInstance(TagResponseDto, updatedTag, {
+      excludeExtraneousValues: true,
+    });
   }
 }

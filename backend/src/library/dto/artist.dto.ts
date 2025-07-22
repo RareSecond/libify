@@ -10,7 +10,10 @@ export class ArtistDto {
   @Expose()
   artistImage: null | string;
 
-  @ApiProperty({ description: 'Average rating across all rated tracks', nullable: true })
+  @ApiProperty({
+    description: 'Average rating across all rated tracks',
+    nullable: true,
+  })
   @Expose()
   avgRating: null | number;
 
@@ -18,7 +21,10 @@ export class ArtistDto {
   @Expose()
   firstAdded: Date;
 
-  @ApiProperty({ description: 'Date when any track was last played', nullable: true })
+  @ApiProperty({
+    description: 'Date when any track was last played',
+    nullable: true,
+  })
   @Expose()
   lastPlayed: Date | null;
 

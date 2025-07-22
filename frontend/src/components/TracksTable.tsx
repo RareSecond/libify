@@ -39,21 +39,27 @@ export function TracksTable({
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
   const playTrackMutation = useLibraryControllerPlayTrack();
-  const { playTrackList, currentTrack, isPlaying } = useSpotifyPlayer();
+  const { currentTrack, isPlaying, playTrackList } = useSpotifyPlayer();
 
-  const handlePlayTrack = async (trackId: string, trackTitle: string, spotifyId?: string) => {
+  const handlePlayTrack = async (
+    trackId: string,
+    trackTitle: string,
+    spotifyId?: string,
+  ) => {
     try {
       if (spotifyId && tracks.length > 0) {
         // Build list of all track URIs
         const trackUris = tracks
-          .filter(track => track.spotifyId)
-          .map(track => `spotify:track:${track.spotifyId}`);
-        
+          .filter((track) => track.spotifyId)
+          .map((track) => `spotify:track:${track.spotifyId}`);
+
         if (trackUris.length > 0) {
           // Find the index of the clicked track in the filtered list
           const clickedTrackUri = `spotify:track:${spotifyId}`;
-          const trackIndex = trackUris.findIndex(uri => uri === clickedTrackUri);
-          
+          const trackIndex = trackUris.findIndex(
+            (uri) => uri === clickedTrackUri,
+          );
+
           // Play the entire track list starting from the clicked track
           await playTrackList(trackUris, trackIndex >= 0 ? trackIndex : 0);
           notifications.show({
@@ -126,13 +132,13 @@ export function TracksTable({
                   {isCurrentTrack && isPlaying && (
                     <Center
                       style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
                         backgroundColor: "rgba(0, 0, 0, 0.6)",
+                        bottom: 0,
                         color: "white",
+                        left: 0,
+                        position: "absolute",
+                        right: 0,
+                        top: 0,
                       }}
                     >
                       <Volume2 size={20} />
@@ -140,7 +146,12 @@ export function TracksTable({
                   )}
                 </Box>
               ) : (
-                <Center bg="gray.2" h={36} style={{ borderRadius: "4px" }} w={36}>
+                <Center
+                  bg="gray.2"
+                  h={36}
+                  style={{ borderRadius: "4px" }}
+                  w={36}
+                >
                   {isCurrentTrack && isPlaying ? (
                     <Volume2 size={18} />
                   ) : (
@@ -161,11 +172,11 @@ export function TracksTable({
         cell: ({ getValue, row }) => {
           const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
           return (
-            <Text 
-              fw={500} 
-              lineClamp={1} 
-              size="sm"
+            <Text
               c={isCurrentTrack && isPlaying ? "blue" : undefined}
+              fw={500}
+              lineClamp={1}
+              size="sm"
             >
               {getValue() as string}
             </Text>
@@ -259,7 +270,7 @@ export function TracksTable({
         size: 150,
       },
     ],
-    [onRefetch, currentTrack, isPlaying]
+    [onRefetch, currentTrack, isPlaying],
   );
 
   const table = useReactTable({
@@ -346,7 +357,7 @@ export function TracksTable({
               >
                 {flexRender(
                   header.column.columnDef.header,
-                  header.getContext()
+                  header.getContext(),
                 )}
               </Table.Th>
             ))}
@@ -360,11 +371,18 @@ export function TracksTable({
                 className="hover:bg-gray-50"
                 key={row.id}
                 onClick={() =>
-                  handlePlayTrack(row.original.id, row.original.title, row.original.spotifyId)
+                  handlePlayTrack(
+                    row.original.id,
+                    row.original.title,
+                    row.original.spotifyId,
+                  )
                 }
-                style={{ 
+                style={{
+                  backgroundColor:
+                    isCurrentTrack && isPlaying
+                      ? "rgba(0, 123, 255, 0.05)"
+                      : undefined,
                   cursor: "pointer",
-                  backgroundColor: isCurrentTrack && isPlaying ? "rgba(0, 123, 255, 0.05)" : undefined,
                 }}
               >
                 {row.getVisibleCells().map((cell) => (

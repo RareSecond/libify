@@ -1,14 +1,18 @@
-import { Center, Loader, Text } from '@mantine/core';
+import { Center, Loader, Text } from "@mantine/core";
 
-import { useLibraryControllerGetArtistTracks } from '../data/api';
-import { TracksTable } from './TracksTable';
+import { useLibraryControllerGetArtistTracks } from "../data/api";
+import { TracksTable } from "./TracksTable";
 
 interface ArtistDetailProps {
   artist: string;
 }
 
 export function ArtistDetail({ artist }: ArtistDetailProps) {
-  const { data: tracks = [], error, isLoading } = useLibraryControllerGetArtistTracks(artist);
+  const {
+    data: tracks = [],
+    error,
+    isLoading,
+  } = useLibraryControllerGetArtistTracks(artist);
 
   if (isLoading) {
     return (

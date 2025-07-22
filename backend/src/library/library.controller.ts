@@ -27,7 +27,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginatedAlbumsDto } from './dto/album.dto';
 import { PaginatedArtistsDto } from './dto/artist.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
-import { AddTagToTrackDto, CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
+import {
+  AddTagToTrackDto,
+  CreateTagDto,
+  TagResponseDto,
+  UpdateTagDto,
+} from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
 import { LibrarySyncService } from './library-sync.service';
 import { SpotifyService } from './spotify.service';
@@ -67,7 +72,11 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Create a new tag' })
-  @ApiResponse({ description: 'Tag created', status: 201, type: TagResponseDto })
+  @ApiResponse({
+    description: 'Tag created',
+    status: 201,
+    type: TagResponseDto,
+  })
   @Post('tags')
   async createTag(
     @Req() req: AuthenticatedRequest,
@@ -88,14 +97,25 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Get all albums in user library' })
-  @ApiResponse({ description: 'Paginated list of albums', status: 200, type: PaginatedAlbumsDto })
+  @ApiResponse({
+    description: 'Paginated list of albums',
+    status: 200,
+    type: PaginatedAlbumsDto,
+  })
   @Get('albums')
   async getAlbums(
     @Req() req: AuthenticatedRequest,
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number,
     @Query('search') search?: string,
-    @Query('sortBy') sortBy?: 'artist' | 'avgRating' | 'lastPlayed' | 'name' | 'totalPlayCount' | 'trackCount',
+    @Query('sortBy')
+    sortBy?:
+      | 'artist'
+      | 'avgRating'
+      | 'lastPlayed'
+      | 'name'
+      | 'totalPlayCount'
+      | 'trackCount',
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ): Promise<PaginatedAlbumsDto> {
     return this.trackService.getUserAlbums(req.user.id, {
@@ -115,18 +135,33 @@ export class LibraryController {
     @Param('artist') artist: string,
     @Param('album') album: string,
   ) {
-    return this.trackService.getAlbumTracks(req.user.id, decodeURIComponent(artist), decodeURIComponent(album));
+    return this.trackService.getAlbumTracks(
+      req.user.id,
+      decodeURIComponent(artist),
+      decodeURIComponent(album),
+    );
   }
 
   @ApiOperation({ summary: 'Get all artists in user library' })
-  @ApiResponse({ description: 'Paginated list of artists', status: 200, type: PaginatedArtistsDto })
+  @ApiResponse({
+    description: 'Paginated list of artists',
+    status: 200,
+    type: PaginatedArtistsDto,
+  })
   @Get('artists')
   async getArtists(
     @Req() req: AuthenticatedRequest,
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number,
     @Query('search') search?: string,
-    @Query('sortBy') sortBy?: 'albumCount' | 'avgRating' | 'lastPlayed' | 'name' | 'totalPlayCount' | 'trackCount',
+    @Query('sortBy')
+    sortBy?:
+      | 'albumCount'
+      | 'avgRating'
+      | 'lastPlayed'
+      | 'name'
+      | 'totalPlayCount'
+      | 'trackCount',
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ): Promise<PaginatedArtistsDto> {
     return this.trackService.getUserArtists(req.user.id, {
@@ -145,7 +180,10 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Param('artist') artist: string,
   ) {
-    return this.trackService.getArtistTracks(req.user.id, decodeURIComponent(artist));
+    return this.trackService.getArtistTracks(
+      req.user.id,
+      decodeURIComponent(artist),
+    );
   }
 
   // Tag management endpoints
@@ -159,7 +197,11 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Get all user tags' })
-  @ApiResponse({ description: 'List of tags', status: 200, type: [TagResponseDto] })
+  @ApiResponse({
+    description: 'List of tags',
+    status: 200,
+    type: [TagResponseDto],
+  })
   @Get('tags')
   async getTags(@Req() req: AuthenticatedRequest): Promise<TagResponseDto[]> {
     return this.tagService.getUserTags(req.user.id);
@@ -179,13 +221,15 @@ export class LibraryController {
     return this.trackService.getUserTracks(req.user.id, query);
   }
 
-
   @ApiOperation({ summary: 'Play a track on Spotify' })
   @ApiResponse({ description: 'Track started playing', status: 200 })
   @ApiResponse({ description: 'Unauthorized', status: 401 })
   @ApiResponse({ description: 'Bad request', status: 400 })
   @Post('tracks/:trackId/play')
-  async playTrack(@Req() req: AuthenticatedRequest, @Param('trackId') trackId: string) {
+  async playTrack(
+    @Req() req: AuthenticatedRequest,
+    @Param('trackId') trackId: string,
+  ) {
     try {
       // Get the track to get the Spotify ID
       const track = await this.trackService.getTrackById(req.user.id, trackId);
@@ -194,7 +238,9 @@ export class LibraryController {
       }
 
       // Get Spotify access token
-      const accessToken = await this.authService.getSpotifyAccessToken(req.user.id);
+      const accessToken = await this.authService.getSpotifyAccessToken(
+        req.user.id,
+      );
       if (!accessToken) {
         throw new HttpException(
           'Spotify access token not found. Please re-authenticate.',
@@ -308,7 +354,11 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Update a tag' })
-  @ApiResponse({ description: 'Tag updated', status: 200, type: TagResponseDto })
+  @ApiResponse({
+    description: 'Tag updated',
+    status: 200,
+    type: TagResponseDto,
+  })
   @ApiResponse({ description: 'Tag not found', status: 404 })
   @Put('tags/:tagId')
   async updateTag(
@@ -336,4 +386,3 @@ export class LibraryController {
     return { message: 'Rating updated', rating };
   }
 }
-

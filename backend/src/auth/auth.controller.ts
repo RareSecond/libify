@@ -17,6 +17,15 @@ interface AuthenticatedRequest extends Request {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Get('token')
+  @UseGuards(AuthGuard('jwt'))
+  async getAccessToken(@Req() req: AuthenticatedRequest) {
+    const accessToken = await this.authService.getSpotifyAccessToken(
+      req.user.id,
+    );
+    return { accessToken };
+  }
+
   @ApiResponse({ description: 'User profile', status: 200, type: UserDto })
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
@@ -35,13 +44,6 @@ export class AuthController {
       secure: false,
     });
     res.json({ message: 'Logged out successfully' });
-  }
-
-  @Get('token')
-  @UseGuards(AuthGuard('jwt'))
-  async getAccessToken(@Req() req: AuthenticatedRequest) {
-    const accessToken = await this.authService.getSpotifyAccessToken(req.user.id);
-    return { accessToken };
   }
 
   @Get('spotify')

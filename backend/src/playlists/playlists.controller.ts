@@ -1,10 +1,32 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { Request } from 'express';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateSmartPlaylistDto, SmartPlaylistDto, SmartPlaylistWithTracksDto, UpdateSmartPlaylistDto } from './dto/smart-playlist.dto';
+import {
+  CreateSmartPlaylistDto,
+  SmartPlaylistDto,
+  SmartPlaylistWithTracksDto,
+  UpdateSmartPlaylistDto,
+} from './dto/smart-playlist.dto';
 import { PlaylistsService } from './playlists.service';
 
 interface AuthenticatedRequest extends Request {
@@ -35,7 +57,9 @@ export class PlaylistsController {
   @ApiOperation({ summary: 'Get all smart playlists' })
   @ApiResponse({ status: 200, type: [SmartPlaylistWithTracksDto] })
   @Get()
-  async findAll(@Req() req: AuthenticatedRequest): Promise<SmartPlaylistWithTracksDto[]> {
+  async findAll(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<SmartPlaylistWithTracksDto[]> {
     return this.playlistsService.findAll(req.user.id);
   }
 
@@ -85,7 +109,11 @@ export class PlaylistsController {
     @Param('id') id: string,
     @Body() updateDto: UpdateSmartPlaylistDto,
   ): Promise<SmartPlaylistDto> {
-    const playlist = await this.playlistsService.update(req.user.id, id, updateDto);
+    const playlist = await this.playlistsService.update(
+      req.user.id,
+      id,
+      updateDto,
+    );
     return {
       ...playlist,
       criteria: playlist.criteria as any,

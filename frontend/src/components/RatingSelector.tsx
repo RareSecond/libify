@@ -1,10 +1,8 @@
-import { ActionIcon, Group } from '@mantine/core';
-import { Star } from 'lucide-react';
-import { useState } from 'react';
+import { ActionIcon, Group } from "@mantine/core";
+import { Star } from "lucide-react";
+import { useState } from "react";
 
-import { 
-  useLibraryControllerUpdateTrackRating,
-} from '../data/api';
+import { useLibraryControllerUpdateTrackRating } from "../data/api";
 
 interface RatingSelectorProps {
   onRatingChange?: () => void;
@@ -12,7 +10,11 @@ interface RatingSelectorProps {
   trackId: string;
 }
 
-export function RatingSelector({ onRatingChange, rating, trackId }: RatingSelectorProps) {
+export function RatingSelector({
+  onRatingChange,
+  rating,
+  trackId,
+}: RatingSelectorProps) {
   const [hoveredStar, setHoveredStar] = useState<null | number>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -36,7 +38,6 @@ export function RatingSelector({ onRatingChange, rating, trackId }: RatingSelect
     }
   };
 
-
   return (
     <Group gap={0} onMouseLeave={() => setHoveredStar(null)} wrap="nowrap">
       {[1, 2, 3, 4, 5].map((value) => (
@@ -50,8 +51,10 @@ export function RatingSelector({ onRatingChange, rating, trackId }: RatingSelect
           variant="transparent"
         >
           <Star
-            color={value <= (hoveredStar ?? rating ?? 0) ? 'gold' : 'gray'}
-            fill={value <= (hoveredStar ?? rating ?? 0) ? 'gold' : 'transparent'}
+            color={value <= (hoveredStar ?? rating ?? 0) ? "gold" : "gray"}
+            fill={
+              value <= (hoveredStar ?? rating ?? 0) ? "gold" : "transparent"
+            }
             size={12}
           />
         </ActionIcon>

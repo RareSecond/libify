@@ -15,13 +15,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { Search, Tag } from "lucide-react";
 import { useState } from "react";
 
-import {
-  useLibraryControllerGetTracks,
-} from "../data/api";
+import { useLibraryControllerGetTracks } from "../data/api";
 import { Route } from "../routes/~tracks";
 import { TagManager } from "./TagManager";
 import { TracksTable } from "./TracksTable";
-
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -51,7 +48,6 @@ export function TrackList() {
     sortOrder,
   });
 
-
   const updateSearch = (
     newSearch: Partial<{
       page?: number;
@@ -66,7 +62,7 @@ export function TrackList() {
         | "title"
         | "totalPlayCount";
       sortOrder?: "asc" | "desc";
-    }>
+    }>,
   ) => {
     navigate({
       search: (prev) => ({
@@ -79,7 +75,6 @@ export function TrackList() {
       }),
     });
   };
-
 
   if (error) {
     return (
@@ -163,7 +158,7 @@ export function TrackList() {
           {data?.total || 0} tracks in library
         </Text>
 
-        <TracksTable 
+        <TracksTable
           isLoading={isLoading}
           onRefetch={refetch}
           tracks={data?.tracks || []}

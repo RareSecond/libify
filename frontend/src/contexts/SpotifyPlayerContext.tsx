@@ -1,10 +1,22 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-import { useAuthControllerGetProfile } from '../data/api';
-import { SpotifyPlayer, SpotifyPlayerState, SpotifyTrack } from '../types/spotify';
+import { useAuthControllerGetProfile } from "../data/api";
+import {
+  SpotifyPlayer,
+  SpotifyPlayerState,
+  SpotifyTrack,
+} from "../types/spotify";
 
 interface SpotifyPlayerContextType {
   currentTrack: null | SpotifyTrack;
+  currentTrackIndex: number;
+  currentTrackList: string[];
   deviceId: null | string;
   duration: number;
   isPlaying: boolean;
@@ -12,25 +24,27 @@ interface SpotifyPlayerContextType {
   nextTrack: () => Promise<void>;
   pause: () => Promise<void>;
   play: (uri?: string) => Promise<void>;
-  playTrackList: (trackUris: string[], startIndex?: number) => Promise<void>;
   player: null | SpotifyPlayer;
+  playTrackList: (trackUris: string[], startIndex?: number) => Promise<void>;
   position: number;
   previousTrack: () => Promise<void>;
   resume: () => Promise<void>;
   seek: (position: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   volume: number;
-  currentTrackList: string[];
-  currentTrackIndex: number;
 }
 
-const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(null);
+const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(
+  null,
+);
 
 interface SpotifyPlayerProviderProps {
   children: ReactNode;
 }
 
-export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) {
+export function SpotifyPlayerProvider({
+  children,
+}: SpotifyPlayerProviderProps) {
   const [player, setPlayer] = useState<null | SpotifyPlayer>(null);
   const [deviceId, setDeviceId] = useState<null | string>(null);
   const [currentTrack, setCurrentTrack] = useState<null | SpotifyTrack>(null);
@@ -50,48 +64,53 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     const initializePlayer = () => {
       const spotifyPlayer = new window.Spotify.Player({
         getOAuthToken: (cb) => {
-          fetch(`${import.meta.env.VITE_API_URL}/auth/token`, { credentials: 'include' })
-            .then(response => response.json())
-            .then(data => cb(data.accessToken))
-            .catch(() => cb(''));
+          fetch(`${import.meta.env.VITE_API_URL}/auth/token`, {
+            credentials: "include",
+          })
+            .then((response) => response.json())
+            .then((data) => cb(data.accessToken))
+            .catch(() => cb(""));
         },
-        name: 'Spotlib Web Player',
+        name: "Spotlib Web Player",
         volume,
       });
 
       // Error handling
-      spotifyPlayer.addListener('initialization_error', ({ message }) => {
-        console.error('Failed to initialize:', message);
+      spotifyPlayer.addListener("initialization_error", ({ message }) => {
+        console.error("Failed to initialize:", message);
       });
 
-      spotifyPlayer.addListener('authentication_error', ({ message }) => {
-        console.error('Failed to authenticate:', message);
+      spotifyPlayer.addListener("authentication_error", ({ message }) => {
+        console.error("Failed to authenticate:", message);
       });
 
-      spotifyPlayer.addListener('account_error', ({ message }) => {
-        console.error('Failed to validate Spotify account:', message);
+      spotifyPlayer.addListener("account_error", ({ message }) => {
+        console.error("Failed to validate Spotify account:", message);
       });
 
       // Playback status updates
-      spotifyPlayer.addListener('player_state_changed', (state: null | SpotifyPlayerState) => {
-        if (!state) return;
+      spotifyPlayer.addListener(
+        "player_state_changed",
+        (state: null | SpotifyPlayerState) => {
+          if (!state) return;
 
-        setCurrentTrack(state.track_window.current_track);
-        setIsPlaying(!state.paused);
-        setPosition(state.position);
-        setDuration(state.track_window.current_track.duration_ms);
-      });
+          setCurrentTrack(state.track_window.current_track);
+          setIsPlaying(!state.paused);
+          setPosition(state.position);
+          setDuration(state.track_window.current_track.duration_ms);
+        },
+      );
 
       // Ready
-      spotifyPlayer.addListener('ready', ({ device_id }) => {
-        console.log('Ready with Device ID', device_id);
+      spotifyPlayer.addListener("ready", ({ device_id }) => {
+        console.log("Ready with Device ID", device_id);
         setDeviceId(device_id);
         setIsReady(true);
       });
 
       // Not Ready
-      spotifyPlayer.addListener('not_ready', ({ device_id }) => {
-        console.log('Device ID has gone offline', device_id);
+      spotifyPlayer.addListener("not_ready", ({ device_id }) => {
+        console.log("Device ID has gone offline", device_id);
         setIsReady(false);
       });
 
@@ -148,17 +167,20 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
 
     if (uri) {
       // Play specific track and reset track list to just this track
-      const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        body: JSON.stringify({ uris: [uri] }),
-        headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        {
+          body: JSON.stringify({ uris: [uri] }),
+          headers: {
+            Authorization: `Bearer ${await getAccessToken()}`,
+            "Content-Type": "application/json",
+          },
+          method: "PUT",
         },
-        method: 'PUT',
-      });
-      
+      );
+
       if (!response.ok) {
-        console.error('Failed to play track:', response.statusText);
+        console.error("Failed to play track:", response.statusText);
       } else {
         // Update track list to just contain this track
         setCurrentTrackList([uri]);
@@ -170,23 +192,26 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     }
   };
 
-  const playTrackList = async (trackUris: string[], startIndex: number = 0) => {
+  const playTrackList = async (trackUris: string[], startIndex = 0) => {
     if (!player || !deviceId || trackUris.length === 0) return;
 
-    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-      body: JSON.stringify({ 
-        uris: trackUris,
-        offset: { position: startIndex }
-      }),
-      headers: {
-        Authorization: `Bearer ${await getAccessToken()}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+      {
+        body: JSON.stringify({
+          offset: { position: startIndex },
+          uris: trackUris,
+        }),
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+          "Content-Type": "application/json",
+        },
+        method: "PUT",
       },
-      method: 'PUT',
-    });
-    
+    );
+
     if (!response.ok) {
-      console.error('Failed to play track list:', response.statusText);
+      console.error("Failed to play track list:", response.statusText);
     } else {
       setCurrentTrackList(trackUris);
       setCurrentTrackIndex(startIndex);
@@ -209,21 +234,24 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     if (!player || currentTrackList.length === 0) return;
 
     const nextIndex = currentTrackIndex + 1;
-    
+
     if (nextIndex < currentTrackList.length) {
       // Play next track in our list
       const nextUri = currentTrackList[nextIndex];
-      const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        body: JSON.stringify({ uris: [nextUri] }),
-        headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        {
+          body: JSON.stringify({ uris: [nextUri] }),
+          headers: {
+            Authorization: `Bearer ${await getAccessToken()}`,
+            "Content-Type": "application/json",
+          },
+          method: "PUT",
         },
-        method: 'PUT',
-      });
-      
+      );
+
       if (!response.ok) {
-        console.error('Failed to play next track:', response.statusText);
+        console.error("Failed to play next track:", response.statusText);
       } else {
         setCurrentTrackIndex(nextIndex);
       }
@@ -237,21 +265,24 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     if (!player || currentTrackList.length === 0) return;
 
     const prevIndex = currentTrackIndex - 1;
-    
+
     if (prevIndex >= 0) {
       // Play previous track in our list
       const prevUri = currentTrackList[prevIndex];
-      const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        body: JSON.stringify({ uris: [prevUri] }),
-        headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        {
+          body: JSON.stringify({ uris: [prevUri] }),
+          headers: {
+            Authorization: `Bearer ${await getAccessToken()}`,
+            "Content-Type": "application/json",
+          },
+          method: "PUT",
         },
-        method: 'PUT',
-      });
-      
+      );
+
       if (!response.ok) {
-        console.error('Failed to play previous track:', response.statusText);
+        console.error("Failed to play previous track:", response.statusText);
       } else {
         setCurrentTrackIndex(prevIndex);
       }
@@ -276,13 +307,17 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
   };
 
   const getAccessToken = async (): Promise<string> => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/token`, { credentials: 'include' });
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/token`, {
+      credentials: "include",
+    });
     const data = await response.json();
     return data.accessToken;
   };
 
   const contextValue: SpotifyPlayerContextType = {
     currentTrack,
+    currentTrackIndex,
+    currentTrackList,
     deviceId,
     duration,
     isPlaying,
@@ -290,16 +325,14 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
     nextTrack,
     pause,
     play,
-    playTrackList,
     player,
+    playTrackList,
     position,
     previousTrack,
     resume,
     seek,
     setVolume,
     volume,
-    currentTrackList,
-    currentTrackIndex,
   };
 
   return (
@@ -312,7 +345,9 @@ export function SpotifyPlayerProvider({ children }: SpotifyPlayerProviderProps) 
 export function useSpotifyPlayer() {
   const context = useContext(SpotifyPlayerContext);
   if (!context) {
-    throw new Error('useSpotifyPlayer must be used within a SpotifyPlayerProvider');
+    throw new Error(
+      "useSpotifyPlayer must be used within a SpotifyPlayerProvider",
+    );
   }
   return context;
 }

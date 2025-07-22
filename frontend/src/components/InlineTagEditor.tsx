@@ -23,7 +23,7 @@ export function InlineTagEditor({
 }: InlineTagEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>(
-    trackTags.map((t) => t.name)
+    trackTags.map((t) => t.name),
   );
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -41,7 +41,7 @@ export function InlineTagEditor({
   const handleRemoveTag = async (
     e: React.MouseEvent,
     tagId: string,
-    tagName: string
+    tagName: string,
   ) => {
     e.stopPropagation();
     setIsUpdating(true);

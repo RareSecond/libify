@@ -9,12 +9,12 @@ import {
   Stack,
   Text,
   Title,
-} from '@mantine/core';
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Clock, Music, Play, Star } from 'lucide-react';
+} from "@mantine/core";
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Clock, Music, Play, Star } from "lucide-react";
 
-import { TrackDto, useLibraryControllerGetTracks } from '../data/api';
-import { TracksTable } from './TracksTable';
+import { TrackDto, useLibraryControllerGetTracks } from "../data/api";
+import { TracksTable } from "./TracksTable";
 
 interface AlbumDetailProps {
   album: string;
@@ -25,7 +25,7 @@ const formatDuration = (ms: number) => {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m ${seconds}s`;
   }
@@ -34,7 +34,7 @@ const formatDuration = (ms: number) => {
 
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
-  
+
   // For now, use the regular tracks API with search filter
   // This will be replaced when the album-specific endpoint is generated
   const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
@@ -61,18 +61,28 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
 
   // Filter tracks to only show ones from this specific album and artist
   const tracks = (data?.tracks || []).filter(
-    (track: TrackDto) => track.album === album && track.artist === artist
+    (track: TrackDto) => track.album === album && track.artist === artist,
   );
   const albumArt = tracks[0]?.albumArt;
-  const totalDuration = tracks.reduce((sum: number, track: TrackDto) => sum + track.duration, 0);
-  const totalPlayCount = tracks.reduce((sum: number, track: TrackDto) => sum + track.totalPlayCount, 0);
-  const avgRating = tracks.filter((t: TrackDto) => t.rating).reduce((sum: number, track: TrackDto) => sum + (track.rating || 0), 0) / tracks.filter((t: TrackDto) => t.rating).length || null;
+  const totalDuration = tracks.reduce(
+    (sum: number, track: TrackDto) => sum + track.duration,
+    0,
+  );
+  const totalPlayCount = tracks.reduce(
+    (sum: number, track: TrackDto) => sum + track.totalPlayCount,
+    0,
+  );
+  const avgRating =
+    tracks
+      .filter((t: TrackDto) => t.rating)
+      .reduce((sum: number, track: TrackDto) => sum + (track.rating || 0), 0) /
+      tracks.filter((t: TrackDto) => t.rating).length || null;
 
   return (
     <Stack gap="md">
       <Button
         leftSection={<ArrowLeft size={16} />}
-        onClick={() => navigate({ to: '/albums' })}
+        onClick={() => navigate({ to: "/albums" })}
         size="xs"
         variant="subtle"
       >
@@ -89,7 +99,7 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
                 h={200}
                 radius="md"
                 src={albumArt}
-                style={{ objectFit: 'cover' }}
+                style={{ objectFit: "cover" }}
                 w={200}
               />
             ) : (
@@ -102,12 +112,16 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
           <Stack gap="sm" style={{ flex: 1 }}>
             <div>
               <Title order={2}>{album}</Title>
-              <Text c="dimmed" size="lg">{artist}</Text>
+              <Text c="dimmed" size="lg">
+                {artist}
+              </Text>
             </div>
 
             <Group gap="xl">
               <Group gap="xs">
-                <Text c="dimmed" size="sm">Tracks:</Text>
+                <Text c="dimmed" size="sm">
+                  Tracks:
+                </Text>
                 <Text fw={500}>{tracks.length}</Text>
               </Group>
 
@@ -136,12 +150,8 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
         <Text c="dimmed" mb="xs" size="sm">
           Album Tracks
         </Text>
-        
-        <TracksTable 
-          isLoading={false}
-          onRefetch={refetch}
-          tracks={tracks}
-        />
+
+        <TracksTable isLoading={false} onRefetch={refetch} tracks={tracks} />
       </Paper>
     </Stack>
   );

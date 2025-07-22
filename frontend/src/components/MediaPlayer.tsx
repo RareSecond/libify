@@ -7,7 +7,7 @@ import {
   Slider,
   Stack,
   Text,
-} from '@mantine/core';
+} from "@mantine/core";
 import {
   Pause,
   Play,
@@ -15,15 +15,15 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-} from 'lucide-react';
-import { useState } from 'react';
+} from "lucide-react";
+import { useState } from "react";
 
-import { useSpotifyPlayer } from '../contexts/SpotifyPlayerContext';
+import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 
 const formatTime = (ms: number): string => {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
 export function MediaPlayer() {
@@ -79,10 +79,10 @@ export function MediaPlayer() {
       shadow="lg"
       style={{
         borderRadius: 0,
-        borderTop: '1px solid #e9ecef',
+        borderTop: "1px solid #e9ecef",
         bottom: 0,
         left: 0,
-        position: 'fixed',
+        position: "fixed",
         right: 0,
         zIndex: 1000,
       }}
@@ -102,7 +102,7 @@ export function MediaPlayer() {
               {currentTrack.name}
             </Text>
             <Text c="dimmed" lineClamp={1} size="sm">
-              {currentTrack.artists.map(artist => artist.name).join(', ')}
+              {currentTrack.artists.map((artist) => artist.name).join(", ")}
             </Text>
           </Box>
         </Group>
@@ -139,11 +139,16 @@ export function MediaPlayer() {
           </Group>
 
           {/* Progress Bar */}
-          <Group gap="sm" style={{ width: '100%' }}>
-            <Text c="dimmed" size="xs" style={{ minWidth: 40, textAlign: 'right' }}>
+          <Group gap="sm" style={{ width: "100%" }}>
+            <Text
+              c="dimmed"
+              size="xs"
+              style={{ minWidth: 40, textAlign: "right" }}
+            >
               {formatTime(currentPosition)}
             </Text>
             <Slider
+              label={null}
               max={100}
               min={0}
               onChange={(value) => handleSeek(value)}
@@ -153,7 +158,6 @@ export function MediaPlayer() {
               style={{ flex: 1 }}
               thumbSize={12}
               value={progressPercent}
-              label={null}
             />
             <Text c="dimmed" size="xs" style={{ minWidth: 40 }}>
               {formatTime(duration)}
@@ -171,10 +175,11 @@ export function MediaPlayer() {
             >
               {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </ActionIcon>
-            
+
             {isVolumeSliderVisible && (
               <Box style={{ width: 100 }}>
                 <Slider
+                  label={null}
                   max={100}
                   min={0}
                   onChange={(value) => setVolume(value / 100)}
@@ -182,7 +187,6 @@ export function MediaPlayer() {
                   step={1}
                   thumbSize={10}
                   value={volume * 100}
-                  label={null}
                 />
               </Box>
             )}

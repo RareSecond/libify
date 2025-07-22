@@ -33,16 +33,22 @@ export class SpotifyService {
     });
   }
 
-  async getAllUserLibraryTracks(accessToken: string): Promise<Array<{ added_at: string; track: SpotifyTrackData; }>> {
-    const allTracks: Array<{ added_at: string; track: SpotifyTrackData; }> = [];
+  async getAllUserLibraryTracks(
+    accessToken: string,
+  ): Promise<Array<{ added_at: string; track: SpotifyTrackData }>> {
+    const allTracks: Array<{ added_at: string; track: SpotifyTrackData }> = [];
     let offset = 0;
     const limit = 50;
     let hasMore = true;
 
     while (hasMore) {
-      const response = await this.getUserLibraryTracks(accessToken, limit, offset);
+      const response = await this.getUserLibraryTracks(
+        accessToken,
+        limit,
+        offset,
+      );
       allTracks.push(...response.items);
-      
+
       if (response.next === null) {
         hasMore = false;
       } else {
@@ -57,15 +63,17 @@ export class SpotifyService {
     return allTracks;
   }
 
-  async getAvailableDevices(accessToken: string): Promise<Array<{
-    id: string;
-    is_active: boolean;
-    is_private_session: boolean;
-    is_restricted: boolean;
-    name: string;
-    type: string;
-    volume_percent: number;
-  }>> {
+  async getAvailableDevices(accessToken: string): Promise<
+    Array<{
+      id: string;
+      is_active: boolean;
+      is_private_session: boolean;
+      is_restricted: boolean;
+      name: string;
+      type: string;
+      volume_percent: number;
+    }>
+  > {
     try {
       const response = await this.spotifyApi.get('/me/player/devices', {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -77,11 +85,16 @@ export class SpotifyService {
     }
   }
 
-  async getCurrentlyPlaying(accessToken: string): Promise<null | { progress_ms: number; track: SpotifyTrackData; }> {
+  async getCurrentlyPlaying(
+    accessToken: string,
+  ): Promise<null | { progress_ms: number; track: SpotifyTrackData }> {
     try {
-      const response = await this.spotifyApi.get('/me/player/currently-playing', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await this.spotifyApi.get(
+        '/me/player/currently-playing',
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
 
       if (response.data && response.data.item && response.data.is_playing) {
         return {
@@ -97,7 +110,10 @@ export class SpotifyService {
     }
   }
 
-  async getRecentlyPlayed(accessToken: string, limit = 50): Promise<Array<{ played_at: string; track: SpotifyTrackData; }>> {
+  async getRecentlyPlayed(
+    accessToken: string,
+    limit = 50,
+  ): Promise<Array<{ played_at: string; track: SpotifyTrackData }>> {
     try {
       const response = await this.spotifyApi.get('/me/player/recently-played', {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -110,7 +126,10 @@ export class SpotifyService {
     }
   }
 
-  async getTracksByIds(accessToken: string, trackIds: string[]): Promise<SpotifyTrackData[]> {
+  async getTracksByIds(
+    accessToken: string,
+    trackIds: string[],
+  ): Promise<SpotifyTrackData[]> {
     if (trackIds.length === 0) return [];
 
     // Spotify API allows max 50 tracks per request
@@ -129,37 +148,23 @@ export class SpotifyService {
         });
         allTracks.push(...response.data.tracks);
       } catch (error) {
-        this.logger.error(`Failed to fetch tracks for IDs: ${chunk.join(',')}`, error);
+        this.logger.error(
+          `Failed to fetch tracks for IDs: ${chunk.join(',')}`,
+          error,
+        );
       }
     }
 
     return allTracks;
   }
 
-  async searchArtist(accessToken: string, artistName: string): Promise<{ id: string; images: Array<{ url: string }>; name: string; } | null> {
-    try {
-      const response = await this.spotifyApi.get('/search', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        params: {
-          limit: 1,
-          q: artistName,
-          type: 'artist',
-        },
-      });
-      
-      const artists = response.data.artists?.items;
-      return artists && artists.length > 0 ? artists[0] : null;
-    } catch (error) {
-      this.logger.error(`Failed to search for artist: ${artistName}`, error);
-      return null;
-    }
-  }
-
   async getUserLibraryTracks(
     accessToken: string,
     limit = 50,
     offset = 0,
-  ): Promise<SpotifyPaginatedResponse<{ added_at: string; track: SpotifyTrackData; }>> {
+  ): Promise<
+    SpotifyPaginatedResponse<{ added_at: string; track: SpotifyTrackData }>
+  > {
     try {
       const response = await this.spotifyApi.get('/me/tracks', {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -172,32 +177,70 @@ export class SpotifyService {
     }
   }
 
-  async playTrack(accessToken: string, trackUri: string, deviceId?: string): Promise<void> {
+  async playTrack(
+    accessToken: string,
+    trackUri: string,
+    deviceId?: string,
+  ): Promise<void> {
     try {
       // If no device ID provided, get the first available device
       let targetDeviceId = deviceId;
       if (!targetDeviceId) {
         const devices = await this.getAvailableDevices(accessToken);
         if (devices.length === 0) {
-          throw new Error('No Spotify devices available. Please open Spotify on one of your devices.');
+          throw new Error(
+            'No Spotify devices available. Please open Spotify on one of your devices.',
+          );
         }
         // Prefer active device, otherwise use the first available
-        const activeDevice = devices.find(d => d.is_active);
+        const activeDevice = devices.find((d) => d.is_active);
         targetDeviceId = activeDevice?.id || devices[0].id;
       }
 
-      await this.spotifyApi.put('/me/player/play', {
-        device_id: targetDeviceId,
-        uris: [trackUri],
-      }, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        params: { device_id: targetDeviceId },
-      });
+      await this.spotifyApi.put(
+        '/me/player/play',
+        {
+          device_id: targetDeviceId,
+          uris: [trackUri],
+        },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: { device_id: targetDeviceId },
+        },
+      );
 
-      this.logger.log(`Started playing track ${trackUri} on device ${targetDeviceId}`);
+      this.logger.log(
+        `Started playing track ${trackUri} on device ${targetDeviceId}`,
+      );
     } catch (error) {
       this.logger.error('Failed to play track', error);
       throw error;
+    }
+  }
+
+  async searchArtist(
+    accessToken: string,
+    artistName: string,
+  ): Promise<null | {
+    id: string;
+    images: Array<{ url: string }>;
+    name: string;
+  }> {
+    try {
+      const response = await this.spotifyApi.get('/search', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: {
+          limit: 1,
+          q: artistName,
+          type: 'artist',
+        },
+      });
+
+      const artists = response.data.artists?.items;
+      return artists && artists.length > 0 ? artists[0] : null;
+    } catch (error) {
+      this.logger.error(`Failed to search for artist: ${artistName}`, error);
+      return null;
     }
   }
 }

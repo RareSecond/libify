@@ -10,7 +10,10 @@ export class AlbumDto {
   @Expose()
   artist: string;
 
-  @ApiProperty({ description: 'Average rating of rated tracks', nullable: true })
+  @ApiProperty({
+    description: 'Average rating of rated tracks',
+    nullable: true,
+  })
   @Expose()
   avgRating: null | number;
 
@@ -18,7 +21,10 @@ export class AlbumDto {
   @Expose()
   firstAdded: Date;
 
-  @ApiProperty({ description: 'Date when any track from album was last played', nullable: true })
+  @ApiProperty({
+    description: 'Date when any track from album was last played',
+    nullable: true,
+  })
   @Expose()
   lastPlayed: Date | null;
 

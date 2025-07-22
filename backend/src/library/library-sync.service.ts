@@ -42,7 +42,8 @@ export class LibrarySyncService {
 
   async syncRecentlyPlayed(userId: string, accessToken: string): Promise<void> {
     try {
-      const recentTracks = await this.spotifyService.getRecentlyPlayed(accessToken);
+      const recentTracks =
+        await this.spotifyService.getRecentlyPlayed(accessToken);
 
       for (const { played_at, track } of recentTracks) {
         // Find the user track
@@ -78,12 +79,18 @@ export class LibrarySyncService {
 
       this.logger.log(`Synced recently played tracks for user ${userId}`);
     } catch (error) {
-      this.logger.error(`Failed to sync recently played tracks for user ${userId}`, error);
+      this.logger.error(
+        `Failed to sync recently played tracks for user ${userId}`,
+        error,
+      );
       throw error;
     }
   }
 
-  async syncUserLibrary(userId: string, accessToken: string): Promise<SyncResult> {
+  async syncUserLibrary(
+    userId: string,
+    accessToken: string,
+  ): Promise<SyncResult> {
     const result: SyncResult = {
       errors: [],
       newTracks: 0,
@@ -95,7 +102,8 @@ export class LibrarySyncService {
       this.logger.log(`Starting library sync for user ${userId}`);
 
       // Fetch all tracks from Spotify
-      const spotifyTracks = await this.spotifyService.getAllUserLibraryTracks(accessToken);
+      const spotifyTracks =
+        await this.spotifyService.getAllUserLibraryTracks(accessToken);
       result.totalTracks = spotifyTracks.length;
 
       // Process tracks in batches to avoid overwhelming the database
@@ -105,18 +113,20 @@ export class LibrarySyncService {
         await this.processBatch(userId, batch, result);
       }
 
-      this.logger.log(`Library sync completed for user ${userId}. Result: ${JSON.stringify(result)}`);
+      this.logger.log(
+        `Library sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
+      );
       return result;
     } catch (error) {
       this.logger.error(`Failed to sync library for user ${userId}`, error);
-      result.errors.push(`Library sync failed: ${  error.message}`);
+      result.errors.push(`Library sync failed: ${error.message}`);
       return result;
     }
   }
 
   private async processBatch(
     userId: string,
-    tracks: Array<{ added_at: string; track: SpotifyTrackData; }>,
+    tracks: Array<{ added_at: string; track: SpotifyTrackData }>,
     result: SyncResult,
   ): Promise<void> {
     for (const { added_at, track } of tracks) {
@@ -143,14 +153,15 @@ export class LibrarySyncService {
         });
 
         // Then, create or update the UserTrack
-        const existingUserTrack = await this.databaseService.userTrack.findUnique({
-          where: {
-            userId_spotifyTrackId: {
-              spotifyTrackId: spotifyTrack.id,
-              userId,
+        const existingUserTrack =
+          await this.databaseService.userTrack.findUnique({
+            where: {
+              userId_spotifyTrackId: {
+                spotifyTrackId: spotifyTrack.id,
+                userId,
+              },
             },
-          },
-        });
+          });
 
         if (!existingUserTrack) {
           await this.databaseService.userTrack.create({

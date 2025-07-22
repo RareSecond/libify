@@ -1,9 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { IsArray, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class GetTracksQueryDto {
-  @ApiPropertyOptional({ description: 'Filter by minimum rating', maximum: 5, minimum: 1 })
+  @ApiPropertyOptional({
+    description: 'Filter by minimum rating',
+    maximum: 5,
+    minimum: 1,
+  })
   @IsInt()
   @IsOptional()
   @Max(5)
@@ -18,7 +30,12 @@ export class GetTracksQueryDto {
   @Type(() => Number)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 20, description: 'Page size', maximum: 100, minimum: 1 })
+  @ApiPropertyOptional({
+    default: 20,
+    description: 'Page size',
+    maximum: 100,
+    minimum: 1,
+  })
   @IsInt()
   @IsOptional()
   @Max(100)
@@ -26,17 +43,41 @@ export class GetTracksQueryDto {
   @Type(() => Number)
   pageSize?: number = 20;
 
-  @ApiPropertyOptional({ description: 'Search query for title, artist or album' })
+  @ApiPropertyOptional({
+    description: 'Search query for title, artist or album',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Sort field', enum: ['title', 'artist', 'album', 'addedAt', 'lastPlayedAt', 'totalPlayCount', 'rating'] })
+  @ApiPropertyOptional({
+    description: 'Sort field',
+    enum: [
+      'title',
+      'artist',
+      'album',
+      'addedAt',
+      'lastPlayedAt',
+      'totalPlayCount',
+      'rating',
+    ],
+  })
   @IsOptional()
   @IsString()
-  sortBy?: 'addedAt' | 'album' | 'artist' | 'lastPlayedAt' | 'rating' | 'title' | 'totalPlayCount';
+  sortBy?:
+    | 'addedAt'
+    | 'album'
+    | 'artist'
+    | 'lastPlayedAt'
+    | 'rating'
+    | 'title'
+    | 'totalPlayCount';
 
-  @ApiPropertyOptional({ default: 'desc', description: 'Sort order', enum: ['asc', 'desc'] })
+  @ApiPropertyOptional({
+    default: 'desc',
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+  })
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc' = 'desc';

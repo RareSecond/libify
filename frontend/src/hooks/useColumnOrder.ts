@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = 'tracks-table-column-order';
+const STORAGE_KEY = "tracks-table-column-order";
 
 export function useColumnOrder(defaultOrder: string[]) {
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
@@ -9,9 +9,11 @@ export function useColumnOrder(defaultOrder: string[]) {
       if (stored) {
         const parsed = JSON.parse(stored);
         // Validate that all default columns are present
-        const hasAllColumns = defaultOrder.every(col => parsed.includes(col));
-        const hasOnlyValidColumns = parsed.every((col: string) => defaultOrder.includes(col));
-        
+        const hasAllColumns = defaultOrder.every((col) => parsed.includes(col));
+        const hasOnlyValidColumns = parsed.every((col: string) =>
+          defaultOrder.includes(col),
+        );
+
         if (hasAllColumns && hasOnlyValidColumns) {
           return parsed;
         }

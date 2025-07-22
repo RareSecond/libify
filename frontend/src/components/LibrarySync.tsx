@@ -1,4 +1,13 @@
-import { Alert, Badge, Button, Card, Group, Progress, Stack, Text } from "@mantine/core";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Progress,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
 import { useState } from "react";
@@ -24,26 +33,32 @@ export function LibrarySync() {
   // Query for sync status
   const { data: syncStatus, refetch: refetchStatus } = useQuery<SyncStatus>({
     queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/library/sync/status`, {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch sync status');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/library/sync/status`,
+        {
+          credentials: "include",
+        },
+      );
+      if (!response.ok) throw new Error("Failed to fetch sync status");
       return response.json();
     },
-    queryKey: ['library-sync-status'],
+    queryKey: ["library-sync-status"],
   });
 
   // Mutation for syncing library
   const syncLibraryMutation = useMutation<SyncResult>({
     mutationFn: async () => {
       setSyncProgress(0);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/library/sync`, {
-        credentials: 'include',
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/library/sync`,
+        {
+          credentials: "include",
+          method: "POST",
+        },
+      );
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to sync library');
+        throw new Error(error.message || "Failed to sync library");
       }
       return response.json();
     },
@@ -58,7 +73,7 @@ export function LibrarySync() {
   });
 
   const formatLastSync = (lastSync: null | string) => {
-    if (!lastSync) return 'Never';
+    if (!lastSync) return "Never";
     const date = new Date(lastSync);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -66,7 +81,7 @@ export function LibrarySync() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins} minutes ago`;
     if (diffHours < 24) return `${diffHours} hours ago`;
     return `${diffDays} days ago`;
@@ -77,7 +92,9 @@ export function LibrarySync() {
       <Stack gap="md">
         <Group align="center" justify="space-between">
           <div>
-            <Text fw={500} size="lg">Library Sync</Text>
+            <Text fw={500} size="lg">
+              Library Sync
+            </Text>
             <Text color="dimmed" size="sm">
               Keep your Spotify library in sync
             </Text>
@@ -94,7 +111,9 @@ export function LibrarySync() {
 
         {syncStatus && (
           <Group gap="xs">
-            <Text color="dimmed" size="sm">Last synced:</Text>
+            <Text color="dimmed" size="sm">
+              Last synced:
+            </Text>
             <Text fw={500} size="sm">
               {formatLastSync(syncStatus.lastSync)}
             </Text>
@@ -117,7 +136,8 @@ export function LibrarySync() {
             title="Sync Failed"
             variant="light"
           >
-            {syncLibraryMutation.error?.message || 'An error occurred while syncing'}
+            {syncLibraryMutation.error?.message ||
+              "An error occurred while syncing"}
           </Alert>
         )}
 
@@ -139,12 +159,14 @@ export function LibrarySync() {
               )}
               {syncLibraryMutation.data.result.updatedTracks > 0 && (
                 <Text size="sm">
-                  • {syncLibraryMutation.data.result.updatedTracks} tracks updated
+                  • {syncLibraryMutation.data.result.updatedTracks} tracks
+                  updated
                 </Text>
               )}
               {syncLibraryMutation.data.result.errors.length > 0 && (
                 <Text color="red" size="sm">
-                  • {syncLibraryMutation.data.result.errors.length} errors occurred
+                  • {syncLibraryMutation.data.result.errors.length} errors
+                  occurred
                 </Text>
               )}
             </Stack>
@@ -158,7 +180,7 @@ export function LibrarySync() {
           loading={syncLibraryMutation.isPending}
           onClick={() => syncLibraryMutation.mutate()}
         >
-          {syncLibraryMutation.isPending ? 'Syncing...' : 'Sync Now'}
+          {syncLibraryMutation.isPending ? "Syncing..." : "Sync Now"}
         </Button>
       </Stack>
     </Card>

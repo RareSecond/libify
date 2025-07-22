@@ -10,320 +10,320 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/~__root'
-import { Route as TracksImport } from './routes/~tracks'
-import { Route as PlaylistsImport } from './routes/~playlists'
-import { Route as ArtistsImport } from './routes/~artists'
-import { Route as AlbumsImport } from './routes/~albums'
-import { Route as IndexImport } from './routes/~index'
-import { Route as PlaylistsIndexImport } from './routes/~playlists.index'
-import { Route as ArtistsIndexImport } from './routes/~artists.index'
-import { Route as AlbumsIndexImport } from './routes/~albums.index'
-import { Route as PlaylistsIdImport } from './routes/~playlists.$id'
-import { Route as AuthSuccessImport } from './routes/~auth/~success'
-import { Route as ArtistsArtistImport } from './routes/~artists.$artist'
-import { Route as AlbumsArtistAlbumImport } from './routes/~albums.$artist.$album'
+import { Route as rootRoute } from "./routes/~__root";
+import { Route as TracksImport } from "./routes/~tracks";
+import { Route as PlaylistsImport } from "./routes/~playlists";
+import { Route as ArtistsImport } from "./routes/~artists";
+import { Route as AlbumsImport } from "./routes/~albums";
+import { Route as IndexImport } from "./routes/~index";
+import { Route as PlaylistsIndexImport } from "./routes/~playlists.index";
+import { Route as ArtistsIndexImport } from "./routes/~artists.index";
+import { Route as AlbumsIndexImport } from "./routes/~albums.index";
+import { Route as PlaylistsIdImport } from "./routes/~playlists.$id";
+import { Route as AuthSuccessImport } from "./routes/~auth/~success";
+import { Route as ArtistsArtistImport } from "./routes/~artists.$artist";
+import { Route as AlbumsArtistAlbumImport } from "./routes/~albums.$artist.$album";
 
 // Create/Update Routes
 
 const TracksRoute = TracksImport.update({
-  id: '/tracks',
-  path: '/tracks',
+  id: "/tracks",
+  path: "/tracks",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const PlaylistsRoute = PlaylistsImport.update({
-  id: '/playlists',
-  path: '/playlists',
+  id: "/playlists",
+  path: "/playlists",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const ArtistsRoute = ArtistsImport.update({
-  id: '/artists',
-  path: '/artists',
+  id: "/artists",
+  path: "/artists",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const AlbumsRoute = AlbumsImport.update({
-  id: '/albums',
-  path: '/albums',
+  id: "/albums",
+  path: "/albums",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const IndexRoute = IndexImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const PlaylistsIndexRoute = PlaylistsIndexImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => PlaylistsRoute,
-} as any)
+} as any);
 
 const ArtistsIndexRoute = ArtistsIndexImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => ArtistsRoute,
-} as any)
+} as any);
 
 const AlbumsIndexRoute = AlbumsIndexImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => AlbumsRoute,
-} as any)
+} as any);
 
 const PlaylistsIdRoute = PlaylistsIdImport.update({
-  id: '/$id',
-  path: '/$id',
+  id: "/$id",
+  path: "/$id",
   getParentRoute: () => PlaylistsRoute,
-} as any)
+} as any);
 
 const AuthSuccessRoute = AuthSuccessImport.update({
-  id: '/auth/success',
-  path: '/auth/success',
+  id: "/auth/success",
+  path: "/auth/success",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const ArtistsArtistRoute = ArtistsArtistImport.update({
-  id: '/$artist',
-  path: '/$artist',
+  id: "/$artist",
+  path: "/$artist",
   getParentRoute: () => ArtistsRoute,
-} as any)
+} as any);
 
 const AlbumsArtistAlbumRoute = AlbumsArtistAlbumImport.update({
-  id: '/$artist/$album',
-  path: '/$artist/$album',
+  id: "/$artist/$album",
+  path: "/$artist/$album",
   getParentRoute: () => AlbumsRoute,
-} as any)
+} as any);
 
 // Populate the FileRoutesByPath interface
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/albums': {
-      id: '/albums'
-      path: '/albums'
-      fullPath: '/albums'
-      preLoaderRoute: typeof AlbumsImport
-      parentRoute: typeof rootRoute
-    }
-    '/artists': {
-      id: '/artists'
-      path: '/artists'
-      fullPath: '/artists'
-      preLoaderRoute: typeof ArtistsImport
-      parentRoute: typeof rootRoute
-    }
-    '/playlists': {
-      id: '/playlists'
-      path: '/playlists'
-      fullPath: '/playlists'
-      preLoaderRoute: typeof PlaylistsImport
-      parentRoute: typeof rootRoute
-    }
-    '/tracks': {
-      id: '/tracks'
-      path: '/tracks'
-      fullPath: '/tracks'
-      preLoaderRoute: typeof TracksImport
-      parentRoute: typeof rootRoute
-    }
-    '/artists/$artist': {
-      id: '/artists/$artist'
-      path: '/$artist'
-      fullPath: '/artists/$artist'
-      preLoaderRoute: typeof ArtistsArtistImport
-      parentRoute: typeof ArtistsImport
-    }
-    '/auth/success': {
-      id: '/auth/success'
-      path: '/auth/success'
-      fullPath: '/auth/success'
-      preLoaderRoute: typeof AuthSuccessImport
-      parentRoute: typeof rootRoute
-    }
-    '/playlists/$id': {
-      id: '/playlists/$id'
-      path: '/$id'
-      fullPath: '/playlists/$id'
-      preLoaderRoute: typeof PlaylistsIdImport
-      parentRoute: typeof PlaylistsImport
-    }
-    '/albums/': {
-      id: '/albums/'
-      path: '/'
-      fullPath: '/albums/'
-      preLoaderRoute: typeof AlbumsIndexImport
-      parentRoute: typeof AlbumsImport
-    }
-    '/artists/': {
-      id: '/artists/'
-      path: '/'
-      fullPath: '/artists/'
-      preLoaderRoute: typeof ArtistsIndexImport
-      parentRoute: typeof ArtistsImport
-    }
-    '/playlists/': {
-      id: '/playlists/'
-      path: '/'
-      fullPath: '/playlists/'
-      preLoaderRoute: typeof PlaylistsIndexImport
-      parentRoute: typeof PlaylistsImport
-    }
-    '/albums/$artist/$album': {
-      id: '/albums/$artist/$album'
-      path: '/$artist/$album'
-      fullPath: '/albums/$artist/$album'
-      preLoaderRoute: typeof AlbumsArtistAlbumImport
-      parentRoute: typeof AlbumsImport
-    }
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/albums": {
+      id: "/albums";
+      path: "/albums";
+      fullPath: "/albums";
+      preLoaderRoute: typeof AlbumsImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/artists": {
+      id: "/artists";
+      path: "/artists";
+      fullPath: "/artists";
+      preLoaderRoute: typeof ArtistsImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/playlists": {
+      id: "/playlists";
+      path: "/playlists";
+      fullPath: "/playlists";
+      preLoaderRoute: typeof PlaylistsImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/tracks": {
+      id: "/tracks";
+      path: "/tracks";
+      fullPath: "/tracks";
+      preLoaderRoute: typeof TracksImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/artists/$artist": {
+      id: "/artists/$artist";
+      path: "/$artist";
+      fullPath: "/artists/$artist";
+      preLoaderRoute: typeof ArtistsArtistImport;
+      parentRoute: typeof ArtistsImport;
+    };
+    "/auth/success": {
+      id: "/auth/success";
+      path: "/auth/success";
+      fullPath: "/auth/success";
+      preLoaderRoute: typeof AuthSuccessImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/playlists/$id": {
+      id: "/playlists/$id";
+      path: "/$id";
+      fullPath: "/playlists/$id";
+      preLoaderRoute: typeof PlaylistsIdImport;
+      parentRoute: typeof PlaylistsImport;
+    };
+    "/albums/": {
+      id: "/albums/";
+      path: "/";
+      fullPath: "/albums/";
+      preLoaderRoute: typeof AlbumsIndexImport;
+      parentRoute: typeof AlbumsImport;
+    };
+    "/artists/": {
+      id: "/artists/";
+      path: "/";
+      fullPath: "/artists/";
+      preLoaderRoute: typeof ArtistsIndexImport;
+      parentRoute: typeof ArtistsImport;
+    };
+    "/playlists/": {
+      id: "/playlists/";
+      path: "/";
+      fullPath: "/playlists/";
+      preLoaderRoute: typeof PlaylistsIndexImport;
+      parentRoute: typeof PlaylistsImport;
+    };
+    "/albums/$artist/$album": {
+      id: "/albums/$artist/$album";
+      path: "/$artist/$album";
+      fullPath: "/albums/$artist/$album";
+      preLoaderRoute: typeof AlbumsArtistAlbumImport;
+      parentRoute: typeof AlbumsImport;
+    };
   }
 }
 
 // Create and export the route tree
 
 interface AlbumsRouteChildren {
-  AlbumsIndexRoute: typeof AlbumsIndexRoute
-  AlbumsArtistAlbumRoute: typeof AlbumsArtistAlbumRoute
+  AlbumsIndexRoute: typeof AlbumsIndexRoute;
+  AlbumsArtistAlbumRoute: typeof AlbumsArtistAlbumRoute;
 }
 
 const AlbumsRouteChildren: AlbumsRouteChildren = {
   AlbumsIndexRoute: AlbumsIndexRoute,
   AlbumsArtistAlbumRoute: AlbumsArtistAlbumRoute,
-}
+};
 
 const AlbumsRouteWithChildren =
-  AlbumsRoute._addFileChildren(AlbumsRouteChildren)
+  AlbumsRoute._addFileChildren(AlbumsRouteChildren);
 
 interface ArtistsRouteChildren {
-  ArtistsArtistRoute: typeof ArtistsArtistRoute
-  ArtistsIndexRoute: typeof ArtistsIndexRoute
+  ArtistsArtistRoute: typeof ArtistsArtistRoute;
+  ArtistsIndexRoute: typeof ArtistsIndexRoute;
 }
 
 const ArtistsRouteChildren: ArtistsRouteChildren = {
   ArtistsArtistRoute: ArtistsArtistRoute,
   ArtistsIndexRoute: ArtistsIndexRoute,
-}
+};
 
 const ArtistsRouteWithChildren =
-  ArtistsRoute._addFileChildren(ArtistsRouteChildren)
+  ArtistsRoute._addFileChildren(ArtistsRouteChildren);
 
 interface PlaylistsRouteChildren {
-  PlaylistsIdRoute: typeof PlaylistsIdRoute
-  PlaylistsIndexRoute: typeof PlaylistsIndexRoute
+  PlaylistsIdRoute: typeof PlaylistsIdRoute;
+  PlaylistsIndexRoute: typeof PlaylistsIndexRoute;
 }
 
 const PlaylistsRouteChildren: PlaylistsRouteChildren = {
   PlaylistsIdRoute: PlaylistsIdRoute,
   PlaylistsIndexRoute: PlaylistsIndexRoute,
-}
+};
 
 const PlaylistsRouteWithChildren = PlaylistsRoute._addFileChildren(
   PlaylistsRouteChildren,
-)
+);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/albums': typeof AlbumsRouteWithChildren
-  '/artists': typeof ArtistsRouteWithChildren
-  '/playlists': typeof PlaylistsRouteWithChildren
-  '/tracks': typeof TracksRoute
-  '/artists/$artist': typeof ArtistsArtistRoute
-  '/auth/success': typeof AuthSuccessRoute
-  '/playlists/$id': typeof PlaylistsIdRoute
-  '/albums/': typeof AlbumsIndexRoute
-  '/artists/': typeof ArtistsIndexRoute
-  '/playlists/': typeof PlaylistsIndexRoute
-  '/albums/$artist/$album': typeof AlbumsArtistAlbumRoute
+  "/": typeof IndexRoute;
+  "/albums": typeof AlbumsRouteWithChildren;
+  "/artists": typeof ArtistsRouteWithChildren;
+  "/playlists": typeof PlaylistsRouteWithChildren;
+  "/tracks": typeof TracksRoute;
+  "/artists/$artist": typeof ArtistsArtistRoute;
+  "/auth/success": typeof AuthSuccessRoute;
+  "/playlists/$id": typeof PlaylistsIdRoute;
+  "/albums/": typeof AlbumsIndexRoute;
+  "/artists/": typeof ArtistsIndexRoute;
+  "/playlists/": typeof PlaylistsIndexRoute;
+  "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/tracks': typeof TracksRoute
-  '/artists/$artist': typeof ArtistsArtistRoute
-  '/auth/success': typeof AuthSuccessRoute
-  '/playlists/$id': typeof PlaylistsIdRoute
-  '/albums': typeof AlbumsIndexRoute
-  '/artists': typeof ArtistsIndexRoute
-  '/playlists': typeof PlaylistsIndexRoute
-  '/albums/$artist/$album': typeof AlbumsArtistAlbumRoute
+  "/": typeof IndexRoute;
+  "/tracks": typeof TracksRoute;
+  "/artists/$artist": typeof ArtistsArtistRoute;
+  "/auth/success": typeof AuthSuccessRoute;
+  "/playlists/$id": typeof PlaylistsIdRoute;
+  "/albums": typeof AlbumsIndexRoute;
+  "/artists": typeof ArtistsIndexRoute;
+  "/playlists": typeof PlaylistsIndexRoute;
+  "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/albums': typeof AlbumsRouteWithChildren
-  '/artists': typeof ArtistsRouteWithChildren
-  '/playlists': typeof PlaylistsRouteWithChildren
-  '/tracks': typeof TracksRoute
-  '/artists/$artist': typeof ArtistsArtistRoute
-  '/auth/success': typeof AuthSuccessRoute
-  '/playlists/$id': typeof PlaylistsIdRoute
-  '/albums/': typeof AlbumsIndexRoute
-  '/artists/': typeof ArtistsIndexRoute
-  '/playlists/': typeof PlaylistsIndexRoute
-  '/albums/$artist/$album': typeof AlbumsArtistAlbumRoute
+  __root__: typeof rootRoute;
+  "/": typeof IndexRoute;
+  "/albums": typeof AlbumsRouteWithChildren;
+  "/artists": typeof ArtistsRouteWithChildren;
+  "/playlists": typeof PlaylistsRouteWithChildren;
+  "/tracks": typeof TracksRoute;
+  "/artists/$artist": typeof ArtistsArtistRoute;
+  "/auth/success": typeof AuthSuccessRoute;
+  "/playlists/$id": typeof PlaylistsIdRoute;
+  "/albums/": typeof AlbumsIndexRoute;
+  "/artists/": typeof ArtistsIndexRoute;
+  "/playlists/": typeof PlaylistsIndexRoute;
+  "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/albums'
-    | '/artists'
-    | '/playlists'
-    | '/tracks'
-    | '/artists/$artist'
-    | '/auth/success'
-    | '/playlists/$id'
-    | '/albums/'
-    | '/artists/'
-    | '/playlists/'
-    | '/albums/$artist/$album'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/albums"
+    | "/artists"
+    | "/playlists"
+    | "/tracks"
+    | "/artists/$artist"
+    | "/auth/success"
+    | "/playlists/$id"
+    | "/albums/"
+    | "/artists/"
+    | "/playlists/"
+    | "/albums/$artist/$album";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/tracks'
-    | '/artists/$artist'
-    | '/auth/success'
-    | '/playlists/$id'
-    | '/albums'
-    | '/artists'
-    | '/playlists'
-    | '/albums/$artist/$album'
+    | "/"
+    | "/tracks"
+    | "/artists/$artist"
+    | "/auth/success"
+    | "/playlists/$id"
+    | "/albums"
+    | "/artists"
+    | "/playlists"
+    | "/albums/$artist/$album";
   id:
-    | '__root__'
-    | '/'
-    | '/albums'
-    | '/artists'
-    | '/playlists'
-    | '/tracks'
-    | '/artists/$artist'
-    | '/auth/success'
-    | '/playlists/$id'
-    | '/albums/'
-    | '/artists/'
-    | '/playlists/'
-    | '/albums/$artist/$album'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/albums"
+    | "/artists"
+    | "/playlists"
+    | "/tracks"
+    | "/artists/$artist"
+    | "/auth/success"
+    | "/playlists/$id"
+    | "/albums/"
+    | "/artists/"
+    | "/playlists/"
+    | "/albums/$artist/$album";
+  fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AlbumsRoute: typeof AlbumsRouteWithChildren
-  ArtistsRoute: typeof ArtistsRouteWithChildren
-  PlaylistsRoute: typeof PlaylistsRouteWithChildren
-  TracksRoute: typeof TracksRoute
-  AuthSuccessRoute: typeof AuthSuccessRoute
+  IndexRoute: typeof IndexRoute;
+  AlbumsRoute: typeof AlbumsRouteWithChildren;
+  ArtistsRoute: typeof ArtistsRouteWithChildren;
+  PlaylistsRoute: typeof PlaylistsRouteWithChildren;
+  TracksRoute: typeof TracksRoute;
+  AuthSuccessRoute: typeof AuthSuccessRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -333,11 +333,11 @@ const rootRouteChildren: RootRouteChildren = {
   PlaylistsRoute: PlaylistsRouteWithChildren,
   TracksRoute: TracksRoute,
   AuthSuccessRoute: AuthSuccessRoute,
-}
+};
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
 /* ROUTE_MANIFEST_START
 {

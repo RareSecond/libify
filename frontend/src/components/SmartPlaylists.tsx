@@ -1,18 +1,39 @@
-import { ActionIcon, Box, Button, Card, Center, Group, Loader, Modal, Stack, Text, Title } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
-import { Link } from '@tanstack/react-router';
-import { Edit, Music, Plus, Trash } from 'lucide-react';
-import { useState } from 'react';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Card,
+  Center,
+  Group,
+  Loader,
+  Modal,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { Link } from "@tanstack/react-router";
+import { Edit, Music, Plus, Trash } from "lucide-react";
+import { useState } from "react";
 
-import { SmartPlaylistWithTracksDto, usePlaylistsControllerFindAll, usePlaylistsControllerRemove } from '../data/api';
-import { PlaylistEditor } from './PlaylistEditor';
+import {
+  SmartPlaylistWithTracksDto,
+  usePlaylistsControllerFindAll,
+  usePlaylistsControllerRemove,
+} from "../data/api";
+import { PlaylistEditor } from "./PlaylistEditor";
 
 export function SmartPlaylists() {
   const [opened, { close, open }] = useDisclosure(false);
-  const [editingPlaylist, setEditingPlaylist] = useState<null | SmartPlaylistWithTracksDto>(null);
-  
-  const { data: playlists, isLoading, refetch } = usePlaylistsControllerFindAll();
+  const [editingPlaylist, setEditingPlaylist] =
+    useState<null | SmartPlaylistWithTracksDto>(null);
+
+  const {
+    data: playlists,
+    isLoading,
+    refetch,
+  } = usePlaylistsControllerFindAll();
   const deleteMutation = usePlaylistsControllerRemove();
 
   const handleCreate = () => {
@@ -33,14 +54,14 @@ export function SmartPlaylists() {
     try {
       await deleteMutation.mutateAsync({ id: playlistId });
       notifications.show({
-        color: 'green',
-        message: 'Playlist deleted successfully',
+        color: "green",
+        message: "Playlist deleted successfully",
       });
       refetch();
     } catch {
       notifications.show({
-        color: 'red',
-        message: 'Failed to delete playlist',
+        color: "red",
+        message: "Failed to delete playlist",
       });
     }
   };
@@ -72,7 +93,9 @@ export function SmartPlaylists() {
           <Center>
             <Stack align="center" gap="md">
               <Music size={48} style={{ opacity: 0.5 }} />
-              <Text c="dimmed" size="lg">No smart playlists yet</Text>
+              <Text c="dimmed" size="lg">
+                No smart playlists yet
+              </Text>
               <Button onClick={handleCreate} variant="light">
                 Create your first playlist
               </Button>
@@ -85,7 +108,9 @@ export function SmartPlaylists() {
             <Card key={playlist.id} p="lg" radius="md" shadow="xs" withBorder>
               <Stack gap="sm">
                 <Group justify="space-between">
-                  <Text fw={600} size="lg">{playlist.name}</Text>
+                  <Text fw={600} size="lg">
+                    {playlist.name}
+                  </Text>
                   <Group gap="xs">
                     <ActionIcon
                       onClick={() => handleEdit(playlist)}
@@ -106,17 +131,25 @@ export function SmartPlaylists() {
                 </Group>
 
                 {playlist.description && (
-                  <Text c="dimmed" size="sm">{playlist.description}</Text>
+                  <Text c="dimmed" size="sm">
+                    {playlist.description}
+                  </Text>
                 )}
 
                 <Box>
                   <Text c="dimmed" size="xs" tt="uppercase">
-                    {playlist.criteria.logic === 'or' ? 'Match any' : 'Match all'} of:
+                    {playlist.criteria.logic === "or"
+                      ? "Match any"
+                      : "Match all"}{" "}
+                    of:
                   </Text>
                   <Stack gap={4} mt={4}>
                     {playlist.criteria.rules.slice(0, 3).map((rule, index) => (
                       <Text key={index} size="sm">
-                        • {rule.field} {rule.operator} {rule.value || rule.numberValue || `${rule.daysValue} days`}
+                        • {rule.field} {rule.operator}{" "}
+                        {rule.value ||
+                          rule.numberValue ||
+                          `${rule.daysValue} days`}
                       </Text>
                     ))}
                     {playlist.criteria.rules.length > 3 && (
@@ -138,10 +171,7 @@ export function SmartPlaylists() {
                     params={{ id: playlist.id }}
                     to="/playlists/$id"
                   >
-                    <Button
-                      size="xs"
-                      variant="light"
-                    >
+                    <Button size="xs" variant="light">
                       View Tracks
                     </Button>
                   </Link>
@@ -156,7 +186,9 @@ export function SmartPlaylists() {
         onClose={close}
         opened={opened}
         size="lg"
-        title={editingPlaylist ? 'Edit Smart Playlist' : 'Create Smart Playlist'}
+        title={
+          editingPlaylist ? "Edit Smart Playlist" : "Create Smart Playlist"
+        }
       >
         <PlaylistEditor
           onCancel={close}

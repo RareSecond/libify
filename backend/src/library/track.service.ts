@@ -5,7 +5,11 @@ import { plainToInstance } from 'class-transformer';
 import { DatabaseService } from '../database/database.service';
 import { AlbumDto, PaginatedAlbumsDto } from './dto/album.dto';
 import { ArtistDto, PaginatedArtistsDto } from './dto/artist.dto';
-import { GetTracksQueryDto, PaginatedTracksDto, TrackDto } from './dto/track.dto';
+import {
+  GetTracksQueryDto,
+  PaginatedTracksDto,
+  TrackDto,
+} from './dto/track.dto';
 import { SpotifyService } from './spotify.service';
 
 @Injectable()
@@ -39,7 +43,7 @@ export class TrackService {
       },
     });
 
-    const trackDtos = tracks.map(track => {
+    const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
         album: track.spotifyTrack.album,
@@ -51,7 +55,7 @@ export class TrackService {
         ratedAt: track.ratedAt,
         rating: track.rating,
         spotifyId: track.spotifyTrack.spotifyId,
-        tags: track.tags.map(t => ({
+        tags: track.tags.map((t) => ({
           color: t.tag.color,
           id: t.tag.id,
           name: t.tag.name,
@@ -95,7 +99,7 @@ export class TrackService {
       },
     });
 
-    const trackDtos = tracks.map(track => {
+    const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
         album: track.spotifyTrack.album,
@@ -107,7 +111,7 @@ export class TrackService {
         ratedAt: track.ratedAt,
         rating: track.rating,
         spotifyId: track.spotifyTrack.spotifyId,
-        tags: track.tags.map(t => ({
+        tags: track.tags.map((t) => ({
           color: t.tag.color,
           id: t.tag.id,
           name: t.tag.name,
@@ -122,8 +126,10 @@ export class TrackService {
     return trackDtos;
   }
 
-
-  async getTrackById(userId: string, trackId: string): Promise<null | TrackDto> {
+  async getTrackById(
+    userId: string,
+    trackId: string,
+  ): Promise<null | TrackDto> {
     const track = await this.databaseService.userTrack.findFirst({
       include: {
         spotifyTrack: true,
@@ -154,7 +160,7 @@ export class TrackService {
       ratedAt: track.ratedAt,
       rating: track.rating,
       spotifyId: track.spotifyTrack.spotifyId,
-      tags: track.tags.map(t => ({
+      tags: track.tags.map((t) => ({
         color: t.tag.color,
         id: t.tag.id,
         name: t.tag.name,
@@ -167,14 +173,20 @@ export class TrackService {
   }
 
   async getUserAlbums(
-    userId: string, 
-    options: { 
-      page: number; 
+    userId: string,
+    options: {
+      page: number;
       pageSize: number;
       search?: string;
-      sortBy: 'artist' | 'avgRating' | 'lastPlayed' | 'name' | 'totalPlayCount' | 'trackCount';
+      sortBy:
+        | 'artist'
+        | 'avgRating'
+        | 'lastPlayed'
+        | 'name'
+        | 'totalPlayCount'
+        | 'trackCount';
       sortOrder: 'asc' | 'desc';
-    }
+    },
   ): Promise<PaginatedAlbumsDto> {
     // Get all unique albums with aggregated data
     const tracks = await this.databaseService.userTrack.findMany({
@@ -183,26 +195,26 @@ export class TrackService {
       },
       orderBy: {
         spotifyTrack: {
-          album: 'asc'
-        }
+          album: 'asc',
+        },
       },
-      where: { 
+      where: {
         spotifyTrack: {
           album: {
-            not: null
-          }
+            not: null,
+          },
         },
-        userId
-      }
+        userId,
+      },
     });
 
     // Group tracks by album
     const albumsMap = new Map<string, any>();
-    
-    tracks.forEach(track => {
+
+    tracks.forEach((track) => {
       const album = track.spotifyTrack.album;
       if (!album) return;
-      
+
       if (!albumsMap.has(album)) {
         albumsMap.set(album, {
           albumArt: track.spotifyTrack.albumArt,
@@ -217,38 +229,45 @@ export class TrackService {
           trackCount: 0,
         });
       }
-      
+
       const albumData = albumsMap.get(album);
       albumData.trackCount++;
       albumData.totalDuration += track.spotifyTrack.duration;
       albumData.totalPlayCount += track.totalPlayCount;
-      
+
       if (track.rating) {
-        albumData.avgRating = ((albumData.avgRating * albumData.ratedCount) + track.rating) / (albumData.ratedCount + 1);
+        albumData.avgRating =
+          (albumData.avgRating * albumData.ratedCount + track.rating) /
+          (albumData.ratedCount + 1);
         albumData.ratedCount++;
       }
-      
+
       if (!albumData.firstAdded || track.addedAt < albumData.firstAdded) {
         albumData.firstAdded = track.addedAt;
       }
-      
-      if (track.lastPlayedAt && (!albumData.lastPlayed || track.lastPlayedAt > albumData.lastPlayed)) {
+
+      if (
+        track.lastPlayedAt &&
+        (!albumData.lastPlayed || track.lastPlayedAt > albumData.lastPlayed)
+      ) {
         albumData.lastPlayed = track.lastPlayedAt;
       }
     });
 
     // Convert map to array and format
-    let allAlbums = Array.from(albumsMap.values()).map(album => ({
+    let allAlbums = Array.from(albumsMap.values()).map((album) => ({
       ...album,
-      avgRating: album.ratedCount > 0 ? Math.round(album.avgRating * 10) / 10 : null,
+      avgRating:
+        album.ratedCount > 0 ? Math.round(album.avgRating * 10) / 10 : null,
     }));
 
     // Apply search filter
     if (options.search) {
       const searchLower = options.search.toLowerCase();
-      allAlbums = allAlbums.filter(album => 
-        album.name.toLowerCase().includes(searchLower) ||
-        album.artist.toLowerCase().includes(searchLower)
+      allAlbums = allAlbums.filter(
+        (album) =>
+          album.name.toLowerCase().includes(searchLower) ||
+          album.artist.toLowerCase().includes(searchLower),
       );
     }
 
@@ -256,7 +275,7 @@ export class TrackService {
     allAlbums.sort((a, b) => {
       let aVal: any;
       let bVal: any;
-      
+
       switch (options.sortBy) {
         case 'artist':
           aVal = a.artist.toLowerCase();
@@ -283,7 +302,7 @@ export class TrackService {
           bVal = b.trackCount;
           break;
       }
-      
+
       if (options.sortOrder === 'asc') {
         return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       } else {
@@ -297,26 +316,38 @@ export class TrackService {
     const skip = (options.page - 1) * options.pageSize;
     const paginatedAlbums = allAlbums.slice(skip, skip + options.pageSize);
 
-    const albumDtos = plainToInstance(AlbumDto, paginatedAlbums, { excludeExtraneousValues: true });
+    const albumDtos = plainToInstance(AlbumDto, paginatedAlbums, {
+      excludeExtraneousValues: true,
+    });
 
-    return plainToInstance(PaginatedAlbumsDto, {
-      albums: albumDtos,
-      page: options.page,
-      pageSize: options.pageSize,
-      total,
-      totalPages,
-    }, { excludeExtraneousValues: true });
+    return plainToInstance(
+      PaginatedAlbumsDto,
+      {
+        albums: albumDtos,
+        page: options.page,
+        pageSize: options.pageSize,
+        total,
+        totalPages,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   async getUserArtists(
-    userId: string, 
-    options: { 
-      page: number; 
+    userId: string,
+    options: {
+      page: number;
       pageSize: number;
       search?: string;
-      sortBy: 'albumCount' | 'avgRating' | 'lastPlayed' | 'name' | 'totalPlayCount' | 'trackCount';
+      sortBy:
+        | 'albumCount'
+        | 'avgRating'
+        | 'lastPlayed'
+        | 'name'
+        | 'totalPlayCount'
+        | 'trackCount';
       sortOrder: 'asc' | 'desc';
-    }
+    },
   ): Promise<PaginatedArtistsDto> {
     // Get all tracks with artist aggregation
     const tracks = await this.databaseService.userTrack.findMany({
@@ -325,21 +356,21 @@ export class TrackService {
       },
       orderBy: {
         spotifyTrack: {
-          artist: 'asc'
-        }
+          artist: 'asc',
+        },
       },
-      where: { 
-        userId
-      }
+      where: {
+        userId,
+      },
     });
 
     // Group tracks by artist
     const artistsMap = new Map<string, any>();
-    
-    tracks.forEach(track => {
+
+    tracks.forEach((track) => {
       const artist = track.spotifyTrack.artist;
       if (!artist) return;
-      
+
       if (!artistsMap.has(artist)) {
         artistsMap.set(artist, {
           albumCount: new Set(),
@@ -354,46 +385,52 @@ export class TrackService {
           trackCount: 0,
         });
       }
-      
+
       const artistData = artistsMap.get(artist);
       artistData.trackCount++;
       artistData.totalDuration += track.spotifyTrack.duration;
       artistData.totalPlayCount += track.totalPlayCount;
-      
+
       // Add unique albums
       if (track.spotifyTrack.album) {
         artistData.albumCount.add(track.spotifyTrack.album);
       }
-      
+
       // For now, don't set artist images - let the frontend handle with a fallback icon
       // TODO: Implement proper artist image fetching from Spotify
-      
+
       if (track.rating) {
-        artistData.avgRating = ((artistData.avgRating * artistData.ratedCount) + track.rating) / (artistData.ratedCount + 1);
+        artistData.avgRating =
+          (artistData.avgRating * artistData.ratedCount + track.rating) /
+          (artistData.ratedCount + 1);
         artistData.ratedCount++;
       }
-      
+
       if (!artistData.firstAdded || track.addedAt < artistData.firstAdded) {
         artistData.firstAdded = track.addedAt;
       }
-      
-      if (track.lastPlayedAt && (!artistData.lastPlayed || track.lastPlayedAt > artistData.lastPlayed)) {
+
+      if (
+        track.lastPlayedAt &&
+        (!artistData.lastPlayed || track.lastPlayedAt > artistData.lastPlayed)
+      ) {
         artistData.lastPlayed = track.lastPlayedAt;
       }
     });
 
     // Convert map to array and format
-    let allArtists = Array.from(artistsMap.values()).map(artist => ({
+    let allArtists = Array.from(artistsMap.values()).map((artist) => ({
       ...artist,
       albumCount: artist.albumCount.size,
-      avgRating: artist.ratedCount > 0 ? Math.round(artist.avgRating * 10) / 10 : null,
+      avgRating:
+        artist.ratedCount > 0 ? Math.round(artist.avgRating * 10) / 10 : null,
     }));
 
     // Apply search filter
     if (options.search) {
       const searchLower = options.search.toLowerCase();
-      allArtists = allArtists.filter(artist => 
-        artist.name.toLowerCase().includes(searchLower)
+      allArtists = allArtists.filter((artist) =>
+        artist.name.toLowerCase().includes(searchLower),
       );
     }
 
@@ -401,7 +438,7 @@ export class TrackService {
     allArtists.sort((a, b) => {
       let aVal: any;
       let bVal: any;
-      
+
       switch (options.sortBy) {
         case 'albumCount':
           aVal = a.albumCount;
@@ -446,22 +483,39 @@ export class TrackService {
     const paginatedArtists = allArtists.slice(startIndex, endIndex);
 
     // Convert to DTOs
-    const artistDtos = paginatedArtists.map(artist => plainToInstance(ArtistDto, artist, { 
-      excludeExtraneousValues: true 
-    }));
+    const artistDtos = paginatedArtists.map((artist) =>
+      plainToInstance(ArtistDto, artist, {
+        excludeExtraneousValues: true,
+      }),
+    );
 
-    return plainToInstance(PaginatedArtistsDto, {
-      artists: artistDtos,
-      page: options.page,
-      pageSize: options.pageSize,
-      total,
-      totalPages,
-    }, { excludeExtraneousValues: true });
+    return plainToInstance(
+      PaginatedArtistsDto,
+      {
+        artists: artistDtos,
+        page: options.page,
+        pageSize: options.pageSize,
+        total,
+        totalPages,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
-  async getUserTracks(userId: string, query: GetTracksQueryDto): Promise<PaginatedTracksDto> {
-    const { minRating, page = 1, pageSize = 20, search, sortBy = 'addedAt', sortOrder = 'desc', tagIds } = query;
-    
+  async getUserTracks(
+    userId: string,
+    query: GetTracksQueryDto,
+  ): Promise<PaginatedTracksDto> {
+    const {
+      minRating,
+      page = 1,
+      pageSize = 20,
+      search,
+      sortBy = 'addedAt',
+      sortOrder = 'desc',
+      tagIds,
+    } = query;
+
     // Build where clause
     const where: Prisma.UserTrackWhereInput = {
       userId,
@@ -541,7 +595,7 @@ export class TrackService {
     ]);
 
     // Transform to DTOs
-    const trackDtos = tracks.map(track => {
+    const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
         album: track.spotifyTrack.album,
@@ -553,7 +607,7 @@ export class TrackService {
         ratedAt: track.ratedAt,
         rating: track.rating,
         spotifyId: track.spotifyTrack.spotifyId,
-        tags: track.tags.map(t => ({
+        tags: track.tags.map((t) => ({
           color: t.tag.color,
           id: t.tag.id,
           name: t.tag.name,
@@ -566,16 +620,24 @@ export class TrackService {
 
     const totalPages = Math.ceil(total / pageSize);
 
-    return plainToInstance(PaginatedTracksDto, {
-      page,
-      pageSize,
-      total,
-      totalPages,
-      tracks: trackDtos,
-    }, { excludeExtraneousValues: true });
+    return plainToInstance(
+      PaginatedTracksDto,
+      {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        tracks: trackDtos,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
-  async updateTrackRating(userId: string, trackId: string, rating: number): Promise<number> {
+  async updateTrackRating(
+    userId: string,
+    trackId: string,
+    rating: number,
+  ): Promise<number> {
     const track = await this.databaseService.userTrack.findFirst({
       where: { id: trackId, userId },
     });

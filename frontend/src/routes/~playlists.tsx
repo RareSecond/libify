@@ -1,9 +1,9 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { PageTitle } from '../components/PageTitle';
-import { SmartPlaylists } from '../components/SmartPlaylists';
+import { PageTitle } from "../components/PageTitle";
+import { SmartPlaylists } from "../components/SmartPlaylists";
 
-export const Route = createFileRoute('/playlists')({
+export const Route = createFileRoute("/playlists")({
   component: PlaylistsLayout,
 });
 

@@ -1,5 +1,5 @@
 import { Button, Center, Loader, MantineProvider } from "@mantine/core";
-import { Notifications } from '@mantine/notifications';
+import { Notifications } from "@mantine/notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 
@@ -15,15 +15,15 @@ export const Route = createRootRoute({
 });
 
 function AuthWrapper() {
-  const { 
-    data: profile, 
+  const {
+    data: profile,
     error,
-    isLoading
-  } = useAuthControllerGetProfile({ 
-    query: { 
+    isLoading,
+  } = useAuthControllerGetProfile({
+    query: {
       retry: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
-    } 
+    },
   });
 
   if (isLoading) {
@@ -40,7 +40,9 @@ function AuthWrapper() {
       <Center h="100vh">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Welcome to Spotlib</h1>
-          <p className="text-gray-600 mb-8">Login with Spotify to access your music library</p>
+          <p className="text-gray-600 mb-8">
+            Login with Spotify to access your music library
+          </p>
           <Button
             color="green"
             onClick={() => {

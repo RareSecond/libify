@@ -31,12 +31,18 @@ export class AuthService {
     // Check if token is expired or will expire in the next 5 minutes
     const now = new Date();
     const expiryBuffer = 5 * 60 * 1000; // 5 minutes in milliseconds
-    
-    if (user.tokenExpiresAt && new Date(user.tokenExpiresAt.getTime() - expiryBuffer) <= now) {
+
+    if (
+      user.tokenExpiresAt &&
+      new Date(user.tokenExpiresAt.getTime() - expiryBuffer) <= now
+    ) {
       // Token is expired or about to expire, refresh it
       if (user.spotifyRefreshToken) {
         try {
-          const newAccessToken = await this.refreshSpotifyToken(userId, user.spotifyRefreshToken);
+          const newAccessToken = await this.refreshSpotifyToken(
+            userId,
+            user.spotifyRefreshToken,
+          );
           if (newAccessToken) {
             return newAccessToken;
           }
@@ -72,9 +78,10 @@ export class AuthService {
       where: { email },
     });
 
-    const tokenExpiresAt = expiresIn && typeof expiresIn === 'number' && expiresIn > 0
-      ? new Date(Date.now() + expiresIn * 1000)
-      : undefined;
+    const tokenExpiresAt =
+      expiresIn && typeof expiresIn === 'number' && expiresIn > 0
+        ? new Date(Date.now() + expiresIn * 1000)
+        : undefined;
 
     if (!user) {
       user = await this.prisma.user.create({
@@ -106,7 +113,10 @@ export class AuthService {
     return user;
   }
 
-  private async refreshSpotifyToken(userId: string, refreshToken: string): Promise<null | string> {
+  private async refreshSpotifyToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<null | string> {
     try {
       const clientId = process.env.SPOTIFY_CLIENT_ID;
       const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
@@ -117,7 +127,9 @@ export class AuthService {
       }
 
       // Create base64 encoded credentials
-      const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+      const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+        'base64',
+      );
 
       // Make request to Spotify token endpoint
       const response = await axios.post(
@@ -131,7 +143,7 @@ export class AuthService {
             Authorization: `Basic ${credentials}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        }
+        },
       );
 
       const { access_token, expires_in, refresh_token } = response.data;
@@ -150,7 +162,9 @@ export class AuthService {
         where: { id: userId },
       });
 
-      this.logger.log(`Successfully refreshed Spotify token for user ${userId}`);
+      this.logger.log(
+        `Successfully refreshed Spotify token for user ${userId}`,
+      );
       return access_token;
     } catch (error) {
       this.logger.error('Failed to refresh Spotify token:', error);
