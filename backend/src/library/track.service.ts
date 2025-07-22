@@ -12,6 +12,32 @@ import {
 } from './dto/track.dto';
 import { SpotifyService } from './spotify.service';
 
+interface AlbumData {
+  albumArt?: string;
+  artist: string;
+  avgRating: number;
+  firstAdded: Date;
+  lastPlayed: Date | null;
+  name: string;
+  ratedCount: number;
+  totalDuration: number;
+  totalPlayCount: number;
+  trackCount: number;
+}
+
+interface ArtistData {
+  albumCount: Set<string>;
+  artistImage?: null | string;
+  avgRating: number;
+  firstAdded: Date;
+  lastPlayed: Date | null;
+  name: string;
+  ratedCount: number;
+  totalDuration: number;
+  totalPlayCount: number;
+  trackCount: number;
+}
+
 @Injectable()
 export class TrackService {
   constructor(
@@ -209,7 +235,7 @@ export class TrackService {
     });
 
     // Group tracks by album
-    const albumsMap = new Map<string, any>();
+    const albumsMap = new Map<string, AlbumData>();
 
     tracks.forEach((track) => {
       const album = track.spotifyTrack.album;
@@ -273,8 +299,8 @@ export class TrackService {
 
     // Apply sorting
     allAlbums.sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
+      let aVal: Date | null | number | string;
+      let bVal: Date | null | number | string;
 
       switch (options.sortBy) {
         case 'artist':
@@ -365,7 +391,7 @@ export class TrackService {
     });
 
     // Group tracks by artist
-    const artistsMap = new Map<string, any>();
+    const artistsMap = new Map<string, ArtistData>();
 
     tracks.forEach((track) => {
       const artist = track.spotifyTrack.artist;
@@ -436,8 +462,8 @@ export class TrackService {
 
     // Apply sorting
     allArtists.sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
+      let aVal: Date | null | number | string;
+      let bVal: Date | null | number | string;
 
       switch (options.sortBy) {
         case 'albumCount':

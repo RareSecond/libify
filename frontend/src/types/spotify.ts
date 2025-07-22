@@ -8,7 +8,7 @@ export interface SpotifyError {
 }
 
 export interface SpotifyPlayer {
-  addListener: (event: string, callback: (data: any) => void) => void;
+  addListener: (event: string, callback: (data: unknown) => void) => void;
   connect: () => Promise<boolean>;
   disconnect: () => void;
   getCurrentState: () => Promise<null | SpotifyPlayerState>;
@@ -16,7 +16,7 @@ export interface SpotifyPlayer {
   nextTrack: () => Promise<void>;
   pause: () => Promise<void>;
   previousTrack: () => Promise<void>;
-  removeListener: (event: string, callback?: (data: any) => void) => void;
+  removeListener: (event: string, callback?: (data: unknown) => void) => void;
   resume: () => Promise<void>;
   seek: (position: number) => Promise<void>;
   setName: (name: string) => Promise<void>;
@@ -32,7 +32,7 @@ export interface SpotifyPlayerOptions {
 
 export interface SpotifyPlayerState {
   context: {
-    metadata: any;
+    metadata: unknown;
     uri: string;
   };
   disallows: {

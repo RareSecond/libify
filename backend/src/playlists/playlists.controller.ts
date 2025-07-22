@@ -21,6 +21,7 @@ import { User } from '@prisma/client';
 import { Request } from 'express';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
 import {
   CreateSmartPlaylistDto,
   SmartPlaylistDto,
@@ -50,7 +51,7 @@ export class PlaylistsController {
     const playlist = await this.playlistsService.create(req.user.id, createDto);
     return {
       ...playlist,
-      criteria: playlist.criteria as any,
+      criteria: playlist.criteria as unknown as PlaylistCriteriaDto,
     };
   }
 
@@ -116,7 +117,7 @@ export class PlaylistsController {
     );
     return {
       ...playlist,
-      criteria: playlist.criteria as any,
+      criteria: playlist.criteria as unknown as PlaylistCriteriaDto,
     };
   }
 }

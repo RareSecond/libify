@@ -17,6 +17,7 @@ import { useEffect } from "react";
 
 import {
   PlaylistCriteriaDtoLogic,
+  PlaylistCriteriaDtoOrderDirection,
   PlaylistRuleDto,
   PlaylistRuleDtoField,
   PlaylistRuleDtoOperator,
@@ -161,7 +162,9 @@ export function PlaylistEditor({
           limit: playlist.criteria.limit,
           logic: playlist.criteria.logic || PlaylistCriteriaDtoLogic.and,
           orderBy: playlist.criteria.orderBy || "addedAt",
-          orderDirection: (playlist.criteria.orderDirection || "desc") as any,
+          orderDirection: (playlist.criteria.orderDirection || "desc") as
+            | "asc"
+            | "desc",
           rules: playlist.criteria.rules || [{ ...defaultRule }],
         },
         description: playlist.description || "",
@@ -237,7 +240,8 @@ export function PlaylistEditor({
       const data = {
         criteria: {
           ...values.criteria,
-          orderDirection: values.criteria.orderDirection as any,
+          orderDirection: values.criteria
+            .orderDirection as unknown as PlaylistCriteriaDtoOrderDirection,
         },
         description: values.description || undefined,
         isActive: values.isActive,
@@ -327,9 +331,13 @@ export function PlaylistEditor({
         PlaylistRuleDtoField.rating as string,
       ].includes(field as string)
     ) {
-      const props: any = {
+      const props = {
         placeholder: "Number",
         ...form.getInputProps(`criteria.rules.${index}.numberValue`),
+        decimalScale: undefined as number | undefined,
+        max: undefined as number | undefined,
+        min: 0,
+        step: undefined as number | undefined,
       };
 
       if (field === PlaylistRuleDtoField.rating) {

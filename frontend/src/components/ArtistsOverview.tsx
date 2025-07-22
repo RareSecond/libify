@@ -118,7 +118,17 @@ export function ArtistsOverview() {
             { label: "Last Played", value: "lastPlayed" },
           ]}
           label="Sort by"
-          onChange={(value) => updateSearch({ sortBy: value as any })}
+          onChange={(value) =>
+            updateSearch({
+              sortBy: value as
+                | "albumCount"
+                | "avgRating"
+                | "lastPlayed"
+                | "name"
+                | "totalPlayCount"
+                | "trackCount",
+            })
+          }
           value={sortBy}
           w={150}
         />
@@ -129,7 +139,9 @@ export function ArtistsOverview() {
             { label: "Descending", value: "desc" },
           ]}
           label="Order"
-          onChange={(value) => updateSearch({ sortOrder: value as any })}
+          onChange={(value) =>
+            updateSearch({ sortOrder: value as "asc" | "desc" })
+          }
           value={sortOrder}
           w={120}
         />

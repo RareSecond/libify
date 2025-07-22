@@ -108,20 +108,19 @@ export function SpotifyPlayerProvider({
       });
 
       // Playback status updates
-      spotifyPlayer.addListener(
-        "player_state_changed",
-        (state: null | SpotifyPlayerState) => {
-          if (!state) return;
+      spotifyPlayer.addListener("player_state_changed", (data) => {
+        const state = data as null | SpotifyPlayerState;
+        if (!state) return;
 
-          setCurrentTrack(state.track_window.current_track);
-          setIsPlaying(!state.paused);
-          setPosition(state.position);
-          setDuration(state.track_window.current_track.duration_ms);
-        },
-      );
+        setCurrentTrack(state.track_window.current_track);
+        setIsPlaying(!state.paused);
+        setPosition(state.position);
+        setDuration(state.track_window.current_track.duration_ms);
+      });
 
       // Ready
-      spotifyPlayer.addListener("ready", ({ device_id }) => {
+      spotifyPlayer.addListener("ready", (data) => {
+        const { device_id } = data as { device_id: string };
         // Device ready
         setDeviceId(device_id);
         setIsReady(true);

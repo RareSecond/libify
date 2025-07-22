@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { DatabaseService } from '../database/database.service';
 import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
 import {
+  PlaylistRuleDto,
   PlaylistRuleField,
   PlaylistRuleOperator,
 } from './dto/playlist-rule.dto';
@@ -164,7 +165,10 @@ export class PlaylistsService {
     });
   }
 
-  private buildDateCondition(field: string, rule: any): any {
+  private buildDateCondition(
+    field: string,
+    rule: PlaylistRuleDto,
+  ): Prisma.UserTrackWhereInput {
     if (rule.operator === PlaylistRuleOperator.IN_LAST && rule.daysValue) {
       const date = new Date();
       date.setDate(date.getDate() - rule.daysValue);
@@ -180,7 +184,10 @@ export class PlaylistsService {
     return {};
   }
 
-  private buildNumberCondition(field: string, rule: any): any {
+  private buildNumberCondition(
+    field: string,
+    rule: PlaylistRuleDto,
+  ): Record<string, unknown> {
     switch (rule.operator) {
       case PlaylistRuleOperator.EQUALS: {
         const value = rule.numberValue ?? parseInt(rule.value);
@@ -201,7 +208,9 @@ export class PlaylistsService {
     }
   }
 
-  private buildOrderBy(criteria: PlaylistCriteriaDto): any {
+  private buildOrderBy(
+    criteria: PlaylistCriteriaDto,
+  ): Prisma.UserTrackOrderByWithRelationInput {
     if (!criteria.orderBy) {
       return { addedAt: 'desc' };
     }
@@ -230,13 +239,21 @@ export class PlaylistsService {
     }
   }
 
-  private buildRuleCondition(rule: any): Prisma.UserTrackWhereInput {
+  private buildRuleCondition(
+    rule: PlaylistRuleDto,
+  ): Prisma.UserTrackWhereInput {
     switch (rule.field) {
       case PlaylistRuleField.ALBUM:
-        return this.buildStringCondition('spotifyTrack.album', rule);
+        return this.buildStringCondition(
+          'spotifyTrack.album',
+          rule,
+        ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.ARTIST:
-        return this.buildStringCondition('spotifyTrack.artist', rule);
+        return this.buildStringCondition(
+          'spotifyTrack.artist',
+          rule,
+        ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.DATE_ADDED:
         return this.buildDateCondition('addedAt', rule);
@@ -250,25 +267,37 @@ export class PlaylistsService {
         return this.buildDateCondition('lastPlayedAt', rule);
 
       case PlaylistRuleField.PLAY_COUNT:
-        return this.buildNumberCondition('totalPlayCount', rule);
+        return this.buildNumberCondition(
+          'totalPlayCount',
+          rule,
+        ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.RATING:
-        return this.buildNumberCondition('rating', rule);
+        return this.buildNumberCondition(
+          'rating',
+          rule,
+        ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.TAG:
         return this.buildTagCondition(rule);
 
       case PlaylistRuleField.TITLE:
-        return this.buildStringCondition('spotifyTrack.title', rule);
+        return this.buildStringCondition(
+          'spotifyTrack.title',
+          rule,
+        ) as Prisma.UserTrackWhereInput;
 
       default:
         return {};
     }
   }
 
-  private buildStringCondition(field: string, rule: any): any {
+  private buildStringCondition(
+    field: string,
+    rule: PlaylistRuleDto,
+  ): Prisma.SpotifyTrackWhereInput | Prisma.UserTrackWhereInput {
     const [parent, child] = field.split('.');
-    const condition: any = {};
+    const condition: Record<string, unknown> = {};
 
     switch (rule.operator) {
       case PlaylistRuleOperator.CONTAINS:
@@ -305,7 +334,7 @@ export class PlaylistsService {
     return child ? { [parent]: condition } : condition;
   }
 
-  private buildTagCondition(rule: any): Prisma.UserTrackWhereInput {
+  private buildTagCondition(rule: PlaylistRuleDto): Prisma.UserTrackWhereInput {
     switch (rule.operator) {
       case PlaylistRuleOperator.HAS_ANY_TAG:
         return {

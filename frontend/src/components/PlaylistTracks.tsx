@@ -11,6 +11,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import {
+  PaginatedTracksDto,
   usePlaylistsControllerFindOne,
   usePlaylistsControllerGetTracks,
 } from "../data/api";
@@ -35,7 +36,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
     );
   }
 
-  if (playlistLoading || isLoading) {
+  if (playlistLoading || isLoading || !data) {
     return (
       <Center h={400}>
         <Loader size="lg" />
@@ -43,7 +44,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
     );
   }
 
-  const tracks = (data as any)?.tracks || [];
+  const tracks = (data as PaginatedTracksDto).tracks || [];
 
   return (
     <Stack gap="sm">
