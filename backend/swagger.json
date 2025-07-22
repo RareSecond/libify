@@ -588,6 +588,36 @@
         ]
       }
     },
+    "/library/albums": {
+      "get": {
+        "operationId": "LibraryController_getAlbums",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of albums",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all albums in user library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/playlists": {
       "post": {
         "operationId": "PlaylistsController_create",
@@ -1048,6 +1078,63 @@
         },
         "required": [
           "rating"
+        ]
+      },
+      "AlbumDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Album name"
+          },
+          "artist": {
+            "type": "string",
+            "description": "Album artist"
+          },
+          "albumArt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Album artwork URL"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks from this album in library"
+          },
+          "totalDuration": {
+            "type": "number",
+            "description": "Total duration of all tracks in milliseconds"
+          },
+          "totalPlayCount": {
+            "type": "number",
+            "description": "Total play count across all tracks"
+          },
+          "avgRating": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average rating of rated tracks"
+          },
+          "firstAdded": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Date when first track from album was added"
+          },
+          "lastPlayed": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Date when any track from album was last played"
+          }
+        },
+        "required": [
+          "name",
+          "artist",
+          "albumArt",
+          "trackCount",
+          "totalDuration",
+          "totalPlayCount",
+          "avgRating",
+          "firstAdded",
+          "lastPlayed"
         ]
       },
       "PlaylistRuleDto": {

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 
 import { DatabaseService } from '../database/database.service';
+import { AlbumDto } from './dto/album.dto';
 import { GetTracksQueryDto, PaginatedTracksDto, TrackDto } from './dto/track.dto';
 
 @Injectable()
@@ -187,5 +188,76 @@ export class TrackService {
     });
 
     return updated.rating;
+  }
+
+  async getUserAlbums(userId: string): Promise<AlbumDto[]> {
+    // Get all unique albums with aggregated data
+    const tracks = await this.databaseService.userTrack.findMany({
+      where: { 
+        userId,
+        spotifyTrack: {
+          album: {
+            not: null
+          }
+        }
+      },
+      include: {
+        spotifyTrack: true,
+      },
+      orderBy: {
+        spotifyTrack: {
+          album: 'asc'
+        }
+      }
+    });
+
+    // Group tracks by album
+    const albumsMap = new Map<string, any>();
+    
+    tracks.forEach(track => {
+      const album = track.spotifyTrack.album;
+      if (!album) return;
+      
+      if (!albumsMap.has(album)) {
+        albumsMap.set(album, {
+          name: album,
+          artist: track.spotifyTrack.artist,
+          albumArt: track.spotifyTrack.albumArt,
+          trackCount: 0,
+          totalDuration: 0,
+          totalPlayCount: 0,
+          avgRating: 0,
+          ratedCount: 0,
+          firstAdded: track.addedAt,
+          lastPlayed: track.lastPlayedAt,
+        });
+      }
+      
+      const albumData = albumsMap.get(album);
+      albumData.trackCount++;
+      albumData.totalDuration += track.spotifyTrack.duration;
+      albumData.totalPlayCount += track.totalPlayCount;
+      
+      if (track.rating) {
+        albumData.avgRating = ((albumData.avgRating * albumData.ratedCount) + track.rating) / (albumData.ratedCount + 1);
+        albumData.ratedCount++;
+      }
+      
+      if (!albumData.firstAdded || track.addedAt < albumData.firstAdded) {
+        albumData.firstAdded = track.addedAt;
+      }
+      
+      if (track.lastPlayedAt && (!albumData.lastPlayed || track.lastPlayedAt > albumData.lastPlayed)) {
+        albumData.lastPlayed = track.lastPlayedAt;
+      }
+    });
+
+    // Convert map to array and format
+    const albums = Array.from(albumsMap.values()).map(album => ({
+      ...album,
+      avgRating: album.ratedCount > 0 ? Math.round(album.avgRating * 10) / 10 : null,
+    }));
+
+    return plainToInstance(AlbumDto, albums, { excludeExtraneousValues: true });
   }
 }

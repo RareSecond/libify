@@ -1,7 +1,7 @@
 import { AppShell, Burger, Group, NavLink, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Link, useLocation } from '@tanstack/react-router';
-import { Home, Library, ListMusic } from 'lucide-react';
+import { Disc, Home, Library, ListMusic } from 'lucide-react';
 import { ReactNode } from 'react';
 
 interface AppShellLayoutProps {
@@ -15,6 +15,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
   const navItems = [
     { icon: Home, label: 'Home', to: '/' },
     { icon: Library, label: 'My Library', to: '/tracks' },
+    { icon: Disc, label: 'Albums', to: '/albums' },
     { icon: ListMusic, label: 'Smart Playlists', to: '/playlists' },
   ];
 

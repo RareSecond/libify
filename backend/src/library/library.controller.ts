@@ -24,6 +24,7 @@ import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AlbumDto } from './dto/album.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import { AddTagToTrackDto, CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
@@ -271,6 +272,13 @@ export class LibraryController {
       updateRatingDto.rating,
     );
     return { message: 'Rating updated', rating };
+  }
+
+  @ApiOperation({ summary: 'Get all albums in user library' })
+  @ApiResponse({ description: 'List of albums', status: 200, type: [AlbumDto] })
+  @Get('albums')
+  async getAlbums(@Req() req: AuthenticatedRequest): Promise<AlbumDto[]> {
+    return this.trackService.getUserAlbums(req.user.id);
   }
 }
 
