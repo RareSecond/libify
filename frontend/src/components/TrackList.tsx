@@ -22,7 +22,7 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 import { Music, Search, Tag } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -128,157 +128,155 @@ export function TrackList() {
   };
 
   const defaultColumnOrder = [
-    'albumArt',
-    'title',
-    'artist',
-    'album',
-    'duration',
-    'totalPlayCount',
-    'lastPlayedAt',
-    'rating',
-    'tags',
+    "albumArt",
+    "title",
+    "artist",
+    "album",
+    "duration",
+    "totalPlayCount",
+    "lastPlayedAt",
+    "rating",
+    "tags",
   ];
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
 
-  const columns = useMemo<ColumnDef<TrackDto>[]>(() => [
-    {
-      cell: ({ row }) => (
-        <Group gap="xs" wrap="nowrap">
-          {row.original.albumArt ? (
-            <Box
-              h={36}
-              style={{
-                borderRadius: "4px",
-                overflow: "hidden",
-              }}
-              w={36}
-            >
-              <Image
-                alt={row.original.album || row.original.title}
-                fallbackSrc="/placeholder-album.svg"
-                fit="cover"
+  const columns = useMemo<ColumnDef<TrackDto>[]>(
+    () => [
+      {
+        cell: ({ row }) => (
+          <Group gap="xs" wrap="nowrap">
+            {row.original.albumArt ? (
+              <Box
                 h={36}
-                src={row.original.albumArt}
-                style={{ objectFit: "cover" }}
+                style={{
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                }}
                 w={36}
-              />
-            </Box>
-          ) : (
-            <Center
-              bg="gray.2"
-              h={36}
-              style={{ borderRadius: "4px" }}
-              w={36}
-            >
-              <Music color="gray" size={18} />
-            </Center>
-          )}
-        </Group>
-      ),
-      enableSorting: false,
-      header: '',
-      id: 'albumArt',
-      size: 50,
-    },
-    {
-      accessorKey: 'title',
-      cell: ({ getValue }) => (
-        <Text fw={500} lineClamp={1} size="sm">
-          {getValue() as string}
-        </Text>
-      ),
-      header: 'Title',
-      id: 'title',
-      size: 200,
-    },
-    {
-      accessorKey: 'artist',
-      cell: ({ getValue }) => (
-        <Text lineClamp={1} size="sm">
-          {getValue() as string}
-        </Text>
-      ),
-      header: 'Artist',
-      id: 'artist',
-      size: 150,
-    },
-    {
-      accessorKey: 'album',
-      cell: ({ getValue }) => (
-        <Text c="dimmed" lineClamp={1} size="sm">
-          {(getValue() as string) || '-'}
-        </Text>
-      ),
-      header: 'Album',
-      id: 'album',
-      size: 150,
-    },
-    {
-      accessorKey: 'duration',
-      cell: ({ getValue }) => (
-        <Text c="dimmed" size="sm">
-          {formatDuration(getValue() as number)}
-        </Text>
-      ),
-      header: 'Duration',
-      id: 'duration',
-      size: 80,
-    },
-    {
-      accessorKey: 'totalPlayCount',
-      cell: ({ getValue }) => (
-        <Text size="sm" ta="center">
-          {getValue() as number}
-        </Text>
-      ),
-      header: 'Plays',
-      id: 'totalPlayCount',
-      size: 60,
-    },
-    {
-      accessorKey: 'lastPlayedAt',
-      cell: ({ getValue }) => (
-        <Text c="dimmed" size="xs">
-          {formatDate(getValue() as string | undefined)}
-        </Text>
-      ),
-      header: 'Last Played',
-      id: 'lastPlayedAt',
-      size: 100,
-    },
-    {
-      accessorKey: 'rating',
-      cell: ({ row }) => (
-        <RatingSelector
-          onRatingChange={refetch}
-          rating={row.original.rating ?? null}
-          trackId={row.original.id}
-        />
-      ),
-      enableSorting: false,
-      header: 'Rating',
-      id: 'rating',
-      size: 120,
-    },
-    {
-      accessorKey: 'tags',
-      cell: ({ row }) => (
-        <InlineTagEditor
-          onTagsChange={refetch}
-          trackId={row.original.id}
-          trackTags={row.original.tags}
-        />
-      ),
-      enableSorting: false,
-      header: 'Tags',
-      id: 'tags',
-      size: 150,
-    },
-  ], [refetch]);
+              >
+                <Image
+                  alt={row.original.album || row.original.title}
+                  fallbackSrc="/placeholder-album.svg"
+                  fit="cover"
+                  h={36}
+                  src={row.original.albumArt}
+                  style={{ objectFit: "cover" }}
+                  w={36}
+                />
+              </Box>
+            ) : (
+              <Center bg="gray.2" h={36} style={{ borderRadius: "4px" }} w={36}>
+                <Music color="gray" size={18} />
+              </Center>
+            )}
+          </Group>
+        ),
+        enableSorting: false,
+        header: "",
+        id: "albumArt",
+        size: 50,
+      },
+      {
+        accessorKey: "title",
+        cell: ({ getValue }) => (
+          <Text fw={500} lineClamp={1} size="sm">
+            {getValue() as string}
+          </Text>
+        ),
+        header: "Title",
+        id: "title",
+        size: 200,
+      },
+      {
+        accessorKey: "artist",
+        cell: ({ getValue }) => (
+          <Text lineClamp={1} size="sm">
+            {getValue() as string}
+          </Text>
+        ),
+        header: "Artist",
+        id: "artist",
+        size: 150,
+      },
+      {
+        accessorKey: "album",
+        cell: ({ getValue }) => (
+          <Text c="dimmed" lineClamp={1} size="sm">
+            {(getValue() as string) || "-"}
+          </Text>
+        ),
+        header: "Album",
+        id: "album",
+        size: 150,
+      },
+      {
+        accessorKey: "duration",
+        cell: ({ getValue }) => (
+          <Text c="dimmed" size="sm">
+            {formatDuration(getValue() as number)}
+          </Text>
+        ),
+        header: "Duration",
+        id: "duration",
+        size: 80,
+      },
+      {
+        accessorKey: "totalPlayCount",
+        cell: ({ getValue }) => (
+          <Text size="sm" ta="center">
+            {getValue() as number}
+          </Text>
+        ),
+        header: "Plays",
+        id: "totalPlayCount",
+        size: 60,
+      },
+      {
+        accessorKey: "lastPlayedAt",
+        cell: ({ getValue }) => (
+          <Text c="dimmed" size="xs">
+            {formatDate(getValue() as string | undefined)}
+          </Text>
+        ),
+        header: "Last Played",
+        id: "lastPlayedAt",
+        size: 100,
+      },
+      {
+        accessorKey: "rating",
+        cell: ({ row }) => (
+          <RatingSelector
+            onRatingChange={refetch}
+            rating={row.original.rating ?? null}
+            trackId={row.original.id}
+          />
+        ),
+        enableSorting: false,
+        header: "Rating",
+        id: "rating",
+        size: 120,
+      },
+      {
+        accessorKey: "tags",
+        cell: ({ row }) => (
+          <InlineTagEditor
+            onTagsChange={refetch}
+            trackId={row.original.id}
+            trackTags={row.original.tags}
+          />
+        ),
+        enableSorting: false,
+        header: "Tags",
+        id: "tags",
+        size: 150,
+      },
+    ],
+    [refetch]
+  );
 
   const table = useReactTable({
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     columns,
     data: data?.tracks || [],
     getCoreRowModel: getCoreRowModel(),
@@ -288,8 +286,9 @@ export function TrackList() {
     },
   });
 
-  const handleDragStart = (column: string) => {
+  const handleDragStart = (e: React.DragEvent, column: string) => {
     setDraggedColumn(column);
+    e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragEnd = () => {
@@ -298,9 +297,10 @@ export function TrackList() {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetColumn: string) => {
+  const handleDragEnter = (e: React.DragEvent, targetColumn: string) => {
     e.preventDefault();
     if (!draggedColumn || draggedColumn === targetColumn) return;
 
@@ -309,10 +309,15 @@ export function TrackList() {
     const targetIndex = newColumnOrder.indexOf(targetColumn);
 
     if (draggedIndex !== -1 && targetIndex !== -1) {
+      // Remove dragged column and insert at target position
       newColumnOrder.splice(draggedIndex, 1);
       newColumnOrder.splice(targetIndex, 0, draggedColumn);
       setColumnOrder(newColumnOrder);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   if (error) {
@@ -418,13 +423,20 @@ export function TrackList() {
                         draggable
                         key={header.id}
                         onDragEnd={handleDragEnd}
+                        onDragEnter={(e) =>
+                          handleDragEnter(e, header.column.id)
+                        }
                         onDragOver={handleDragOver}
-                        onDragStart={() => handleDragStart(header.column.id)}
-                        onDrop={(e) => handleDrop(e, header.column.id)}
+                        onDragStart={(e) =>
+                          handleDragStart(e, header.column.id)
+                        }
+                        onDrop={handleDrop}
                         style={{
-                          cursor: 'grab',
-                          position: 'relative',
-                          userSelect: 'none',
+                          cursor: draggedColumn ? "grabbing" : "grab",
+                          opacity: draggedColumn === header.column.id ? 0.5 : 1,
+                          position: "relative",
+                          transition: "opacity 0.2s",
+                          userSelect: "none",
                           width: header.getSize(),
                         }}
                       >
@@ -441,7 +453,9 @@ export function TrackList() {
                     <Table.Tr
                       className="hover:bg-gray-50"
                       key={row.id}
-                      onClick={() => handlePlayTrack(row.original.id, row.original.title)}
+                      onClick={() =>
+                        handlePlayTrack(row.original.id, row.original.title)
+                      }
                       style={{ cursor: "pointer" }}
                     >
                       {row.getVisibleCells().map((cell) => (
