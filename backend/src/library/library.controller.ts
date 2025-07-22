@@ -293,5 +293,16 @@ export class LibraryController {
       sortOrder: sortOrder || 'asc',
     });
   }
+
+  @ApiOperation({ summary: 'Get tracks from a specific album' })
+  @ApiResponse({ description: 'List of tracks from the album', status: 200 })
+  @Get('albums/:artist/:album/tracks')
+  async getAlbumTracks(
+    @Req() req: AuthenticatedRequest,
+    @Param('artist') artist: string,
+    @Param('album') album: string,
+  ) {
+    return this.trackService.getAlbumTracks(req.user.id, decodeURIComponent(artist), decodeURIComponent(album));
+  }
 }
 

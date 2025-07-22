@@ -656,6 +656,43 @@
         ]
       }
     },
+    "/library/albums/{artist}/{album}/tracks": {
+      "get": {
+        "operationId": "LibraryController_getAlbumTracks",
+        "parameters": [
+          {
+            "name": "artist",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "album",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tracks from the album"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tracks from a specific album",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/playlists": {
       "post": {
         "operationId": "PlaylistsController_create",

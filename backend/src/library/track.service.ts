@@ -331,4 +331,54 @@ export class TrackService {
       totalPages,
     }, { excludeExtraneousValues: true });
   }
+
+  async getAlbumTracks(userId: string, artist: string, album: string) {
+    const tracks = await this.databaseService.userTrack.findMany({
+      where: {
+        userId,
+        spotifyTrack: {
+          artist,
+          album,
+        },
+      },
+      include: {
+        spotifyTrack: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+      orderBy: {
+        spotifyTrack: {
+          title: 'asc',
+        },
+      },
+    });
+
+    const trackDtos = tracks.map(track => {
+      const dto = {
+        addedAt: track.addedAt,
+        album: track.spotifyTrack.album,
+        albumArt: track.spotifyTrack.albumArt,
+        artist: track.spotifyTrack.artist,
+        duration: track.spotifyTrack.duration,
+        id: track.id,
+        lastPlayedAt: track.lastPlayedAt,
+        ratedAt: track.ratedAt,
+        rating: track.rating,
+        spotifyId: track.spotifyTrack.spotifyId,
+        tags: track.tags.map(t => ({
+          color: t.tag.color,
+          id: t.tag.id,
+          name: t.tag.name,
+        })),
+        title: track.spotifyTrack.title,
+        totalPlayCount: track.totalPlayCount,
+      };
+      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+    });
+
+    return { tracks: trackDtos };
+  }
 }

@@ -14,11 +14,11 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Music, Play, Search, Star } from 'lucide-react';
 
 import { useLibraryControllerGetAlbums } from '../data/api';
-import { Route } from '../routes/~albums';
+import { Route } from '../routes/~albums.index';
 
 const formatDuration = (ms: number) => {
   const hours = Math.floor(ms / 3600000);
@@ -141,7 +141,26 @@ export function AlbumsOverview() {
       <Grid>
         {data?.albums.map((album) => (
           <Grid.Col key={`${album.name}-${album.artist}`} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
-            <Card h="100%" p="md" radius="md" shadow="sm" withBorder>
+            <Link
+              to="/albums/$artist/$album"
+              params={{ 
+                artist: album.artist, 
+                album: album.name 
+              }}
+              style={{ textDecoration: 'none' }}
+            >
+              <Card 
+                h="100%" 
+                p="md" 
+                radius="md" 
+                shadow="sm" 
+                style={{ 
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  cursor: 'pointer',
+                }}
+                withBorder
+                className="hover:shadow-lg hover:-translate-y-1"
+              >
               <Card.Section mb="md">
                 <Box pos="relative">
                   {album.albumArt ? (
@@ -206,6 +225,7 @@ export function AlbumsOverview() {
                 </Text>
               </Stack>
             </Card>
+            </Link>
           </Grid.Col>
         ))}
       </Grid>
