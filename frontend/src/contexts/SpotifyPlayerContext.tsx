@@ -96,6 +96,10 @@ export function SpotifyPlayerProvider({
   const [playStartTime, setPlayStartTime] = useState<null | number>(null);
   const onPlayRecordedCallbackRef = useRef<(() => void) | null>(null);
 
+  // Track previous state to detect track end
+  const previousStateRef = useRef<SpotifyPlayerState | null>(null);
+  const shouldAutoPlayNext = useRef(false);
+
   const { data: user } = useAuthControllerGetProfile();
   const recordPlayMutation = useLibraryControllerRecordPlay();
 
@@ -174,13 +178,26 @@ export function SpotifyPlayerProvider({
       });
 
       // Playback status updates
-      spotifyPlayer.addListener("player_state_changed", (data) => {
+      spotifyPlayer.addListener("player_state_changed", async (data) => {
         const state = data as null | SpotifyPlayerState;
         if (!state) return;
 
         const newTrack = state.track_window.current_track;
         const wasPlaying = isPlaying;
         const newIsPlaying = !state.paused;
+        const previousState = previousStateRef.current;
+
+        // Detect track end: track was playing, now paused at position 0
+        if (previousState && 
+            !previousState.paused && 
+            state.paused && 
+            state.position === 0) {
+          // Track ended naturally, set flag to auto-play next
+          shouldAutoPlayNext.current = true;
+        }
+
+        // Update previous state reference
+        previousStateRef.current = state;
 
         setCurrentTrack(newTrack);
         setIsPlaying(newIsPlaying);
@@ -294,6 +311,52 @@ export function SpotifyPlayerProvider({
 
     return () => clearInterval(interval);
   }, [isPlaying, player]);
+
+  // Handle auto-play next track when a track ends
+  useEffect(() => {
+    if (shouldAutoPlayNext.current && currentTrackList.length > 0 && player && deviceId) {
+      shouldAutoPlayNext.current = false;
+      const nextIndex = currentTrackIndex + 1;
+      
+      if (nextIndex < currentTrackList.length) {
+        // Small delay to ensure state is stable
+        setTimeout(async () => {
+          // Clear current play tracking since we're changing tracks
+          clearPlayTrackingTimer();
+
+          // Play next track in our list
+          const nextUri = currentTrackList[nextIndex];
+          try {
+            const response = await fetch(
+              `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+              {
+                body: JSON.stringify({ uris: [nextUri] }),
+                headers: {
+                  Authorization: `Bearer ${await getAccessToken()}`,
+                  "Content-Type": "application/json",
+                },
+                method: "PUT",
+              },
+            );
+
+            if (response.ok) {
+              setCurrentTrackIndex(nextIndex);
+              // Start tracking for the new track if we have its ID
+              const nextTrackWithId = currentTracksWithIds[nextIndex];
+              if (nextTrackWithId?.trackId) {
+                startPlayTracking(
+                  nextTrackWithId.trackId,
+                  onPlayRecordedCallbackRef.current || undefined,
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Failed to auto-play next track:", error);
+          }
+        }, 100);
+      }
+    }
+  }, [isPlaying, currentTrackList, currentTrackIndex, player, deviceId, currentTracksWithIds]); // Trigger when isPlaying changes (track ended sets it to false)
 
   const play = async (uri?: string) => {
     if (!player || !deviceId) return;
