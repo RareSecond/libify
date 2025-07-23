@@ -7,6 +7,27 @@ export interface AuthConfigType {
 }
 
 export const authValidationSchema = Joi.object({
+  ENCRYPTION_KEY: Joi.string()
+    .hex()
+    .min(64)
+    .required()
+    .custom((value, helpers) => {
+      // Check for basic entropy (not just repeated characters)
+      const uniqueChars = new Set(value).size;
+      if (uniqueChars < 8) {
+        return helpers.error('string.lowEntropy');
+      }
+      return value;
+    })
+    .messages({
+      'any.required':
+        'ENCRYPTION_KEY environment variable is required. Generate using: openssl rand -hex 32',
+      'string.hex': 'ENCRYPTION_KEY must be a hexadecimal string',
+      'string.lowEntropy':
+        'ENCRYPTION_KEY appears to have low entropy. Use a cryptographically secure random key',
+      'string.min':
+        'ENCRYPTION_KEY must be at least 64 characters (32 bytes in hex)',
+    }),
   JWT_EXPIRES_IN: Joi.string().default('24h'),
   JWT_SECRET: Joi.string()
     .min(32)

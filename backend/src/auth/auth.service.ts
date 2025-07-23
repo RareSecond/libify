@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import axios from 'axios';
 
+import { EncryptionService } from '../common/encryption/encryption.service';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private prisma: DatabaseService,
+    private encryptionService: EncryptionService,
   ) {}
 
   async getSpotifyAccessToken(userId: string): Promise<null | string> {
@@ -28,6 +30,17 @@ export class AuthService {
       return null;
     }
 
+    // Decrypt the access token
+    let decryptedAccessToken: string;
+    try {
+      decryptedAccessToken = this.encryptionService.decrypt(
+        user.spotifyAccessToken,
+      );
+    } catch (error) {
+      this.logger.error('Failed to decrypt access token', error);
+      return null;
+    }
+
     // Check if token is expired or will expire in the next 5 minutes
     const now = new Date();
     const expiryBuffer = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -39,9 +52,13 @@ export class AuthService {
       // Token is expired or about to expire, refresh it
       if (user.spotifyRefreshToken) {
         try {
+          // Decrypt refresh token
+          const decryptedRefreshToken = this.encryptionService.decrypt(
+            user.spotifyRefreshToken,
+          );
           const newAccessToken = await this.refreshSpotifyToken(
             userId,
-            user.spotifyRefreshToken,
+            decryptedRefreshToken,
           );
           if (newAccessToken) {
             return newAccessToken;
@@ -54,7 +71,7 @@ export class AuthService {
       return null;
     }
 
-    return user.spotifyAccessToken;
+    return decryptedAccessToken;
   }
 
   async login(user: User) {
@@ -91,9 +108,13 @@ export class AuthService {
           provider,
           providerId,
           ...(provider === 'spotify' && {
-            spotifyAccessToken: accessToken,
+            spotifyAccessToken: accessToken
+              ? this.encryptionService.encrypt(accessToken)
+              : undefined,
             spotifyId: providerId,
-            spotifyRefreshToken: refreshToken,
+            spotifyRefreshToken: refreshToken
+              ? this.encryptionService.encrypt(refreshToken)
+              : undefined,
             tokenExpiresAt,
           }),
         },
@@ -102,8 +123,8 @@ export class AuthService {
       // Update tokens for existing user
       user = await this.prisma.user.update({
         data: {
-          spotifyAccessToken: accessToken,
-          spotifyRefreshToken: refreshToken,
+          spotifyAccessToken: this.encryptionService.encrypt(accessToken),
+          spotifyRefreshToken: this.encryptionService.encrypt(refreshToken),
           tokenExpiresAt,
         },
         where: { id: user.id },
@@ -151,12 +172,14 @@ export class AuthService {
       // Calculate new expiry time
       const tokenExpiresAt = new Date(Date.now() + expires_in * 1000);
 
-      // Update user with new tokens
+      // Update user with new tokens (encrypted)
       await this.prisma.user.update({
         data: {
-          spotifyAccessToken: access_token,
+          spotifyAccessToken: this.encryptionService.encrypt(access_token),
           // Only update refresh token if a new one was provided
-          ...(refresh_token && { spotifyRefreshToken: refresh_token }),
+          ...(refresh_token && {
+            spotifyRefreshToken: this.encryptionService.encrypt(refresh_token),
+          }),
           tokenExpiresAt,
         },
         where: { id: userId },
