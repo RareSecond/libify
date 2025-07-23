@@ -54,16 +54,19 @@ export function TracksTable({
   ) => {
     try {
       if (spotifyId && tracks.length > 0) {
-        // Build list of all track URIs
-        const trackUris = tracks
+        // Build list of tracks with both Spotify URIs and internal track IDs
+        const tracksWithIds = tracks
           .filter((track) => track.spotifyId)
-          .map((track) => `spotify:track:${track.spotifyId}`);
+          .map((track) => ({
+            spotifyUri: `spotify:track:${track.spotifyId}`,
+            trackId: track.id,
+          }));
 
-        if (trackUris.length > 0) {
+        if (tracksWithIds.length > 0) {
           // Find the index of the clicked track in the filtered list
           const clickedTrackUri = `spotify:track:${spotifyId}`;
-          const trackIndex = trackUris.findIndex(
-            (uri) => uri === clickedTrackUri,
+          const trackIndex = tracksWithIds.findIndex(
+            (track) => track.spotifyUri === clickedTrackUri,
           );
 
           // Play the entire track list starting from the clicked track
@@ -71,10 +74,16 @@ export function TracksTable({
             ? { contextId, contextType, search }
             : undefined;
           await playTrackList(
-            trackUris,
+            tracksWithIds,
             trackIndex >= 0 ? trackIndex : 0,
             context,
           );
+
+          // Trigger refetch if available to update play count
+          if (onRefetch) {
+            onRefetch();
+          }
+
           notifications.show({
             color: "green",
             message: trackTitle,
@@ -84,11 +93,17 @@ export function TracksTable({
       } else {
         // Fallback to backend API for single track
         await playTrackMutation.mutateAsync({ trackId });
+
         notifications.show({
           color: "green",
           message: trackTitle,
           title: "Now playing",
         });
+
+        // Trigger refetch if available to update play count
+        if (onRefetch) {
+          onRefetch();
+        }
       }
     } catch (error) {
       notifications.show({

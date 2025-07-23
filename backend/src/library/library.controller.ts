@@ -262,7 +262,20 @@ export class LibraryController {
       const trackUri = `spotify:track:${track.spotifyId}`;
       await this.spotifyService.playTrack(accessToken, trackUri);
 
-      return { message: 'Track started playing', trackId: track.id };
+      // Record the play locally
+      await this.trackService.recordPlay(req.user.id, trackId);
+
+      // Get updated track to return current play count
+      const updatedTrack = await this.trackService.getTrackById(
+        req.user.id,
+        trackId,
+      );
+
+      return {
+        message: 'Track started playing',
+        playCount: updatedTrack?.totalPlayCount || 0,
+        trackId: track.id,
+      };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

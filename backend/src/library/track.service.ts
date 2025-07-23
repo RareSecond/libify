@@ -585,6 +585,42 @@ export class TrackService {
     );
   }
 
+  async recordPlay(userId: string, trackId: string): Promise<void> {
+    // Get the user track to ensure it exists and belongs to the user
+    const userTrack = await this.databaseService.userTrack.findFirst({
+      where: { id: trackId, userId },
+    });
+
+    if (!userTrack) {
+      throw new Error('Track not found');
+    }
+
+    // Create a play history record
+    await this.databaseService.playHistory.create({
+      data: {
+        playedAt: new Date(),
+        userTrackId: trackId,
+      },
+    });
+
+    // Update the user track with incremented play count and last played timestamp
+    await this.databaseService.userTrack.update({
+      data: {
+        lastPlayedAt: new Date(),
+        totalPlayCount: {
+          increment: 1,
+        },
+      },
+      where: { id: trackId },
+    });
+
+    // Update aggregated stats for the artist and album
+    await this.aggregationService.updateStatsForTrack(
+      userId,
+      userTrack.spotifyTrackId,
+    );
+  }
+
   async updateTrackRating(
     userId: string,
     trackId: string,

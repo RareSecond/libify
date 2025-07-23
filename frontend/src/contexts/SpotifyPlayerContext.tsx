@@ -6,7 +6,10 @@ import {
   useState,
 } from "react";
 
-import { useAuthControllerGetProfile } from "../data/api";
+import {
+  useAuthControllerGetProfile,
+  useLibraryControllerPlayTrack,
+} from "../data/api";
 import {
   SpotifyPlayer,
   SpotifyPlayerState,
@@ -35,7 +38,7 @@ interface SpotifyPlayerContextType {
   play: (uri?: string) => Promise<void>;
   player: null | SpotifyPlayer;
   playTrackList: (
-    trackUris: string[],
+    tracks: string[] | TrackWithId[],
     startIndex?: number,
     context?: PlayContext,
   ) => Promise<void>;
@@ -46,6 +49,11 @@ interface SpotifyPlayerContextType {
   setVolume: (volume: number) => Promise<void>;
   toggleShuffle: () => Promise<void>;
   volume: number;
+}
+
+interface TrackWithId {
+  spotifyUri: string;
+  trackId?: string; // Internal track ID for play recording
 }
 
 const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(
@@ -76,6 +84,7 @@ export function SpotifyPlayerProvider({
   );
 
   const { data: user } = useAuthControllerGetProfile();
+  const playTrackMutation = useLibraryControllerPlayTrack();
 
   useEffect(() => {
     if (!user) return;
@@ -213,11 +222,21 @@ export function SpotifyPlayerProvider({
   };
 
   const playTrackList = async (
-    trackUris: string[],
+    tracks: string[] | TrackWithId[],
     startIndex = 0,
     context?: PlayContext,
   ) => {
-    if (!player || !deviceId || trackUris.length === 0) return;
+    if (!player || !deviceId || tracks.length === 0) return;
+
+    // Normalize tracks to TrackWithId format
+    const normalizedTracks: TrackWithId[] = tracks.map((track) => {
+      if (typeof track === "string") {
+        return { spotifyUri: track };
+      }
+      return track;
+    });
+
+    const trackUris = normalizedTracks.map((track) => track.spotifyUri);
 
     const response = await fetch(
       `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
@@ -242,6 +261,18 @@ export function SpotifyPlayerProvider({
       setOriginalTrackList(trackUris);
       setIsShuffled(false);
       setCurrentContext(context || null);
+
+      // Record the play locally if we have the internal track ID
+      const startingTrack = normalizedTracks[startIndex];
+      if (startingTrack?.trackId) {
+        try {
+          await playTrackMutation.mutateAsync({
+            trackId: startingTrack.trackId,
+          });
+        } catch {
+          // Silently fail - don't interrupt the user experience
+        }
+      }
     }
   };
 
