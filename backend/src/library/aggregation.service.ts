@@ -8,13 +8,25 @@ export class AggregationService {
 
   constructor(private databaseService: DatabaseService) {}
 
-  async createOrUpdateSpotifyEntities(spotifyTrackData: {
-    album: { images: Array<{ url: string }>; name: string };
-    artists: Array<{ name: string }>;
-    duration_ms: number;
-    id: string;
-    name: string;
-  }): Promise<{
+  async createOrUpdateSpotifyEntities(
+    spotifyTrackData: {
+      album: { id: string; images: Array<{ url: string }>; name: string };
+      artists: Array<{ id: string; name: string }>;
+      duration_ms: number;
+      id: string;
+      name: string;
+    },
+    artistMap: Map<
+      string,
+      {
+        genres: string[];
+        id: string;
+        images: Array<{ url: string }>;
+        name: string;
+        popularity: number;
+      }
+    >,
+  ): Promise<{
     albumId: null | string;
     artistId: string;
     trackId: string;
@@ -25,18 +37,26 @@ export class AggregationService {
       throw new Error('Track has no artists');
     }
 
+    // Get artist data from the pre-fetched map
+    let artistImageUrl: null | string = null;
+    const artistData = artistMap.get(primaryArtist.id);
+    if (artistData && artistData.images.length > 0) {
+      artistImageUrl = artistData.images[0].url;
+    }
+
     // Create or get artist
     const artist = await this.databaseService.spotifyArtist.upsert({
       create: {
-        imageUrl: null, // Will be fetched later via Spotify API
+        imageUrl: artistImageUrl,
         name: primaryArtist.name,
-        spotifyId: primaryArtist.name, // Using name as ID temporarily
+        spotifyId: primaryArtist.id,
       },
       update: {
         name: primaryArtist.name,
+        ...(artistImageUrl && { imageUrl: artistImageUrl }),
       },
       where: {
-        spotifyId: primaryArtist.name,
+        spotifyId: primaryArtist.id,
       },
     });
 
@@ -49,7 +69,7 @@ export class AggregationService {
             ? spotifyTrackData.album.images[0].url
             : null,
         name: spotifyTrackData.album.name,
-        spotifyId: `${artist.spotifyId}-${spotifyTrackData.album.name}`, // Composite ID
+        spotifyId: spotifyTrackData.album.id,
       },
       update: {
         imageUrl:
@@ -59,7 +79,7 @@ export class AggregationService {
         name: spotifyTrackData.album.name,
       },
       where: {
-        spotifyId: `${artist.spotifyId}-${spotifyTrackData.album.name}`,
+        spotifyId: spotifyTrackData.album.id,
       },
     });
 

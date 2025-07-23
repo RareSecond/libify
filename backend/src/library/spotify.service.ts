@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 
 export interface SpotifyPaginatedResponse<T> {
@@ -13,10 +12,11 @@ export interface SpotifyPaginatedResponse<T> {
 export interface SpotifyTrackData {
   added_at?: string;
   album: {
+    id: string;
     images: Array<{ url: string }>;
     name: string;
   };
-  artists: Array<{ name: string }>;
+  artists: Array<{ id: string; name: string }>;
   duration_ms: number;
   id: string;
   name: string;
@@ -27,7 +27,7 @@ export class SpotifyService {
   private readonly logger = new Logger(SpotifyService.name);
   private readonly spotifyApi: AxiosInstance;
 
-  constructor(private configService: ConfigService) {
+  constructor() {
     this.spotifyApi = axios.create({
       baseURL: 'https://api.spotify.com/v1',
     });
@@ -61,6 +61,27 @@ export class SpotifyService {
 
     this.logger.log(`Fetched ${allTracks.length} tracks from Spotify library`);
     return allTracks;
+  }
+
+  async getArtist(
+    accessToken: string,
+    artistId: string,
+  ): Promise<null | {
+    genres: string[];
+    id: string;
+    images: Array<{ url: string }>;
+    name: string;
+    popularity: number;
+  }> {
+    try {
+      const response = await this.spotifyApi.get(`/artists/${artistId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to get artist ${artistId}`, error);
+      return null;
+    }
   }
 
   async getAvailableDevices(accessToken: string): Promise<
@@ -107,6 +128,42 @@ export class SpotifyService {
     } catch (error) {
       this.logger.error('Failed to fetch currently playing track', error);
       return null;
+    }
+  }
+
+  async getMultipleArtists(
+    accessToken: string,
+    artistIds: string[],
+  ): Promise<
+    Array<{
+      genres: string[];
+      id: string;
+      images: Array<{ url: string }>;
+      name: string;
+      popularity: number;
+    }>
+  > {
+    try {
+      // Spotify API allows up to 50 artists per request
+      const chunks: string[][] = [];
+      for (let i = 0; i < artistIds.length; i += 50) {
+        chunks.push(artistIds.slice(i, i + 50));
+      }
+
+      const allArtists = await Promise.all(
+        chunks.map(async (chunk) => {
+          const response = await this.spotifyApi.get('/artists', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            params: { ids: chunk.join(',') },
+          });
+          return response.data.artists || [];
+        }),
+      );
+
+      return allArtists.flat();
+    } catch (error) {
+      this.logger.error('Failed to get multiple artists', error);
+      return [];
     }
   }
 

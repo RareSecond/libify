@@ -112,7 +112,7 @@ export class LibrarySyncService {
       const batchSize = 100;
       for (let i = 0; i < spotifyTracks.length; i += batchSize) {
         const batch = spotifyTracks.slice(i, i + batchSize);
-        await this.processBatch(userId, batch, result);
+        await this.processBatch(userId, batch, result, accessToken);
       }
 
       this.logger.log(
@@ -130,12 +130,33 @@ export class LibrarySyncService {
     userId: string,
     tracks: Array<{ added_at: string; track: SpotifyTrackData }>,
     result: SyncResult,
+    accessToken: string,
   ): Promise<void> {
+    // First, collect all unique artist IDs from this batch
+    const uniqueArtistIds = new Set<string>();
+    tracks.forEach(({ track }) => {
+      if (track.artists[0]?.id) {
+        uniqueArtistIds.add(track.artists[0].id);
+      }
+    });
+
+    // Fetch all artist data in batch
+    const artistsData = await this.spotifyService.getMultipleArtists(
+      accessToken,
+      Array.from(uniqueArtistIds),
+    );
+
+    // Create a map for quick lookup
+    const artistMap = new Map(artistsData.map((artist) => [artist.id, artist]));
+
     for (const { added_at, track } of tracks) {
       try {
         // Create or update the Spotify entities (artist, album, track)
         const { trackId: spotifyTrackId } =
-          await this.aggregationService.createOrUpdateSpotifyEntities(track);
+          await this.aggregationService.createOrUpdateSpotifyEntities(
+            track,
+            artistMap,
+          );
 
         // Then, create or update the UserTrack
         const existingUserTrack =
