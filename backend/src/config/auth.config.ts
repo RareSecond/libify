@@ -21,10 +21,13 @@ export const authValidationSchema = Joi.object({
       return value;
     })
     .messages({
+      'any.invalid':
+        'JWT_SECRET cannot be a common default value. Use a cryptographically secure random string',
       'any.required': 'JWT_SECRET environment variable is required',
-      'string.min': 'JWT_SECRET must be at least 32 characters long for security',
-      'any.invalid': 'JWT_SECRET cannot be a common default value. Use a cryptographically secure random string',
-      'string.lowEntropy': 'JWT_SECRET appears to have low entropy (too many repeated characters). Use a more random secret string',
+      'string.lowEntropy':
+        'JWT_SECRET appears to have low entropy (too many repeated characters). Use a more random secret string',
+      'string.min':
+        'JWT_SECRET must be at least 32 characters long for security',
     }),
 });
 

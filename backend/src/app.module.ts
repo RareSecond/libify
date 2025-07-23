@@ -12,7 +12,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
 @Module({
   controllers: [AppController],
   imports: [
-    ConfigModule.forRoot({ 
+    ConfigModule.forRoot({
       isGlobal: true,
       load: [authConfig],
       validationSchema: authValidationSchema,

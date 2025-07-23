@@ -15,6 +15,16 @@ interface AuthenticatedRequest extends Request {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private readonly isProduction = process.env.NODE_ENV === 'production';
+  private readonly cookieOptions = {
+    httpOnly: true,
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: this.isProduction,
+    ...(this.isProduction &&
+      process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
+  };
+
   constructor(private authService: AuthService) {}
 
   @Get('token')
@@ -37,12 +47,7 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Res() res: Response) {
-    res.clearCookie('jwt', {
-      httpOnly: true,
-      path: '/',
-      sameSite: 'lax',
-      secure: false,
-    });
+    res.clearCookie('jwt', this.cookieOptions);
     res.json({ message: 'Logged out successfully' });
   }
 
@@ -61,13 +66,9 @@ export class AuthController {
     const user = req.user;
     const loginResult = await this.authService.login(user);
 
-    // Set JWT as HTTP-only cookie
     res.cookie('jwt', loginResult.access_token, {
-      httpOnly: true,
+      ...this.cookieOptions,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/',
-      sameSite: 'lax',
-      secure: false,
     });
 
     // Redirect to frontend
