@@ -10,7 +10,7 @@ import { Music, Volume2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
-import { TrackDto, useLibraryControllerPlayTrack } from "../data/api";
+import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { RatingSelector } from "./RatingSelector";
@@ -44,14 +44,9 @@ export function TracksTable({
   tracks,
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
-  const playTrackMutation = useLibraryControllerPlayTrack();
   const { currentTrack, isPlaying, playTrackList } = useSpotifyPlayer();
 
-  const handlePlayTrack = async (
-    trackId: string,
-    trackTitle: string,
-    spotifyId?: string,
-  ) => {
+  const handlePlayTrack = async (trackTitle: string, spotifyId?: string) => {
     try {
       if (spotifyId && tracks.length > 0) {
         // Build list of tracks with both Spotify URIs and internal track IDs
@@ -77,12 +72,8 @@ export function TracksTable({
             tracksWithIds,
             trackIndex >= 0 ? trackIndex : 0,
             context,
+            onRefetch,
           );
-
-          // Trigger refetch if available to update play count
-          if (onRefetch) {
-            onRefetch();
-          }
 
           notifications.show({
             color: "green",
@@ -91,19 +82,9 @@ export function TracksTable({
           });
         }
       } else {
-        // Fallback to backend API for single track
-        await playTrackMutation.mutateAsync({ trackId });
-
-        notifications.show({
-          color: "green",
-          message: trackTitle,
-          title: "Now playing",
-        });
-
-        // Trigger refetch if available to update play count
-        if (onRefetch) {
-          onRefetch();
-        }
+        // Fallback case - this shouldn't happen in normal usage since we always have Spotify IDs
+        // But if it does, we can't play the track, so just show an error
+        throw new Error("Cannot play track: missing Spotify ID");
       }
     } catch (error) {
       notifications.show({
@@ -399,11 +380,7 @@ export function TracksTable({
                 className="hover:bg-gray-50"
                 key={row.id}
                 onClick={() =>
-                  handlePlayTrack(
-                    row.original.id,
-                    row.original.title,
-                    row.original.spotifyId,
-                  )
+                  handlePlayTrack(row.original.title, row.original.spotifyId)
                 }
                 style={{
                   backgroundColor:

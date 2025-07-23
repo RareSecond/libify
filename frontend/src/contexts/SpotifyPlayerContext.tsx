@@ -3,12 +3,13 @@ import {
   ReactNode,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
 import {
   useAuthControllerGetProfile,
-  useLibraryControllerPlayTrack,
+  useLibraryControllerRecordPlay,
 } from "../data/api";
 import {
   SpotifyPlayer,
@@ -41,6 +42,7 @@ interface SpotifyPlayerContextType {
     tracks: string[] | TrackWithId[],
     startIndex?: number,
     context?: PlayContext,
+    onPlayRecorded?: () => void,
   ) => Promise<void>;
   position: number;
   previousTrack: () => Promise<void>;
@@ -78,13 +80,68 @@ export function SpotifyPlayerProvider({
   const [currentTrackList, setCurrentTrackList] = useState<string[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [originalTrackList, setOriginalTrackList] = useState<string[]>([]);
+  const [currentTracksWithIds, setCurrentTracksWithIds] = useState<
+    TrackWithId[]
+  >([]);
   const [isShuffled, setIsShuffled] = useState(false);
   const [currentContext, setCurrentContext] = useState<null | PlayContext>(
     null,
   );
 
+  // Play tracking state
+  const [playTrackingTimer, setPlayTrackingTimer] = useState<null | number>(
+    null,
+  );
+  const [currentTrackId, setCurrentTrackId] = useState<null | string>(null);
+  const [playStartTime, setPlayStartTime] = useState<null | number>(null);
+  const onPlayRecordedCallbackRef = useRef<(() => void) | null>(null);
+
   const { data: user } = useAuthControllerGetProfile();
-  const playTrackMutation = useLibraryControllerPlayTrack();
+  const recordPlayMutation = useLibraryControllerRecordPlay();
+
+  // Helper functions for play tracking
+  const clearPlayTrackingTimer = () => {
+    if (playTrackingTimer) {
+      window.clearTimeout(playTrackingTimer);
+      setPlayTrackingTimer(null);
+    }
+    setCurrentTrackId(null);
+    setPlayStartTime(null);
+    onPlayRecordedCallbackRef.current = null;
+  };
+
+  const startPlayTracking = (trackId: string, onPlayRecorded?: () => void) => {
+    // Clear any existing timer
+    clearPlayTrackingTimer();
+
+    // Set up new tracking
+    setCurrentTrackId(trackId);
+    setPlayStartTime(Date.now());
+    onPlayRecordedCallbackRef.current = onPlayRecorded || null;
+
+    // Start 30-second timer
+    const timerId = window.setTimeout(async () => {
+      try {
+        if (recordPlayMutation?.mutateAsync) {
+          await recordPlayMutation.mutateAsync({ trackId });
+          // Call the callback to update UI
+          if (onPlayRecorded) {
+            onPlayRecorded();
+          }
+        }
+      } catch {
+        // Silently fail - don't interrupt the user experience
+      } finally {
+        // Clear tracking state after recording
+        setPlayTrackingTimer(null);
+        setCurrentTrackId(null);
+        setPlayStartTime(null);
+        onPlayRecordedCallbackRef.current = null;
+      }
+    }, 30000); // 30 seconds
+
+    setPlayTrackingTimer(timerId);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -121,10 +178,55 @@ export function SpotifyPlayerProvider({
         const state = data as null | SpotifyPlayerState;
         if (!state) return;
 
-        setCurrentTrack(state.track_window.current_track);
-        setIsPlaying(!state.paused);
+        const newTrack = state.track_window.current_track;
+        const wasPlaying = isPlaying;
+        const newIsPlaying = !state.paused;
+
+        setCurrentTrack(newTrack);
+        setIsPlaying(newIsPlaying);
         setPosition(state.position);
-        setDuration(state.track_window.current_track.duration_ms);
+        setDuration(newTrack.duration_ms);
+
+        // Handle play tracking based on state changes
+        if (newIsPlaying && !wasPlaying) {
+          // Started playing - check if we have a track ID to track
+          if (currentTrackId) {
+            // Resume tracking if we have a current track ID
+            const elapsed = playStartTime ? Date.now() - playStartTime : 0;
+            const remainingTime = Math.max(0, 30000 - elapsed);
+
+            if (remainingTime > 0 && !playTrackingTimer) {
+              // Resume timer with remaining time
+              const timerId = window.setTimeout(async () => {
+                try {
+                  if (recordPlayMutation?.mutateAsync) {
+                    await recordPlayMutation.mutateAsync({
+                      trackId: currentTrackId,
+                    });
+                    // Call the callback to update UI
+                    if (onPlayRecordedCallbackRef.current) {
+                      onPlayRecordedCallbackRef.current();
+                    }
+                  }
+                } catch {
+                  // Silently fail
+                } finally {
+                  setPlayTrackingTimer(null);
+                  setCurrentTrackId(null);
+                  setPlayStartTime(null);
+                  onPlayRecordedCallbackRef.current = null;
+                }
+              }, remainingTime);
+              setPlayTrackingTimer(timerId);
+            }
+          }
+        } else if (!newIsPlaying && wasPlaying) {
+          // Paused - pause the timer but keep the state
+          if (playTrackingTimer) {
+            window.clearTimeout(playTrackingTimer);
+            setPlayTrackingTimer(null);
+          }
+        }
       });
 
       // Ready
@@ -171,6 +273,8 @@ export function SpotifyPlayerProvider({
       if (player) {
         player.disconnect();
       }
+      // Clear any pending play tracking timer
+      clearPlayTrackingTimer();
     };
   }, [user, volume]);
 
@@ -225,6 +329,7 @@ export function SpotifyPlayerProvider({
     tracks: string[] | TrackWithId[],
     startIndex = 0,
     context?: PlayContext,
+    onPlayRecorded?: () => void,
   ) => {
     if (!player || !deviceId || tracks.length === 0) return;
 
@@ -259,19 +364,14 @@ export function SpotifyPlayerProvider({
       setCurrentTrackList(trackUris);
       setCurrentTrackIndex(startIndex);
       setOriginalTrackList(trackUris);
+      setCurrentTracksWithIds(normalizedTracks);
       setIsShuffled(false);
       setCurrentContext(context || null);
 
-      // Record the play locally if we have the internal track ID
+      // Start tracking the play for the starting track
       const startingTrack = normalizedTracks[startIndex];
       if (startingTrack?.trackId) {
-        try {
-          await playTrackMutation.mutateAsync({
-            trackId: startingTrack.trackId,
-          });
-        } catch {
-          // Silently fail - don't interrupt the user experience
-        }
+        startPlayTracking(startingTrack.trackId, onPlayRecorded);
       }
     }
   };
@@ -290,6 +390,9 @@ export function SpotifyPlayerProvider({
 
   const nextTrack = async () => {
     if (!player || currentTrackList.length === 0) return;
+
+    // Clear current play tracking since we're changing tracks
+    clearPlayTrackingTimer();
 
     const nextIndex = currentTrackIndex + 1;
 
@@ -312,6 +415,14 @@ export function SpotifyPlayerProvider({
         // Failed to play next track
       } else {
         setCurrentTrackIndex(nextIndex);
+        // Start tracking for the new track if we have its ID
+        const nextTrackWithId = currentTracksWithIds[nextIndex];
+        if (nextTrackWithId?.trackId) {
+          startPlayTracking(
+            nextTrackWithId.trackId,
+            onPlayRecordedCallbackRef.current || undefined,
+          );
+        }
       }
     } else {
       // Try Spotify's native next (in case there's a queue)
@@ -321,6 +432,9 @@ export function SpotifyPlayerProvider({
 
   const previousTrack = async () => {
     if (!player || currentTrackList.length === 0) return;
+
+    // Clear current play tracking since we're changing tracks
+    clearPlayTrackingTimer();
 
     const prevIndex = currentTrackIndex - 1;
 
@@ -343,6 +457,14 @@ export function SpotifyPlayerProvider({
         // Failed to play previous track
       } else {
         setCurrentTrackIndex(prevIndex);
+        // Start tracking for the new track if we have its ID
+        const prevTrackWithId = currentTracksWithIds[prevIndex];
+        if (prevTrackWithId?.trackId) {
+          startPlayTracking(
+            prevTrackWithId.trackId,
+            onPlayRecordedCallbackRef.current || undefined,
+          );
+        }
       }
     } else {
       // Try Spotify's native previous
