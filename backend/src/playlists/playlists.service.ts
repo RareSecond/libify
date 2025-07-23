@@ -89,7 +89,16 @@ export class PlaylistsService {
     const [tracks, total] = await Promise.all([
       this.prisma.userTrack.findMany({
         include: {
-          spotifyTrack: true,
+          spotifyTrack: {
+            include: {
+              album: {
+                include: {
+                  artist: true,
+                },
+              },
+              artist: true,
+            },
+          },
           tags: {
             include: {
               tag: true,
@@ -106,9 +115,9 @@ export class PlaylistsService {
 
     const formattedTracks = tracks.map((track) => ({
       addedAt: track.addedAt.toISOString(),
-      album: track.spotifyTrack.album,
-      albumArt: track.spotifyTrack.albumArt,
-      artist: track.spotifyTrack.artist,
+      album: track.spotifyTrack.album.name,
+      albumArt: track.spotifyTrack.album.imageUrl || null,
+      artist: track.spotifyTrack.artist.name,
       duration: track.spotifyTrack.duration,
       id: track.id,
       lastPlayedAt: track.lastPlayedAt?.toISOString(),
@@ -219,9 +228,9 @@ export class PlaylistsService {
 
     switch (criteria.orderBy) {
       case 'album':
-        return { spotifyTrack: { album: direction } };
+        return { spotifyTrack: { album: { name: direction } } };
       case 'artist':
-        return { spotifyTrack: { artist: direction } };
+        return { spotifyTrack: { artist: { name: direction } } };
       case 'dateAdded':
         return { addedAt: direction };
       case 'duration':

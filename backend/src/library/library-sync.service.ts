@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service';
+import { AggregationService } from './aggregation.service';
 import { SpotifyService, SpotifyTrackData } from './spotify.service';
 
 export interface SyncResult {
@@ -17,6 +18,7 @@ export class LibrarySyncService {
   constructor(
     private databaseService: DatabaseService,
     private spotifyService: SpotifyService,
+    private aggregationService: AggregationService,
   ) {}
 
   async getSyncStatus(userId: string): Promise<{
@@ -131,33 +133,16 @@ export class LibrarySyncService {
   ): Promise<void> {
     for (const { added_at, track } of tracks) {
       try {
-        // First, ensure the SpotifyTrack exists (upsert)
-        const spotifyTrack = await this.databaseService.spotifyTrack.upsert({
-          create: {
-            album: track.album?.name || '',
-            albumArt: track.album?.images?.[0]?.url || null,
-            artist: track.artists.map((a) => a.name).join(', '),
-            duration: track.duration_ms,
-            spotifyId: track.id,
-            title: track.name,
-          },
-          update: {
-            album: track.album?.name || '',
-            albumArt: track.album?.images?.[0]?.url || null,
-            artist: track.artists.map((a) => a.name).join(', '),
-            duration: track.duration_ms,
-            lastUpdated: new Date(),
-            title: track.name,
-          },
-          where: { spotifyId: track.id },
-        });
+        // Create or update the Spotify entities (artist, album, track)
+        const { trackId: spotifyTrackId } =
+          await this.aggregationService.createOrUpdateSpotifyEntities(track);
 
         // Then, create or update the UserTrack
         const existingUserTrack =
           await this.databaseService.userTrack.findUnique({
             where: {
               userId_spotifyTrackId: {
-                spotifyTrackId: spotifyTrack.id,
+                spotifyTrackId,
                 userId,
               },
             },
@@ -167,11 +152,17 @@ export class LibrarySyncService {
           await this.databaseService.userTrack.create({
             data: {
               addedAt: new Date(added_at),
-              spotifyTrackId: spotifyTrack.id,
+              spotifyTrackId,
               userId,
             },
           });
           result.newTracks++;
+
+          // Update aggregated stats for the new track
+          await this.aggregationService.updateStatsForTrack(
+            userId,
+            spotifyTrackId,
+          );
         } else {
           result.updatedTracks++;
         }

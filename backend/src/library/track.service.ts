@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 
 import { DatabaseService } from '../database/database.service';
+import { AggregationService } from './aggregation.service';
 import { AlbumDto, PaginatedAlbumsDto } from './dto/album.dto';
 import { ArtistDto, PaginatedArtistsDto } from './dto/artist.dto';
 import {
@@ -12,43 +13,29 @@ import {
 } from './dto/track.dto';
 import { SpotifyService } from './spotify.service';
 
-interface AlbumData {
-  albumArt?: string;
-  artist: string;
-  avgRating: number;
-  firstAdded: Date;
-  lastPlayed: Date | null;
-  name: string;
-  ratedCount: number;
-  totalDuration: number;
-  totalPlayCount: number;
-  trackCount: number;
-}
-
-interface ArtistData {
-  albumCount: Set<string>;
-  artistImage?: null | string;
-  avgRating: number;
-  firstAdded: Date;
-  lastPlayed: Date | null;
-  name: string;
-  ratedCount: number;
-  totalDuration: number;
-  totalPlayCount: number;
-  trackCount: number;
-}
+// Interfaces removed - using direct database queries with UserAlbum and UserArtist models
 
 @Injectable()
 export class TrackService {
   constructor(
     private databaseService: DatabaseService,
     private spotifyService: SpotifyService,
+    private aggregationService: AggregationService,
   ) {}
 
   async getAlbumTracks(userId: string, artist: string, album: string) {
     const tracks = await this.databaseService.userTrack.findMany({
       include: {
-        spotifyTrack: true,
+        spotifyTrack: {
+          include: {
+            album: {
+              include: {
+                artist: true,
+              },
+            },
+            artist: true,
+          },
+        },
         tags: {
           include: {
             tag: true,
@@ -62,8 +49,12 @@ export class TrackService {
       },
       where: {
         spotifyTrack: {
-          album,
-          artist,
+          album: {
+            name: album,
+          },
+          artist: {
+            name: artist,
+          },
         },
         userId,
       },
@@ -72,9 +63,9 @@ export class TrackService {
     const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
-        album: track.spotifyTrack.album,
-        albumArt: track.spotifyTrack.albumArt,
-        artist: track.spotifyTrack.artist,
+        album: track.spotifyTrack.album.name,
+        albumArt: track.spotifyTrack.album.imageUrl || null,
+        artist: track.spotifyTrack.artist.name,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -98,7 +89,16 @@ export class TrackService {
   async getArtistTracks(userId: string, artist: string) {
     const tracks = await this.databaseService.userTrack.findMany({
       include: {
-        spotifyTrack: true,
+        spotifyTrack: {
+          include: {
+            album: {
+              include: {
+                artist: true,
+              },
+            },
+            artist: true,
+          },
+        },
         tags: {
           include: {
             tag: true,
@@ -108,7 +108,9 @@ export class TrackService {
       orderBy: [
         {
           spotifyTrack: {
-            album: 'asc',
+            album: {
+              name: 'asc',
+            },
           },
         },
         {
@@ -119,7 +121,9 @@ export class TrackService {
       ],
       where: {
         spotifyTrack: {
-          artist,
+          artist: {
+            name: artist,
+          },
         },
         userId,
       },
@@ -128,9 +132,9 @@ export class TrackService {
     const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
-        album: track.spotifyTrack.album,
-        albumArt: track.spotifyTrack.albumArt,
-        artist: track.spotifyTrack.artist,
+        album: track.spotifyTrack.album.name,
+        albumArt: track.spotifyTrack.album.imageUrl || null,
+        artist: track.spotifyTrack.artist.name,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -158,7 +162,16 @@ export class TrackService {
   ): Promise<null | TrackDto> {
     const track = await this.databaseService.userTrack.findFirst({
       include: {
-        spotifyTrack: true,
+        spotifyTrack: {
+          include: {
+            album: {
+              include: {
+                artist: true,
+              },
+            },
+            artist: true,
+          },
+        },
         tags: {
           include: {
             tag: true,
@@ -177,9 +190,9 @@ export class TrackService {
 
     const dto = {
       addedAt: track.addedAt,
-      album: track.spotifyTrack.album,
-      albumArt: track.spotifyTrack.albumArt,
-      artist: track.spotifyTrack.artist,
+      album: track.spotifyTrack.album?.name || null,
+      albumArt: track.spotifyTrack.album?.imageUrl || null,
+      artist: track.spotifyTrack.artist.name,
       duration: track.spotifyTrack.duration,
       id: track.id,
       lastPlayedAt: track.lastPlayedAt,
@@ -214,137 +227,93 @@ export class TrackService {
       sortOrder: 'asc' | 'desc';
     },
   ): Promise<PaginatedAlbumsDto> {
-    // Get all unique albums with aggregated data
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: true,
-      },
-      orderBy: {
-        spotifyTrack: {
-          album: 'asc',
-        },
-      },
-      where: {
-        spotifyTrack: {
+    // Build where clause
+    const where: Prisma.UserAlbumWhereInput = {
+      userId,
+    };
+
+    // Add search filter
+    if (options.search) {
+      where.OR = [
+        {
           album: {
-            not: null,
+            name: { contains: options.search, mode: 'insensitive' },
           },
         },
-        userId,
-      },
-    });
-
-    // Group tracks by album
-    const albumsMap = new Map<string, AlbumData>();
-
-    tracks.forEach((track) => {
-      const album = track.spotifyTrack.album;
-      if (!album) return;
-
-      if (!albumsMap.has(album)) {
-        albumsMap.set(album, {
-          albumArt: track.spotifyTrack.albumArt,
-          artist: track.spotifyTrack.artist,
-          avgRating: 0,
-          firstAdded: track.addedAt,
-          lastPlayed: track.lastPlayedAt,
-          name: album,
-          ratedCount: 0,
-          totalDuration: 0,
-          totalPlayCount: 0,
-          trackCount: 0,
-        });
-      }
-
-      const albumData = albumsMap.get(album);
-      albumData.trackCount++;
-      albumData.totalDuration += track.spotifyTrack.duration;
-      albumData.totalPlayCount += track.totalPlayCount;
-
-      if (track.rating) {
-        albumData.avgRating =
-          (albumData.avgRating * albumData.ratedCount + track.rating) /
-          (albumData.ratedCount + 1);
-        albumData.ratedCount++;
-      }
-
-      if (!albumData.firstAdded || track.addedAt < albumData.firstAdded) {
-        albumData.firstAdded = track.addedAt;
-      }
-
-      if (
-        track.lastPlayedAt &&
-        (!albumData.lastPlayed || track.lastPlayedAt > albumData.lastPlayed)
-      ) {
-        albumData.lastPlayed = track.lastPlayedAt;
-      }
-    });
-
-    // Convert map to array and format
-    let allAlbums = Array.from(albumsMap.values()).map((album) => ({
-      ...album,
-      avgRating:
-        album.ratedCount > 0 ? Math.round(album.avgRating * 10) / 10 : null,
-    }));
-
-    // Apply search filter
-    if (options.search) {
-      const searchLower = options.search.toLowerCase();
-      allAlbums = allAlbums.filter(
-        (album) =>
-          album.name.toLowerCase().includes(searchLower) ||
-          album.artist.toLowerCase().includes(searchLower),
-      );
+        {
+          album: {
+            artist: {
+              name: { contains: options.search, mode: 'insensitive' },
+            },
+          },
+        },
+      ];
     }
 
-    // Apply sorting
-    allAlbums.sort((a, b) => {
-      let aVal: Date | null | number | string;
-      let bVal: Date | null | number | string;
+    // Build orderBy clause
+    let orderBy: Prisma.UserAlbumOrderByWithRelationInput = {};
+    switch (options.sortBy) {
+      case 'artist':
+        orderBy = { album: { artist: { name: options.sortOrder } } };
+        break;
+      case 'avgRating':
+        orderBy = { avgRating: options.sortOrder };
+        break;
+      case 'lastPlayed':
+        orderBy = { lastPlayedAt: options.sortOrder };
+        break;
+      case 'name':
+        orderBy = { album: { name: options.sortOrder } };
+        break;
+      case 'totalPlayCount':
+        orderBy = { totalPlayCount: options.sortOrder };
+        break;
+      case 'trackCount':
+        orderBy = { trackCount: options.sortOrder };
+        break;
+    }
 
-      switch (options.sortBy) {
-        case 'artist':
-          aVal = a.artist.toLowerCase();
-          bVal = b.artist.toLowerCase();
-          break;
-        case 'avgRating':
-          aVal = a.avgRating || 0;
-          bVal = b.avgRating || 0;
-          break;
-        case 'lastPlayed':
-          aVal = a.lastPlayed ? new Date(a.lastPlayed).getTime() : 0;
-          bVal = b.lastPlayed ? new Date(b.lastPlayed).getTime() : 0;
-          break;
-        case 'name':
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-          break;
-        case 'totalPlayCount':
-          aVal = a.totalPlayCount;
-          bVal = b.totalPlayCount;
-          break;
-        case 'trackCount':
-          aVal = a.trackCount;
-          bVal = b.trackCount;
-          break;
-      }
-
-      if (options.sortOrder === 'asc') {
-        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      } else {
-        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-      }
-    });
-
-    // Apply pagination
-    const total = allAlbums.length;
-    const totalPages = Math.ceil(total / options.pageSize);
+    // Calculate pagination
     const skip = (options.page - 1) * options.pageSize;
-    const paginatedAlbums = allAlbums.slice(skip, skip + options.pageSize);
 
-    const albumDtos = plainToInstance(AlbumDto, paginatedAlbums, {
-      excludeExtraneousValues: true,
+    // Execute queries
+    const [userAlbums, total] = await Promise.all([
+      this.databaseService.userAlbum.findMany({
+        include: {
+          album: {
+            include: {
+              artist: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: options.pageSize,
+        where,
+      }),
+      this.databaseService.userAlbum.count({ where }),
+    ]);
+
+    // Transform to DTOs
+    const albumDtos = userAlbums.map((userAlbum) => {
+      return plainToInstance(
+        AlbumDto,
+        {
+          albumArt: userAlbum.album.imageUrl,
+          artist: userAlbum.album.artist.name,
+          avgRating: userAlbum.avgRating,
+          firstAdded: userAlbum.firstAddedAt,
+          lastPlayed: userAlbum.lastPlayedAt,
+          name: userAlbum.album.name,
+          totalDuration: userAlbum.totalDuration,
+          totalPlayCount: userAlbum.totalPlayCount,
+          trackCount: userAlbum.trackCount,
+        },
+        { excludeExtraneousValues: true },
+      );
     });
+
+    const totalPages = Math.ceil(total / options.pageSize);
 
     return plainToInstance(
       PaginatedAlbumsDto,
@@ -375,145 +344,78 @@ export class TrackService {
       sortOrder: 'asc' | 'desc';
     },
   ): Promise<PaginatedArtistsDto> {
-    // Get all tracks with artist aggregation
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: true,
-      },
-      orderBy: {
-        spotifyTrack: {
-          artist: 'asc',
-        },
-      },
-      where: {
-        userId,
-      },
-    });
+    // Build where clause
+    const where: Prisma.UserArtistWhereInput = {
+      userId,
+    };
 
-    // Group tracks by artist
-    const artistsMap = new Map<string, ArtistData>();
-
-    tracks.forEach((track) => {
-      const artist = track.spotifyTrack.artist;
-      if (!artist) return;
-
-      if (!artistsMap.has(artist)) {
-        artistsMap.set(artist, {
-          albumCount: new Set(),
-          artistImage: null, // Will be populated from first track with image
-          avgRating: 0,
-          firstAdded: track.addedAt,
-          lastPlayed: track.lastPlayedAt,
-          name: artist,
-          ratedCount: 0,
-          totalDuration: 0,
-          totalPlayCount: 0,
-          trackCount: 0,
-        });
-      }
-
-      const artistData = artistsMap.get(artist);
-      artistData.trackCount++;
-      artistData.totalDuration += track.spotifyTrack.duration;
-      artistData.totalPlayCount += track.totalPlayCount;
-
-      // Add unique albums
-      if (track.spotifyTrack.album) {
-        artistData.albumCount.add(track.spotifyTrack.album);
-      }
-
-      // For now, don't set artist images - let the frontend handle with a fallback icon
-      // TODO: Implement proper artist image fetching from Spotify
-
-      if (track.rating) {
-        artistData.avgRating =
-          (artistData.avgRating * artistData.ratedCount + track.rating) /
-          (artistData.ratedCount + 1);
-        artistData.ratedCount++;
-      }
-
-      if (!artistData.firstAdded || track.addedAt < artistData.firstAdded) {
-        artistData.firstAdded = track.addedAt;
-      }
-
-      if (
-        track.lastPlayedAt &&
-        (!artistData.lastPlayed || track.lastPlayedAt > artistData.lastPlayed)
-      ) {
-        artistData.lastPlayed = track.lastPlayedAt;
-      }
-    });
-
-    // Convert map to array and format
-    let allArtists = Array.from(artistsMap.values()).map((artist) => ({
-      ...artist,
-      albumCount: artist.albumCount.size,
-      avgRating:
-        artist.ratedCount > 0 ? Math.round(artist.avgRating * 10) / 10 : null,
-    }));
-
-    // Apply search filter
+    // Add search filter
     if (options.search) {
-      const searchLower = options.search.toLowerCase();
-      allArtists = allArtists.filter((artist) =>
-        artist.name.toLowerCase().includes(searchLower),
-      );
+      where.artist = {
+        name: { contains: options.search, mode: 'insensitive' },
+      };
     }
 
-    // Apply sorting
-    allArtists.sort((a, b) => {
-      let aVal: Date | null | number | string;
-      let bVal: Date | null | number | string;
+    // Build orderBy clause
+    let orderBy: Prisma.UserArtistOrderByWithRelationInput = {};
+    switch (options.sortBy) {
+      case 'albumCount':
+        orderBy = { albumCount: options.sortOrder };
+        break;
+      case 'avgRating':
+        orderBy = { avgRating: options.sortOrder };
+        break;
+      case 'lastPlayed':
+        orderBy = { lastPlayedAt: options.sortOrder };
+        break;
+      case 'name':
+        orderBy = { artist: { name: options.sortOrder } };
+        break;
+      case 'totalPlayCount':
+        orderBy = { totalPlayCount: options.sortOrder };
+        break;
+      case 'trackCount':
+        orderBy = { trackCount: options.sortOrder };
+        break;
+    }
 
-      switch (options.sortBy) {
-        case 'albumCount':
-          aVal = a.albumCount;
-          bVal = b.albumCount;
-          break;
-        case 'avgRating':
-          aVal = a.avgRating || 0;
-          bVal = b.avgRating || 0;
-          break;
-        case 'lastPlayed':
-          aVal = a.lastPlayed ? new Date(a.lastPlayed).getTime() : 0;
-          bVal = b.lastPlayed ? new Date(b.lastPlayed).getTime() : 0;
-          break;
-        case 'name':
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-          break;
-        case 'totalPlayCount':
-          aVal = a.totalPlayCount;
-          bVal = b.totalPlayCount;
-          break;
-        case 'trackCount':
-          aVal = a.trackCount;
-          bVal = b.trackCount;
-          break;
-        default:
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-      }
+    // Calculate pagination
+    const skip = (options.page - 1) * options.pageSize;
 
-      if (options.sortOrder === 'desc') {
-        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-      }
-      return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+    // Execute queries
+    const [userArtists, total] = await Promise.all([
+      this.databaseService.userArtist.findMany({
+        include: {
+          artist: true,
+        },
+        orderBy,
+        skip,
+        take: options.pageSize,
+        where,
+      }),
+      this.databaseService.userArtist.count({ where }),
+    ]);
+
+    // Transform to DTOs
+    const artistDtos = userArtists.map((userArtist) => {
+      return plainToInstance(
+        ArtistDto,
+        {
+          albumCount: userArtist.albumCount,
+          artistImage: userArtist.artist.imageUrl,
+          avgRating: userArtist.avgRating,
+          firstAdded: userArtist.firstAddedAt,
+          lastPlayed: userArtist.lastPlayedAt,
+          name: userArtist.artist.name,
+          totalDuration: userArtist.totalDuration,
+          totalPlayCount: userArtist.totalPlayCount,
+          trackCount: userArtist.trackCount,
+        },
+        { excludeExtraneousValues: true },
+      );
     });
 
-    // Apply pagination
-    const total = allArtists.length;
     const totalPages = Math.ceil(total / options.pageSize);
-    const startIndex = (options.page - 1) * options.pageSize;
-    const endIndex = startIndex + options.pageSize;
-    const paginatedArtists = allArtists.slice(startIndex, endIndex);
-
-    // Convert to DTOs
-    const artistDtos = paginatedArtists.map((artist) =>
-      plainToInstance(ArtistDto, artist, {
-        excludeExtraneousValues: true,
-      }),
-    );
 
     return plainToInstance(
       PaginatedArtistsDto,
@@ -551,8 +453,16 @@ export class TrackService {
     if (search) {
       where.OR = [
         { spotifyTrack: { title: { contains: search, mode: 'insensitive' } } },
-        { spotifyTrack: { artist: { contains: search, mode: 'insensitive' } } },
-        { spotifyTrack: { album: { contains: search, mode: 'insensitive' } } },
+        {
+          spotifyTrack: {
+            artist: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
+        {
+          spotifyTrack: {
+            album: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
       ];
     }
 
@@ -579,10 +489,10 @@ export class TrackService {
         orderBy = { addedAt: sortOrder };
         break;
       case 'album':
-        orderBy = { spotifyTrack: { album: sortOrder } };
+        orderBy = { spotifyTrack: { album: { name: sortOrder } } };
         break;
       case 'artist':
-        orderBy = { spotifyTrack: { artist: sortOrder } };
+        orderBy = { spotifyTrack: { artist: { name: sortOrder } } };
         break;
       case 'lastPlayedAt':
         orderBy = { lastPlayedAt: sortOrder };
@@ -605,7 +515,16 @@ export class TrackService {
     const [tracks, total] = await Promise.all([
       this.databaseService.userTrack.findMany({
         include: {
-          spotifyTrack: true,
+          spotifyTrack: {
+            include: {
+              album: {
+                include: {
+                  artist: true,
+                },
+              },
+              artist: true,
+            },
+          },
           tags: {
             include: {
               tag: true,
@@ -624,9 +543,9 @@ export class TrackService {
     const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
-        album: track.spotifyTrack.album,
-        albumArt: track.spotifyTrack.albumArt,
-        artist: track.spotifyTrack.artist,
+        album: track.spotifyTrack.album.name,
+        albumArt: track.spotifyTrack.album.imageUrl || null,
+        artist: track.spotifyTrack.artist.name,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -679,6 +598,12 @@ export class TrackService {
       },
       where: { id: trackId },
     });
+
+    // Update aggregated stats
+    await this.aggregationService.updateStatsForTrack(
+      userId,
+      track.spotifyTrackId,
+    );
 
     return updated.rating;
   }
