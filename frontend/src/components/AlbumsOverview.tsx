@@ -13,11 +13,11 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Music, Play, Search, Star } from "lucide-react";
 
 import { useLibraryControllerGetAlbums } from "../data/api";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~albums.index";
 
 const formatDuration = (ms: number) => {
@@ -45,7 +45,21 @@ export function AlbumsOverview() {
     sortOrder = "asc",
   } = Route.useSearch();
 
-  const [debouncedSearch] = useDebouncedValue(search, 300);
+  const { debouncedSearch, localSearch, setLocalSearch } = useDebouncedSearch(
+    search,
+    {
+      onDebouncedChange: (value) => {
+        navigate({
+          replace: value === "" && search !== "",
+          search: (prev) => ({
+            ...prev,
+            page: 1,
+            search: value,
+          }),
+        });
+      },
+    },
+  );
 
   const { data, error, isLoading } = useLibraryControllerGetAlbums({
     page,
@@ -102,9 +116,9 @@ export function AlbumsOverview() {
       <Group>
         <TextInput
           leftSection={<Search size={16} />}
-          onChange={(e) => updateSearch({ search: e.currentTarget.value })}
+          onChange={(e) => setLocalSearch(e.currentTarget.value)}
           placeholder="Search albums or artists..."
-          value={search}
+          value={localSearch}
           w={300}
         />
 

@@ -10,12 +10,12 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import { Search, Tag } from "lucide-react";
 import { useState } from "react";
 
 import { useLibraryControllerGetTracks } from "../data/api";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~tracks";
 import { TagManager } from "./TagManager";
 import { TracksTable } from "./TracksTable";
@@ -31,7 +31,21 @@ export function TrackList() {
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
 
-  const [debouncedSearch] = useDebouncedValue(search, 300);
+  const { debouncedSearch, localSearch, setLocalSearch } = useDebouncedSearch(
+    search,
+    {
+      onDebouncedChange: (value) => {
+        navigate({
+          replace: value === "" && search !== "",
+          search: (prev) => ({
+            ...prev,
+            page: 1,
+            search: value,
+          }),
+        });
+      },
+    },
+  );
 
   const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
     page,
@@ -96,9 +110,9 @@ export function TrackList() {
           <Group>
             <TextInput
               leftSection={<Search size={16} />}
-              onChange={(e) => updateSearch({ search: e.currentTarget.value })}
+              onChange={(e) => setLocalSearch(e.currentTarget.value)}
               placeholder="Search tracks..."
-              value={search}
+              value={localSearch}
               w={300}
             />
             <ActionIcon
