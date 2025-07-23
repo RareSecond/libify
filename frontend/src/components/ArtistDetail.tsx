@@ -8,11 +8,8 @@ interface ArtistDetailProps {
 }
 
 export function ArtistDetail({ artist }: ArtistDetailProps) {
-  const {
-    data: tracks = [],
-    error,
-    isLoading,
-  } = useLibraryControllerGetArtistTracks(artist);
+  const { data, error, isLoading } =
+    useLibraryControllerGetArtistTracks(artist);
 
   if (isLoading) {
     return (
@@ -30,7 +27,9 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
     );
   }
 
-  if (!tracks || tracks.length === 0) {
+  const tracks = data?.tracks || [];
+
+  if (tracks.length === 0) {
     return (
       <Center h={400}>
         <Text c="dimmed" size="lg">

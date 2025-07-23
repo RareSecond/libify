@@ -55,8 +55,8 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
     );
   }
 
-  // data is now directly an array of tracks from the album
-  const tracks: TrackDto[] = data || [];
+  // data contains an object with tracks property
+  const tracks: TrackDto[] = data?.tracks || [];
   const albumArt = tracks[0]?.albumArt;
   const albumId = `${artist}|${album}`;
   const totalDuration = tracks.reduce(

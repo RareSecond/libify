@@ -382,7 +382,14 @@
         ],
         "responses": {
           "200": {
-            "description": "List of tracks from the album"
+            "description": "List of tracks from the album",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumTracksResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -479,7 +486,14 @@
         ],
         "responses": {
           "200": {
-            "description": "List of tracks from the artist"
+            "description": "List of tracks from the artist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtistTracksResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1218,6 +1232,101 @@
           "totalPages"
         ]
       },
+      "TagDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "TrackDto": {
+        "type": "object",
+        "properties": {
+          "addedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "album": {
+            "type": "string"
+          },
+          "albumArt": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Duration in milliseconds"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastPlayedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ratedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "maximum": 5,
+            "minimum": 1
+          },
+          "spotifyId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagDto"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "totalPlayCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "addedAt",
+          "artist",
+          "duration",
+          "id",
+          "spotifyId",
+          "tags",
+          "title",
+          "totalPlayCount"
+        ]
+      },
+      "AlbumTracksResponseDto": {
+        "type": "object",
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackDto"
+            }
+          }
+        },
+        "required": [
+          "tracks"
+        ]
+      },
       "ArtistDto": {
         "type": "object",
         "properties": {
@@ -1310,85 +1419,18 @@
           "totalPages"
         ]
       },
-      "TagDto": {
+      "ArtistTracksResponseDto": {
         "type": "object",
         "properties": {
-          "color": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ]
-      },
-      "TrackDto": {
-        "type": "object",
-        "properties": {
-          "addedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "album": {
-            "type": "string"
-          },
-          "albumArt": {
-            "type": "string"
-          },
-          "artist": {
-            "type": "string"
-          },
-          "duration": {
-            "type": "number",
-            "description": "Duration in milliseconds"
-          },
-          "id": {
-            "type": "string"
-          },
-          "lastPlayedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "ratedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "rating": {
-            "type": "number",
-            "maximum": 5,
-            "minimum": 1
-          },
-          "spotifyId": {
-            "type": "string"
-          },
-          "tags": {
+          "tracks": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TagDto"
+              "$ref": "#/components/schemas/TrackDto"
             }
-          },
-          "title": {
-            "type": "string"
-          },
-          "totalPlayCount": {
-            "type": "number"
           }
         },
         "required": [
-          "addedAt",
-          "artist",
-          "duration",
-          "id",
-          "spotifyId",
-          "tags",
-          "title",
-          "totalPlayCount"
+          "tracks"
         ]
       },
       "PaginatedTracksDto": {

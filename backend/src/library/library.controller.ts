@@ -24,7 +24,9 @@ import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AlbumTracksResponseDto } from './dto/album-tracks.dto';
 import { PaginatedAlbumsDto } from './dto/album.dto';
+import { ArtistTracksResponseDto } from './dto/artist-tracks.dto';
 import { PaginatedArtistsDto } from './dto/artist.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import {
@@ -128,13 +130,17 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Get tracks from a specific album' })
-  @ApiResponse({ description: 'List of tracks from the album', status: 200 })
+  @ApiResponse({
+    description: 'List of tracks from the album',
+    status: 200,
+    type: AlbumTracksResponseDto,
+  })
   @Get('albums/:artist/:album/tracks')
   async getAlbumTracks(
     @Req() req: AuthenticatedRequest,
     @Param('artist') artist: string,
     @Param('album') album: string,
-  ) {
+  ): Promise<AlbumTracksResponseDto> {
     return this.trackService.getAlbumTracks(
       req.user.id,
       decodeURIComponent(artist),
@@ -174,12 +180,16 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Get tracks from a specific artist' })
-  @ApiResponse({ description: 'List of tracks from the artist', status: 200 })
+  @ApiResponse({
+    description: 'List of tracks from the artist',
+    status: 200,
+    type: ArtistTracksResponseDto,
+  })
   @Get('artists/:artist/tracks')
   async getArtistTracks(
     @Req() req: AuthenticatedRequest,
     @Param('artist') artist: string,
-  ) {
+  ): Promise<ArtistTracksResponseDto> {
     return this.trackService.getArtistTracks(
       req.user.id,
       decodeURIComponent(artist),

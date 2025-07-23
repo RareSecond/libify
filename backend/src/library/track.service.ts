@@ -23,7 +23,11 @@ export class TrackService {
     private aggregationService: AggregationService,
   ) {}
 
-  async getAlbumTracks(userId: string, artist: string, album: string) {
+  async getAlbumTracks(
+    userId: string,
+    artist: string,
+    album: string,
+  ): Promise<{ tracks: TrackDto[] }> {
     const tracks = await this.databaseService.userTrack.findMany({
       include: {
         spotifyTrack: {
@@ -86,7 +90,10 @@ export class TrackService {
     return { tracks: trackDtos };
   }
 
-  async getArtistTracks(userId: string, artist: string) {
+  async getArtistTracks(
+    userId: string,
+    artist: string,
+  ): Promise<{ tracks: TrackDto[] }> {
     const tracks = await this.databaseService.userTrack.findMany({
       include: {
         spotifyTrack: {
@@ -153,7 +160,7 @@ export class TrackService {
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
 
-    return trackDtos;
+    return { tracks: trackDtos };
   }
 
   async getTrackById(
