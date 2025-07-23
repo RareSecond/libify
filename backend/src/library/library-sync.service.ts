@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service';
 import { AggregationService } from './aggregation.service';
+import { SpotifySavedAlbum } from './dto/spotify-album.dto';
 import { SpotifyService, SpotifyTrackData } from './spotify.service';
 
 export interface SyncResult {
   errors: string[];
+  newAlbums: number;
   newTracks: number;
+  totalAlbums: number;
   totalTracks: number;
+  updatedAlbums: number;
   updatedTracks: number;
 }
 
@@ -24,8 +28,13 @@ export class LibrarySyncService {
   async getSyncStatus(userId: string): Promise<{
     lastSync: Date | null;
     totalTracks: number;
+    totalAlbums: number;
   }> {
     const totalTracks = await this.databaseService.userTrack.count({
+      where: { userId },
+    });
+
+    const totalAlbums = await this.databaseService.userAlbum.count({
       where: { userId },
     });
 
@@ -39,6 +48,7 @@ export class LibrarySyncService {
     return {
       lastSync: lastUpdatedTrack?.spotifyTrack.lastUpdated || null,
       totalTracks,
+      totalAlbums,
     };
   }
 
@@ -89,21 +99,67 @@ export class LibrarySyncService {
     }
   }
 
+  async syncUserAlbums(
+    userId: string,
+    accessToken: string,
+  ): Promise<{
+    errors: string[];
+    newAlbums: number;
+    totalAlbums: number;
+    updatedAlbums: number;
+  }> {
+    const result = {
+      errors: [] as string[],
+      newAlbums: 0,
+      totalAlbums: 0,
+      updatedAlbums: 0,
+    };
+
+    try {
+      this.logger.log(`Starting album sync for user ${userId}`);
+
+      // Fetch all saved albums from Spotify
+      const spotifyAlbums =
+        await this.spotifyService.getAllUserSavedAlbums(accessToken);
+      result.totalAlbums = spotifyAlbums.length;
+
+      // Process albums in batches to avoid overwhelming the database
+      const batchSize = 20; // Smaller batch size for albums since they're more complex
+      for (let i = 0; i < spotifyAlbums.length; i += batchSize) {
+        const batch = spotifyAlbums.slice(i, i + batchSize);
+        await this.processAlbumBatch(userId, batch, result, accessToken);
+      }
+
+      this.logger.log(
+        `Album sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to sync albums for user ${userId}`, error);
+      result.errors.push(`Album sync failed: ${error.message}`);
+      return result;
+    }
+  }
+
   async syncUserLibrary(
     userId: string,
     accessToken: string,
   ): Promise<SyncResult> {
     const result: SyncResult = {
       errors: [],
+      newAlbums: 0,
       newTracks: 0,
+      totalAlbums: 0,
       totalTracks: 0,
+      updatedAlbums: 0,
       updatedTracks: 0,
     };
 
     try {
       this.logger.log(`Starting library sync for user ${userId}`);
 
-      // Fetch all tracks from Spotify
+      // Sync liked tracks
+      this.logger.log(`Syncing liked tracks for user ${userId}`);
       const spotifyTracks =
         await this.spotifyService.getAllUserLibraryTracks(accessToken);
       result.totalTracks = spotifyTracks.length;
@@ -115,6 +171,16 @@ export class LibrarySyncService {
         await this.processBatch(userId, batch, result, accessToken);
       }
 
+      // Sync saved albums
+      this.logger.log(`Syncing saved albums for user ${userId}`);
+      const albumSyncResult = await this.syncUserAlbums(userId, accessToken);
+      
+      // Merge album sync results
+      result.newAlbums = albumSyncResult.newAlbums;
+      result.totalAlbums = albumSyncResult.totalAlbums;
+      result.updatedAlbums = albumSyncResult.updatedAlbums;
+      result.errors.push(...albumSyncResult.errors);
+
       this.logger.log(
         `Library sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
       );
@@ -123,6 +189,105 @@ export class LibrarySyncService {
       this.logger.error(`Failed to sync library for user ${userId}`, error);
       result.errors.push(`Library sync failed: ${error.message}`);
       return result;
+    }
+  }
+
+  private async processAlbumBatch(
+    userId: string,
+    albums: SpotifySavedAlbum[],
+    result: {
+      errors: string[];
+      newAlbums: number;
+      totalAlbums: number;
+      updatedAlbums: number;
+    },
+    accessToken: string,
+  ): Promise<void> {
+    // Collect all unique artist IDs from this batch
+    const uniqueArtistIds = new Set<string>();
+    albums.forEach(({ album }) => {
+      if (album.artists[0]?.id) {
+        uniqueArtistIds.add(album.artists[0].id);
+      }
+    });
+
+    // Fetch all artist data in batch
+    const artistsData = await this.spotifyService.getMultipleArtists(
+      accessToken,
+      Array.from(uniqueArtistIds),
+    );
+
+    // Create a map for quick lookup
+    const artistMap = new Map(artistsData.map((artist) => [artist.id, artist]));
+
+    for (const savedAlbum of albums) {
+      try {
+        // Create or update the Spotify entities (artist, album, tracks)
+        const { albumId, trackIds } =
+          await this.aggregationService.createOrUpdateAlbumEntities(
+            savedAlbum,
+            artistMap,
+          );
+
+        // Check if UserAlbum already exists
+        const existingUserAlbum =
+          await this.databaseService.userAlbum.findUnique({
+            where: {
+              userId_albumId: {
+                albumId,
+                userId,
+              },
+            },
+          });
+
+        if (!existingUserAlbum) {
+          // Create new UserAlbum
+          await this.databaseService.userAlbum.create({
+            data: {
+              albumId,
+              firstAddedAt: new Date(savedAlbum.added_at),
+              userId,
+            },
+          });
+          result.newAlbums++;
+        } else {
+          result.updatedAlbums++;
+        }
+
+        // Create UserTrack entries for each track in the album
+        for (const spotifyTrackId of trackIds) {
+          const existingUserTrack =
+            await this.databaseService.userTrack.findUnique({
+              where: {
+                userId_spotifyTrackId: {
+                  spotifyTrackId,
+                  userId,
+                },
+              },
+            });
+
+          if (!existingUserTrack) {
+            await this.databaseService.userTrack.create({
+              data: {
+                addedAt: new Date(savedAlbum.added_at),
+                spotifyTrackId,
+                userId,
+              },
+            });
+          }
+        }
+
+        // Update aggregated stats for the album
+        await this.aggregationService.updateUserAlbumStats(userId, albumId);
+      } catch (error) {
+        this.logger.error(
+          `Failed to process album ${savedAlbum.album.id}`,
+          error,
+        );
+        result.errors.push(
+          `Album ${savedAlbum.album.name}: ${error.message}`,
+        );
+      }
     }
   }
 

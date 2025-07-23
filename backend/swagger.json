@@ -762,7 +762,48 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Library sync completed"
+            "description": "Library sync completed with track and album statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "result": {
+                      "properties": {
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "newTracks": {
+                          "type": "number"
+                        },
+                        "totalTracks": {
+                          "type": "number"
+                        },
+                        "updatedTracks": {
+                          "type": "number"
+                        },
+                        "newAlbums": {
+                          "type": "number"
+                        },
+                        "totalAlbums": {
+                          "type": "number"
+                        },
+                        "updatedAlbums": {
+                          "type": "number"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
           },
           "201": {
             "description": ""
@@ -779,7 +820,7 @@
             "bearer": []
           }
         ],
-        "summary": "Sync user library from Spotify",
+        "summary": "Sync user library from Spotify (liked songs and saved albums)",
         "tags": [
           "library"
         ]

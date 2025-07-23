@@ -338,8 +338,29 @@ export class LibraryController {
     return { message: 'Tag removed from track' };
   }
 
-  @ApiOperation({ summary: 'Sync user library from Spotify' })
-  @ApiResponse({ description: 'Library sync completed', status: 200 })
+  @ApiOperation({ summary: 'Sync user library from Spotify (liked songs and saved albums)' })
+  @ApiResponse({ 
+    description: 'Library sync completed with track and album statistics', 
+    status: 200,
+    schema: {
+      properties: {
+        message: { type: 'string' },
+        result: {
+          properties: {
+            errors: { type: 'array', items: { type: 'string' } },
+            newTracks: { type: 'number' },
+            totalTracks: { type: 'number' },
+            updatedTracks: { type: 'number' },
+            newAlbums: { type: 'number' },
+            totalAlbums: { type: 'number' },
+            updatedAlbums: { type: 'number' },
+          },
+          type: 'object',
+        },
+      },
+      type: 'object',
+    },
+  })
   @ApiResponse({ description: 'Unauthorized', status: 401 })
   @ApiResponse({ description: 'Internal server error', status: 500 })
   @Post('sync')

@@ -1,12 +1,149 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service';
+import { SpotifySavedAlbum } from './dto/spotify-album.dto';
 
 @Injectable()
 export class AggregationService {
   private readonly logger = new Logger(AggregationService.name);
 
   constructor(private databaseService: DatabaseService) {}
+
+  async createOrUpdateAlbumEntities(
+    savedAlbum: SpotifySavedAlbum,
+    artistMap: Map<
+      string,
+      {
+        genres: string[];
+        id: string;
+        images: Array<{ url: string }>;
+        name: string;
+        popularity: number;
+      }
+    >,
+  ): Promise<{
+    albumId: string;
+    artistId: string;
+    trackIds: string[];
+  }> {
+    const albumData = savedAlbum.album;
+    
+    // For now, we'll use the first artist (primary artist)
+    const primaryArtist = albumData.artists[0];
+    if (!primaryArtist) {
+      throw new Error('Album has no artists');
+    }
+
+    // Get artist data from the pre-fetched map
+    let artistImageUrl: null | string = null;
+    let genres: string[] = [];
+    let popularity: null | number = null;
+    const artistData = artistMap.get(primaryArtist.id);
+    if (artistData) {
+      if (artistData.images.length > 0) {
+        artistImageUrl = artistData.images[0].url;
+      }
+      genres = artistData.genres || [];
+      popularity = artistData.popularity;
+    }
+
+    // Create or update artist
+    const artist = await this.databaseService.spotifyArtist.upsert({
+      create: {
+        genres,
+        imageUrl: artistImageUrl,
+        name: primaryArtist.name,
+        popularity,
+        spotifyId: primaryArtist.id,
+      },
+      update: {
+        genres,
+        name: primaryArtist.name,
+        ...(artistImageUrl && { imageUrl: artistImageUrl }),
+        ...(popularity !== null && { popularity }),
+      },
+      where: {
+        spotifyId: primaryArtist.id,
+      },
+    });
+
+    // Parse release date
+    let releaseDate: Date | null = null;
+    if (albumData.release_date) {
+      try {
+        releaseDate = new Date(albumData.release_date);
+      } catch {
+        this.logger.warn(
+          `Failed to parse release date for album ${albumData.id}: ${albumData.release_date}`,
+        );
+      }
+    }
+
+    // Create or update album
+    const album = await this.databaseService.spotifyAlbum.upsert({
+      create: {
+        albumType: albumData.album_type,
+        artistId: artist.id,
+        imageUrl:
+          albumData.images.length > 0 ? albumData.images[0].url : null,
+        name: albumData.name,
+        releaseDate,
+        spotifyId: albumData.id,
+        totalTracks: albumData.total_tracks,
+      },
+      update: {
+        albumType: albumData.album_type,
+        imageUrl:
+          albumData.images.length > 0 ? albumData.images[0].url : null,
+        name: albumData.name,
+        releaseDate,
+        totalTracks: albumData.total_tracks,
+      },
+      where: {
+        spotifyId: albumData.id,
+      },
+    });
+
+    // Process album tracks if they're included
+    const trackIds: string[] = [];
+    if (albumData.tracks && albumData.tracks.items.length > 0) {
+      for (const trackData of albumData.tracks.items) {
+        const track = await this.databaseService.spotifyTrack.upsert({
+          create: {
+            albumId: album.id,
+            artistId: artist.id,
+            discNumber: trackData.disc_number || 1,
+            duration: trackData.duration_ms,
+            explicit: trackData.explicit,
+            previewUrl: trackData.preview_url,
+            spotifyId: trackData.id,
+            title: trackData.name,
+            trackNumber: trackData.track_number,
+          },
+          update: {
+            albumId: album.id,
+            artistId: artist.id,
+            discNumber: trackData.disc_number || 1,
+            duration: trackData.duration_ms,
+            explicit: trackData.explicit,
+            previewUrl: trackData.preview_url,
+            title: trackData.name,
+            trackNumber: trackData.track_number,
+          },
+          where: {
+            spotifyId: trackData.id,
+          },
+        });
+        trackIds.push(track.id);
+      }
+    }
+
+    return {
+      albumId: album.id,
+      artistId: artist.id,
+      trackIds,
+    };
+  }
 
   async createOrUpdateSpotifyEntities(
     spotifyTrackData: {

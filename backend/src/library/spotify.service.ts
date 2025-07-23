@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 
+import {
+  SpotifyAlbumsPaginatedResponse,
+  SpotifySavedAlbum,
+} from './dto/spotify-album.dto';
+
 export interface SpotifyPaginatedResponse<T> {
   items: T[];
   limit: number;
@@ -61,6 +66,36 @@ export class SpotifyService {
 
     this.logger.log(`Fetched ${allTracks.length} tracks from Spotify library`);
     return allTracks;
+  }
+
+  async getAllUserSavedAlbums(
+    accessToken: string,
+  ): Promise<SpotifySavedAlbum[]> {
+    const allAlbums: SpotifySavedAlbum[] = [];
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.getUserSavedAlbums(
+        accessToken,
+        limit,
+        offset,
+      );
+      allAlbums.push(...response.items);
+
+      if (response.next === null) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+
+      // Add a small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    this.logger.log(`Fetched ${allAlbums.length} albums from Spotify library`);
+    return allAlbums;
   }
 
   async getArtist(
@@ -230,6 +265,23 @@ export class SpotifyService {
       return response.data;
     } catch (error) {
       this.logger.error('Failed to fetch user library tracks', error);
+      throw error;
+    }
+  }
+
+  async getUserSavedAlbums(
+    accessToken: string,
+    limit = 50,
+    offset = 0,
+  ): Promise<SpotifyAlbumsPaginatedResponse> {
+    try {
+      const response = await this.spotifyApi.get('/me/albums', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { limit, offset },
+      });
+      return response.data;
+    } catch (error) {
+      this.logger.error('Failed to fetch user saved albums', error);
       throw error;
     }
   }

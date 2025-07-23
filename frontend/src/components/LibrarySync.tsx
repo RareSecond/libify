@@ -19,12 +19,16 @@ interface SyncResult {
     newTracks: number;
     totalTracks: number;
     updatedTracks: number;
+    newAlbums: number;
+    totalAlbums: number;
+    updatedAlbums: number;
   };
 }
 
 interface SyncStatus {
   lastSync: null | string;
   totalTracks: number;
+  totalAlbums: number;
 }
 
 export function LibrarySync() {
@@ -99,14 +103,24 @@ export function LibrarySync() {
               Keep your Spotify library in sync
             </Text>
           </div>
-          <Badge
-            color="blue"
-            leftSection={<Music size={14} />}
-            size="lg"
-            variant="light"
-          >
-            {syncStatus?.totalTracks || 0} tracks
-          </Badge>
+          <div className="flex gap-2">
+            <Badge
+              color="blue"
+              leftSection={<Music size={14} />}
+              size="lg"
+              variant="light"
+            >
+              {syncStatus?.totalTracks || 0} tracks
+            </Badge>
+            <Badge
+              color="teal"
+              leftSection={<Music size={14} />}
+              size="lg"
+              variant="light"
+            >
+              {syncStatus?.totalAlbums || 0} albums
+            </Badge>
+          </div>
         </Group>
 
         {syncStatus && (
@@ -150,7 +164,8 @@ export function LibrarySync() {
           >
             <Stack gap="xs">
               <Text size="sm">
-                Synced {syncLibraryMutation.data.result.totalTracks} tracks
+                Synced {syncLibraryMutation.data.result.totalTracks} tracks and{" "}
+                {syncLibraryMutation.data.result.totalAlbums} albums
               </Text>
               {syncLibraryMutation.data.result.newTracks > 0 && (
                 <Text size="sm">
@@ -160,6 +175,17 @@ export function LibrarySync() {
               {syncLibraryMutation.data.result.updatedTracks > 0 && (
                 <Text size="sm">
                   • {syncLibraryMutation.data.result.updatedTracks} tracks
+                  updated
+                </Text>
+              )}
+              {syncLibraryMutation.data.result.newAlbums > 0 && (
+                <Text size="sm">
+                  • {syncLibraryMutation.data.result.newAlbums} new albums added
+                </Text>
+              )}
+              {syncLibraryMutation.data.result.updatedAlbums > 0 && (
+                <Text size="sm">
+                  • {syncLibraryMutation.data.result.updatedAlbums} albums
                   updated
                 </Text>
               )}
