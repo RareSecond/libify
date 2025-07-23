@@ -42,7 +42,7 @@ interface SpotifyPlayerContextType {
     tracks: string[] | TrackWithId[],
     startIndex?: number,
     context?: PlayContext,
-    onPlayRecorded?: () => void,
+    onPlayRecorded?: () => void
   ) => Promise<void>;
   position: number;
   previousTrack: () => Promise<void>;
@@ -59,7 +59,7 @@ interface TrackWithId {
 }
 
 const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(
-  null,
+  null
 );
 
 interface SpotifyPlayerProviderProps {
@@ -85,19 +85,19 @@ export function SpotifyPlayerProvider({
   >([]);
   const [isShuffled, setIsShuffled] = useState(false);
   const [currentContext, setCurrentContext] = useState<null | PlayContext>(
-    null,
+    null
   );
 
   // Play tracking state
   const [playTrackingTimer, setPlayTrackingTimer] = useState<null | number>(
-    null,
+    null
   );
   const [currentTrackId, setCurrentTrackId] = useState<null | string>(null);
   const [playStartTime, setPlayStartTime] = useState<null | number>(null);
   const onPlayRecordedCallbackRef = useRef<(() => void) | null>(null);
 
   // Track previous state to detect track end
-  const previousStateRef = useRef<SpotifyPlayerState | null>(null);
+  const previousStateRef = useRef<null | SpotifyPlayerState>(null);
   const shouldAutoPlayNext = useRef(false);
 
   const { data: user } = useAuthControllerGetProfile();
@@ -188,10 +188,12 @@ export function SpotifyPlayerProvider({
         const previousState = previousStateRef.current;
 
         // Detect track end: track was playing, now paused at position 0
-        if (previousState && 
-            !previousState.paused && 
-            state.paused && 
-            state.position === 0) {
+        if (
+          previousState &&
+          !previousState.paused &&
+          state.paused &&
+          state.position === 0
+        ) {
           // Track ended naturally, set flag to auto-play next
           shouldAutoPlayNext.current = true;
         }
@@ -314,10 +316,15 @@ export function SpotifyPlayerProvider({
 
   // Handle auto-play next track when a track ends
   useEffect(() => {
-    if (shouldAutoPlayNext.current && currentTrackList.length > 0 && player && deviceId) {
+    if (
+      shouldAutoPlayNext.current &&
+      currentTrackList.length > 0 &&
+      player &&
+      deviceId
+    ) {
       shouldAutoPlayNext.current = false;
       const nextIndex = currentTrackIndex + 1;
-      
+
       if (nextIndex < currentTrackList.length) {
         // Small delay to ensure state is stable
         setTimeout(async () => {
@@ -336,7 +343,7 @@ export function SpotifyPlayerProvider({
                   "Content-Type": "application/json",
                 },
                 method: "PUT",
-              },
+              }
             );
 
             if (response.ok) {
@@ -346,7 +353,7 @@ export function SpotifyPlayerProvider({
               if (nextTrackWithId?.trackId) {
                 startPlayTracking(
                   nextTrackWithId.trackId,
-                  onPlayRecordedCallbackRef.current || undefined,
+                  onPlayRecordedCallbackRef.current || undefined
                 );
               }
             }
@@ -356,7 +363,14 @@ export function SpotifyPlayerProvider({
         }, 100);
       }
     }
-  }, [isPlaying, currentTrackList, currentTrackIndex, player, deviceId, currentTracksWithIds]); // Trigger when isPlaying changes (track ended sets it to false)
+  }, [
+    isPlaying,
+    currentTrackList,
+    currentTrackIndex,
+    player,
+    deviceId,
+    currentTracksWithIds,
+  ]); // Trigger when isPlaying changes (track ended sets it to false)
 
   const play = async (uri?: string) => {
     if (!player || !deviceId) return;
@@ -372,7 +386,7 @@ export function SpotifyPlayerProvider({
             "Content-Type": "application/json",
           },
           method: "PUT",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -392,7 +406,7 @@ export function SpotifyPlayerProvider({
     tracks: string[] | TrackWithId[],
     startIndex = 0,
     context?: PlayContext,
-    onPlayRecorded?: () => void,
+    onPlayRecorded?: () => void
   ) => {
     if (!player || !deviceId || tracks.length === 0) return;
 
@@ -418,7 +432,7 @@ export function SpotifyPlayerProvider({
           "Content-Type": "application/json",
         },
         method: "PUT",
-      },
+      }
     );
 
     if (!response.ok) {
@@ -471,7 +485,7 @@ export function SpotifyPlayerProvider({
             "Content-Type": "application/json",
           },
           method: "PUT",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -483,7 +497,7 @@ export function SpotifyPlayerProvider({
         if (nextTrackWithId?.trackId) {
           startPlayTracking(
             nextTrackWithId.trackId,
-            onPlayRecordedCallbackRef.current || undefined,
+            onPlayRecordedCallbackRef.current || undefined
           );
         }
       }
@@ -513,7 +527,7 @@ export function SpotifyPlayerProvider({
             "Content-Type": "application/json",
           },
           method: "PUT",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -525,7 +539,7 @@ export function SpotifyPlayerProvider({
         if (prevTrackWithId?.trackId) {
           startPlayTracking(
             prevTrackWithId.trackId,
-            onPlayRecordedCallbackRef.current || undefined,
+            onPlayRecordedCallbackRef.current || undefined
           );
         }
       }
@@ -600,7 +614,7 @@ export function SpotifyPlayerProvider({
                   .filter((track: { spotifyId?: string }) => track.spotifyId)
                   .map(
                     (track: { spotifyId: string }) =>
-                      `spotify:track:${track.spotifyId}`,
+                      `spotify:track:${track.spotifyId}`
                   )
               : [];
           }
@@ -624,7 +638,7 @@ export function SpotifyPlayerProvider({
                   .filter((track: { spotifyId?: string }) => track.spotifyId)
                   .map(
                     (track: { spotifyId: string }) =>
-                      `spotify:track:${track.spotifyId}`,
+                      `spotify:track:${track.spotifyId}`
                   )
               : [];
           }
@@ -647,7 +661,7 @@ export function SpotifyPlayerProvider({
 
           const response = await fetch(
             `${baseUrl}/tracks?${searchParams.toString()}`,
-            { credentials: "include" },
+            { credentials: "include" }
           );
 
           if (!response.ok) {
@@ -660,7 +674,7 @@ export function SpotifyPlayerProvider({
             .filter((track: { spotifyId?: string }) => track.spotifyId)
             .map(
               (track: { spotifyId: string }) =>
-                `spotify:track:${track.spotifyId}`,
+                `spotify:track:${track.spotifyId}`
             );
           break;
         }
@@ -704,7 +718,7 @@ export function SpotifyPlayerProvider({
 
       // Create shuffled array with current track at the beginning
       const remainingTracks = tracksToShuffle.filter(
-        (uri) => uri !== currentTrackUri,
+        (uri) => uri !== currentTrackUri
       );
       const shuffledRemaining = shuffleArray(remainingTracks);
       const shuffledList = [currentTrackUri, ...shuffledRemaining];
@@ -751,7 +765,7 @@ export function useSpotifyPlayer() {
   const context = useContext(SpotifyPlayerContext);
   if (!context) {
     throw new Error(
-      "useSpotifyPlayer must be used within a SpotifyPlayerProvider",
+      "useSpotifyPlayer must be used within a SpotifyPlayerProvider"
     );
   }
   return context;
