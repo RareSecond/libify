@@ -16,7 +16,7 @@ import {
   Music,
   RefreshCw,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useSyncProgress } from "../hooks/useSyncProgress";
 
@@ -44,7 +44,7 @@ export function LibrarySync() {
         `${import.meta.env.VITE_API_URL}/library/sync/status`,
         {
           credentials: "include",
-        },
+        }
       );
       if (!response.ok) throw new Error("Failed to fetch sync status");
       return response.json();
@@ -60,7 +60,7 @@ export function LibrarySync() {
         {
           credentials: "include",
           method: "POST",
-        },
+        }
       );
       if (!response.ok) {
         const error = await response.json();
@@ -78,17 +78,30 @@ export function LibrarySync() {
   });
 
   // Reset state when sync completes
-  if (syncProgress?.state === "completed" || syncProgress?.state === "failed") {
-    setTimeout(() => {
-      refetchStatus();
-      if (syncProgress.state === "completed") {
-        setTimeout(() => {
-          setCurrentJobId(null);
-          resetProgress();
-        }, 3000);
-      }
-    }, 1000);
-  }
+  useEffect(() => {
+    let refetchTimeout: NodeJS.Timeout;
+    let resetTimeout: NodeJS.Timeout;
+
+    if (
+      syncProgress?.state === "completed" ||
+      syncProgress?.state === "failed"
+    ) {
+      refetchTimeout = setTimeout(() => {
+        refetchStatus();
+        if (syncProgress.state === "completed") {
+          resetTimeout = setTimeout(() => {
+            setCurrentJobId(null);
+            resetProgress();
+          }, 3000);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      clearTimeout(refetchTimeout);
+      clearTimeout(resetTimeout);
+    };
+  }, [syncProgress?.state, refetchStatus, resetProgress]);
 
   const formatLastSync = (lastSync: null | string) => {
     if (!lastSync) return "Never";
@@ -187,7 +200,7 @@ export function LibrarySync() {
                       style={{ display: "inline", marginRight: 4 }}
                     />
                     {Math.ceil(
-                      syncProgress.progress.estimatedTimeRemaining / 60,
+                      syncProgress.progress.estimatedTimeRemaining / 60
                     )}{" "}
                     min remaining
                   </Text>
