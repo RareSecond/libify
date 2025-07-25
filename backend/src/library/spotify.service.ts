@@ -14,6 +14,25 @@ export interface SpotifyPaginatedResponse<T> {
   total: number;
 }
 
+export interface SpotifyPlaylist {
+  description: string;
+  id: string;
+  name: string;
+  owner: {
+    display_name?: string;
+    id: string;
+  };
+  tracks: {
+    href: string;
+    total: number;
+  };
+}
+
+export interface SpotifyPlaylistTrack {
+  added_at: string;
+  track: SpotifyTrackData;
+}
+
 export interface SpotifyTrackData {
   added_at?: string;
   album: {
@@ -66,6 +85,30 @@ export class SpotifyService {
 
     this.logger.log(`Fetched ${allTracks.length} tracks from Spotify library`);
     return allTracks;
+  }
+
+  async getAllUserPlaylists(accessToken: string): Promise<SpotifyPlaylist[]> {
+    const allPlaylists: SpotifyPlaylist[] = [];
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.getUserPlaylists(accessToken, limit, offset);
+      allPlaylists.push(...response.items);
+
+      if (response.next === null) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+
+      // Add a small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    this.logger.log(`Fetched ${allPlaylists.length} playlists from Spotify`);
+    return allPlaylists;
   }
 
   async getAllUserSavedAlbums(
@@ -202,6 +245,55 @@ export class SpotifyService {
     }
   }
 
+  async getPlaylistTracks(
+    accessToken: string,
+    playlistId: string,
+  ): Promise<SpotifyPlaylistTrack[]> {
+    const allTracks: SpotifyPlaylistTrack[] = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const response = await this.spotifyApi.get(
+          `/playlists/${playlistId}/tracks`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            params: { limit, offset },
+          },
+        );
+
+        const data =
+          response.data as SpotifyPaginatedResponse<SpotifyPlaylistTrack>;
+
+        // Filter out null tracks (they can be null if track was removed from Spotify)
+        const validTracks = data.items.filter((item) => item.track !== null);
+        allTracks.push(...validTracks);
+
+        if (data.next === null) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+
+        // Add a small delay to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error) {
+        this.logger.error(
+          `Failed to fetch tracks for playlist ${playlistId}`,
+          error,
+        );
+        throw error;
+      }
+    }
+
+    this.logger.log(
+      `Fetched ${allTracks.length} tracks from playlist ${playlistId}`,
+    );
+    return allTracks;
+  }
+
   async getRecentlyPlayed(
     accessToken: string,
     limit = 50,
@@ -265,6 +357,23 @@ export class SpotifyService {
       return response.data;
     } catch (error) {
       this.logger.error('Failed to fetch user library tracks', error);
+      throw error;
+    }
+  }
+
+  async getUserPlaylists(
+    accessToken: string,
+    limit = 50,
+    offset = 0,
+  ): Promise<SpotifyPaginatedResponse<SpotifyPlaylist>> {
+    try {
+      const response = await this.spotifyApi.get('/me/playlists', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { limit, offset },
+      });
+      return response.data;
+    } catch (error) {
+      this.logger.error('Failed to fetch user playlists', error);
       throw error;
     }
   }

@@ -773,27 +773,27 @@
                     "result": {
                       "properties": {
                         "errors": {
-                          "type": "array",
                           "items": {
                             "type": "string"
-                          }
-                        },
-                        "newTracks": {
-                          "type": "number"
-                        },
-                        "totalTracks": {
-                          "type": "number"
-                        },
-                        "updatedTracks": {
-                          "type": "number"
+                          },
+                          "type": "array"
                         },
                         "newAlbums": {
+                          "type": "number"
+                        },
+                        "newTracks": {
                           "type": "number"
                         },
                         "totalAlbums": {
                           "type": "number"
                         },
+                        "totalTracks": {
+                          "type": "number"
+                        },
                         "updatedAlbums": {
+                          "type": "number"
+                        },
+                        "updatedTracks": {
                           "type": "number"
                         }
                       },

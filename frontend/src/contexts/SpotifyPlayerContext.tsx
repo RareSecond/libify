@@ -42,7 +42,7 @@ interface SpotifyPlayerContextType {
     tracks: string[] | TrackWithId[],
     startIndex?: number,
     context?: PlayContext,
-    onPlayRecorded?: () => void
+    onPlayRecorded?: () => void,
   ) => Promise<void>;
   position: number;
   previousTrack: () => Promise<void>;
@@ -59,7 +59,7 @@ interface TrackWithId {
 }
 
 const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(
-  null
+  null,
 );
 
 interface SpotifyPlayerProviderProps {
@@ -85,12 +85,12 @@ export function SpotifyPlayerProvider({
   >([]);
   const [isShuffled, setIsShuffled] = useState(false);
   const [currentContext, setCurrentContext] = useState<null | PlayContext>(
-    null
+    null,
   );
 
   // Play tracking state
   const [playTrackingTimer, setPlayTrackingTimer] = useState<null | number>(
-    null
+    null,
   );
   const [currentTrackId, setCurrentTrackId] = useState<null | string>(null);
   const [playStartTime, setPlayStartTime] = useState<null | number>(null);
@@ -343,7 +343,7 @@ export function SpotifyPlayerProvider({
                   "Content-Type": "application/json",
                 },
                 method: "PUT",
-              }
+              },
             );
 
             if (response.ok) {
@@ -353,7 +353,7 @@ export function SpotifyPlayerProvider({
               if (nextTrackWithId?.trackId) {
                 startPlayTracking(
                   nextTrackWithId.trackId,
-                  onPlayRecordedCallbackRef.current || undefined
+                  onPlayRecordedCallbackRef.current || undefined,
                 );
               }
             }
@@ -386,7 +386,7 @@ export function SpotifyPlayerProvider({
             "Content-Type": "application/json",
           },
           method: "PUT",
-        }
+        },
       );
 
       if (!response.ok) {
@@ -406,7 +406,7 @@ export function SpotifyPlayerProvider({
     tracks: string[] | TrackWithId[],
     startIndex = 0,
     context?: PlayContext,
-    onPlayRecorded?: () => void
+    onPlayRecorded?: () => void,
   ) => {
     if (!player || !deviceId || tracks.length === 0) return;
 
@@ -432,7 +432,7 @@ export function SpotifyPlayerProvider({
           "Content-Type": "application/json",
         },
         method: "PUT",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -485,7 +485,7 @@ export function SpotifyPlayerProvider({
             "Content-Type": "application/json",
           },
           method: "PUT",
-        }
+        },
       );
 
       if (!response.ok) {
@@ -497,7 +497,7 @@ export function SpotifyPlayerProvider({
         if (nextTrackWithId?.trackId) {
           startPlayTracking(
             nextTrackWithId.trackId,
-            onPlayRecordedCallbackRef.current || undefined
+            onPlayRecordedCallbackRef.current || undefined,
           );
         }
       }
@@ -527,7 +527,7 @@ export function SpotifyPlayerProvider({
             "Content-Type": "application/json",
           },
           method: "PUT",
-        }
+        },
       );
 
       if (!response.ok) {
@@ -539,7 +539,7 @@ export function SpotifyPlayerProvider({
         if (prevTrackWithId?.trackId) {
           startPlayTracking(
             prevTrackWithId.trackId,
-            onPlayRecordedCallbackRef.current || undefined
+            onPlayRecordedCallbackRef.current || undefined,
           );
         }
       }
@@ -614,7 +614,7 @@ export function SpotifyPlayerProvider({
                   .filter((track: { spotifyId?: string }) => track.spotifyId)
                   .map(
                     (track: { spotifyId: string }) =>
-                      `spotify:track:${track.spotifyId}`
+                      `spotify:track:${track.spotifyId}`,
                   )
               : [];
           }
@@ -638,7 +638,7 @@ export function SpotifyPlayerProvider({
                   .filter((track: { spotifyId?: string }) => track.spotifyId)
                   .map(
                     (track: { spotifyId: string }) =>
-                      `spotify:track:${track.spotifyId}`
+                      `spotify:track:${track.spotifyId}`,
                   )
               : [];
           }
@@ -661,7 +661,7 @@ export function SpotifyPlayerProvider({
 
           const response = await fetch(
             `${baseUrl}/tracks?${searchParams.toString()}`,
-            { credentials: "include" }
+            { credentials: "include" },
           );
 
           if (!response.ok) {
@@ -674,7 +674,7 @@ export function SpotifyPlayerProvider({
             .filter((track: { spotifyId?: string }) => track.spotifyId)
             .map(
               (track: { spotifyId: string }) =>
-                `spotify:track:${track.spotifyId}`
+                `spotify:track:${track.spotifyId}`,
             );
           break;
         }
@@ -718,7 +718,7 @@ export function SpotifyPlayerProvider({
 
       // Create shuffled array with current track at the beginning
       const remainingTracks = tracksToShuffle.filter(
-        (uri) => uri !== currentTrackUri
+        (uri) => uri !== currentTrackUri,
       );
       const shuffledRemaining = shuffleArray(remainingTracks);
       const shuffledList = [currentTrackUri, ...shuffledRemaining];
@@ -765,7 +765,7 @@ export function useSpotifyPlayer() {
   const context = useContext(SpotifyPlayerContext);
   if (!context) {
     throw new Error(
-      "useSpotifyPlayer must be used within a SpotifyPlayerProvider"
+      "useSpotifyPlayer must be used within a SpotifyPlayerProvider",
     );
   }
   return context;

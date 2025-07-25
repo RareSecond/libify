@@ -16,19 +16,19 @@ interface SyncResult {
   message: string;
   result: {
     errors: string[];
-    newTracks: number;
-    totalTracks: number;
-    updatedTracks: number;
     newAlbums: number;
+    newTracks: number;
     totalAlbums: number;
+    totalTracks: number;
     updatedAlbums: number;
+    updatedTracks: number;
   };
 }
 
 interface SyncStatus {
   lastSync: null | string;
-  totalTracks: number;
   totalAlbums: number;
+  totalTracks: number;
 }
 
 export function LibrarySync() {

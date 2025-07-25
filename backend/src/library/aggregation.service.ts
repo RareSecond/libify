@@ -27,7 +27,7 @@ export class AggregationService {
     trackIds: string[];
   }> {
     const albumData = savedAlbum.album;
-    
+
     // For now, we'll use the first artist (primary artist)
     const primaryArtist = albumData.artists[0];
     if (!primaryArtist) {
@@ -84,8 +84,7 @@ export class AggregationService {
       create: {
         albumType: albumData.album_type,
         artistId: artist.id,
-        imageUrl:
-          albumData.images.length > 0 ? albumData.images[0].url : null,
+        imageUrl: albumData.images.length > 0 ? albumData.images[0].url : null,
         name: albumData.name,
         releaseDate,
         spotifyId: albumData.id,
@@ -93,8 +92,7 @@ export class AggregationService {
       },
       update: {
         albumType: albumData.album_type,
-        imageUrl:
-          albumData.images.length > 0 ? albumData.images[0].url : null,
+        imageUrl: albumData.images.length > 0 ? albumData.images[0].url : null,
         name: albumData.name,
         releaseDate,
         totalTracks: albumData.total_tracks,

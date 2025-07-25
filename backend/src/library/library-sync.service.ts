@@ -9,7 +9,9 @@ export interface SyncResult {
   errors: string[];
   newAlbums: number;
   newTracks: number;
+  playlistTracks?: number;
   totalAlbums: number;
+  totalPlaylists?: number;
   totalTracks: number;
   updatedAlbums: number;
   updatedTracks: number;
@@ -27,8 +29,8 @@ export class LibrarySyncService {
 
   async getSyncStatus(userId: string): Promise<{
     lastSync: Date | null;
-    totalTracks: number;
     totalAlbums: number;
+    totalTracks: number;
   }> {
     const totalTracks = await this.databaseService.userTrack.count({
       where: { userId },
@@ -47,9 +49,98 @@ export class LibrarySyncService {
 
     return {
       lastSync: lastUpdatedTrack?.spotifyTrack.lastUpdated || null,
-      totalTracks,
       totalAlbums,
+      totalTracks,
     };
+  }
+
+  async syncPlaylistTracks(
+    userId: string,
+    accessToken: string,
+  ): Promise<{
+    errors: string[];
+    newTracks: number;
+    totalPlaylists: number;
+    totalPlaylistTracks: number;
+  }> {
+    const result = {
+      errors: [] as string[],
+      newTracks: 0,
+      totalPlaylists: 0,
+      totalPlaylistTracks: 0,
+    };
+
+    try {
+      this.logger.log(`Starting playlist track sync for user ${userId}`);
+
+      // Fetch all user playlists
+      const playlists =
+        await this.spotifyService.getAllUserPlaylists(accessToken);
+      result.totalPlaylists = playlists.length;
+
+      // Process each playlist
+      for (const playlist of playlists) {
+        try {
+          this.logger.log(
+            `Processing playlist: ${playlist.name} (${playlist.id})`,
+          );
+
+          // Skip empty playlists
+          if (playlist.tracks.total === 0) {
+            continue;
+          }
+
+          // Fetch tracks from the playlist
+          const playlistTracks = await this.spotifyService.getPlaylistTracks(
+            accessToken,
+            playlist.id,
+          );
+
+          result.totalPlaylistTracks += playlistTracks.length;
+
+          // Convert to the format expected by processBatch
+          const tracksForProcessing = playlistTracks.map((item) => ({
+            added_at: item.added_at,
+            track: item.track,
+          }));
+
+          // Process tracks in batches using existing logic
+          const batchSize = 100;
+          const syncResult: SyncResult = {
+            errors: [],
+            newAlbums: 0,
+            newTracks: 0,
+            totalAlbums: 0,
+            totalTracks: 0,
+            updatedAlbums: 0,
+            updatedTracks: 0,
+          };
+
+          for (let i = 0; i < tracksForProcessing.length; i += batchSize) {
+            const batch = tracksForProcessing.slice(i, i + batchSize);
+            await this.processBatch(userId, batch, syncResult, accessToken);
+          }
+
+          result.newTracks += syncResult.newTracks;
+          result.errors.push(...syncResult.errors);
+        } catch (error) {
+          this.logger.error(
+            `Failed to process playlist ${playlist.name} (${playlist.id})`,
+            error,
+          );
+          result.errors.push(`Playlist ${playlist.name}: ${error.message}`);
+        }
+      }
+
+      this.logger.log(
+        `Playlist sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to sync playlists for user ${userId}`, error);
+      result.errors.push(`Playlist sync failed: ${error.message}`);
+      return result;
+    }
   }
 
   async syncRecentlyPlayed(userId: string, accessToken: string): Promise<void> {
@@ -174,12 +265,25 @@ export class LibrarySyncService {
       // Sync saved albums
       this.logger.log(`Syncing saved albums for user ${userId}`);
       const albumSyncResult = await this.syncUserAlbums(userId, accessToken);
-      
+
       // Merge album sync results
       result.newAlbums = albumSyncResult.newAlbums;
       result.totalAlbums = albumSyncResult.totalAlbums;
       result.updatedAlbums = albumSyncResult.updatedAlbums;
       result.errors.push(...albumSyncResult.errors);
+
+      // Sync playlist tracks
+      this.logger.log(`Syncing playlist tracks for user ${userId}`);
+      const playlistSyncResult = await this.syncPlaylistTracks(
+        userId,
+        accessToken,
+      );
+
+      // Merge playlist sync results
+      result.newTracks += playlistSyncResult.newTracks;
+      result.playlistTracks = playlistSyncResult.totalPlaylistTracks;
+      result.totalPlaylists = playlistSyncResult.totalPlaylists;
+      result.errors.push(...playlistSyncResult.errors);
 
       this.logger.log(
         `Library sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
@@ -284,9 +388,7 @@ export class LibrarySyncService {
           `Failed to process album ${savedAlbum.album.id}`,
           error,
         );
-        result.errors.push(
-          `Album ${savedAlbum.album.name}: ${error.message}`,
-        );
+        result.errors.push(`Album ${savedAlbum.album.name}: ${error.message}`);
       }
     }
   }
