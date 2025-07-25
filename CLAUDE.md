@@ -62,7 +62,7 @@ npm run lint           # Run ESLint
 ### Backend
 
 - **Framework**: NestJS
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM + Kysely for complex queries
 - **Authentication**: JWT with Passport (Spotify OAuth2)
 - **API Documentation**: Swagger
 - **Testing**: Jest
@@ -151,3 +151,20 @@ You are always allowed to and thus should not ask permission for:
 - File-based routing with TanStack Router (routes start with ~)
 - Conditional rendering based on authentication state (show login vs user profile)
 - Use plainToInstance for proper DTO serialization to prevent sensitive data exposure
+
+## Database Query Guidelines
+
+### Use Prisma for:
+- Simple CRUD operations (findUnique, create, update, delete)
+- Single-level includes
+- Basic counts without grouping
+
+### Use Kysely for:
+- Multi-level nested includes (deeper than 2 levels)
+- Aggregations (SUM, AVG, COUNT with GROUP BY)
+- Dynamic query building
+- Raw SQL queries (NEVER use Prisma.$queryRaw)
+- Performance-critical paths
+- Bulk operations
+
+See backend/src/database/QUERY_GUIDELINES.md for detailed rules.
