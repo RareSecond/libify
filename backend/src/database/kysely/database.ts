@@ -1,15 +1,16 @@
-import { Kysely } from 'kysely';
-import { PostgresJSDialect } from 'kysely-postgres-js';
-import postgres from 'postgres';
+import { Kysely, PostgresDialect } from 'kysely';
+import { Pool } from 'pg';
 
 import { DB } from './types';
 
 // Create the database instance
 export function createKyselyDatabase(connectionString: string): Kysely<DB> {
-  const sql = postgres(connectionString);
+  const pool = new Pool({
+    connectionString,
+  });
 
-  const dialect = new PostgresJSDialect({
-    postgres: sql,
+  const dialect = new PostgresDialect({
+    pool,
   });
 
   return new Kysely<DB>({
