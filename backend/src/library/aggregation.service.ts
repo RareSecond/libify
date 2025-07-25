@@ -1,13 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { sql } from 'kysely';
 
 import { DatabaseService } from '../database/database.service';
+import { KyselyService } from '../database/kysely/kysely.service';
 import { SpotifySavedAlbum } from './dto/spotify-album.dto';
 
 @Injectable()
 export class AggregationService {
   private readonly logger = new Logger(AggregationService.name);
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(
+    private databaseService: DatabaseService,
+    private kyselyService: KyselyService,
+  ) {}
 
   async createOrUpdateAlbumEntities(
     savedAlbum: SpotifySavedAlbum,
@@ -262,6 +267,35 @@ export class AggregationService {
     };
   }
 
+  /**
+   * Get artist statistics without loading all data into memory
+   * This replaces the PRODUCTION_DATA_ARCHITECTURE_GUIDE's $queryRaw example
+   */
+  async getArtistStats(userId: string, limit = 100) {
+    const db = this.kyselyService.database;
+
+    return db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .where('ut.userId', '=', userId)
+      .groupBy(['sar.id', 'sar.name', 'sar.imageUrl'])
+      .select([
+        'sar.id',
+        'sar.name',
+        'sar.imageUrl',
+        sql<number>`COUNT(DISTINCT ut.id)::int`.as('trackCount'),
+        sql<number>`SUM(ut."totalPlayCount")::int`.as('totalPlays'),
+        sql<Date>`MAX(ut."lastPlayedAt")`.as('lastPlayed'),
+        sql<number>`ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1)`.as(
+          'avgRating',
+        ),
+      ])
+      .orderBy('totalPlays', 'desc')
+      .limit(limit)
+      .execute();
+  }
+
   async recalculateAllUserStats(userId: string): Promise<void> {
     this.logger.log(`Recalculating all stats for user ${userId}`);
 
@@ -319,92 +353,67 @@ export class AggregationService {
   }
 
   async updateUserAlbumStats(userId: string, albumId: string): Promise<void> {
-    // Get all user tracks for this album
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: true,
-      },
-      where: {
-        spotifyTrack: {
-          albumId,
-        },
-        userId,
-      },
-    });
+    const db = this.kyselyService.database;
 
-    if (tracks.length === 0) {
-      // Remove UserAlbum record if no tracks exist
-      await this.databaseService.userAlbum.deleteMany({
-        where: { albumId, userId },
-      });
+    // Calculate all stats in a single query
+    const stats = await db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .where('ut.userId', '=', userId)
+      .where('st.albumId', '=', albumId)
+      .select([
+        sql<number>`COUNT(*)::int`.as('trackCount'),
+        sql<number>`SUM(st.duration)::int`.as('totalDuration'),
+        sql<number>`SUM(ut."totalPlayCount")::int`.as('totalPlayCount'),
+        sql<number>`COUNT(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::int`.as(
+          'ratedTrackCount',
+        ),
+        sql<number>`ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1)`.as(
+          'avgRating',
+        ),
+        sql<Date>`MIN(ut."addedAt")`.as('firstAddedAt'),
+        sql<Date>`MAX(ut."lastPlayedAt")`.as('lastPlayedAt'),
+      ])
+      .executeTakeFirst();
+
+    if (!stats || stats.trackCount === 0) {
+      // No tracks for this album, remove the UserAlbum record if it exists
+      await db
+        .deleteFrom('UserAlbum')
+        .where('userId', '=', userId)
+        .where('albumId', '=', albumId)
+        .execute();
       return;
     }
 
-    // Calculate aggregated stats
-    const stats = {
-      avgRating: null as null | number,
-      firstAddedAt: tracks.reduce(
-        (min, t) => (t.addedAt < min ? t.addedAt : min),
-        tracks[0].addedAt,
-      ),
-      lastPlayedAt: tracks.reduce(
-        (max, t) => {
-          if (!t.lastPlayedAt) return max;
-          if (!max) return t.lastPlayedAt;
-          return t.lastPlayedAt > max ? t.lastPlayedAt : max;
-        },
-        null as Date | null,
-      ),
-      ratedTrackCount: 0,
-      totalDuration: 0,
-      totalPlayCount: 0,
-      trackCount: tracks.length,
-    };
-
-    // Calculate average rating and other stats
-    let totalRating = 0;
-    tracks.forEach((track) => {
-      stats.totalDuration += track.spotifyTrack.duration;
-      stats.totalPlayCount += track.totalPlayCount;
-      if (track.rating !== null) {
-        totalRating += track.rating;
-        stats.ratedTrackCount++;
-      }
-    });
-
-    if (stats.ratedTrackCount > 0) {
-      stats.avgRating =
-        Math.round((totalRating / stats.ratedTrackCount) * 10) / 10;
-    }
-
-    // Upsert UserAlbum record
-    await this.databaseService.userAlbum.upsert({
-      create: {
+    // Upsert the aggregated stats
+    await db
+      .insertInto('UserAlbum')
+      .values({
         albumId,
         avgRating: stats.avgRating,
         firstAddedAt: stats.firstAddedAt,
+        id: sql<string>`gen_random_uuid()`,
         lastPlayedAt: stats.lastPlayedAt,
         ratedTrackCount: stats.ratedTrackCount,
-        totalDuration: stats.totalDuration,
-        totalPlayCount: stats.totalPlayCount,
+        totalDuration: stats.totalDuration ?? 0,
+        totalPlayCount: stats.totalPlayCount ?? 0,
         trackCount: stats.trackCount,
+        updatedAt: new Date(),
         userId,
-      },
-      update: {
-        avgRating: stats.avgRating,
-        lastPlayedAt: stats.lastPlayedAt,
-        ratedTrackCount: stats.ratedTrackCount,
-        totalDuration: stats.totalDuration,
-        totalPlayCount: stats.totalPlayCount,
-        trackCount: stats.trackCount,
-      },
-      where: {
-        userId_albumId: {
-          albumId,
-          userId,
-        },
-      },
-    });
+      })
+      .onConflict((oc) =>
+        oc.columns(['userId', 'albumId']).doUpdateSet({
+          avgRating: stats.avgRating,
+          lastPlayedAt: stats.lastPlayedAt,
+          ratedTrackCount: stats.ratedTrackCount,
+          totalDuration: stats.totalDuration ?? 0,
+          totalPlayCount: stats.totalPlayCount ?? 0,
+          trackCount: stats.trackCount,
+          updatedAt: new Date(),
+        }),
+      )
+      .execute();
 
     this.logger.debug(
       `Updated UserAlbum stats for user ${userId}, album ${albumId}`,
@@ -412,99 +421,70 @@ export class AggregationService {
   }
 
   async updateUserArtistStats(userId: string, artistId: string): Promise<void> {
-    // Get all user tracks for this artist
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: {
-          include: {
-            album: true,
-          },
-        },
-      },
-      where: {
-        spotifyTrack: {
-          artistId,
-        },
-        userId,
-      },
-    });
+    const db = this.kyselyService.database;
 
-    if (tracks.length === 0) {
-      // Remove UserArtist record if no tracks exist
-      await this.databaseService.userArtist.deleteMany({
-        where: { artistId, userId },
-      });
+    // Calculate all stats in a single query
+    const stats = await db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .where('ut.userId', '=', userId)
+      .where('st.artistId', '=', artistId)
+      .select([
+        sql<number>`COUNT(*)::int`.as('trackCount'),
+        sql<number>`COUNT(DISTINCT st."albumId")::int`.as('albumCount'),
+        sql<number>`SUM(st.duration)::int`.as('totalDuration'),
+        sql<number>`SUM(ut."totalPlayCount")::int`.as('totalPlayCount'),
+        sql<number>`COUNT(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::int`.as(
+          'ratedTrackCount',
+        ),
+        sql<number>`ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1)`.as(
+          'avgRating',
+        ),
+        sql<Date>`MIN(ut."addedAt")`.as('firstAddedAt'),
+        sql<Date>`MAX(ut."lastPlayedAt")`.as('lastPlayedAt'),
+      ])
+      .executeTakeFirst();
+
+    if (!stats || stats.trackCount === 0) {
+      // No tracks for this artist, remove the UserArtist record if it exists
+      await db
+        .deleteFrom('UserArtist')
+        .where('userId', '=', userId)
+        .where('artistId', '=', artistId)
+        .execute();
       return;
     }
 
-    // Calculate aggregated stats
-    const stats = {
-      albumCount: new Set(tracks.map((t) => t.spotifyTrack.albumId)).size,
-      avgRating: null as null | number,
-      firstAddedAt: tracks.reduce(
-        (min, t) => (t.addedAt < min ? t.addedAt : min),
-        tracks[0].addedAt,
-      ),
-      lastPlayedAt: tracks.reduce(
-        (max, t) => {
-          if (!t.lastPlayedAt) return max;
-          if (!max) return t.lastPlayedAt;
-          return t.lastPlayedAt > max ? t.lastPlayedAt : max;
-        },
-        null as Date | null,
-      ),
-      ratedTrackCount: 0,
-      totalDuration: 0,
-      totalPlayCount: 0,
-      trackCount: tracks.length,
-    };
-
-    // Calculate average rating and other stats
-    let totalRating = 0;
-    tracks.forEach((track) => {
-      stats.totalDuration += track.spotifyTrack.duration;
-      stats.totalPlayCount += track.totalPlayCount;
-      if (track.rating !== null) {
-        totalRating += track.rating;
-        stats.ratedTrackCount++;
-      }
-    });
-
-    if (stats.ratedTrackCount > 0) {
-      stats.avgRating =
-        Math.round((totalRating / stats.ratedTrackCount) * 10) / 10;
-    }
-
-    // Upsert UserArtist record
-    await this.databaseService.userArtist.upsert({
-      create: {
+    // Upsert the aggregated stats
+    await db
+      .insertInto('UserArtist')
+      .values({
         albumCount: stats.albumCount,
         artistId,
         avgRating: stats.avgRating,
         firstAddedAt: stats.firstAddedAt,
+        id: sql<string>`gen_random_uuid()`,
         lastPlayedAt: stats.lastPlayedAt,
         ratedTrackCount: stats.ratedTrackCount,
-        totalDuration: stats.totalDuration,
-        totalPlayCount: stats.totalPlayCount,
+        totalDuration: stats.totalDuration ?? 0,
+        totalPlayCount: stats.totalPlayCount ?? 0,
         trackCount: stats.trackCount,
+        updatedAt: new Date(),
         userId,
-      },
-      update: {
-        albumCount: stats.albumCount,
-        avgRating: stats.avgRating,
-        lastPlayedAt: stats.lastPlayedAt,
-        ratedTrackCount: stats.ratedTrackCount,
-        totalDuration: stats.totalDuration,
-        totalPlayCount: stats.totalPlayCount,
-        trackCount: stats.trackCount,
-      },
-      where: {
-        userId_artistId: {
-          artistId,
-          userId,
-        },
-      },
-    });
+      })
+      .onConflict((oc) =>
+        oc.columns(['userId', 'artistId']).doUpdateSet({
+          albumCount: stats.albumCount,
+          avgRating: stats.avgRating,
+          lastPlayedAt: stats.lastPlayedAt,
+          ratedTrackCount: stats.ratedTrackCount,
+          totalDuration: stats.totalDuration ?? 0,
+          totalPlayCount: stats.totalPlayCount ?? 0,
+          trackCount: stats.trackCount,
+          updatedAt: new Date(),
+        }),
+      )
+      .execute();
 
     this.logger.debug(
       `Updated UserArtist stats for user ${userId}, artist ${artistId}`,
