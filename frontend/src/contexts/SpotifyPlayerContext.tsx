@@ -357,8 +357,8 @@ export function SpotifyPlayerProvider({
                 );
               }
             }
-          } catch (error) {
-            console.error("Failed to auto-play next track:", error);
+          } catch {
+            // Failed to auto-play next track
           }
         }, 100);
       }

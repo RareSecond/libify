@@ -12,6 +12,22 @@
           "introspectComments": true
         }
       }
-    ]
+    ],
+    "webpack": false,
+    "assets": ["**/*.sh"]
+  },
+  "projects": {
+    "app": {
+      "type": "application",
+      "root": ".",
+      "entryFile": "main",
+      "sourceRoot": "src"
+    },
+    "worker": {
+      "type": "application", 
+      "root": ".",
+      "entryFile": "worker",
+      "sourceRoot": "src"
+    }
   }
 }
