@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
+import { sql } from 'kysely';
 
 import { DatabaseService } from '../database/database.service';
+import { KyselyService } from '../database/kysely/kysely.service';
 import { AggregationService } from './aggregation.service';
 import { AlbumDto, PaginatedAlbumsDto } from './dto/album.dto';
 import { ArtistDto, PaginatedArtistsDto } from './dto/artist.dto';
@@ -19,6 +21,7 @@ import { SpotifyService } from './spotify.service';
 export class TrackService {
   constructor(
     private databaseService: DatabaseService,
+    private kyselyService: KyselyService,
     private spotifyService: SpotifyService,
     private aggregationService: AggregationService,
   ) {}
@@ -28,61 +31,80 @@ export class TrackService {
     artist: string,
     album: string,
   ): Promise<{ tracks: TrackDto[] }> {
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: {
-          include: {
-            album: {
-              include: {
-                artist: true,
-              },
-            },
-            artist: true,
-          },
-        },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-      },
-      orderBy: {
-        spotifyTrack: {
-          title: 'asc',
-        },
-      },
-      where: {
-        spotifyTrack: {
-          album: {
-            name: album,
-          },
-          artist: {
-            name: artist,
-          },
-        },
-        userId,
-      },
-    });
+    const db = this.kyselyService.database;
 
+    // Single optimized query with all joins
+    const tracks = await db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
+      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
+      .leftJoin('Tag as t', 'tt.tagId', 't.id')
+      .select([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name as albumName',
+        'sa.imageUrl as albumImageUrl',
+        'sar.name as artistName',
+        'sar.genres as artistGenres',
+        // Aggregate tags into array
+        sql<Array<{ color: null | string; id: string; name: string }>>`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', t.id,
+                'name', t.name,
+                'color', t.color
+              )
+            ) FILTER (WHERE t.id IS NOT NULL),
+            '[]'::json
+          )`.as('tags'),
+      ])
+      .where('ut.userId', '=', userId)
+      .where('sar.name', '=', artist)
+      .where('sa.name', '=', album)
+      .groupBy([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name',
+        'sa.imageUrl',
+        'sar.name',
+        'sar.genres',
+      ])
+      .orderBy('st.title', 'asc')
+      .execute();
+
+    // Transform to DTOs
     const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
-        album: track.spotifyTrack.album.name,
-        albumArt: track.spotifyTrack.album.imageUrl || null,
-        artist: track.spotifyTrack.artist.name,
-        artistGenres: track.spotifyTrack.artist.genres,
-        duration: track.spotifyTrack.duration,
+        album: track.albumName,
+        albumArt: track.albumImageUrl,
+        artist: track.artistName,
+        artistGenres: track.artistGenres,
+        duration: track.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
         ratedAt: track.ratedAt,
         rating: track.rating,
-        spotifyId: track.spotifyTrack.spotifyId,
-        tags: track.tags.map((t) => ({
-          color: t.tag.color,
-          id: t.tag.id,
-          name: t.tag.name,
-        })),
-        title: track.spotifyTrack.title,
+        spotifyId: track.spotifyId,
+        tags: track.tags,
+        title: track.title,
         totalPlayCount: track.totalPlayCount,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
@@ -95,70 +117,79 @@ export class TrackService {
     userId: string,
     artist: string,
   ): Promise<{ tracks: TrackDto[] }> {
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: {
-          include: {
-            album: {
-              include: {
-                artist: true,
-              },
-            },
-            artist: true,
-          },
-        },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-      },
-      orderBy: [
-        {
-          spotifyTrack: {
-            album: {
-              name: 'asc',
-            },
-          },
-        },
-        {
-          spotifyTrack: {
-            title: 'asc',
-          },
-        },
-      ],
-      where: {
-        spotifyTrack: {
-          artist: {
-            name: artist,
-          },
-        },
-        userId,
-      },
-    });
+    const db = this.kyselyService.database;
+
+    const tracks = await db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
+      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
+      .leftJoin('Tag as t', 'tt.tagId', 't.id')
+      .select([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name as albumName',
+        'sa.imageUrl as albumImageUrl',
+        'sar.name as artistName',
+        'sar.genres as artistGenres',
+        sql<Array<{ color: null | string; id: string; name: string }>>`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', t.id,
+                'name', t.name,
+                'color', t.color
+              )
+            ) FILTER (WHERE t.id IS NOT NULL),
+            '[]'::json
+          )`.as('tags'),
+      ])
+      .where('ut.userId', '=', userId)
+      .where('sar.name', '=', artist)
+      .groupBy([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name',
+        'sa.imageUrl',
+        'sar.name',
+        'sar.genres',
+      ])
+      .orderBy('sa.name', 'asc')
+      .orderBy('st.title', 'asc')
+      .execute();
 
     const trackDtos = tracks.map((track) => {
       const dto = {
         addedAt: track.addedAt,
-        album: track.spotifyTrack.album.name,
-        albumArt: track.spotifyTrack.album.imageUrl || null,
-        artist: track.spotifyTrack.artist.name,
-        artistGenres: track.spotifyTrack.artist.genres,
-        duration: track.spotifyTrack.duration,
+        album: track.albumName,
+        albumArt: track.albumImageUrl,
+        artist: track.artistName,
+        artistGenres: track.artistGenres,
+        duration: track.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
         ratedAt: track.ratedAt,
         rating: track.rating,
-        spotifyId: track.spotifyTrack.spotifyId,
-        tags: track.tags.map((t) => ({
-          color: t.tag.color,
-          id: t.tag.id,
-          name: t.tag.name,
-        })),
-        title: track.spotifyTrack.title,
+        spotifyId: track.spotifyId,
+        tags: track.tags,
+        title: track.title,
         totalPlayCount: track.totalPlayCount,
       };
-
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
 
@@ -219,6 +250,92 @@ export class TrackService {
     };
 
     return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+  }
+
+  /**
+   * Get tracks with cursor-based pagination for better performance
+   * Implements solution from PRODUCTION_DATA_ARCHITECTURE_GUIDE.md
+   */
+  async getTracksWithCursor(
+    userId: string,
+    cursor?: { addedAt: Date; id: string },
+    limit = 50,
+  ) {
+    const db = this.kyselyService.database;
+
+    let query = db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
+      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .select([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name as albumName',
+        'sa.imageUrl as albumImageUrl',
+        'sar.name as artistName',
+      ])
+      .where('ut.userId', '=', userId)
+      .orderBy('ut.addedAt', 'desc')
+      .orderBy('ut.id', 'asc') // Stable sort tiebreaker
+      .limit(limit + 1); // Fetch one extra to check if more exist
+
+    // Apply cursor if provided
+    if (cursor) {
+      query = query.where((eb) =>
+        eb.or([
+          eb('ut.addedAt', '<', cursor.addedAt),
+          eb.and([
+            eb('ut.addedAt', '=', cursor.addedAt),
+            eb('ut.id', '>', cursor.id),
+          ]),
+        ]),
+      );
+    }
+
+    const tracks = await query.execute();
+
+    const hasMore = tracks.length > limit;
+    const items = hasMore ? tracks.slice(0, -1) : tracks;
+
+    const nextCursor = hasMore
+      ? {
+          addedAt: items[items.length - 1].addedAt,
+          id: items[items.length - 1].id,
+        }
+      : null;
+
+    return {
+      hasMore,
+      items: items.map((track) =>
+        plainToInstance(
+          TrackDto,
+          {
+            addedAt: track.addedAt,
+            album: track.albumName,
+            albumArt: track.albumImageUrl,
+            artist: track.artistName,
+            duration: track.duration,
+            id: track.id,
+            lastPlayedAt: track.lastPlayedAt,
+            ratedAt: track.ratedAt,
+            rating: track.rating,
+            spotifyId: track.spotifyId,
+            title: track.title,
+            totalPlayCount: track.totalPlayCount,
+          },
+          { excludeExtraneousValues: true },
+        ),
+      ),
+      nextCursor,
+    };
   }
 
   async getUserAlbums(
