@@ -15,14 +15,6 @@ export function createKyselyDatabase(connectionString: string): Kysely<DB> {
 
   return new Kysely<DB>({
     dialect,
-    log(event) {
-      if (event.level === 'query' && process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('Query:', event.query.sql);
-        // eslint-disable-next-line no-console
-        console.log('Parameters:', event.query.parameters);
-      }
-    },
   });
 }
 
