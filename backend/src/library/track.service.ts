@@ -70,6 +70,7 @@ export class TrackService {
         album: track.spotifyTrack.album.name,
         albumArt: track.spotifyTrack.album.imageUrl || null,
         artist: track.spotifyTrack.artist.name,
+        artistGenres: track.spotifyTrack.artist.genres,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -142,6 +143,7 @@ export class TrackService {
         album: track.spotifyTrack.album.name,
         albumArt: track.spotifyTrack.album.imageUrl || null,
         artist: track.spotifyTrack.artist.name,
+        artistGenres: track.spotifyTrack.artist.genres,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -200,6 +202,7 @@ export class TrackService {
       album: track.spotifyTrack.album?.name || null,
       albumArt: track.spotifyTrack.album?.imageUrl || null,
       artist: track.spotifyTrack.artist.name,
+      artistGenres: track.spotifyTrack.artist.genres,
       duration: track.spotifyTrack.duration,
       id: track.id,
       lastPlayedAt: track.lastPlayedAt,
@@ -221,6 +224,7 @@ export class TrackService {
   async getUserAlbums(
     userId: string,
     options: {
+      genres?: string[];
       page: number;
       pageSize: number;
       search?: string;
@@ -255,6 +259,28 @@ export class TrackService {
           },
         },
       ];
+    }
+
+    // Add genre filter
+    if (options.genres && options.genres.length > 0) {
+      const genreFilter: Prisma.UserAlbumWhereInput = {
+        album: {
+          artist: {
+            genres: {
+              hasSome: options.genres,
+            },
+          },
+        },
+      };
+
+      if (where.OR) {
+        // If we already have OR conditions from search, wrap everything in AND
+        where.AND = [{ OR: where.OR }, genreFilter];
+        delete where.OR;
+      } else {
+        // Otherwise just add the genre filter
+        Object.assign(where, genreFilter);
+      }
     }
 
     // Build orderBy clause
@@ -308,6 +334,7 @@ export class TrackService {
         {
           albumArt: userAlbum.album.imageUrl,
           artist: userAlbum.album.artist.name,
+          artistGenres: userAlbum.album.artist.genres,
           avgRating: userAlbum.avgRating,
           firstAdded: userAlbum.firstAddedAt,
           lastPlayed: userAlbum.lastPlayedAt,
@@ -338,6 +365,7 @@ export class TrackService {
   async getUserArtists(
     userId: string,
     options: {
+      genres?: string[];
       page: number;
       pageSize: number;
       search?: string;
@@ -361,6 +389,24 @@ export class TrackService {
       where.artist = {
         name: { contains: options.search, mode: 'insensitive' },
       };
+    }
+
+    // Add genre filter
+    if (options.genres && options.genres.length > 0) {
+      if (options.search) {
+        // If we have both search and genre filter, we need to combine them
+        where.artist = {
+          AND: [
+            { name: { contains: options.search, mode: 'insensitive' } },
+            { genres: { hasSome: options.genres } },
+          ],
+        };
+      } else {
+        // Just genre filter
+        where.artist = {
+          genres: { hasSome: options.genres },
+        };
+      }
     }
 
     // Build orderBy clause
@@ -412,6 +458,7 @@ export class TrackService {
           artistImage: userArtist.artist.imageUrl,
           avgRating: userArtist.avgRating,
           firstAdded: userArtist.firstAddedAt,
+          genres: userArtist.artist.genres,
           lastPlayed: userArtist.lastPlayedAt,
           name: userArtist.artist.name,
           totalDuration: userArtist.totalDuration,
@@ -437,11 +484,37 @@ export class TrackService {
     );
   }
 
+  async getUserGenres(userId: string): Promise<string[]> {
+    // Get all unique genres from artists in user's library
+    const userArtists = await this.databaseService.userArtist.findMany({
+      include: {
+        artist: {
+          select: {
+            genres: true,
+          },
+        },
+      },
+      where: {
+        userId,
+      },
+    });
+
+    // Extract and flatten all genres
+    const allGenres = userArtists
+      .map((ua) => ua.artist.genres)
+      .flat()
+      .filter((genre) => genre && genre.length > 0);
+
+    // Return unique genres sorted alphabetically
+    return [...new Set(allGenres)].sort();
+  }
+
   async getUserTracks(
     userId: string,
     query: GetTracksQueryDto,
   ): Promise<PaginatedTracksDto> {
     const {
+      genres,
       minRating,
       page = 1,
       pageSize = 20,
@@ -487,6 +560,28 @@ export class TrackService {
       where.rating = {
         gte: minRating,
       };
+    }
+
+    // Add genre filter
+    if (genres && genres.length > 0) {
+      const genreFilter: Prisma.UserTrackWhereInput = {
+        spotifyTrack: {
+          artist: {
+            genres: {
+              hasSome: genres,
+            },
+          },
+        },
+      };
+
+      if (where.OR) {
+        // If we already have OR conditions from search, wrap everything in AND
+        where.AND = [{ OR: where.OR }, genreFilter];
+        delete where.OR;
+      } else {
+        // Otherwise just add the genre filter
+        Object.assign(where, genreFilter);
+      }
     }
 
     // Build orderBy clause
@@ -553,6 +648,7 @@ export class TrackService {
         album: track.spotifyTrack.album.name,
         albumArt: track.spotifyTrack.album.imageUrl || null,
         artist: track.spotifyTrack.artist.name,
+        artistGenres: track.spotifyTrack.artist.genres,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,

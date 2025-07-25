@@ -11,6 +11,14 @@ export class AlbumDto {
   artist: string;
 
   @ApiProperty({
+    description: 'Array of genre names from the album artist',
+    nullable: true,
+    type: [String],
+  })
+  @Expose()
+  artistGenres: string[];
+
+  @ApiProperty({
     description: 'Average rating of rated tracks',
     nullable: true,
   })

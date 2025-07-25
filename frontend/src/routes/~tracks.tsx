@@ -5,6 +5,7 @@ import { PageTitle } from "../components/PageTitle";
 import { TrackList } from "../components/TrackList";
 
 const tracksSearchSchema = z.object({
+  genres: z.array(z.string()).optional().default([]),
   page: z.number().min(1).optional().catch(1),
   pageSize: z.number().min(1).max(100).optional().catch(20),
   search: z.string().optional(),

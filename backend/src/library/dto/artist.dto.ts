@@ -22,6 +22,14 @@ export class ArtistDto {
   firstAdded: Date;
 
   @ApiProperty({
+    description: 'Array of genre names associated with this artist',
+    nullable: true,
+    type: [String],
+  })
+  @Expose()
+  genres: string[];
+
+  @ApiProperty({
     description: 'Date when any track was last played',
     nullable: true,
   })

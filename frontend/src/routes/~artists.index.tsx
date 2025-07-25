@@ -5,6 +5,7 @@ import { ArtistsOverview } from "../components/ArtistsOverview";
 import { PageTitle } from "../components/PageTitle";
 
 const artistsSearchSchema = z.object({
+  genres: z.array(z.string()).optional().default([]),
   page: z.number().optional().default(1),
   pageSize: z.number().optional().default(24),
   search: z.string().optional().default(""),

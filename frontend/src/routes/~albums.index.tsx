@@ -5,6 +5,7 @@ import { AlbumsOverview } from "../components/AlbumsOverview";
 import { PageTitle } from "../components/PageTitle";
 
 const albumsSearchSchema = z.object({
+  genres: z.array(z.string()).optional().default([]),
   page: z.number().optional().default(1),
   pageSize: z.number().optional().default(24),
   search: z.string().optional().default(""),

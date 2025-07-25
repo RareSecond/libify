@@ -16,9 +16,13 @@ import {
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Music, Play, Search, Star, User } from "lucide-react";
 
-import { useLibraryControllerGetArtists } from "../data/api";
+import {
+  useLibraryControllerGetArtists,
+  useLibraryControllerGetGenres,
+} from "../data/api";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~artists.index";
+import { GenreFilter } from "./filters/GenreFilter";
 
 const formatDuration = (ms: number) => {
   const hours = Math.floor(ms / 3600000);
@@ -38,6 +42,7 @@ const formatDate = (date: null | string | undefined) => {
 export function ArtistsOverview() {
   const navigate = useNavigate({ from: Route.fullPath });
   const {
+    genres = [],
     page = 1,
     pageSize = 24,
     search = "",
@@ -62,6 +67,7 @@ export function ArtistsOverview() {
   );
 
   const { data, error, isLoading } = useLibraryControllerGetArtists({
+    genres,
     page,
     pageSize,
     search: debouncedSearch || "",
@@ -69,8 +75,11 @@ export function ArtistsOverview() {
     sortOrder,
   });
 
+  const { data: genresData } = useLibraryControllerGetGenres();
+
   const updateSearch = (
     newSearch: Partial<{
+      genres?: string[];
       page?: number;
       pageSize?: number;
       search?: string;
@@ -169,6 +178,14 @@ export function ArtistsOverview() {
           value={pageSize.toString()}
           w={100}
         />
+
+        {genresData && genresData.length > 0 && (
+          <GenreFilter
+            genres={genresData}
+            onChange={(value) => updateSearch({ genres: value, page: 1 })}
+            value={genres}
+          />
+        )}
       </Group>
 
       <Grid>

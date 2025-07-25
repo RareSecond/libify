@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsInt,
@@ -11,6 +11,31 @@ import {
 } from 'class-validator';
 
 export class GetTracksQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by artist genres (tracks matching any of the genres)',
+    type: [String],
+  })
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  @Transform(({ obj, value }) => {
+    // Handle genres[] format from frontend
+    if (obj['genres[]']) {
+      const genresArray = obj['genres[]'];
+      if (typeof genresArray === 'string') {
+        return [genresArray];
+      }
+      return genresArray;
+    }
+    // Handle normal genres format
+    if (!value) return [];
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  genres?: string[];
+
   @ApiPropertyOptional({
     description: 'Filter by minimum rating',
     maximum: 5,
@@ -86,6 +111,22 @@ export class GetTracksQueryDto {
   @IsArray()
   @IsOptional()
   @IsUUID('4', { each: true })
+  @Transform(({ obj, value }) => {
+    // Handle tagIds[] format from frontend
+    if (obj['tagIds[]']) {
+      const tagIdsArray = obj['tagIds[]'];
+      if (typeof tagIdsArray === 'string') {
+        return [tagIdsArray];
+      }
+      return tagIdsArray;
+    }
+    // Handle normal tagIds format
+    if (!value) return [];
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
   tagIds?: string[];
 }
 
@@ -142,6 +183,14 @@ export class TrackDto {
   @ApiProperty()
   @Expose()
   artist: string;
+
+  @ApiProperty({
+    description: 'Array of genre names from the track artist',
+    nullable: true,
+    type: [String],
+  })
+  @Expose()
+  artistGenres: string[];
 
   @ApiProperty({ description: 'Duration in milliseconds' })
   @Expose()

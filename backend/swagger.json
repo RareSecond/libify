@@ -296,43 +296,78 @@
         "operationId": "LibraryController_getAlbums",
         "parameters": [
           {
-            "name": "page",
-            "required": true,
+            "name": "genres",
+            "required": false,
             "in": "query",
+            "description": "Filter by artist genres (albums matching any of the genres)",
             "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
               "type": "number"
             }
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Page size",
             "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 24,
               "type": "number"
             }
           },
           {
             "name": "search",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Search query for album name or artist name",
             "schema": {
               "type": "string"
             }
           },
           {
             "name": "sortBy",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Sort field",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "artist",
+                "avgRating",
+                "lastPlayed",
+                "name",
+                "totalPlayCount",
+                "trackCount"
+              ]
             }
           },
           {
             "name": "sortOrder",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Sort order",
             "schema": {
-              "type": "string"
+              "default": "asc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           }
         ],
@@ -408,43 +443,78 @@
         "operationId": "LibraryController_getArtists",
         "parameters": [
           {
-            "name": "page",
-            "required": true,
+            "name": "genres",
+            "required": false,
             "in": "query",
+            "description": "Filter by genres (artists matching any of the genres)",
             "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
               "type": "number"
             }
           },
           {
             "name": "pageSize",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Page size",
             "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 24,
               "type": "number"
             }
           },
           {
             "name": "search",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Search query for artist name",
             "schema": {
               "type": "string"
             }
           },
           {
             "name": "sortBy",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Sort field",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "albumCount",
+                "avgRating",
+                "lastPlayed",
+                "name",
+                "totalPlayCount",
+                "trackCount"
+              ]
             }
           },
           {
             "name": "sortOrder",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Sort order",
             "schema": {
-              "type": "string"
+              "default": "asc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           }
         ],
@@ -507,6 +577,36 @@
         ]
       }
     },
+    "/library/genres": {
+      "get": {
+        "operationId": "LibraryController_getGenres",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of unique genres",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all unique genres in user library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/status": {
       "get": {
         "operationId": "LibraryController_getSyncStatus",
@@ -531,6 +631,18 @@
       "get": {
         "operationId": "LibraryController_getTracks",
         "parameters": [
+          {
+            "name": "genres",
+            "required": false,
+            "in": "query",
+            "description": "Filter by artist genres (tracks matching any of the genres)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
           {
             "name": "minRating",
             "required": false,
@@ -1228,6 +1340,14 @@
             "type": "string",
             "description": "Album artist"
           },
+          "artistGenres": {
+            "description": "Array of genre names from the album artist",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "avgRating": {
             "type": "number",
             "nullable": true,
@@ -1264,6 +1384,7 @@
         "required": [
           "albumArt",
           "artist",
+          "artistGenres",
           "avgRating",
           "firstAdded",
           "lastPlayed",
@@ -1342,6 +1463,14 @@
           "artist": {
             "type": "string"
           },
+          "artistGenres": {
+            "description": "Array of genre names from the track artist",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "duration": {
             "type": "number",
             "description": "Duration in milliseconds"
@@ -1381,6 +1510,7 @@
         "required": [
           "addedAt",
           "artist",
+          "artistGenres",
           "duration",
           "id",
           "spotifyId",
@@ -1425,6 +1555,14 @@
             "type": "string",
             "description": "Date when first track was added"
           },
+          "genres": {
+            "description": "Array of genre names associated with this artist",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "lastPlayed": {
             "format": "date-time",
             "type": "string",
@@ -1453,6 +1591,7 @@
           "artistImage",
           "avgRating",
           "firstAdded",
+          "genres",
           "lastPlayed",
           "name",
           "totalDuration",

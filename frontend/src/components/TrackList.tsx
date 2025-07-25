@@ -14,15 +14,20 @@ import { useNavigate } from "@tanstack/react-router";
 import { Search, Tag } from "lucide-react";
 import { useState } from "react";
 
-import { useLibraryControllerGetTracks } from "../data/api";
+import {
+  useLibraryControllerGetGenres,
+  useLibraryControllerGetTracks,
+} from "../data/api";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~tracks";
+import { GenreFilter } from "./filters/GenreFilter";
 import { TagManager } from "./TagManager";
 import { TracksTable } from "./TracksTable";
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
   const {
+    genres = [],
     page = 1,
     pageSize = 20,
     search = "",
@@ -48,6 +53,7 @@ export function TrackList() {
   );
 
   const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
+    genres,
     page,
     pageSize,
     search: debouncedSearch || undefined,
@@ -62,8 +68,11 @@ export function TrackList() {
     sortOrder,
   });
 
+  const { data: genresData } = useLibraryControllerGetGenres();
+
   const updateSearch = (
     newSearch: Partial<{
+      genres?: string[];
       page?: number;
       pageSize?: number;
       search?: string;
@@ -165,6 +174,14 @@ export function TrackList() {
               value={pageSize.toString()}
               w={100}
             />
+
+            {genresData && genresData.length > 0 && (
+              <GenreFilter
+                genres={genresData}
+                onChange={(value) => updateSearch({ genres: value, page: 1 })}
+                value={genres}
+              />
+            )}
           </Group>
         </Group>
 

@@ -28,6 +28,8 @@ import { AlbumTracksResponseDto } from './dto/album-tracks.dto';
 import { PaginatedAlbumsDto } from './dto/album.dto';
 import { ArtistTracksResponseDto } from './dto/artist-tracks.dto';
 import { PaginatedArtistsDto } from './dto/artist.dto';
+import { GetAlbumsQueryDto } from './dto/get-albums-query.dto';
+import { GetArtistsQueryDto } from './dto/get-artists-query.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import {
   AddTagToTrackDto,
@@ -107,25 +109,28 @@ export class LibraryController {
   @Get('albums')
   async getAlbums(
     @Req() req: AuthenticatedRequest,
-    @Query('page') page?: number,
-    @Query('pageSize') pageSize?: number,
-    @Query('search') search?: string,
-    @Query('sortBy')
-    sortBy?:
-      | 'artist'
-      | 'avgRating'
-      | 'lastPlayed'
-      | 'name'
-      | 'totalPlayCount'
-      | 'trackCount',
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    @Query() query: GetAlbumsQueryDto,
   ): Promise<PaginatedAlbumsDto> {
+    // Manually handle genres[] parameter
+    let genres: string[] = [];
+    if (req.query['genres[]']) {
+      const genresParam = req.query['genres[]'];
+      if (Array.isArray(genresParam)) {
+        genres = genresParam as string[];
+      } else if (typeof genresParam === 'string') {
+        genres = [genresParam];
+      }
+    } else if (query.genres) {
+      genres = query.genres;
+    }
+
     return this.trackService.getUserAlbums(req.user.id, {
-      page: page || 1,
-      pageSize: pageSize || 24,
-      search,
-      sortBy: sortBy || 'name',
-      sortOrder: sortOrder || 'asc',
+      genres,
+      page: query.page || 1,
+      pageSize: query.pageSize || 24,
+      search: query.search,
+      sortBy: query.sortBy || 'name',
+      sortOrder: query.sortOrder || 'asc',
     });
   }
 
@@ -157,25 +162,28 @@ export class LibraryController {
   @Get('artists')
   async getArtists(
     @Req() req: AuthenticatedRequest,
-    @Query('page') page?: number,
-    @Query('pageSize') pageSize?: number,
-    @Query('search') search?: string,
-    @Query('sortBy')
-    sortBy?:
-      | 'albumCount'
-      | 'avgRating'
-      | 'lastPlayed'
-      | 'name'
-      | 'totalPlayCount'
-      | 'trackCount',
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    @Query() query: GetArtistsQueryDto,
   ): Promise<PaginatedArtistsDto> {
+    // Manually handle genres[] parameter
+    let genres: string[] = [];
+    if (req.query['genres[]']) {
+      const genresParam = req.query['genres[]'];
+      if (Array.isArray(genresParam)) {
+        genres = genresParam as string[];
+      } else if (typeof genresParam === 'string') {
+        genres = [genresParam];
+      }
+    } else if (query.genres) {
+      genres = query.genres;
+    }
+
     return this.trackService.getUserArtists(req.user.id, {
-      page: page || 1,
-      pageSize: pageSize || 24,
-      search,
-      sortBy: sortBy || 'name',
-      sortOrder: sortOrder || 'asc',
+      genres,
+      page: query.page || 1,
+      pageSize: query.pageSize || 24,
+      search: query.search,
+      sortBy: query.sortBy || 'name',
+      sortOrder: query.sortOrder || 'asc',
     });
   }
 
@@ -194,6 +202,17 @@ export class LibraryController {
       req.user.id,
       decodeURIComponent(artist),
     );
+  }
+
+  @ApiOperation({ summary: 'Get all unique genres in user library' })
+  @ApiResponse({
+    description: 'List of unique genres',
+    status: 200,
+    type: [String],
+  })
+  @Get('genres')
+  async getGenres(@Req() req: AuthenticatedRequest): Promise<string[]> {
+    return this.trackService.getUserGenres(req.user.id);
   }
 
   // Tag management endpoints
@@ -228,7 +247,36 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Query() query: GetTracksQueryDto,
   ): Promise<PaginatedTracksDto> {
-    return this.trackService.getUserTracks(req.user.id, query);
+    // Manually handle genres[] and tagIds[] parameters
+    let genres: string[] = [];
+    if (req.query['genres[]']) {
+      const genresParam = req.query['genres[]'];
+      if (Array.isArray(genresParam)) {
+        genres = genresParam as string[];
+      } else if (typeof genresParam === 'string') {
+        genres = [genresParam];
+      }
+    } else if (query.genres) {
+      genres = query.genres;
+    }
+
+    let tagIds: string[] = [];
+    if (req.query['tagIds[]']) {
+      const tagIdsParam = req.query['tagIds[]'];
+      if (Array.isArray(tagIdsParam)) {
+        tagIds = tagIdsParam as string[];
+      } else if (typeof tagIdsParam === 'string') {
+        tagIds = [tagIdsParam];
+      }
+    } else if (query.tagIds) {
+      tagIds = query.tagIds;
+    }
+
+    return this.trackService.getUserTracks(req.user.id, {
+      ...query,
+      genres,
+      tagIds,
+    });
   }
 
   @ApiOperation({ summary: 'Play a track on Spotify' })
