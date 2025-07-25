@@ -20,7 +20,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "kysely:generate": "prisma generate"
   },
   "dependencies": {
     "@mynance/types": "^0.0.0",
@@ -39,9 +40,13 @@
     "cookie-parser": "^1.4.7",
     "date-fns": "^4.1.0",
     "joi": "^17.13.3",
+    "kysely": "^0.28.3",
+    "kysely-postgres-js": "^2.0.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "passport-spotify": "^2.0.0",
+    "postgres": "^3.4.7",
+    "prisma-kysely": "^1.8.0",
     "reflect-metadata": "^0.2.2",
     "ts-pattern": "^5.6.2"
   },

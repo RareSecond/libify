@@ -183,9 +183,13 @@ export class AggregationService {
       }
       genres = artistData.genres || [];
       popularity = artistData.popularity;
-      this.logger.debug(`Artist ${primaryArtist.name} has ${genres.length} genres: ${genres.join(', ')}`);
+      this.logger.debug(
+        `Artist ${primaryArtist.name} has ${genres.length} genres: ${genres.join(', ')}`,
+      );
     } else {
-      this.logger.warn(`No artist data found for ${primaryArtist.name} (${primaryArtist.id}) in pre-fetched map`);
+      this.logger.warn(
+        `No artist data found for ${primaryArtist.name} (${primaryArtist.id}) in pre-fetched map`,
+      );
     }
 
     // Create or get artist
