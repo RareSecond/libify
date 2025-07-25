@@ -9,8 +9,6 @@
     "redis:start": "docker run -d -p 6379:6379 --name spotlib-redis redis:alpine",
     "redis:stop": "docker stop spotlib-redis && docker rm spotlib-redis",
     "redis:logs": "docker logs -f spotlib-redis",
-    "build:docker": "docker build -t undo-backend .",
-    "start:docker": "docker run -p 3000:3000 undo",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "prettier:check": "npm run prettier:check --workspaces --if-present",

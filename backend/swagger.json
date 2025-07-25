@@ -99,6 +99,20 @@
         ]
       }
     },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
     "/library/tracks/{trackId}/tags": {
       "post": {
         "operationId": "LibraryController_addTagToTrack",
@@ -1266,14 +1280,14 @@
     }
   },
   "info": {
-    "title": "Mynance API",
-    "description": "The Mynance API description",
+    "title": "Libify API",
+    "description": "Spotify library management API",
     "version": "0.0.1",
     "contact": {}
   },
   "tags": [
     {
-      "name": "mynance",
+      "name": "libify",
       "description": ""
     }
   ],

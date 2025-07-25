@@ -44,7 +44,7 @@ export function LibrarySync() {
         `${import.meta.env.VITE_API_URL}/library/sync/status`,
         {
           credentials: "include",
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to fetch sync status");
       return response.json();
@@ -60,7 +60,7 @@ export function LibrarySync() {
         {
           credentials: "include",
           method: "POST",
-        }
+        },
       );
       if (!response.ok) {
         const error = await response.json();
@@ -200,7 +200,7 @@ export function LibrarySync() {
                       style={{ display: "inline", marginRight: 4 }}
                     />
                     {Math.ceil(
-                      syncProgress.progress.estimatedTimeRemaining / 60
+                      syncProgress.progress.estimatedTimeRemaining / 60,
                     )}{" "}
                     min remaining
                   </Text>

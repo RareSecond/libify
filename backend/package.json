@@ -26,7 +26,6 @@
     "kysely:generate": "prisma generate"
   },
   "dependencies": {
-    "@mynance/types": "^0.0.0",
     "@nestjs/bullmq": "^11.0.3",
     "@nestjs/common": "^11.0.10",
     "@nestjs/config": "^4.0.0",
@@ -46,7 +45,6 @@
     "date-fns": "^4.1.0",
     "joi": "^17.13.3",
     "kysely": "^0.28.3",
-    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "passport-spotify": "^2.0.0",
     "pg": "^8.16.3",
