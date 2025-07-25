@@ -21,6 +21,16 @@ export interface SyncResult {
 @Injectable()
 export class LibrarySyncService {
   private readonly logger = new Logger(LibrarySyncService.name);
+  private syncArtistCache = new Map<
+    string,
+    {
+      genres: string[];
+      id: string;
+      images: Array<{ url: string }>;
+      name: string;
+      popularity: number;
+    }
+  >(); // Cache artists across batches during sync
 
   constructor(
     private databaseService: DatabaseService,
@@ -240,6 +250,8 @@ export class LibrarySyncService {
     };
 
     try {
+      // Clear artist cache at start of sync to avoid stale data across sync sessions
+      this.syncArtistCache.clear();
       this.logger.log(`Starting library sync for user ${userId}`);
 
       // Sync liked tracks using streaming for memory efficiency
@@ -280,6 +292,101 @@ export class LibrarySyncService {
     }
   }
 
+  /**
+   * Get artists from database first, only fetching from API if completely missing
+   * This prevents unnecessary API calls for artists we already have
+   */
+  private async getOrFetchArtists(
+    artistIds: string[],
+    accessToken: string,
+  ): Promise<
+    Map<
+      string,
+      {
+        genres: string[];
+        id: string;
+        images: Array<{ url: string }>;
+        name: string;
+        popularity: number;
+      }
+    >
+  > {
+    if (artistIds.length === 0) {
+      return new Map();
+    }
+
+    const db = this.kyselyService.database;
+    const artistMap = new Map();
+
+    // Step 1: Check sync cache first (artists fetched in this sync session)
+    const uncachedArtistIds: string[] = [];
+    for (const artistId of artistIds) {
+      if (this.syncArtistCache.has(artistId)) {
+        artistMap.set(artistId, this.syncArtistCache.get(artistId));
+      } else {
+        uncachedArtistIds.push(artistId);
+      }
+    }
+
+    if (uncachedArtistIds.length === 0) {
+      this.logger.debug(
+        `All ${artistIds.length} artists found in sync cache - no API calls needed`,
+      );
+      return artistMap;
+    }
+
+    // Step 2: Check database for remaining artists
+    const existingArtists = await db
+      .selectFrom('SpotifyArtist')
+      .select(['spotifyId', 'name', 'genres', 'popularity', 'imageUrl'])
+      .where('spotifyId', 'in', uncachedArtistIds)
+      .execute();
+
+    const foundInDb = new Set<string>();
+    for (const artist of existingArtists) {
+      const artistData = {
+        genres: artist.genres,
+        id: artist.spotifyId,
+        images: artist.imageUrl ? [{ url: artist.imageUrl }] : [],
+        name: artist.name,
+        popularity: artist.popularity || 0,
+      };
+      artistMap.set(artist.spotifyId, artistData);
+      this.syncArtistCache.set(artist.spotifyId, artistData);
+      foundInDb.add(artist.spotifyId);
+    }
+
+    // Step 3: Only fetch from Spotify API if artist doesn't exist in database at all
+    const needsApiFetch = uncachedArtistIds.filter((id) => !foundInDb.has(id));
+
+    if (needsApiFetch.length > 0) {
+      this.logger.log(
+        `Fetching ${needsApiFetch.length} missing artists from Spotify API (out of ${artistIds.length} total)`,
+      );
+      try {
+        const artistsData = await this.spotifyService.getMultipleArtists(
+          accessToken,
+          needsApiFetch,
+        );
+
+        for (const artist of artistsData) {
+          artistMap.set(artist.id, artist);
+          this.syncArtistCache.set(artist.id, artist);
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to fetch ${needsApiFetch.length} artists from API: ${error.message}`,
+        );
+      }
+    } else {
+      this.logger.debug(
+        `All ${artistIds.length} artists found in database - no API calls needed`,
+      );
+    }
+
+    return artistMap;
+  }
+
   private async processAlbumBatch(
     userId: string,
     albums: SpotifySavedAlbum[],
@@ -299,14 +406,11 @@ export class LibrarySyncService {
       }
     });
 
-    // Fetch all artist data in batch
-    const artistsData = await this.spotifyService.getMultipleArtists(
-      accessToken,
+    // Use optimized artist fetching (cache + db + API only if needed)
+    const artistMap = await this.getOrFetchArtists(
       Array.from(uniqueArtistIds),
+      accessToken,
     );
-
-    // Create a map for quick lookup
-    const artistMap = new Map(artistsData.map((artist) => [artist.id, artist]));
 
     for (const savedAlbum of albums) {
       try {
@@ -463,13 +567,8 @@ export class LibrarySyncService {
     ];
     const uniqueTrackIds = [...new Set(tracks.map((t) => t.track.id))];
 
-    // 1. Check what already exists in database using Kysely
-    const [existingArtists, existingUserTracks] = await Promise.all([
-      db
-        .selectFrom('SpotifyArtist')
-        .select('spotifyId')
-        .where('spotifyId', 'in', uniqueArtistIds)
-        .execute(),
+    // 1. Check what UserTracks already exist to avoid duplicate processing
+    const [existingUserTracks, existingSpotifyTracks] = await Promise.all([
       db
         .selectFrom('UserTrack as ut')
         .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
@@ -477,40 +576,57 @@ export class LibrarySyncService {
         .where('ut.userId', '=', userId)
         .where('st.spotifyId', 'in', uniqueTrackIds)
         .execute(),
+      db
+        .selectFrom('SpotifyTrack')
+        .select(['spotifyId'])
+        .where('spotifyId', 'in', uniqueTrackIds)
+        .execute(),
     ]);
 
-    const existingArtistIds = new Set(existingArtists.map((a) => a.spotifyId));
     const existingUserTrackIds = new Set(
       existingUserTracks.map((ut) => ut.spotifyId),
     );
-
-    // 2. Fetch artist data only for new artists (batch API call)
-    const newArtistIds = uniqueArtistIds.filter(
-      (id) => !existingArtistIds.has(id),
+    const existingSpotifyTrackIds = new Set(
+      existingSpotifyTracks.map((st) => st.spotifyId),
     );
-    let artistMap = new Map();
 
-    if (newArtistIds.length > 0) {
-      try {
-        const artistsData = await this.spotifyService.getMultipleArtists(
-          accessToken,
-          newArtistIds,
-        );
-        artistMap = new Map(artistsData.map((artist) => [artist.id, artist]));
-      } catch (error) {
-        this.logger.warn(`Failed to fetch artist data: ${error.message}`);
+    // Build a map of spotifyId -> internal ID for existing tracks
+    const spotifyTrackIdMap = new Map<string, string>();
+    if (existingSpotifyTracks.length > 0) {
+      const fullTrackData = await db
+        .selectFrom('SpotifyTrack')
+        .select(['id', 'spotifyId'])
+        .where('spotifyId', 'in', Array.from(existingSpotifyTrackIds))
+        .execute();
+
+      for (const track of fullTrackData) {
+        spotifyTrackIdMap.set(track.spotifyId, track.id);
       }
     }
+
+    // 2. Use optimized artist fetching (cache + db + API only if needed)
+    const artistMap = await this.getOrFetchArtists(
+      uniqueArtistIds,
+      accessToken,
+    );
 
     // 3. Process each track with minimal memory usage
     for (const { added_at, track } of tracks) {
       try {
-        // Only create/update entities that don't exist
-        const { trackId: spotifyTrackId } =
-          await this.aggregationService.createOrUpdateSpotifyEntities(
-            track,
-            artistMap,
-          );
+        let spotifyTrackId: string;
+
+        // Only create Spotify metadata entities if track doesn't exist in database
+        if (!existingSpotifyTrackIds.has(track.id)) {
+          const { trackId } =
+            await this.aggregationService.createOrUpdateSpotifyEntities(
+              track,
+              artistMap,
+            );
+          spotifyTrackId = trackId;
+        } else {
+          // Track metadata already exists, use cached ID
+          spotifyTrackId = spotifyTrackIdMap.get(track.id)!;
+        }
 
         // Create UserTrack only if it doesn't exist
         if (!existingUserTrackIds.has(track.id)) {

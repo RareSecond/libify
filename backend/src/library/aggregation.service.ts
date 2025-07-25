@@ -52,25 +52,22 @@ export class AggregationService {
       popularity = artistData.popularity;
     }
 
-    // Create or update artist
-    const artist = await this.databaseService.spotifyArtist.upsert({
-      create: {
-        genres,
-        imageUrl: artistImageUrl,
-        name: primaryArtist.name,
-        popularity,
-        spotifyId: primaryArtist.id,
-      },
-      update: {
-        genres,
-        name: primaryArtist.name,
-        ...(artistImageUrl && { imageUrl: artistImageUrl }),
-        ...(popularity !== null && { popularity }),
-      },
-      where: {
-        spotifyId: primaryArtist.id,
-      },
+    // Since we assume Spotify metadata never changes, only create artist if it doesn't exist
+    let artist = await this.databaseService.spotifyArtist.findUnique({
+      where: { spotifyId: primaryArtist.id },
     });
+
+    if (!artist) {
+      artist = await this.databaseService.spotifyArtist.create({
+        data: {
+          genres,
+          imageUrl: artistImageUrl,
+          name: primaryArtist.name,
+          popularity,
+          spotifyId: primaryArtist.id,
+        },
+      });
+    }
 
     // Parse release date
     let releaseDate: Date | null = null;
@@ -197,68 +194,58 @@ export class AggregationService {
       );
     }
 
-    // Create or get artist
-    const artist = await this.databaseService.spotifyArtist.upsert({
-      create: {
-        genres,
-        imageUrl: artistImageUrl,
-        name: primaryArtist.name,
-        popularity,
-        spotifyId: primaryArtist.id,
-      },
-      update: {
-        genres,
-        name: primaryArtist.name,
-        ...(artistImageUrl && { imageUrl: artistImageUrl }),
-        ...(popularity !== null && { popularity }),
-      },
-      where: {
-        spotifyId: primaryArtist.id,
-      },
+    // Since we assume Spotify metadata never changes, only create artist if it doesn't exist
+    let artist = await this.databaseService.spotifyArtist.findUnique({
+      where: { spotifyId: primaryArtist.id },
     });
 
-    // Create or get album - always required
-    const album = await this.databaseService.spotifyAlbum.upsert({
-      create: {
-        artistId: artist.id,
-        imageUrl:
-          spotifyTrackData.album.images.length > 0
-            ? spotifyTrackData.album.images[0].url
-            : null,
-        name: spotifyTrackData.album.name,
-        spotifyId: spotifyTrackData.album.id,
-      },
-      update: {
-        imageUrl:
-          spotifyTrackData.album.images.length > 0
-            ? spotifyTrackData.album.images[0].url
-            : null,
-        name: spotifyTrackData.album.name,
-      },
-      where: {
-        spotifyId: spotifyTrackData.album.id,
-      },
+    if (!artist) {
+      artist = await this.databaseService.spotifyArtist.create({
+        data: {
+          genres,
+          imageUrl: artistImageUrl,
+          name: primaryArtist.name,
+          popularity,
+          spotifyId: primaryArtist.id,
+        },
+      });
+    }
+
+    // Since we assume Spotify metadata never changes, only create album if it doesn't exist
+    let album = await this.databaseService.spotifyAlbum.findUnique({
+      where: { spotifyId: spotifyTrackData.album.id },
     });
 
-    // Create or update track
-    const track = await this.databaseService.spotifyTrack.upsert({
-      create: {
-        albumId: album.id,
-        artistId: artist.id,
-        duration: spotifyTrackData.duration_ms,
-        spotifyId: spotifyTrackData.id,
-        title: spotifyTrackData.name,
-      },
-      update: {
-        albumId: album.id,
-        artistId: artist.id,
-        duration: spotifyTrackData.duration_ms,
-        title: spotifyTrackData.name,
-      },
-      where: {
-        spotifyId: spotifyTrackData.id,
-      },
+    if (!album) {
+      album = await this.databaseService.spotifyAlbum.create({
+        data: {
+          artistId: artist.id,
+          imageUrl:
+            spotifyTrackData.album.images.length > 0
+              ? spotifyTrackData.album.images[0].url
+              : null,
+          name: spotifyTrackData.album.name,
+          spotifyId: spotifyTrackData.album.id,
+        },
+      });
+    }
+
+    // Since we assume Spotify metadata never changes, only create track if it doesn't exist
+    let track = await this.databaseService.spotifyTrack.findUnique({
+      where: { spotifyId: spotifyTrackData.id },
     });
+
+    if (!track) {
+      track = await this.databaseService.spotifyTrack.create({
+        data: {
+          albumId: album.id,
+          artistId: artist.id,
+          duration: spotifyTrackData.duration_ms,
+          spotifyId: spotifyTrackData.id,
+          title: spotifyTrackData.name,
+        },
+      });
+    }
 
     return {
       albumId: album.id,
