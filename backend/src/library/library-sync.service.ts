@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service';
+import { KyselyService } from '../database/kysely/kysely.service';
 import { AggregationService } from './aggregation.service';
 import { SpotifySavedAlbum } from './dto/spotify-album.dto';
 import { SpotifyService, SpotifyTrackData } from './spotify.service';
@@ -23,6 +24,7 @@ export class LibrarySyncService {
 
   constructor(
     private databaseService: DatabaseService,
+    private kyselyService: KyselyService,
     private spotifyService: SpotifyService,
     private aggregationService: AggregationService,
   ) {}
@@ -209,17 +211,8 @@ export class LibrarySyncService {
     try {
       this.logger.log(`Starting album sync for user ${userId}`);
 
-      // Fetch all saved albums from Spotify
-      const spotifyAlbums =
-        await this.spotifyService.getAllUserSavedAlbums(accessToken);
-      result.totalAlbums = spotifyAlbums.length;
-
-      // Process albums in batches to avoid overwhelming the database
-      const batchSize = 20; // Smaller batch size for albums since they're more complex
-      for (let i = 0; i < spotifyAlbums.length; i += batchSize) {
-        const batch = spotifyAlbums.slice(i, i + batchSize);
-        await this.processAlbumBatch(userId, batch, result, accessToken);
-      }
+      // Stream albums to avoid memory issues
+      await this.syncAlbumsStreaming(userId, accessToken, result);
 
       this.logger.log(
         `Album sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
@@ -249,18 +242,9 @@ export class LibrarySyncService {
     try {
       this.logger.log(`Starting library sync for user ${userId}`);
 
-      // Sync liked tracks
+      // Sync liked tracks using streaming for memory efficiency
       this.logger.log(`Syncing liked tracks for user ${userId}`);
-      const spotifyTracks =
-        await this.spotifyService.getAllUserLibraryTracks(accessToken);
-      result.totalTracks = spotifyTracks.length;
-
-      // Process tracks in batches to avoid overwhelming the database
-      const batchSize = 100;
-      for (let i = 0; i < spotifyTracks.length; i += batchSize) {
-        const batch = spotifyTracks.slice(i, i + batchSize);
-        await this.processBatch(userId, batch, result, accessToken);
-      }
+      await this.syncTracksStreaming(userId, accessToken, result);
 
       // Sync saved albums
       this.logger.log(`Syncing saved albums for user ${userId}`);
@@ -459,5 +443,183 @@ export class LibrarySyncService {
         result.errors.push(`Track ${track.name}: ${error.message}`);
       }
     }
+  }
+
+  /**
+   * Optimized batch processing using Kysely for bulk operations
+   * Eliminates the memory-heavy artist map creation
+   */
+  private async processBatchOptimized(
+    userId: string,
+    tracks: Array<{ added_at: string; track: SpotifyTrackData }>,
+    result: SyncResult,
+    accessToken: string,
+  ): Promise<void> {
+    const db = this.kyselyService.database;
+
+    // Extract unique IDs for batch processing
+    const uniqueArtistIds = [
+      ...new Set(tracks.map((t) => t.track.artists[0]?.id).filter(Boolean)),
+    ];
+    const uniqueTrackIds = [...new Set(tracks.map((t) => t.track.id))];
+
+    // 1. Check what already exists in database using Kysely
+    const [existingArtists, existingUserTracks] = await Promise.all([
+      db
+        .selectFrom('SpotifyArtist')
+        .select('spotifyId')
+        .where('spotifyId', 'in', uniqueArtistIds)
+        .execute(),
+      db
+        .selectFrom('UserTrack as ut')
+        .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+        .select(['st.spotifyId'])
+        .where('ut.userId', '=', userId)
+        .where('st.spotifyId', 'in', uniqueTrackIds)
+        .execute(),
+    ]);
+
+    const existingArtistIds = new Set(existingArtists.map((a) => a.spotifyId));
+    const existingUserTrackIds = new Set(
+      existingUserTracks.map((ut) => ut.spotifyId),
+    );
+
+    // 2. Fetch artist data only for new artists (batch API call)
+    const newArtistIds = uniqueArtistIds.filter(
+      (id) => !existingArtistIds.has(id),
+    );
+    let artistMap = new Map();
+
+    if (newArtistIds.length > 0) {
+      try {
+        const artistsData = await this.spotifyService.getMultipleArtists(
+          accessToken,
+          newArtistIds,
+        );
+        artistMap = new Map(artistsData.map((artist) => [artist.id, artist]));
+      } catch (error) {
+        this.logger.warn(`Failed to fetch artist data: ${error.message}`);
+      }
+    }
+
+    // 3. Process each track with minimal memory usage
+    for (const { added_at, track } of tracks) {
+      try {
+        // Only create/update entities that don't exist
+        const { trackId: spotifyTrackId } =
+          await this.aggregationService.createOrUpdateSpotifyEntities(
+            track,
+            artistMap,
+          );
+
+        // Create UserTrack only if it doesn't exist
+        if (!existingUserTrackIds.has(track.id)) {
+          await this.databaseService.userTrack.create({
+            data: {
+              addedAt: new Date(added_at),
+              spotifyTrackId,
+              userId,
+            },
+          });
+          result.newTracks++;
+
+          // Update aggregated stats efficiently
+          await this.aggregationService.updateStatsForTrack(
+            userId,
+            spotifyTrackId,
+          );
+        } else {
+          result.updatedTracks++;
+        }
+      } catch (error) {
+        this.logger.error(`Failed to process track ${track.id}`, error);
+        result.errors.push(`Track ${track.name}: ${error.message}`);
+      }
+    }
+
+    // Clear the artist map to free memory
+    artistMap.clear();
+  }
+
+  /**
+   * Memory-efficient streaming sync for user albums
+   */
+  private async syncAlbumsStreaming(
+    userId: string,
+    accessToken: string,
+    result: {
+      errors: string[];
+      newAlbums: number;
+      totalAlbums: number;
+      updatedAlbums: number;
+    },
+  ): Promise<void> {
+    const batchSize = 20; // Smaller batches for albums since they're more complex
+    let batch: SpotifySavedAlbum[] = [];
+    let totalProcessed = 0;
+
+    // Stream albums and process in batches
+    for await (const album of this.spotifyService.streamUserSavedAlbums(
+      accessToken,
+    )) {
+      batch.push(album);
+      totalProcessed++;
+
+      // Process batch when it reaches the desired size
+      if (batch.length >= batchSize) {
+        await this.processAlbumBatch(userId, batch, result, accessToken);
+        batch = []; // Clear batch to free memory
+
+        // Force garbage collection if available (for development)
+        if (global.gc) global.gc();
+      }
+    }
+
+    // Process remaining albums in the last batch
+    if (batch.length > 0) {
+      await this.processAlbumBatch(userId, batch, result, accessToken);
+    }
+
+    result.totalAlbums = totalProcessed;
+    this.logger.log(`Streamed and processed ${totalProcessed} albums`);
+  }
+
+  /**
+   * Memory-efficient streaming sync for user tracks
+   * Processes tracks in small batches without loading everything into memory
+   */
+  private async syncTracksStreaming(
+    userId: string,
+    accessToken: string,
+    result: SyncResult,
+  ): Promise<void> {
+    const batchSize = 50;
+    let batch: Array<{ added_at: string; track: SpotifyTrackData }> = [];
+    let totalProcessed = 0;
+
+    // Stream tracks and process in batches
+    for await (const track of this.spotifyService.streamUserLibraryTracks(
+      accessToken,
+    )) {
+      batch.push(track);
+      totalProcessed++;
+
+      // Process batch when it reaches the desired size
+      if (batch.length >= batchSize) {
+        await this.processBatchOptimized(userId, batch, result, accessToken);
+        batch = []; // Clear batch to free memory
+
+        // Force garbage collection if available (for development)
+        if (global.gc) global.gc();
+      }
+    }
+
+    // Process remaining tracks in the last batch
+    if (batch.length > 0) {
+      await this.processBatchOptimized(userId, batch, result, accessToken);
+    }
+
+    result.totalTracks = totalProcessed;
+    this.logger.log(`Streamed and processed ${totalProcessed} tracks`);
   }
 }

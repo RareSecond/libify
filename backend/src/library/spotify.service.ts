@@ -57,36 +57,6 @@ export class SpotifyService {
     });
   }
 
-  async getAllUserLibraryTracks(
-    accessToken: string,
-  ): Promise<Array<{ added_at: string; track: SpotifyTrackData }>> {
-    const allTracks: Array<{ added_at: string; track: SpotifyTrackData }> = [];
-    let offset = 0;
-    const limit = 50;
-    let hasMore = true;
-
-    while (hasMore) {
-      const response = await this.getUserLibraryTracks(
-        accessToken,
-        limit,
-        offset,
-      );
-      allTracks.push(...response.items);
-
-      if (response.next === null) {
-        hasMore = false;
-      } else {
-        offset += limit;
-      }
-
-      // Add a small delay to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
-    this.logger.log(`Fetched ${allTracks.length} tracks from Spotify library`);
-    return allTracks;
-  }
-
   async getAllUserPlaylists(accessToken: string): Promise<SpotifyPlaylist[]> {
     const allPlaylists: SpotifyPlaylist[] = [];
     let offset = 0;
@@ -109,36 +79,6 @@ export class SpotifyService {
 
     this.logger.log(`Fetched ${allPlaylists.length} playlists from Spotify`);
     return allPlaylists;
-  }
-
-  async getAllUserSavedAlbums(
-    accessToken: string,
-  ): Promise<SpotifySavedAlbum[]> {
-    const allAlbums: SpotifySavedAlbum[] = [];
-    let offset = 0;
-    const limit = 50;
-    let hasMore = true;
-
-    while (hasMore) {
-      const response = await this.getUserSavedAlbums(
-        accessToken,
-        limit,
-        offset,
-      );
-      allAlbums.push(...response.items);
-
-      if (response.next === null) {
-        hasMore = false;
-      } else {
-        offset += limit;
-      }
-
-      // Add a small delay to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
-    this.logger.log(`Fetched ${allAlbums.length} albums from Spotify library`);
-    return allAlbums;
   }
 
   async getArtist(
@@ -460,5 +400,77 @@ export class SpotifyService {
       this.logger.error(`Failed to search for artist: ${artistName}`, error);
       return null;
     }
+  }
+
+  async *streamUserLibraryTracks(
+    accessToken: string,
+  ): AsyncGenerator<
+    { added_at: string; track: SpotifyTrackData },
+    void,
+    unknown
+  > {
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+    let totalFetched = 0;
+
+    while (hasMore) {
+      const response = await this.getUserLibraryTracks(
+        accessToken,
+        limit,
+        offset,
+      );
+
+      // Yield each track immediately instead of accumulating
+      for (const track of response.items) {
+        yield track;
+        totalFetched++;
+      }
+
+      if (response.next === null) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+
+      // Add a small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    this.logger.log(`Streamed ${totalFetched} tracks from Spotify library`);
+  }
+
+  async *streamUserSavedAlbums(
+    accessToken: string,
+  ): AsyncGenerator<SpotifySavedAlbum, void, unknown> {
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+    let totalFetched = 0;
+
+    while (hasMore) {
+      const response = await this.getUserSavedAlbums(
+        accessToken,
+        limit,
+        offset,
+      );
+
+      // Yield each album immediately instead of accumulating
+      for (const album of response.items) {
+        yield album;
+        totalFetched++;
+      }
+
+      if (response.next === null) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+
+      // Add a small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    this.logger.log(`Streamed ${totalFetched} albums from Spotify library`);
   }
 }
