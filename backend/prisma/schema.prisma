@@ -3,9 +3,9 @@ generator client {
 }
 
 generator kysely {
-  provider = "prisma-kysely"
-  output = "../src/database/kysely"
-  fileName = "types.ts"
+  provider     = "prisma-kysely"
+  output       = "../src/database/kysely"
+  fileName     = "types.ts"
   enumFileName = "enums.ts"
 }
 
@@ -15,85 +15,85 @@ datasource db {
 }
 
 model User {
-  id                  String         @id @default(uuid())
-  email               String         @unique
+  id                  String    @id @default(uuid())
+  email               String    @unique
   name                String?
-  provider            String         // 'spotify'
-  providerId          String         // ID from OAuth provider
-  spotifyId           String?        // Spotify-specific ID
-  spotifyAccessToken  String?        // Spotify access token
-  spotifyRefreshToken String?        // Spotify refresh token
-  tokenExpiresAt      DateTime?      // Token expiration time
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  
+  provider            String // 'spotify'
+  providerId          String // ID from OAuth provider
+  spotifyId           String? // Spotify-specific ID
+  spotifyAccessToken  String? // Spotify access token
+  spotifyRefreshToken String? // Spotify refresh token
+  tokenExpiresAt      DateTime? // Token expiration time
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
   // Relations
-  userTracks          UserTrack[]
-  tags                Tag[]
-  playlists           SmartPlaylist[]
-  userArtists         UserArtist[]
-  userAlbums          UserAlbum[]
+  userTracks  UserTrack[]
+  tags        Tag[]
+  playlists   SmartPlaylist[]
+  userArtists UserArtist[]
+  userAlbums  UserAlbum[]
 }
 
 // Spotify artist data
 model SpotifyArtist {
-  id              String   @id @default(uuid())
-  spotifyId       String   @unique // Spotify artist ID
-  name            String
-  imageUrl        String?  // Artist image from Spotify
-  genres          String[] // Array of genre names
-  popularity      Int?     // Spotify popularity score (0-100)
-  lastUpdated     DateTime @default(now())
-  
+  id          String   @id @default(uuid())
+  spotifyId   String   @unique // Spotify artist ID
+  name        String
+  imageUrl    String? // Artist image from Spotify
+  genres      String[] // Array of genre names
+  popularity  Int? // Spotify popularity score (0-100)
+  lastUpdated DateTime @default(now())
+
   // Relations
-  albums          SpotifyAlbum[]
-  tracks          SpotifyTrack[]
-  userArtists     UserArtist[]
-  
+  albums      SpotifyAlbum[]
+  tracks      SpotifyTrack[]
+  userArtists UserArtist[]
+
   @@index([name])
 }
 
 // Spotify album data
 model SpotifyAlbum {
-  id              String   @id @default(uuid())
-  spotifyId       String   @unique // Spotify album ID
-  name            String
-  artistId        String
-  imageUrl        String?  // Album cover image
-  releaseDate     DateTime?
-  totalTracks     Int?
-  albumType       String?  // album, single, compilation
-  lastUpdated     DateTime @default(now())
-  
+  id          String    @id @default(uuid())
+  spotifyId   String    @unique // Spotify album ID
+  name        String
+  artistId    String
+  imageUrl    String? // Album cover image
+  releaseDate DateTime?
+  totalTracks Int?
+  albumType   String? // album, single, compilation
+  lastUpdated DateTime  @default(now())
+
   // Relations
-  artist          SpotifyArtist @relation(fields: [artistId], references: [id])
-  tracks          SpotifyTrack[]
-  userAlbums      UserAlbum[]
-  
+  artist     SpotifyArtist  @relation(fields: [artistId], references: [id])
+  tracks     SpotifyTrack[]
+  userAlbums UserAlbum[]
+
   @@index([name])
   @@index([artistId])
 }
 
 // Shared Spotify track data - single source of truth
 model SpotifyTrack {
-  id              String   @id @default(uuid())
-  spotifyId       String   @unique // Spotify track ID
-  title           String
-  artistId        String
-  albumId         String   // Always required - even singles have albums
-  trackNumber     Int?     // Track position in album
-  discNumber      Int?     // Disc number for multi-disc albums
-  duration        Int      // Duration in milliseconds
-  explicit        Boolean  @default(false)
-  popularity      Int?     // Spotify popularity score (0-100)
-  previewUrl      String?  // 30-second preview URL
-  lastUpdated     DateTime @default(now()) // When we last synced with Spotify
-  
+  id          String   @id @default(uuid())
+  spotifyId   String   @unique // Spotify track ID
+  title       String
+  artistId    String
+  albumId     String // Always required - even singles have albums
+  trackNumber Int? // Track position in album
+  discNumber  Int? // Disc number for multi-disc albums
+  duration    Int // Duration in milliseconds
+  explicit    Boolean  @default(false)
+  popularity  Int? // Spotify popularity score (0-100)
+  previewUrl  String? // 30-second preview URL
+  lastUpdated DateTime @default(now()) // When we last synced with Spotify
+
   // Relations
-  artist          SpotifyArtist @relation(fields: [artistId], references: [id])
-  album           SpotifyAlbum @relation(fields: [albumId], references: [id])
-  userTracks      UserTrack[]
-  
+  artist     SpotifyArtist @relation(fields: [artistId], references: [id])
+  album      SpotifyAlbum  @relation(fields: [albumId], references: [id])
+  userTracks UserTrack[]
+
   @@index([spotifyId])
   @@index([artistId])
   @@index([albumId])
@@ -102,38 +102,42 @@ model SpotifyTrack {
 
 // User-specific track data (when added, play count, etc.)
 model UserTrack {
-  id              String   @id @default(uuid())
-  userId          String
-  spotifyTrackId  String
-  addedAt         DateTime @default(now())
-  lastPlayedAt    DateTime?
-  totalPlayCount  Int      @default(0)
-  rating          Float?   // 0.5-5 stars in 0.5 increments (nullable since not all tracks are rated)
-  ratedAt         DateTime?
-  
+  id             String    @id @default(uuid())
+  userId         String
+  spotifyTrackId String
+  addedAt        DateTime  @default(now())
+  lastPlayedAt   DateTime?
+  totalPlayCount Int       @default(0)
+  rating         Float? // 0.5-5 stars in 0.5 increments (nullable since not all tracks are rated)
+  ratedAt        DateTime?
+
   // Relations
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  spotifyTrack    SpotifyTrack  @relation(fields: [spotifyTrackId], references: [id])
-  tags            TrackTag[]
-  playHistory     PlayHistory[]
-  
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spotifyTrack SpotifyTrack  @relation(fields: [spotifyTrackId], references: [id])
+  tags         TrackTag[]
+  playHistory  PlayHistory[]
+
   @@unique([userId, spotifyTrackId])
   @@index([userId])
   @@index([spotifyTrackId])
   @@index([rating])
+  @@index([userId, rating, addedAt], name: "idx_user_rating_added")
+  @@index([userId, totalPlayCount, lastPlayedAt], name: "idx_user_plays")
+  @@index([userId, lastPlayedAt], name: "idx_user_last_played")
+  @@index([spotifyTrackId, userId], name: "idx_track_user")
 }
 
 model Tag {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  color     String?    // Hex color for UI display
+  color     String? // Hex color for UI display
   userId    String
-  createdAt DateTime   @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Relations
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tracks    TrackTag[]
-  
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks TrackTag[]
+
   @@unique([name, userId])
   @@index([userId])
 }
@@ -142,25 +146,28 @@ model TrackTag {
   userTrackId String
   tagId       String
   createdAt   DateTime @default(now())
-  
+
   // Relations
-  userTrack   UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
-  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  
+  userTrack UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
   @@id([userTrackId, tagId])
   @@index([tagId])
+  @@index([tagId, userTrackId], name: "idx_tag_track")
 }
 
 model PlayHistory {
-  id              String   @id @default(uuid())
-  userTrackId     String
-  playedAt        DateTime @default(now())
-  duration        Int?     // How long the track was played (milliseconds)
-  
+  id          String   @id @default(uuid())
+  userTrackId String
+  playedAt    DateTime @default(now())
+  duration    Int? // How long the track was played (milliseconds)
+
   // Relations
-  userTrack       UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
-  
+  userTrack UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
+
   @@index([userTrackId, playedAt])
+  @@index([userTrackId, playedAt(sort: Desc)], name: "idx_track_played_desc")
+  @@index([playedAt], name: "idx_played_at")
 }
 
 model SmartPlaylist {
@@ -168,37 +175,37 @@ model SmartPlaylist {
   name        String
   description String?
   userId      String
-  criteria    Json     // Store complex criteria as JSON
+  criteria    Json // Store complex criteria as JSON
   isActive    Boolean  @default(true)
   lastUpdated DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
 // Pre-aggregated user-specific artist statistics
 model UserArtist {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   userId          String
   artistId        String
-  trackCount      Int      @default(0)
-  albumCount      Int      @default(0)
-  totalDuration   Int      @default(0)
-  totalPlayCount  Int      @default(0)
+  trackCount      Int       @default(0)
+  albumCount      Int       @default(0)
+  totalDuration   Int       @default(0)
+  totalPlayCount  Int       @default(0)
   avgRating       Float?
-  ratedTrackCount Int      @default(0) // Number of rated tracks for accurate avg calculation
+  ratedTrackCount Int       @default(0) // Number of rated tracks for accurate avg calculation
   lastPlayedAt    DateTime?
-  firstAddedAt    DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  firstAddedAt    DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   // Relations
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artist          SpotifyArtist @relation(fields: [artistId], references: [id])
-  
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist SpotifyArtist @relation(fields: [artistId], references: [id])
+
   @@unique([userId, artistId])
   @@index([userId, avgRating])
   @@index([userId, lastPlayedAt])
@@ -208,22 +215,22 @@ model UserArtist {
 
 // Pre-aggregated user-specific album statistics  
 model UserAlbum {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   userId          String
   albumId         String
-  trackCount      Int      @default(0)
-  totalDuration   Int      @default(0)
-  totalPlayCount  Int      @default(0)
+  trackCount      Int       @default(0)
+  totalDuration   Int       @default(0)
+  totalPlayCount  Int       @default(0)
   avgRating       Float?
-  ratedTrackCount Int      @default(0) // Number of rated tracks for accurate avg calculation
+  ratedTrackCount Int       @default(0) // Number of rated tracks for accurate avg calculation
   lastPlayedAt    DateTime?
-  firstAddedAt    DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  firstAddedAt    DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   // Relations
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  album           SpotifyAlbum @relation(fields: [albumId], references: [id])
-  
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album SpotifyAlbum @relation(fields: [albumId], references: [id])
+
   @@unique([userId, albumId])
   @@index([userId, avgRating])
   @@index([userId, lastPlayedAt])
