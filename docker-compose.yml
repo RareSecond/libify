@@ -30,8 +30,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     volumes:
       - ./backend/.env:/app/.env:ro
     restart: unless-stopped
@@ -54,8 +53,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     volumes:
       - ./backend/.env:/app/.env:ro
     restart: unless-stopped
