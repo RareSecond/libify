@@ -9,20 +9,21 @@ import {
   Text,
 } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Music,
+  RefreshCw,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
-interface SyncResult {
+import { useSyncProgress } from "../hooks/useSyncProgress";
+
+interface SyncJobResponse {
+  jobId: string;
   message: string;
-  result: {
-    errors: string[];
-    newAlbums: number;
-    newTracks: number;
-    totalAlbums: number;
-    totalTracks: number;
-    updatedAlbums: number;
-    updatedTracks: number;
-  };
+  status: string;
 }
 
 interface SyncStatus {
@@ -32,7 +33,9 @@ interface SyncStatus {
 }
 
 export function LibrarySync() {
-  const [syncProgress, setSyncProgress] = useState<null | number>(null);
+  const [currentJobId, setCurrentJobId] = useState<null | string>(null);
+  const { reset: resetProgress, status: syncProgress } =
+    useSyncProgress(currentJobId);
 
   // Query for sync status
   const { data: syncStatus, refetch: refetchStatus } = useQuery<SyncStatus>({
@@ -49,10 +52,9 @@ export function LibrarySync() {
     queryKey: ["library-sync-status"],
   });
 
-  // Mutation for syncing library
-  const syncLibraryMutation = useMutation<SyncResult>({
+  // Mutation for starting sync
+  const syncLibraryMutation = useMutation<SyncJobResponse>({
     mutationFn: async () => {
-      setSyncProgress(0);
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/library/sync`,
         {
@@ -62,19 +64,44 @@ export function LibrarySync() {
       );
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to sync library");
+        throw new Error(error.message || "Failed to start sync");
       }
       return response.json();
     },
     onError: () => {
-      setSyncProgress(null);
+      setCurrentJobId(null);
+      resetProgress();
     },
-    onSuccess: () => {
-      setSyncProgress(100);
-      refetchStatus();
-      setTimeout(() => setSyncProgress(null), 2000);
+    onSuccess: (data) => {
+      setCurrentJobId(data.jobId);
     },
   });
+
+  // Reset state when sync completes
+  useEffect(() => {
+    let refetchTimeout: NodeJS.Timeout;
+    let resetTimeout: NodeJS.Timeout;
+
+    if (
+      syncProgress?.state === "completed" ||
+      syncProgress?.state === "failed"
+    ) {
+      refetchTimeout = setTimeout(() => {
+        refetchStatus();
+        if (syncProgress.state === "completed") {
+          resetTimeout = setTimeout(() => {
+            setCurrentJobId(null);
+            resetProgress();
+          }, 3000);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      clearTimeout(refetchTimeout);
+      clearTimeout(resetTimeout);
+    };
+  }, [syncProgress?.state, refetchStatus, resetProgress]);
 
   const formatLastSync = (lastSync: null | string) => {
     if (!lastSync) return "Never";
@@ -134,13 +161,53 @@ export function LibrarySync() {
           </Group>
         )}
 
-        {syncProgress !== null && (
-          <Progress
-            animated
-            color="green"
-            striped={syncProgress < 100}
-            value={syncProgress}
-          />
+        {syncProgress && (
+          <Stack gap="xs">
+            <Group justify="space-between">
+              <Text fw={500} size="sm">
+                {syncProgress.progress?.message || `Sync ${syncProgress.state}`}
+              </Text>
+              {syncProgress.progress?.itemsPerSecond && (
+                <Badge color="blue" size="sm" variant="light">
+                  {syncProgress.progress.itemsPerSecond} items/sec
+                </Badge>
+              )}
+            </Group>
+
+            <Progress
+              animated={syncProgress.state === "active"}
+              color={
+                syncProgress.state === "completed"
+                  ? "green"
+                  : syncProgress.state === "failed"
+                    ? "red"
+                    : "blue"
+              }
+              striped={syncProgress.state === "active"}
+              value={syncProgress.progress?.percentage || 0}
+            />
+
+            {syncProgress.progress && (
+              <Group justify="space-between">
+                <Text color="dimmed" size="xs">
+                  {syncProgress.progress.phase}: {syncProgress.progress.current}
+                  /{syncProgress.progress.total}
+                </Text>
+                {syncProgress.progress.estimatedTimeRemaining && (
+                  <Text color="dimmed" size="xs">
+                    <Clock
+                      size={12}
+                      style={{ display: "inline", marginRight: 4 }}
+                    />
+                    {Math.ceil(
+                      syncProgress.progress.estimatedTimeRemaining / 60,
+                    )}{" "}
+                    min remaining
+                  </Text>
+                )}
+              </Group>
+            )}
+          </Stack>
         )}
 
         {syncLibraryMutation.isError && (
@@ -155,7 +222,18 @@ export function LibrarySync() {
           </Alert>
         )}
 
-        {syncLibraryMutation.isSuccess && syncLibraryMutation.data && (
+        {syncProgress?.state === "failed" && syncProgress.error && (
+          <Alert
+            color="red"
+            icon={<AlertCircle size={16} />}
+            title="Sync Failed"
+            variant="light"
+          >
+            {syncProgress.error}
+          </Alert>
+        )}
+
+        {syncProgress?.state === "completed" && syncProgress.result && (
           <Alert
             color="green"
             icon={<CheckCircle size={16} />}
@@ -164,35 +242,32 @@ export function LibrarySync() {
           >
             <Stack gap="xs">
               <Text size="sm">
-                Synced {syncLibraryMutation.data.result.totalTracks} tracks and{" "}
-                {syncLibraryMutation.data.result.totalAlbums} albums
+                Synced {syncProgress.result.totalTracks} tracks and{" "}
+                {syncProgress.result.totalAlbums} albums
               </Text>
-              {syncLibraryMutation.data.result.newTracks > 0 && (
+              {syncProgress.result.newTracks > 0 && (
                 <Text size="sm">
-                  • {syncLibraryMutation.data.result.newTracks} new tracks added
+                  • {syncProgress.result.newTracks} new tracks added
                 </Text>
               )}
-              {syncLibraryMutation.data.result.updatedTracks > 0 && (
+              {syncProgress.result.updatedTracks > 0 && (
                 <Text size="sm">
-                  • {syncLibraryMutation.data.result.updatedTracks} tracks
-                  updated
+                  • {syncProgress.result.updatedTracks} tracks updated
                 </Text>
               )}
-              {syncLibraryMutation.data.result.newAlbums > 0 && (
+              {syncProgress.result.newAlbums > 0 && (
                 <Text size="sm">
-                  • {syncLibraryMutation.data.result.newAlbums} new albums added
+                  • {syncProgress.result.newAlbums} new albums added
                 </Text>
               )}
-              {syncLibraryMutation.data.result.updatedAlbums > 0 && (
+              {syncProgress.result.updatedAlbums > 0 && (
                 <Text size="sm">
-                  • {syncLibraryMutation.data.result.updatedAlbums} albums
-                  updated
+                  • {syncProgress.result.updatedAlbums} albums updated
                 </Text>
               )}
-              {syncLibraryMutation.data.result.errors.length > 0 && (
+              {syncProgress.result.errors?.length > 0 && (
                 <Text color="red" size="sm">
-                  • {syncLibraryMutation.data.result.errors.length} errors
-                  occurred
+                  • {syncProgress.result.errors.length} errors occurred
                 </Text>
               )}
             </Stack>
@@ -200,13 +275,24 @@ export function LibrarySync() {
         )}
 
         <Button
-          disabled={syncProgress !== null && syncProgress < 100}
+          disabled={
+            syncProgress?.state === "active" ||
+            syncProgress?.state === "waiting"
+          }
           fullWidth
           leftSection={<RefreshCw size={16} />}
-          loading={syncLibraryMutation.isPending}
+          loading={
+            syncLibraryMutation.isPending || syncProgress?.state === "waiting"
+          }
           onClick={() => syncLibraryMutation.mutate()}
         >
-          {syncLibraryMutation.isPending ? "Syncing..." : "Sync Now"}
+          {syncLibraryMutation.isPending
+            ? "Starting sync..."
+            : syncProgress?.state === "active"
+              ? "Syncing..."
+              : syncProgress?.state === "waiting"
+                ? "Queued..."
+                : "Sync Now"}
         </Button>
       </Stack>
     </Card>

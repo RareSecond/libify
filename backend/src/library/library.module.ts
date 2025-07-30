@@ -1,3 +1,4 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module';
@@ -12,7 +13,13 @@ import { TrackService } from './track.service';
 @Module({
   controllers: [LibraryController],
   exports: [SpotifyService, LibrarySyncService],
-  imports: [DatabaseModule, AuthModule],
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    BullModule.registerQueue({
+      name: 'sync',
+    }),
+  ],
   providers: [
     SpotifyService,
     LibrarySyncService,

@@ -11,10 +11,10 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV === 'development') {
     const config = new DocumentBuilder()
-      .setTitle('Mynance API')
-      .setDescription('The Mynance API description')
+      .setTitle('Libify API')
+      .setDescription('Spotify library management API')
       .setVersion('0.0.1')
-      .addTag('mynance')
+      .addTag('libify')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

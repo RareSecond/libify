@@ -4,6 +4,7 @@ import { DatabaseService } from '../database/database.service';
 import { KyselyService } from '../database/kysely/kysely.service';
 import { AggregationService } from './aggregation.service';
 import { SpotifySavedAlbum } from './dto/spotify-album.dto';
+import { SyncProgressCallback } from './dto/sync-progress-base.dto';
 import { SpotifyService, SpotifyTrackData } from './spotify.service';
 
 export interface SyncResult {
@@ -69,6 +70,7 @@ export class LibrarySyncService {
   async syncPlaylistTracks(
     userId: string,
     accessToken: string,
+    onProgress?: SyncProgressCallback,
   ): Promise<{
     errors: string[];
     newTracks: number;
@@ -89,6 +91,7 @@ export class LibrarySyncService {
       const playlists =
         await this.spotifyService.getAllUserPlaylists(accessToken);
       result.totalPlaylists = playlists.length;
+      let processedPlaylists = 0;
 
       // Process each playlist
       for (const playlist of playlists) {
@@ -97,8 +100,21 @@ export class LibrarySyncService {
             `Processing playlist: ${playlist.name} (${playlist.id})`,
           );
 
+          processedPlaylists++;
+
           // Skip empty playlists
           if (playlist.tracks.total === 0) {
+            if (onProgress) {
+              await onProgress({
+                current: processedPlaylists,
+                errors: result.errors,
+                message: `Processing playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
+                percentage:
+                  66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
+                phase: 'playlists',
+                total: playlists.length,
+              });
+            }
             continue;
           }
 
@@ -135,6 +151,19 @@ export class LibrarySyncService {
 
           result.newTracks += syncResult.newTracks;
           result.errors.push(...syncResult.errors);
+
+          // Report progress after each playlist
+          if (onProgress) {
+            await onProgress({
+              current: processedPlaylists,
+              errors: result.errors,
+              message: `Processed playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
+              percentage:
+                66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
+              phase: 'playlists',
+              total: playlists.length,
+            });
+          }
         } catch (error) {
           this.logger.error(
             `Failed to process playlist ${playlist.name} (${playlist.id})`,
@@ -205,6 +234,7 @@ export class LibrarySyncService {
   async syncUserAlbums(
     userId: string,
     accessToken: string,
+    onProgress?: SyncProgressCallback,
   ): Promise<{
     errors: string[];
     newAlbums: number;
@@ -222,7 +252,7 @@ export class LibrarySyncService {
       this.logger.log(`Starting album sync for user ${userId}`);
 
       // Stream albums to avoid memory issues
-      await this.syncAlbumsStreaming(userId, accessToken, result);
+      await this.syncAlbumsStreaming(userId, accessToken, result, onProgress);
 
       this.logger.log(
         `Album sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
@@ -238,6 +268,7 @@ export class LibrarySyncService {
   async syncUserLibrary(
     userId: string,
     accessToken: string,
+    onProgress?: SyncProgressCallback,
   ): Promise<SyncResult> {
     const result: SyncResult = {
       errors: [],
@@ -254,13 +285,51 @@ export class LibrarySyncService {
       this.syncArtistCache.clear();
       this.logger.log(`Starting library sync for user ${userId}`);
 
+      // Initial progress
+      if (onProgress) {
+        await onProgress({
+          current: 0,
+          errors: [],
+          message: 'Starting library sync...',
+          percentage: 0,
+          phase: 'tracks',
+          total: 0,
+        });
+      }
+
       // Sync liked tracks using streaming for memory efficiency
       this.logger.log(`Syncing liked tracks for user ${userId}`);
-      await this.syncTracksStreaming(userId, accessToken, result);
+      await this.syncTracksStreaming(userId, accessToken, result, onProgress);
+
+      // Update progress for albums phase
+      if (onProgress) {
+        await onProgress({
+          current: 0,
+          errors: result.errors,
+          message: 'Syncing saved albums...',
+          percentage: 33,
+          phase: 'albums',
+          total: 0,
+        });
+      }
 
       // Sync saved albums
       this.logger.log(`Syncing saved albums for user ${userId}`);
-      const albumSyncResult = await this.syncUserAlbums(userId, accessToken);
+      const albumSyncResult = await this.syncUserAlbums(
+        userId,
+        accessToken,
+        onProgress
+          ? async (progress) => {
+              // Scale album progress from 0-100% to 33-66% range
+              const scaledPercentage = 33 + Math.round((progress.percentage / 100) * 33);
+              await onProgress({
+                ...progress,
+                percentage: scaledPercentage,
+                phase: 'albums',
+              });
+            }
+          : undefined,
+      );
 
       // Merge album sync results
       result.newAlbums = albumSyncResult.newAlbums;
@@ -268,11 +337,34 @@ export class LibrarySyncService {
       result.updatedAlbums = albumSyncResult.updatedAlbums;
       result.errors.push(...albumSyncResult.errors);
 
+      // Update progress for playlists phase
+      if (onProgress) {
+        await onProgress({
+          current: 0,
+          errors: result.errors,
+          message: 'Syncing playlist tracks...',
+          percentage: 66,
+          phase: 'playlists',
+          total: 0,
+        });
+      }
+
       // Sync playlist tracks
       this.logger.log(`Syncing playlist tracks for user ${userId}`);
       const playlistSyncResult = await this.syncPlaylistTracks(
         userId,
         accessToken,
+        onProgress
+          ? async (progress) => {
+              // Scale playlist progress from 0-100% to 66-100% range
+              const scaledPercentage = 66 + Math.round((progress.percentage / 100) * 34);
+              await onProgress({
+                ...progress,
+                percentage: scaledPercentage,
+                phase: 'playlists',
+              });
+            }
+          : undefined,
       );
 
       // Merge playlist sync results
@@ -280,6 +372,18 @@ export class LibrarySyncService {
       result.playlistTracks = playlistSyncResult.totalPlaylistTracks;
       result.totalPlaylists = playlistSyncResult.totalPlaylists;
       result.errors.push(...playlistSyncResult.errors);
+
+      // Final progress
+      if (onProgress) {
+        await onProgress({
+          current: result.totalTracks,
+          errors: result.errors,
+          message: 'Sync completed successfully!',
+          percentage: 100,
+          phase: 'playlists',
+          total: result.totalTracks,
+        });
+      }
 
       this.logger.log(
         `Library sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
@@ -669,10 +773,27 @@ export class LibrarySyncService {
       totalAlbums: number;
       updatedAlbums: number;
     },
+    onProgress?: SyncProgressCallback,
   ): Promise<void> {
     const batchSize = 20; // Smaller batches for albums since they're more complex
     let batch: SpotifySavedAlbum[] = [];
     let totalProcessed = 0;
+    let estimatedTotal = 0;
+    const startTime = Date.now();
+
+    // Get estimated total for progress calculation
+    try {
+      const firstPage = await this.spotifyService.getUserSavedAlbums(
+        accessToken,
+        1,
+        0,
+      );
+      estimatedTotal = firstPage.total;
+    } catch {
+      this.logger.warn(
+        'Could not get total album count for progress estimation',
+      );
+    }
 
     // Stream albums and process in batches
     for await (const album of this.spotifyService.streamUserSavedAlbums(
@@ -686,8 +807,33 @@ export class LibrarySyncService {
         await this.processAlbumBatch(userId, batch, result, accessToken);
         batch = []; // Clear batch to free memory
 
+        // Report progress
+        if (onProgress && estimatedTotal > 0) {
+          const elapsed = Date.now() - startTime;
+          const itemsPerSecond = totalProcessed / (elapsed / 1000);
+          const remaining = estimatedTotal - totalProcessed;
+          const estimatedTimeRemaining = remaining / itemsPerSecond;
+
+          await onProgress({
+            current: totalProcessed,
+            errors: result.errors,
+            estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+            itemsPerSecond: Math.round(itemsPerSecond),
+            message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
+            percentage: 33 + Math.round((totalProcessed / estimatedTotal) * 33), // 33-66% for albums phase
+            phase: 'albums',
+            total: estimatedTotal,
+          });
+        }
+
         // Force garbage collection if available (for development)
-        if (global.gc) global.gc();
+        if (typeof global.gc === 'function') {
+          try {
+            global.gc();
+          } catch (error) {
+            this.logger.debug('Manual garbage collection failed:', error);
+          }
+        }
       }
     }
 
@@ -708,10 +854,27 @@ export class LibrarySyncService {
     userId: string,
     accessToken: string,
     result: SyncResult,
+    onProgress?: SyncProgressCallback,
   ): Promise<void> {
     const batchSize = 50;
     let batch: Array<{ added_at: string; track: SpotifyTrackData }> = [];
     let totalProcessed = 0;
+    let estimatedTotal = 0;
+    const startTime = Date.now();
+
+    // Get estimated total for progress calculation
+    try {
+      const firstPage = await this.spotifyService.getUserLibraryTracks(
+        accessToken,
+        1,
+        0,
+      );
+      estimatedTotal = firstPage.total;
+    } catch {
+      this.logger.warn(
+        'Could not get total track count for progress estimation',
+      );
+    }
 
     // Stream tracks and process in batches
     for await (const track of this.spotifyService.streamUserLibraryTracks(
@@ -725,8 +888,33 @@ export class LibrarySyncService {
         await this.processBatchOptimized(userId, batch, result, accessToken);
         batch = []; // Clear batch to free memory
 
+        // Report progress
+        if (onProgress && estimatedTotal > 0) {
+          const elapsed = Date.now() - startTime;
+          const itemsPerSecond = totalProcessed / (elapsed / 1000);
+          const remaining = estimatedTotal - totalProcessed;
+          const estimatedTimeRemaining = remaining / itemsPerSecond;
+
+          await onProgress({
+            current: totalProcessed,
+            errors: result.errors,
+            estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+            itemsPerSecond: Math.round(itemsPerSecond),
+            message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
+            percentage: Math.round((totalProcessed / estimatedTotal) * 33), // 0-33% for tracks phase
+            phase: 'tracks',
+            total: estimatedTotal,
+          });
+        }
+
         // Force garbage collection if available (for development)
-        if (global.gc) global.gc();
+        if (typeof global.gc === 'function') {
+          try {
+            global.gc();
+          } catch (error) {
+            this.logger.debug('Manual garbage collection failed:', error);
+          }
+        }
       }
     }
 

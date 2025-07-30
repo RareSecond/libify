@@ -99,6 +99,20 @@
         ]
       }
     },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
     "/library/tracks/{trackId}/tags": {
       "post": {
         "operationId": "LibraryController_addTagToTrack",
@@ -607,6 +621,45 @@
         ]
       }
     },
+    "/library/sync/{jobId}": {
+      "get": {
+        "operationId": "LibraryController_getSyncJobStatus",
+        "parameters": [
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sync job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncJobStatusDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get sync job status",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/status": {
       "get": {
         "operationId": "LibraryController_getSyncStatus",
@@ -874,57 +927,27 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Library sync completed with track and album statistics",
+            "description": "Sync job queued successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    },
-                    "result": {
-                      "properties": {
-                        "errors": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "newAlbums": {
-                          "type": "number"
-                        },
-                        "newTracks": {
-                          "type": "number"
-                        },
-                        "totalAlbums": {
-                          "type": "number"
-                        },
-                        "totalTracks": {
-                          "type": "number"
-                        },
-                        "updatedAlbums": {
-                          "type": "number"
-                        },
-                        "updatedTracks": {
-                          "type": "number"
-                        }
-                      },
-                      "type": "object"
-                    }
-                  },
-                  "type": "object"
+                  "$ref": "#/components/schemas/SyncJobResponseDto"
                 }
               }
             }
           },
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncJobResponseDto"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         },
         "security": [
@@ -932,7 +955,36 @@
             "bearer": []
           }
         ],
-        "summary": "Sync user library from Spotify (liked songs and saved albums)",
+        "summary": "Start library sync job (non-blocking)",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/sync/{jobId}/progress": {
+      "get": {
+        "operationId": "LibraryController_syncProgress",
+        "parameters": [
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE stream of sync progress"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get real-time sync progress via Server-Sent Events",
         "tags": [
           "library"
         ]
@@ -1228,14 +1280,14 @@
     }
   },
   "info": {
-    "title": "Mynance API",
-    "description": "The Mynance API description",
+    "title": "Libify API",
+    "description": "Spotify library management API",
     "version": "0.0.1",
     "contact": {}
   },
   "tags": [
     {
-      "name": "mynance",
+      "name": "libify",
       "description": ""
     }
   ],
@@ -1648,6 +1700,113 @@
           "tracks"
         ]
       },
+      "SyncProgressDto": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "number",
+            "description": "Number of items processed in current phase"
+          },
+          "errors": {
+            "description": "List of non-fatal errors encountered",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "estimatedTimeRemaining": {
+            "type": "number",
+            "description": "Estimated time remaining in seconds"
+          },
+          "itemsPerSecond": {
+            "type": "number",
+            "description": "Processing speed (items per second)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable status message"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Overall progress percentage (0-100)"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Current sync phase",
+            "enum": [
+              "tracks",
+              "albums",
+              "playlists"
+            ]
+          },
+          "total": {
+            "type": "number",
+            "description": "Total items to process in current phase"
+          }
+        },
+        "required": [
+          "current",
+          "errors",
+          "message",
+          "percentage",
+          "phase",
+          "total"
+        ]
+      },
+      "SyncJobStatusDto": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Job creation timestamp"
+          },
+          "jobId": {
+            "type": "string",
+            "description": "Unique job identifier"
+          },
+          "message": {
+            "type": "string",
+            "description": "Success message"
+          },
+          "status": {
+            "type": "string",
+            "description": "Job status",
+            "enum": [
+              "queued",
+              "active",
+              "completed",
+              "failed"
+            ]
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Job completion timestamp"
+          },
+          "failedReason": {
+            "type": "string",
+            "description": "Error message if job failed"
+          },
+          "progress": {
+            "description": "Current progress information",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SyncProgressDto"
+              }
+            ]
+          },
+          "result": {
+            "type": "object",
+            "description": "Final sync result"
+          }
+        },
+        "required": [
+          "jobId",
+          "message",
+          "status"
+        ]
+      },
       "PaginatedTracksDto": {
         "type": "object",
         "properties": {
@@ -1676,6 +1835,39 @@
           "total",
           "totalPages",
           "tracks"
+        ]
+      },
+      "SyncJobResponseDto": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Job creation timestamp"
+          },
+          "jobId": {
+            "type": "string",
+            "description": "Unique job identifier"
+          },
+          "message": {
+            "type": "string",
+            "description": "Success message"
+          },
+          "status": {
+            "type": "string",
+            "description": "Job status",
+            "enum": [
+              "queued",
+              "active",
+              "completed",
+              "failed"
+            ]
+          }
+        },
+        "required": [
+          "jobId",
+          "message",
+          "status"
         ]
       },
       "UpdateTagDto": {
