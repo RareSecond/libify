@@ -4,10 +4,23 @@ set -e
 # Function to wait for database
 wait_for_db() {
   echo "Waiting for database to be ready..."
+  local max_retries=30
+  local retry_count=0
+  local retry_interval=2
+  
   while ! npx prisma db pull --print 2>/dev/null; do
-    echo "Database is not ready - sleeping"
-    sleep 2
+    retry_count=$((retry_count + 1))
+    
+    if [ $retry_count -ge $max_retries ]; then
+      echo "ERROR: Database failed to become ready after $((max_retries * retry_interval)) seconds"
+      echo "Maximum retry attempts ($max_retries) reached. Exiting..."
+      exit 1
+    fi
+    
+    echo "Database is not ready - sleeping (attempt $retry_count/$max_retries)"
+    sleep $retry_interval
   done
+  
   echo "Database is ready!"
 }
 
