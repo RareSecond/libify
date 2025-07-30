@@ -807,7 +807,13 @@ export class LibrarySyncService {
         }
 
         // Force garbage collection if available (for development)
-        if (global.gc) global.gc();
+        if (typeof global.gc === 'function') {
+          try {
+            global.gc();
+          } catch (error) {
+            this.logger.debug('Manual garbage collection failed:', error);
+          }
+        }
       }
     }
 
@@ -882,7 +888,13 @@ export class LibrarySyncService {
         }
 
         // Force garbage collection if available (for development)
-        if (global.gc) global.gc();
+        if (typeof global.gc === 'function') {
+          try {
+            global.gc();
+          } catch (error) {
+            this.logger.debug('Manual garbage collection failed:', error);
+          }
+        }
       }
     }
 
