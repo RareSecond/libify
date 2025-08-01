@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import { ApiModule } from './api.module';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(ApiModule);
 
   if (process.env.NODE_ENV === 'development') {
@@ -58,6 +59,6 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 
-  console.log(`Application is running on port ${port}`);
+  logger.log(`Application is running on port ${port}`);
 }
 bootstrap();

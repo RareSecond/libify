@@ -14,6 +14,31 @@ export class AggregationService {
     private kyselyService: KyselyService,
   ) {}
 
+  async batchUpdateUserStats(
+    userId: string,
+    trackIds: string[],
+    albumIds: string[],
+    artistIds: string[],
+  ): Promise<void> {
+    this.logger.log(
+      `Batch updating stats for user ${userId}: ${trackIds.length} tracks, ${albumIds.length} albums, ${artistIds.length} artists`,
+    );
+
+    // Update all unique artists
+    const uniqueArtistIds = new Set(artistIds);
+    for (const artistId of uniqueArtistIds) {
+      await this.updateUserArtistStats(userId, artistId);
+    }
+
+    // Update all unique albums
+    const uniqueAlbumIds = new Set(albumIds);
+    for (const albumId of uniqueAlbumIds) {
+      await this.updateUserAlbumStats(userId, albumId);
+    }
+
+    this.logger.log(`Completed batch stats update for user ${userId}`);
+  }
+
   async createOrUpdateAlbumEntities(
     savedAlbum: SpotifySavedAlbum,
     artistMap: Map<
@@ -316,6 +341,44 @@ export class AggregationService {
     this.logger.log(
       `Recalculated stats for ${artistIds.size} artists and ${albumIds.size} albums`,
     );
+  }
+
+  async updateAllUserStats(userId: string): Promise<void> {
+    const db = this.kyselyService.database;
+
+    this.logger.log(`Updating all stats for user ${userId}`);
+
+    // Get all unique album IDs for the user
+    const userAlbumIds = await db
+      .selectFrom('UserAlbum')
+      .where('userId', '=', userId)
+      .select('albumId')
+      .execute();
+
+    // Get all unique artist IDs for the user
+    const userArtistIds = await db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .where('ut.userId', '=', userId)
+      .select('st.artistId')
+      .distinct()
+      .execute();
+
+    this.logger.log(
+      `Found ${userAlbumIds.length} albums and ${userArtistIds.length} artists to update`,
+    );
+
+    // Update all album stats
+    for (const { albumId } of userAlbumIds) {
+      await this.updateUserAlbumStats(userId, albumId);
+    }
+
+    // Update all artist stats
+    for (const { artistId } of userArtistIds) {
+      await this.updateUserArtistStats(userId, artistId);
+    }
+
+    this.logger.log(`Completed updating all stats for user ${userId}`);
   }
 
   async updateStatsForTrack(

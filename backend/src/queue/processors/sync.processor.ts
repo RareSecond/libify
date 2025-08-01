@@ -5,6 +5,7 @@ import { Job } from 'bullmq';
 import { AuthService } from '../../auth/auth.service';
 import { SyncProgressDto } from '../../library/dto/sync-progress-base.dto';
 import { LibrarySyncService } from '../../library/library-sync.service';
+import { ThrottledProgress } from '../utils/progress-throttle';
 
 export interface SyncJobData {
   syncType: 'full' | 'recent';
@@ -35,9 +36,15 @@ export class SyncProcessor extends WorkerHost {
         throw new Error('Failed to get Spotify access token');
       }
 
-      // Progress callback that updates job progress
+      // Create throttled progress updater
+      const throttledProgress = new ThrottledProgress(job, {
+        minInterval: 2000, // Update at most every 2 seconds
+        minProgress: 5, // Or when progress changes by 5%
+      });
+
+      // Progress callback that updates job progress with throttling
       const updateProgress = async (progress: SyncProgressDto) => {
-        await job.updateProgress(progress);
+        await throttledProgress.update(progress.percentage);
         this.logger.debug(
           `Sync progress - ${progress.phase}: ${progress.current}/${progress.total} (${progress.percentage}%)`,
         );
@@ -57,6 +64,9 @@ export class SyncProcessor extends WorkerHost {
         this.logger.log(
           `Sync completed for user ${userId}: ${result.newTracks} new tracks, ${result.newAlbums} new albums`,
         );
+
+        // Ensure final progress is flushed
+        await throttledProgress.flush();
 
         return result;
       }

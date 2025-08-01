@@ -104,17 +104,6 @@ export class LibrarySyncService {
 
           // Skip empty playlists
           if (playlist.tracks.total === 0) {
-            if (onProgress) {
-              await onProgress({
-                current: processedPlaylists,
-                errors: result.errors,
-                message: `Processing playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
-                percentage:
-                  66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
-                phase: 'playlists',
-                total: playlists.length,
-              });
-            }
             continue;
           }
 
@@ -152,8 +141,11 @@ export class LibrarySyncService {
           result.newTracks += syncResult.newTracks;
           result.errors.push(...syncResult.errors);
 
-          // Report progress after each playlist
-          if (onProgress) {
+          // Report progress after each playlist, but only if we found new tracks or it's every 10th playlist
+          if (
+            onProgress &&
+            (syncResult.newTracks > 0 || processedPlaylists % 10 === 0)
+          ) {
             await onProgress({
               current: processedPlaylists,
               errors: result.errors,
@@ -375,6 +367,22 @@ export class LibrarySyncService {
       result.totalPlaylists = playlistSyncResult.totalPlaylists;
       result.errors.push(...playlistSyncResult.errors);
 
+      // Final progress - update stats
+      if (onProgress) {
+        await onProgress({
+          current: result.totalTracks,
+          errors: result.errors,
+          message: 'Updating statistics...',
+          percentage: 95,
+          phase: 'playlists',
+          total: result.totalTracks,
+        });
+      }
+
+      // Run a single stats update for the entire user library at the end
+      this.logger.log(`Updating all user stats for user ${userId}`);
+      await this.aggregationService.updateAllUserStats(userId);
+
       // Final progress
       if (onProgress) {
         await onProgress({
@@ -575,8 +583,8 @@ export class LibrarySyncService {
           }
         }
 
-        // Update aggregated stats for the album
-        await this.aggregationService.updateUserAlbumStats(userId, albumId);
+        // Stats updates are now batched at the end of sync
+        // await this.aggregationService.updateUserAlbumStats(userId, albumId);
       } catch (error) {
         this.logger.error(
           `Failed to process album ${savedAlbum.album.id}`,
@@ -640,11 +648,11 @@ export class LibrarySyncService {
           });
           result.newTracks++;
 
-          // Update aggregated stats for the new track
-          await this.aggregationService.updateStatsForTrack(
-            userId,
-            spotifyTrackId,
-          );
+          // Stats updates are now batched at the end of sync
+          // await this.aggregationService.updateStatsForTrack(
+          //   userId,
+          //   spotifyTrackId,
+          // );
         } else {
           result.updatedTracks++;
         }
@@ -745,11 +753,11 @@ export class LibrarySyncService {
           });
           result.newTracks++;
 
-          // Update aggregated stats efficiently
-          await this.aggregationService.updateStatsForTrack(
-            userId,
-            spotifyTrackId,
-          );
+          // Stats updates are now batched at the end of sync
+          // await this.aggregationService.updateStatsForTrack(
+          //   userId,
+          //   spotifyTrackId,
+          // );
         } else {
           result.updatedTracks++;
         }
