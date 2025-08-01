@@ -1,11 +1,14 @@
 name: spotlib
-region: nyc3
+region: ams3
 
 services:
   # API Service
   - name: api
     dockerfile_path: backend/Dockerfile.api
-    source_dir: backend
+    github:
+      repo: RareSecond/libify
+      branch: master
+      deploy_on_push: true
     http_port: 3000
     instance_size_slug: basic-xs
     instance_count: 1
@@ -33,15 +36,18 @@ services:
       - key: APP_URL
         value: ${api.PUBLIC_URL}
       - key: FRONTEND_URL
-        value: ""  # Will be set after deployment
+        value: "" # Will be set after deployment
 
+workers:
   # Worker Service
   - name: worker
     dockerfile_path: backend/Dockerfile.worker
-    source_dir: backend
+    github:
+      repo: RareSecond/libify
+      branch: master
+      deploy_on_push: true
     instance_size_slug: basic-xs
     instance_count: 1
-    kind: WORKER
     envs:
       - key: NODE_ENV
         value: production

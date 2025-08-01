@@ -14,24 +14,42 @@ import { SyncProcessor } from './processors/sync.processor';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
-        
+
         if (redisUrl) {
           // Parse Redis URL for external managed Redis services
           try {
             const url = new URL(redisUrl);
             const useTls = url.protocol === 'rediss:';
-            
+
             return {
               connection: {
-                host: url.hostname,
-                port: parseInt(url.port) || (useTls ? 6380 : 6379),
-                username: url.username || undefined,
-                password: url.password || undefined,
                 enableReadyCheck: false,
+                host: url.hostname,
                 maxRetriesPerRequest: null,
-                tls: useTls ? {
-                  rejectUnauthorized: configService.get('REDIS_TLS_REJECT_UNAUTHORIZED') !== 'false',
-                } : undefined,
+                password: url.password || undefined,
+                port: parseInt(url.port) || (useTls ? 6380 : 6379),
+                tls: useTls
+                  ? {
+                      rejectUnauthorized:
+                        configService.get('REDIS_TLS_REJECT_UNAUTHORIZED') !==
+                        'false',
+                    }
+                  : undefined,
+                username: url.username || undefined,
+              },
+              defaultJobOptions: {
+                attempts: 3,
+                backoff: {
+                  delay: 5000,
+                  type: 'exponential',
+                },
+                removeOnComplete: {
+                  age: 3600, // Keep completed jobs for 1 hour
+                  count: 100, // Keep last 100 completed jobs
+                },
+                removeOnFail: {
+                  age: 86400, // Keep failed jobs for 24 hours
+                },
               },
             };
           } catch (error) {
@@ -39,7 +57,7 @@ import { SyncProcessor } from './processors/sync.processor';
             throw new Error('Invalid REDIS_URL format');
           }
         }
-        
+
         // Fallback to individual config values for local development
         return {
           connection: {
@@ -51,23 +69,22 @@ import { SyncProcessor } from './processors/sync.processor';
             port: configService.get('redis.port'),
             tls: configService.get('redis.tls') ? {} : undefined,
           },
+          defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+              delay: 5000,
+              type: 'exponential',
+            },
+            removeOnComplete: {
+              age: 3600, // Keep completed jobs for 1 hour
+              count: 100, // Keep last 100 completed jobs
+            },
+            removeOnFail: {
+              age: 86400, // Keep failed jobs for 24 hours
+            },
+          },
         };
       },
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            delay: 5000,
-            type: 'exponential',
-          },
-          removeOnComplete: {
-            age: 3600, // Keep completed jobs for 1 hour
-            count: 100, // Keep last 100 completed jobs
-          },
-          removeOnFail: {
-            age: 86400, // Keep failed jobs for 24 hours
-          },
-        },
-      }),
     }),
     BullModule.registerQueue({
       defaultJobOptions: {

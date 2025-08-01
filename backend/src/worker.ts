@@ -20,7 +20,7 @@ async function bootstrap() {
     // Setup graceful shutdown handlers
     const shutdown = async (signal: string) => {
       logger.log(`Received ${signal}, starting graceful shutdown...`);
-      
+
       try {
         if (app) {
           await app.close();
@@ -47,7 +47,6 @@ async function bootstrap() {
       logger.error('Unhandled rejection at:', promise, 'reason:', reason);
       shutdown('unhandledRejection');
     });
-
   } catch (error) {
     logger.error('Failed to start worker process', error);
     process.exit(1);

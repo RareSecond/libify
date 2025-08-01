@@ -25,7 +25,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, document);
   }
 
-  const corsOrigins = [
+  const corsOrigins: (RegExp | string)[] = [
     /^http:\/\/localhost:\d+$/,
     /^http:\/\/127\.0\.0\.1:\d+$/,
     /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
@@ -38,7 +38,9 @@ async function bootstrap() {
 
   // Support multiple frontend URLs if needed (comma-separated)
   if (process.env.ADDITIONAL_FRONTEND_URLS) {
-    const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(',').map(url => url.trim());
+    const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(',').map(
+      (url) => url.trim(),
+    );
     corsOrigins.push(...additionalUrls);
   }
 
@@ -53,10 +55,10 @@ async function bootstrap() {
     }),
   );
   app.setGlobalPrefix('api');
-  
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  
+
   console.log(`Application is running on port ${port}`);
 }
 bootstrap();

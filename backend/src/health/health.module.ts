@@ -1,16 +1,16 @@
-import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
+import { Module } from '@nestjs/common';
 
-import { HealthController } from './health.controller';
 import { DatabaseModule } from '../database/database.module';
+import { HealthController } from './health.controller';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     DatabaseModule,
     BullModule.registerQueue({
       name: 'sync',
     }),
   ],
-  controllers: [HealthController],
 })
 export class HealthModule {}

@@ -321,7 +321,8 @@ export class LibrarySyncService {
         onProgress
           ? async (progress) => {
               // Scale album progress from 0-100% to 33-66% range
-              const scaledPercentage = 33 + Math.round((progress.percentage / 100) * 33);
+              const scaledPercentage =
+                33 + Math.round((progress.percentage / 100) * 33);
               await onProgress({
                 ...progress,
                 percentage: scaledPercentage,
@@ -357,7 +358,8 @@ export class LibrarySyncService {
         onProgress
           ? async (progress) => {
               // Scale playlist progress from 0-100% to 66-100% range
-              const scaledPercentage = 66 + Math.round((progress.percentage / 100) * 34);
+              const scaledPercentage =
+                66 + Math.round((progress.percentage / 100) * 34);
               await onProgress({
                 ...progress,
                 percentage: scaledPercentage,
