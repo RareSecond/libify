@@ -53,8 +53,9 @@ import { SyncProcessor } from './processors/sync.processor';
               },
             };
           } catch (error) {
-            console.error('Invalid REDIS_URL format:', error);
-            throw new Error('Invalid REDIS_URL format');
+            throw new Error(
+              `Invalid REDIS_URL format: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
           }
         }
 
@@ -89,8 +90,14 @@ import { SyncProcessor } from './processors/sync.processor';
     BullModule.registerQueue({
       defaultJobOptions: {
         attempts: 1, // Sync jobs should not auto-retry
-        removeOnComplete: false, // Keep for progress tracking
-        removeOnFail: false,
+        removeOnComplete: {
+          age: 3600, // Keep completed jobs for 1 hour
+          count: 10, // Keep last 10 completed sync jobs
+        },
+        removeOnFail: {
+          age: 86400, // Keep failed jobs for 24 hours
+          count: 50, // Keep last 50 failed jobs
+        },
       },
       name: 'sync',
     }),
