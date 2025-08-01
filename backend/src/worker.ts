@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { AppModule } from './app.module';
+import { WorkerModule } from './worker.module';
 
 async function bootstrap() {
   const logger = new Logger('Worker');
@@ -9,7 +9,7 @@ async function bootstrap() {
 
   try {
     // Create the application context without starting the HTTP server
-    app = await NestFactory.createApplicationContext(AppModule);
+    app = await NestFactory.createApplicationContext(WorkerModule);
 
     logger.log('Worker process started successfully');
     logger.log('Waiting for jobs...');

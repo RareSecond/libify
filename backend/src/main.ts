@@ -4,10 +4,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 
-import { AppModule } from './app.module';
+import { ApiModule } from './api.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(ApiModule);
 
   if (process.env.NODE_ENV === 'development') {
     const config = new DocumentBuilder()
