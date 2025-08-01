@@ -10,6 +10,7 @@ export type DB = {
   User: User;
   UserAlbum: UserAlbum;
   UserArtist: UserArtist;
+  UserPlaylist: UserPlaylist;
   UserTrack: UserTrack;
 };
 export type Generated<T> =
@@ -118,6 +119,22 @@ export type UserArtist = {
   totalDuration: Generated<number>;
   totalPlayCount: Generated<number>;
   trackCount: Generated<number>;
+  updatedAt: Timestamp;
+  userId: string;
+};
+export type UserPlaylist = {
+  collaborative: Generated<boolean>;
+  createdAt: Generated<Timestamp>;
+  description: null | string;
+  id: string;
+  lastSyncedAt: Generated<Timestamp>;
+  name: string;
+  ownerId: string;
+  ownerName: null | string;
+  public: Generated<boolean>;
+  snapshotId: string;
+  spotifyId: string;
+  totalTracks: number;
   updatedAt: Timestamp;
   userId: string;
 };
