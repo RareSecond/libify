@@ -22,6 +22,7 @@ export interface SpotifyPlaylist {
     display_name?: string;
     id: string;
   };
+  snapshot_id: string;
   tracks: {
     href: string;
     total: number;

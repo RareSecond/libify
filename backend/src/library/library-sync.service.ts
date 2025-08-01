@@ -5,7 +5,11 @@ import { KyselyService } from '../database/kysely/kysely.service';
 import { AggregationService } from './aggregation.service';
 import { SpotifySavedAlbum } from './dto/spotify-album.dto';
 import { SyncProgressCallback } from './dto/sync-progress-base.dto';
-import { SpotifyService, SpotifyTrackData } from './spotify.service';
+import {
+  SpotifyPlaylist,
+  SpotifyService,
+  SpotifyTrackData,
+} from './spotify.service';
 
 export interface SyncResult {
   errors: string[];
@@ -67,6 +71,25 @@ export class LibrarySyncService {
     };
   }
 
+  async getUserPlaylists(
+    userId: string,
+  ): Promise<Map<string, { lastSyncedAt: Date; snapshotId: string }>> {
+    const userPlaylists = await this.databaseService.userPlaylist.findMany({
+      select: { lastSyncedAt: true, snapshotId: true, spotifyId: true },
+      where: { userId },
+    });
+
+    return new Map(
+      userPlaylists.map((playlist) => [
+        playlist.spotifyId,
+        {
+          lastSyncedAt: playlist.lastSyncedAt,
+          snapshotId: playlist.snapshotId,
+        },
+      ]),
+    );
+  }
+
   async syncPlaylistTracks(
     userId: string,
     accessToken: string,
@@ -74,12 +97,14 @@ export class LibrarySyncService {
   ): Promise<{
     errors: string[];
     newTracks: number;
+    skippedPlaylists: number;
     totalPlaylists: number;
     totalPlaylistTracks: number;
   }> {
     const result = {
       errors: [] as string[],
       newTracks: 0,
+      skippedPlaylists: 0,
       totalPlaylists: 0,
       totalPlaylistTracks: 0,
     };
@@ -87,11 +112,18 @@ export class LibrarySyncService {
     try {
       this.logger.log(`Starting playlist track sync for user ${userId}`);
 
+      // Get stored playlist snapshots
+      const storedPlaylists = await this.getUserPlaylists(userId);
+      this.logger.log(
+        `Found ${storedPlaylists.size} stored playlists for user ${userId}`,
+      );
+
       // Fetch all user playlists
       const playlists =
         await this.spotifyService.getAllUserPlaylists(accessToken);
       result.totalPlaylists = playlists.length;
       let processedPlaylists = 0;
+      let skippedPlaylists = 0;
 
       // Process each playlist
       for (const playlist of playlists) {
@@ -101,6 +133,34 @@ export class LibrarySyncService {
           );
 
           processedPlaylists++;
+
+          // Check if playlist has changed by comparing snapshot IDs
+          const storedPlaylist = storedPlaylists.get(playlist.id);
+          if (
+            storedPlaylist &&
+            storedPlaylist.snapshotId === playlist.snapshot_id
+          ) {
+            this.logger.log(
+              `Skipping unchanged playlist: ${playlist.name} (${playlist.id})`,
+            );
+            skippedPlaylists++;
+
+            if (onProgress) {
+              await onProgress({
+                current: processedPlaylists,
+                errors: result.errors,
+                message: `Skipped unchanged playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
+                percentage:
+                  66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
+                phase: 'playlists',
+                total: playlists.length,
+              });
+            }
+            continue;
+          }
+
+          // Update playlist metadata
+          await this.upsertUserPlaylist(userId, playlist);
 
           // Skip empty playlists
           if (playlist.tracks.total === 0) {
@@ -166,8 +226,9 @@ export class LibrarySyncService {
       }
 
       this.logger.log(
-        `Playlist sync completed for user ${userId}. Result: ${JSON.stringify(result)}`,
+        `Playlist sync completed for user ${userId}. Processed: ${processedPlaylists}, Skipped: ${skippedPlaylists}, New tracks: ${result.newTracks}`,
       );
+      result.skippedPlaylists = skippedPlaylists;
       return result;
     } catch (error) {
       this.logger.error(`Failed to sync playlists for user ${userId}`, error);
@@ -404,6 +465,39 @@ export class LibrarySyncService {
       result.errors.push(`Library sync failed: ${error.message}`);
       return result;
     }
+  }
+
+  async upsertUserPlaylist(
+    userId: string,
+    playlist: SpotifyPlaylist,
+  ): Promise<void> {
+    await this.databaseService.userPlaylist.upsert({
+      create: {
+        description: playlist.description,
+        lastSyncedAt: new Date(),
+        name: playlist.name,
+        ownerId: playlist.owner.id,
+        ownerName: playlist.owner.display_name || null,
+        snapshotId: playlist.snapshot_id,
+        spotifyId: playlist.id,
+        totalTracks: playlist.tracks.total,
+        userId,
+      },
+      update: {
+        description: playlist.description,
+        lastSyncedAt: new Date(),
+        name: playlist.name,
+        ownerName: playlist.owner.display_name || null,
+        snapshotId: playlist.snapshot_id,
+        totalTracks: playlist.tracks.total,
+      },
+      where: {
+        userId_spotifyId: {
+          spotifyId: playlist.id,
+          userId,
+        },
+      },
+    });
   }
 
   /**
