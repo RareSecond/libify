@@ -1,0 +1,59 @@
+name: spotlib
+region: nyc3
+
+services:
+  # API Service
+  - name: api
+    dockerfile_path: backend/Dockerfile.api
+    source_dir: backend
+    http_port: 3000
+    instance_size_slug: basic-xs
+    instance_count: 1
+    health_check:
+      http_path: /api/health
+      timeout_seconds: 10
+      port: 3000
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        type: SECRET
+      - key: DATABASE_DIRECT_URL
+        type: SECRET
+      - key: REDIS_URL
+        type: SECRET
+      - key: JWT_SECRET
+        type: SECRET
+      - key: SPOTIFY_CLIENT_ID
+        type: SECRET
+      - key: SPOTIFY_CLIENT_SECRET
+        type: SECRET
+      - key: APP_URL
+        value: ${api.PUBLIC_URL}
+      - key: FRONTEND_URL
+        value: ""  # Will be set after deployment
+
+  # Worker Service
+  - name: worker
+    dockerfile_path: backend/Dockerfile.worker
+    source_dir: backend
+    instance_size_slug: basic-xs
+    instance_count: 1
+    kind: WORKER
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        type: SECRET
+      - key: DATABASE_DIRECT_URL
+        type: SECRET
+      - key: REDIS_URL
+        type: SECRET
+      - key: JWT_SECRET
+        type: SECRET
+      - key: SPOTIFY_CLIENT_ID
+        type: SECRET
+      - key: SPOTIFY_CLIENT_SECRET
+        type: SECRET

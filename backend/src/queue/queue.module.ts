@@ -12,16 +12,47 @@ import { SyncProcessor } from './processors/sync.processor';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
-          db: configService.get('redis.db'),
-          enableReadyCheck: false,
-          host: configService.get('redis.host'),
-          maxRetriesPerRequest: null,
-          password: configService.get('redis.password'),
-          port: configService.get('redis.port'),
-          tls: configService.get('redis.tls') ? {} : undefined,
-        },
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        
+        if (redisUrl) {
+          // Parse Redis URL for external managed Redis services
+          try {
+            const url = new URL(redisUrl);
+            const useTls = url.protocol === 'rediss:';
+            
+            return {
+              connection: {
+                host: url.hostname,
+                port: parseInt(url.port) || (useTls ? 6380 : 6379),
+                username: url.username || undefined,
+                password: url.password || undefined,
+                enableReadyCheck: false,
+                maxRetriesPerRequest: null,
+                tls: useTls ? {
+                  rejectUnauthorized: configService.get('REDIS_TLS_REJECT_UNAUTHORIZED') !== 'false',
+                } : undefined,
+              },
+            };
+          } catch (error) {
+            console.error('Invalid REDIS_URL format:', error);
+            throw new Error('Invalid REDIS_URL format');
+          }
+        }
+        
+        // Fallback to individual config values for local development
+        return {
+          connection: {
+            db: configService.get('redis.db'),
+            enableReadyCheck: false,
+            host: configService.get('redis.host'),
+            maxRetriesPerRequest: null,
+            password: configService.get('redis.password'),
+            port: configService.get('redis.port'),
+            tls: configService.get('redis.tls') ? {} : undefined,
+          },
+        };
+      },
         defaultJobOptions: {
           attempts: 3,
           backoff: {

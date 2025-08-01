@@ -25,14 +25,26 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, document);
   }
 
+  const corsOrigins = [
+    /^http:\/\/localhost:\d+$/,
+    /^http:\/\/127\.0\.0\.1:\d+$/,
+    /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
+  ];
+
+  // Add FRONTEND_URL if it exists
+  if (process.env.FRONTEND_URL) {
+    corsOrigins.push(process.env.FRONTEND_URL);
+  }
+
+  // Support multiple frontend URLs if needed (comma-separated)
+  if (process.env.ADDITIONAL_FRONTEND_URLS) {
+    const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(',').map(url => url.trim());
+    corsOrigins.push(...additionalUrls);
+  }
+
   app.enableCors({
     credentials: true,
-    origin: [
-      /^http:\/\/localhost:\d+$/,
-      /^http:\/\/127\.0\.0\.1:\d+$/,
-      /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+    origin: corsOrigins,
   });
   app.use(cookieParser());
   app.useGlobalPipes(
@@ -40,6 +52,11 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  await app.listen(process.env.PORT ?? 3000);
+  app.setGlobalPrefix('api');
+  
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  
+  console.log(`Application is running on port ${port}`);
 }
 bootstrap();
