@@ -78,40 +78,30 @@ export function MediaPlayer() {
 
   return (
     <Card
-      p="md"
+      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-gray-200 p-4 z-[1000]"
       shadow="lg"
-      style={{
-        borderRadius: 0,
-        borderTop: "1px solid #e9ecef",
-        bottom: 0,
-        left: 0,
-        position: "fixed",
-        right: 0,
-        zIndex: 1000,
-      }}
     >
       <Group align="center" justify="space-between">
         {/* Track Info */}
-        <Group gap="md" style={{ flex: 1, minWidth: 0 }}>
+        <Group className="flex-1 min-w-0" gap="md">
           <Image
             alt={currentTrack.album.name}
-            h={60}
+            className="h-[60px] w-[60px]"
             radius="sm"
             src={currentTrack.album.images[0]?.url}
-            w={60}
           />
-          <Box style={{ flex: 1, minWidth: 0 }}>
-            <Text fw={600} lineClamp={1}>
+          <Box className="flex-1 min-w-0">
+            <Text className="font-semibold" lineClamp={1}>
               {currentTrack.name}
             </Text>
-            <Text c="dimmed" lineClamp={1} size="sm">
+            <Text className="text-gray-600" lineClamp={1} size="sm">
               {currentTrack.artists.map((artist) => artist.name).join(", ")}
             </Text>
           </Box>
         </Group>
 
         {/* Playback Controls */}
-        <Stack align="center" gap="sm" style={{ flex: 1, maxWidth: 500 }}>
+        <Stack align="center" className="flex-1 max-w-[500px]" gap="sm">
           <Group gap="xs">
             <ActionIcon
               color={isShuffled ? "blue" : undefined}
@@ -152,15 +142,12 @@ export function MediaPlayer() {
           </Group>
 
           {/* Progress Bar */}
-          <Group gap="sm" style={{ width: "100%" }}>
-            <Text
-              c="dimmed"
-              size="xs"
-              style={{ minWidth: 40, textAlign: "right" }}
-            >
+          <Group className="w-full" gap="sm">
+            <Text className="min-w-10 text-right text-gray-600" size="xs">
               {formatTime(currentPosition)}
             </Text>
             <Slider
+              className="flex-1"
               label={null}
               max={100}
               min={0}
@@ -168,18 +155,17 @@ export function MediaPlayer() {
               onChangeEnd={handleSeekEnd}
               size="sm"
               step={0.1}
-              style={{ flex: 1 }}
               thumbSize={12}
               value={progressPercent}
             />
-            <Text c="dimmed" size="xs" style={{ minWidth: 40 }}>
+            <Text className="min-w-10 text-gray-600" size="xs">
               {formatTime(duration)}
             </Text>
           </Group>
         </Stack>
 
         {/* Volume Control */}
-        <Group justify="flex-end" style={{ flex: 1 }}>
+        <Group className="flex-1" justify="flex-end">
           <Group align="center" gap="xs">
             <ActionIcon
               onClick={() => setIsVolumeSliderVisible(!isVolumeSliderVisible)}
@@ -190,7 +176,7 @@ export function MediaPlayer() {
             </ActionIcon>
 
             {isVolumeSliderVisible && (
-              <Box style={{ width: 100 }}>
+              <Box className="w-[100px]">
                 <Slider
                   label={null}
                   max={100}

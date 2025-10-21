@@ -30,15 +30,17 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
 
   if (error) {
     return (
-      <Center h={400}>
-        <Text c="red">Error loading tracks: {error.message}</Text>
+      <Center className="h-[400px]">
+        <Text className="text-red-600">
+          Error loading tracks: {error.message}
+        </Text>
       </Center>
     );
   }
 
   if (playlistLoading || isLoading || !data) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -51,27 +53,27 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
       <Group justify="space-between">
         <div>
           <Button
+            className="mb-2"
             leftSection={<ArrowLeft size={16} />}
-            mb="xs"
             onClick={() => navigate({ to: "/playlists" })}
             size="xs"
             variant="subtle"
           >
             Back to Playlists
           </Button>
-          <Text fw={700} mb="xs" size="lg">
+          <Text className="mb-2 font-bold" size="lg">
             {playlist?.name}
           </Text>
           {playlist?.description && (
-            <Text c="dimmed" size="sm">
+            <Text className="text-gray-600" size="sm">
               {playlist.description}
             </Text>
           )}
         </div>
       </Group>
 
-      <Paper p="sm" radius="md" shadow="xs">
-        <Text c="dimmed" mb="xs" size="sm">
+      <Paper className="p-4" radius="md" shadow="xs">
+        <Text className="mb-2 text-gray-600" size="sm">
           {tracks.length} tracks
         </Text>
 

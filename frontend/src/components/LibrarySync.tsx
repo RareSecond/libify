@@ -118,7 +118,7 @@ export function LibrarySync() {
       <Stack gap="md">
         <Group align="center" justify="space-between">
           <div>
-            <Text fw={500} size="lg">
+            <Text className="font-medium" size="lg">
               Library Sync
             </Text>
             <Text color="dimmed" size="sm">
@@ -150,7 +150,7 @@ export function LibrarySync() {
             <Text color="dimmed" size="sm">
               Last synced:
             </Text>
-            <Text fw={500} size="sm">
+            <Text className="font-medium" size="sm">
               {formatLastSync(syncStatus.lastSync)}
             </Text>
           </Group>
@@ -159,7 +159,7 @@ export function LibrarySync() {
         {syncProgress && (
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text fw={500} size="sm">
+              <Text className="font-medium" size="sm">
                 {syncProgress.progress?.message || `Sync ${syncProgress.state}`}
               </Text>
               {syncProgress.progress?.itemsPerSecond && (
@@ -190,10 +190,7 @@ export function LibrarySync() {
                 </Text>
                 {syncProgress.progress.estimatedTimeRemaining && (
                   <Text color="dimmed" size="xs">
-                    <Clock
-                      size={12}
-                      style={{ display: "inline", marginRight: 4 }}
-                    />
+                    <Clock className="inline mr-1" size={12} />
                     {Math.ceil(
                       syncProgress.progress.estimatedTimeRemaining / 60,
                     )}{" "}

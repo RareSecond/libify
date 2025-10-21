@@ -97,15 +97,17 @@ export function AlbumsOverview() {
 
   if (error) {
     return (
-      <Center h={400}>
-        <Text c="red">Error loading albums: {error.message}</Text>
+      <Center className="h-[400px]">
+        <Text className="text-red-600">
+          Error loading albums: {error.message}
+        </Text>
       </Center>
     );
   }
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -115,19 +117,20 @@ export function AlbumsOverview() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={2}>My Albums</Title>
-        <Text c="dimmed">{data?.total || 0} albums</Text>
+        <Text className="text-gray-600">{data?.total || 0} albums</Text>
       </Group>
 
       <Group>
         <TextInput
+          className="w-[300px]"
           leftSection={<Search size={16} />}
           onChange={(e) => setLocalSearch(e.currentTarget.value)}
           placeholder="Search albums or artists..."
           value={localSearch}
-          w={300}
         />
 
         <Select
+          className="w-[150px]"
           data={[
             { label: "Album Name", value: "name" },
             { label: "Artist", value: "artist" },
@@ -149,10 +152,10 @@ export function AlbumsOverview() {
             })
           }
           value={sortBy}
-          w={150}
         />
 
         <Select
+          className="w-[120px]"
           data={[
             { label: "Ascending", value: "asc" },
             { label: "Descending", value: "desc" },
@@ -162,17 +165,16 @@ export function AlbumsOverview() {
             updateSearch({ sortOrder: value as "asc" | "desc" })
           }
           value={sortOrder}
-          w={120}
         />
 
         <Select
+          className="w-[100px]"
           data={["12", "24", "48", "96"]}
           label="Page size"
           onChange={(value) =>
             updateSearch({ page: 1, pageSize: parseInt(value || "24") })
           }
           value={pageSize.toString()}
-          w={100}
         />
 
         {genresData && genresData.length > 0 && (
@@ -191,47 +193,32 @@ export function AlbumsOverview() {
             span={{ base: 12, lg: 3, md: 4, sm: 6 }}
           >
             <Link
+              className="no-underline"
               params={{ album: album.name, artist: album.artist }}
-              style={{ textDecoration: "none" }}
               to="/albums/$artist/$album"
             >
               <Card
-                className="hover:shadow-lg hover:-translate-y-1"
-                h="100%"
-                p="md"
+                className="h-full cursor-pointer p-4 hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
                 radius="md"
                 shadow="sm"
-                style={{
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                }}
                 withBorder
               >
-                <Card.Section mb="md">
-                  <Box pos="relative">
+                <Card.Section className="mb-4">
+                  <Box className="relative">
                     {album.albumArt ? (
                       <Image
                         alt={album.name}
+                        className="h-[200px] object-cover"
                         fallbackSrc="/placeholder-album.svg"
-                        h={200}
                         src={album.albumArt}
-                        style={{ objectFit: "cover" }}
                       />
                     ) : (
-                      <Center bg="gray.2" h={200}>
+                      <Center className="h-[200px] bg-gray-200">
                         <Music color="gray" size={48} />
                       </Center>
                     )}
-                    <Box
-                      bg="dark.7"
-                      pos="absolute"
-                      px="xs"
-                      py={4}
-                      right={8}
-                      style={{ borderRadius: 4, opacity: 0.9 }}
-                      top={8}
-                    >
-                      <Text c="white" fw={600} size="xs">
+                    <Box className="absolute right-2 top-2 rounded bg-gray-900 px-2 py-1 opacity-90">
+                      <Text className="text-xs font-semibold text-white">
                         {album.trackCount} tracks
                       </Text>
                     </Box>
@@ -240,10 +227,10 @@ export function AlbumsOverview() {
 
                 <Stack gap="xs">
                   <div>
-                    <Text fw={600} lineClamp={1} size="md">
+                    <Text className="font-semibold" lineClamp={1} size="md">
                       {album.name}
                     </Text>
-                    <Text c="dimmed" lineClamp={1} size="sm">
+                    <Text className="text-gray-600" lineClamp={1} size="sm">
                       {album.artist}
                     </Text>
                   </div>
@@ -261,12 +248,12 @@ export function AlbumsOverview() {
                       </Group>
                     )}
 
-                    <Text c="dimmed" size="xs" style={{ marginLeft: "auto" }}>
+                    <Text className="ml-auto text-xs text-gray-600">
                       {formatDuration(album.totalDuration)}
                     </Text>
                   </Group>
 
-                  <Text c="dimmed" size="xs">
+                  <Text className="text-xs text-gray-600">
                     Last played: {formatDate(album.lastPlayed)}
                   </Text>
                 </Stack>
@@ -277,10 +264,10 @@ export function AlbumsOverview() {
       </Grid>
 
       {(!data?.albums || data.albums.length === 0) && (
-        <Center h={200}>
+        <Center className="h-[200px]">
           <Stack align="center" gap="md">
-            <Music size={48} style={{ opacity: 0.5 }} />
-            <Text c="dimmed" size="lg">
+            <Music className="opacity-50" size={48} />
+            <Text className="text-lg text-gray-600">
               {debouncedSearch
                 ? "No albums found matching your search"
                 : "No albums in your library yet"}
@@ -290,7 +277,7 @@ export function AlbumsOverview() {
       )}
 
       {data && data.totalPages > 1 && (
-        <Center mt="lg">
+        <Center className="mt-6">
           <Pagination
             boundaries={1}
             onChange={(newPage) => updateSearch({ page: newPage })}

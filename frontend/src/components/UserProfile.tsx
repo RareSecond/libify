@@ -57,7 +57,7 @@ export function UserProfile() {
             <User size={24} />
           </Avatar>
           <div>
-            <Text fw={500} size="lg">
+            <Text className="font-medium" size="lg">
               {user.name || "Anonymous User"}
             </Text>
             <Text color="dimmed" size="sm">

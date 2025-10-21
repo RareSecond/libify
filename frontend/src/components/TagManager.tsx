@@ -241,8 +241,8 @@ export function TagManager({
         )}
 
         <div>
-          <Group justify="space-between" mb="xs">
-            <Text fw={500} size="sm">
+          <Group className="mb-2" justify="space-between">
+            <Text className="font-medium" size="sm">
               All Tags
             </Text>
             <Button
@@ -255,7 +255,7 @@ export function TagManager({
           </Group>
           <Stack gap="xs">
             {allTags.length === 0 ? (
-              <Text c="dimmed" size="sm">
+              <Text className="text-gray-600" size="sm">
                 No tags created yet
               </Text>
             ) : (

@@ -369,10 +369,9 @@ export function PlaylistEditor({
         />
 
         <Box>
-          <Text fw={500} mb="xs">
-            Rules
-          </Text>
+          <Text className="mb-2 font-medium">Rules</Text>
           <Select
+            className="mb-4"
             data={[
               {
                 label: "Match all of the following rules",
@@ -383,7 +382,6 @@ export function PlaylistEditor({
                 value: PlaylistCriteriaDtoLogic.or,
               },
             ]}
-            mb="md"
             {...form.getInputProps("criteria.logic")}
           />
 
@@ -391,9 +389,9 @@ export function PlaylistEditor({
             {form.values.criteria.rules.map((rule, index) => (
               <Group align="flex-start" key={index}>
                 <Select
+                  className="w-[150px]"
                   data={fieldOptions}
                   placeholder="Field"
-                  w={150}
                   {...form.getInputProps(`criteria.rules.${index}.field`)}
                   onChange={(value) => {
                     form.setFieldValue(
@@ -412,13 +410,13 @@ export function PlaylistEditor({
                 />
 
                 <Select
+                  className="w-[150px]"
                   data={operatorsByField[rule.field] || []}
                   placeholder="Operator"
-                  w={150}
                   {...form.getInputProps(`criteria.rules.${index}.operator`)}
                 />
 
-                <Box style={{ flex: 1 }}>{getValueInput(rule, index)}</Box>
+                <Box className="flex-1">{getValueInput(rule, index)}</Box>
 
                 <ActionIcon
                   color="red"
@@ -433,8 +431,8 @@ export function PlaylistEditor({
           </Stack>
 
           <Button
+            className="mt-4"
             leftSection={<Plus size={16} />}
-            mt="sm"
             onClick={addRule}
             variant="subtle"
           >

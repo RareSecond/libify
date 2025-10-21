@@ -22,6 +22,7 @@ export default [
       "**/playwright-report/**",
       "**/test-results/**",
       "e2e/.auth/**",
+      "**/src/data/**",
       "**/prisma/migrations/**",
     ],
   },
@@ -59,10 +60,7 @@ export default [
   {
     files: ["**/*.{test,spec}.{ts,tsx,js}", "**/test/**/*.{ts,tsx,js}"],
     languageOptions: { globals: { ...globals.jest, ...globals.node } },
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "no-console": "off"
-    },
+    rules: { "@typescript-eslint/no-explicit-any": "off", "no-console": "off" },
   },
 
   // E2E test files configuration

@@ -55,73 +55,45 @@ export function RatingSelector({
 
         return (
           <div
+            className={`relative h-4 w-4 ${isUpdating ? "cursor-default" : "cursor-pointer"}`}
             key={starIndex}
-            style={{
-              cursor: isUpdating ? "default" : "pointer",
-              height: 16,
-              marginLeft: starIndex > 1 ? -4 : 0,
-              position: "relative",
-              width: 16,
-            }}
+            style={{ marginLeft: starIndex > 1 ? -4 : 0 }}
           >
             {/* Left half click area */}
             <div
+              className="absolute left-0 top-0 z-[2] h-full w-1/2"
               onClick={(e) =>
                 !isUpdating && handleRatingClick(e, leftHalfValue)
               }
               onMouseEnter={() =>
                 !isUpdating && setHoveredRating(leftHalfValue)
               }
-              style={{
-                height: "100%",
-                left: 0,
-                position: "absolute",
-                top: 0,
-                width: "50%",
-                zIndex: 2,
-              }}
             />
             {/* Right half click area */}
             <div
+              className="absolute right-0 top-0 z-[2] h-full w-1/2"
               onClick={(e) => !isUpdating && handleRatingClick(e, fullValue)}
               onMouseEnter={() => !isUpdating && setHoveredRating(fullValue)}
-              style={{
-                height: "100%",
-                position: "absolute",
-                right: 0,
-                top: 0,
-                width: "50%",
-                zIndex: 2,
-              }}
             />
             {/* Star visual */}
-            <div
-              style={{ height: "100%", position: "relative", width: "100%" }}
-            >
+            <div className="relative h-full w-full">
               {/* Background star (empty) */}
               <Star
+                className="absolute left-0.5 top-0.5"
                 color="gray"
                 fill="transparent"
                 size={12}
-                style={{ left: 2, position: "absolute", top: 2 }}
               />
               {/* Foreground star (filled) */}
               {fillType !== "empty" && (
                 <div
-                  style={{
-                    height: "100%",
-                    left: 0,
-                    overflow: "hidden",
-                    position: "absolute",
-                    top: 0,
-                    width: fillType === "half" ? "50%" : "100%",
-                  }}
+                  className={`absolute left-0 top-0 h-full overflow-hidden ${fillType === "half" ? "w-1/2" : "w-full"}`}
                 >
                   <Star
+                    className="absolute left-0.5 top-0.5"
                     color="gold"
                     fill="gold"
                     size={12}
-                    style={{ left: 2, position: "absolute", top: 2 }}
                   />
                 </div>
               )}

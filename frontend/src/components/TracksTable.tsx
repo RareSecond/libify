@@ -120,47 +120,22 @@ export function TracksTable({
           return (
             <Group gap="xs" wrap="nowrap">
               {row.original.albumArt ? (
-                <Box
-                  h={36}
-                  style={{
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    position: "relative",
-                  }}
-                  w={36}
-                >
+                <Box className="h-9 w-9 rounded overflow-hidden relative">
                   <Image
                     alt={row.original.album || row.original.title}
+                    className="h-9 w-9 object-cover"
                     fallbackSrc="/placeholder-album.svg"
                     fit="cover"
-                    h={36}
                     src={row.original.albumArt}
-                    style={{ objectFit: "cover" }}
-                    w={36}
                   />
                   {isCurrentTrack && isPlaying && (
-                    <Center
-                      style={{
-                        backgroundColor: "rgba(0, 0, 0, 0.6)",
-                        bottom: 0,
-                        color: "white",
-                        left: 0,
-                        position: "absolute",
-                        right: 0,
-                        top: 0,
-                      }}
-                    >
+                    <Center className="absolute inset-0 bg-black/60 text-white">
                       <Volume2 size={20} />
                     </Center>
                   )}
                 </Box>
               ) : (
-                <Center
-                  bg="gray.2"
-                  h={36}
-                  style={{ borderRadius: "4px" }}
-                  w={36}
-                >
+                <Center className="h-9 w-9 rounded bg-gray-200">
                   {isCurrentTrack && isPlaying ? (
                     <Volume2 size={18} />
                   ) : (
@@ -182,8 +157,7 @@ export function TracksTable({
           const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
           return (
             <Text
-              c={isCurrentTrack && isPlaying ? "blue" : undefined}
-              fw={500}
+              className={`font-medium ${isCurrentTrack && isPlaying ? "text-blue-600" : ""}`}
               lineClamp={1}
               size="sm"
             >
@@ -209,7 +183,7 @@ export function TracksTable({
       {
         accessorKey: "album",
         cell: ({ getValue }) => (
-          <Text c="dimmed" lineClamp={1} size="sm">
+          <Text className="text-gray-600" lineClamp={1} size="sm">
             {(getValue() as string) || "-"}
           </Text>
         ),
@@ -220,7 +194,7 @@ export function TracksTable({
       {
         accessorKey: "duration",
         cell: ({ getValue }) => (
-          <Text c="dimmed" size="sm">
+          <Text className="text-gray-600" size="sm">
             {formatDuration(getValue() as number)}
           </Text>
         ),
@@ -231,7 +205,7 @@ export function TracksTable({
       {
         accessorKey: "totalPlayCount",
         cell: ({ getValue }) => (
-          <Text size="sm" ta="center">
+          <Text className="text-center" size="sm">
             {getValue() as number}
           </Text>
         ),
@@ -242,7 +216,7 @@ export function TracksTable({
       {
         accessorKey: "lastPlayedAt",
         cell: ({ getValue }) => (
-          <Text c="dimmed" size="xs">
+          <Text className="text-gray-600" size="xs">
             {formatDate(getValue() as string | undefined)}
           </Text>
         ),
@@ -327,7 +301,7 @@ export function TracksTable({
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -346,6 +320,7 @@ export function TracksTable({
           <Table.Tr>
             {table.getFlatHeaders().map((header) => (
               <Table.Th
+                className={`relative select-none transition-opacity duration-200 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"}`}
                 draggable
                 key={header.id}
                 onDragEnd={handleDragEnd}
@@ -354,11 +329,7 @@ export function TracksTable({
                 onDragStart={(e) => handleDragStart(e, header.column.id)}
                 onDrop={handleDrop}
                 style={{
-                  cursor: draggedColumn ? "grabbing" : "grab",
                   opacity: draggedColumn === header.column.id ? 0.5 : 1,
-                  position: "relative",
-                  transition: "opacity 0.2s",
-                  userSelect: "none",
                   width: header.getSize(),
                 }}
               >
@@ -375,18 +346,11 @@ export function TracksTable({
             const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
             return (
               <Table.Tr
-                className="hover:bg-gray-50"
+                className={`cursor-pointer hover:bg-gray-50 ${isCurrentTrack && isPlaying ? "bg-blue-50/50" : ""}`}
                 key={row.id}
                 onClick={() =>
                   handlePlayTrack(row.original.title, row.original.spotifyId)
                 }
-                style={{
-                  backgroundColor:
-                    isCurrentTrack && isPlaying
-                      ? "rgba(0, 123, 255, 0.05)"
-                      : undefined,
-                  cursor: "pointer",
-                }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <Table.Td key={cell.id}>

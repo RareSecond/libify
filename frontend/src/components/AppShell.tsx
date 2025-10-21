@@ -27,31 +27,29 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
+        <Group className="h-full px-4">
           <Burger hiddenFrom="sm" onClick={toggle} opened={opened} size="sm" />
-          <Text fw={700} size="xl">
+          <Text className="font-bold" size="xl">
             Spotlib
           </Text>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar className="p-4">
         {navItems.map((item) => (
           <NavLink
             active={location.pathname === item.to}
+            className="mb-2"
             component={Link}
             key={item.to}
             label={item.label}
             leftSection={<item.icon size={20} />}
-            mb="xs"
             to={item.to}
           />
         ))}
       </AppShell.Navbar>
 
-      <AppShell.Main style={{ paddingBottom: "120px" }}>
-        {children}
-      </AppShell.Main>
+      <AppShell.Main className="pb-[120px]">{children}</AppShell.Main>
     </AppShell>
   );
 }

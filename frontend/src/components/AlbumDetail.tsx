@@ -41,15 +41,17 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
 
   if (error) {
     return (
-      <Center h={400}>
-        <Text c="red">Error loading album: {(error as Error).message}</Text>
+      <Center className="h-[400px]">
+        <Text className="text-red-600">
+          Error loading album: {(error as Error).message}
+        </Text>
       </Center>
     );
   }
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -88,56 +90,56 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
         Back to Albums
       </Button>
 
-      <Paper p="lg" radius="md" shadow="xs">
+      <Paper className="p-6" radius="md" shadow="xs">
         <Group align="start" gap="xl" wrap="nowrap">
           <Box>
             {albumArt ? (
               <Image
                 alt={album}
+                className="h-[200px] w-[200px] object-cover"
                 fallbackSrc="/placeholder-album.svg"
-                h={200}
                 radius="md"
                 src={albumArt}
-                style={{ objectFit: "cover" }}
-                w={200}
               />
             ) : (
-              <Center bg="gray.2" h={200} style={{ borderRadius: 8 }} w={200}>
+              <Center className="h-[200px] w-[200px] rounded-lg bg-gray-200">
                 <Music color="gray" size={48} />
               </Center>
             )}
           </Box>
 
-          <Stack gap="sm" style={{ flex: 1 }}>
+          <Stack className="flex-1" gap="sm">
             <div>
               <Title order={2}>{album}</Title>
-              <Text c="dimmed" size="lg">
+              <Text className="text-gray-600" size="lg">
                 {artist}
               </Text>
             </div>
 
             <Group gap="xl">
               <Group gap="xs">
-                <Text c="dimmed" size="sm">
+                <Text className="text-gray-600" size="sm">
                   Tracks:
                 </Text>
-                <Text fw={500}>{tracks.length}</Text>
+                <Text className="font-medium">{tracks.length}</Text>
               </Group>
 
               <Group gap="xs">
-                <Clock size={16} style={{ opacity: 0.5 }} />
-                <Text fw={500}>{formatDuration(totalDuration)}</Text>
+                <Clock className="opacity-50" size={16} />
+                <Text className="font-medium">
+                  {formatDuration(totalDuration)}
+                </Text>
               </Group>
 
               <Group gap="xs">
-                <Play size={16} style={{ opacity: 0.5 }} />
-                <Text fw={500}>{totalPlayCount} plays</Text>
+                <Play className="opacity-50" size={16} />
+                <Text className="font-medium">{totalPlayCount} plays</Text>
               </Group>
 
               {avgRating && (
                 <Group gap="xs">
-                  <Star size={16} style={{ opacity: 0.5 }} />
-                  <Text fw={500}>{avgRating.toFixed(1)}</Text>
+                  <Star className="opacity-50" size={16} />
+                  <Text className="font-medium">{avgRating.toFixed(1)}</Text>
                 </Group>
               )}
             </Group>
@@ -145,10 +147,8 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
         </Group>
       </Paper>
 
-      <Paper p="sm" radius="md" shadow="xs">
-        <Text c="dimmed" mb="xs" size="sm">
-          Album Tracks
-        </Text>
+      <Paper className="p-4" radius="md" shadow="xs">
+        <Text className="mb-2 text-sm text-gray-600">Album Tracks</Text>
 
         <TracksTable
           contextId={albumId}
