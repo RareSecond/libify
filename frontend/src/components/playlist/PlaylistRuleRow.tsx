@@ -5,6 +5,7 @@ import { PlaylistRuleDto, PlaylistRuleDtoField } from "../../data/api";
 import { fieldOptions, operatorsByField } from "../../utils/playlistConstants";
 import { PlaylistRuleValueInput } from "./PlaylistRuleValueInput";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface PlaylistRuleRowProps {
   canRemove: boolean;
   index: number;
@@ -12,14 +13,15 @@ interface PlaylistRuleRowProps {
   onRemove: (index: number) => void;
   rule: PlaylistRuleDto;
   ruleInputProps: {
-    daysValue: unknown;
-    field: unknown;
-    numberValue: unknown;
-    operator: unknown;
-    value: unknown;
+    daysValue: any;
+    field: any;
+    numberValue: any;
+    operator: any;
+    value: any;
   };
   tags?: Array<{ id: string; name: string }>;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export function PlaylistRuleRow({
   canRemove,

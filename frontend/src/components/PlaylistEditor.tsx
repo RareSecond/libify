@@ -18,6 +18,7 @@ import { useEffect } from "react";
 import {
   PlaylistCriteriaDtoLogic,
   PlaylistCriteriaDtoOrderDirection,
+  type PlaylistRuleDto,
   PlaylistRuleDtoField,
   PlaylistRuleDtoOperator,
   SmartPlaylistWithTracksDto,

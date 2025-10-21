@@ -6,11 +6,13 @@ import {
   PlaylistRuleDtoOperator,
 } from "../../data/api";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface PlaylistRuleValueInputProps {
-  inputProps: { daysValue: unknown; numberValue: unknown; value: unknown };
+  inputProps: { daysValue: any; numberValue: any; value: any };
   rule: PlaylistRuleDto;
   tags?: Array<{ id: string; name: string }>;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export function PlaylistRuleValueInput({
   inputProps,

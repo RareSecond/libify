@@ -98,7 +98,11 @@ export function TracksTable({
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
 
-  const columns = useTracksTableColumns({ currentTrack, isPlaying, onRefetch });
+  const columns = useTracksTableColumns({
+    currentTrack: currentTrack ? { id: currentTrack.id } : undefined,
+    isPlaying,
+    onRefetch,
+  });
 
   const table = useReactTable({
     columnResizeMode: "onChange",
