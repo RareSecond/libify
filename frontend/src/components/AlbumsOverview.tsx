@@ -56,11 +56,7 @@ export function AlbumsOverview() {
       onDebouncedChange: (value) => {
         navigate({
           replace: value === "" && search !== "",
-          search: (prev) => ({
-            ...prev,
-            page: 1,
-            search: value,
-          }),
+          search: (prev) => ({ ...prev, page: 1, search: value }),
         });
       },
     },
@@ -195,10 +191,7 @@ export function AlbumsOverview() {
             span={{ base: 12, lg: 3, md: 4, sm: 6 }}
           >
             <Link
-              params={{
-                album: album.name,
-                artist: album.artist,
-              }}
+              params={{ album: album.name, artist: album.artist }}
               style={{ textDecoration: "none" }}
               to="/albums/$artist/$album"
             >

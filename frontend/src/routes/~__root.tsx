@@ -10,9 +10,7 @@ import { useAuthControllerGetProfile } from "../data/api";
 
 const queryClient = new QueryClient();
 
-export const Route = createRootRoute({
-  component: RootComponent,
-});
+export const Route = createRootRoute({ component: RootComponent });
 
 function AuthWrapper() {
   const {

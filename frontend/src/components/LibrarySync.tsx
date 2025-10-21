@@ -42,9 +42,7 @@ export function LibrarySync() {
     queryFn: async () => {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/library/sync/status`,
-        {
-          credentials: "include",
-        },
+        { credentials: "include" },
       );
       if (!response.ok) throw new Error("Failed to fetch sync status");
       return response.json();
@@ -57,10 +55,7 @@ export function LibrarySync() {
     mutationFn: async () => {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/library/sync`,
-        {
-          credentials: "include",
-          method: "POST",
-        },
+        { credentials: "include", method: "POST" },
       );
       if (!response.ok) {
         const error = await response.json();

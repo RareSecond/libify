@@ -339,7 +339,7 @@ export function SpotifyPlayerProvider({
               {
                 body: JSON.stringify({ uris: [nextUri] }),
                 headers: {
-                  Authorization: `Bearer ${await getAccessToken()}`,
+                  "Authorization": `Bearer ${await getAccessToken()}`,
                   "Content-Type": "application/json",
                 },
                 method: "PUT",
@@ -382,7 +382,7 @@ export function SpotifyPlayerProvider({
         {
           body: JSON.stringify({ uris: [uri] }),
           headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
+            "Authorization": `Bearer ${await getAccessToken()}`,
             "Content-Type": "application/json",
           },
           method: "PUT",
@@ -428,7 +428,7 @@ export function SpotifyPlayerProvider({
           uris: trackUris,
         }),
         headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
+          "Authorization": `Bearer ${await getAccessToken()}`,
           "Content-Type": "application/json",
         },
         method: "PUT",
@@ -481,7 +481,7 @@ export function SpotifyPlayerProvider({
         {
           body: JSON.stringify({ uris: [nextUri] }),
           headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
+            "Authorization": `Bearer ${await getAccessToken()}`,
             "Content-Type": "application/json",
           },
           method: "PUT",
@@ -523,7 +523,7 @@ export function SpotifyPlayerProvider({
         {
           body: JSON.stringify({ uris: [prevUri] }),
           headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
+            "Authorization": `Bearer ${await getAccessToken()}`,
             "Content-Type": "application/json",
           },
           method: "PUT",

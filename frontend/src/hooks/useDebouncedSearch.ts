@@ -28,9 +28,5 @@ export function useDebouncedSearch(
     }
   }, [debouncedSearch, urlSearch, onDebouncedChange]);
 
-  return {
-    debouncedSearch,
-    localSearch,
-    setLocalSearch,
-  };
+  return { debouncedSearch, localSearch, setLocalSearch };
 }

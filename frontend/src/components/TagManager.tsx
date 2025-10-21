@@ -59,10 +59,7 @@ export function TagManager({
   }, [trackTags]);
 
   const form = useForm({
-    initialValues: {
-      color: "#339af0",
-      name: "",
-    },
+    initialValues: { color: "#339af0", name: "" },
     validate: {
       name: (value: string) => (!value.trim() ? "Tag name is required" : null),
     },
@@ -71,10 +68,7 @@ export function TagManager({
   const handleCreateTag = async (values: { color: string; name: string }) => {
     try {
       await createTagMutation.mutateAsync({
-        data: {
-          color: values.color,
-          name: values.name,
-        },
+        data: { color: values.color, name: values.name },
       });
       notifications.show({
         color: "green",
@@ -97,10 +91,7 @@ export function TagManager({
     values: { color?: string; name?: string },
   ) => {
     try {
-      await updateTagMutation.mutateAsync({
-        data: values,
-        tagId,
-      });
+      await updateTagMutation.mutateAsync({ data: values, tagId });
       notifications.show({
         color: "green",
         message: "Tag has been updated successfully",

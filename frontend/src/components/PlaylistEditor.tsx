@@ -150,9 +150,7 @@ export function PlaylistEditor({
       isActive: true,
       name: "",
     },
-    validate: {
-      name: (value) => (!value ? "Name is required" : null),
-    },
+    validate: { name: (value) => (!value ? "Name is required" : null) },
   });
 
   useEffect(() => {
@@ -249,10 +247,7 @@ export function PlaylistEditor({
       };
 
       if (playlist) {
-        await updateMutation.mutateAsync({
-          data,
-          id: playlist.id,
-        });
+        await updateMutation.mutateAsync({ data, id: playlist.id });
         notifications.show({
           color: "green",
           message: "Playlist updated successfully",
@@ -266,10 +261,7 @@ export function PlaylistEditor({
       }
       onSave();
     } catch {
-      notifications.show({
-        color: "red",
-        message: "Failed to save playlist",
-      });
+      notifications.show({ color: "red", message: "Failed to save playlist" });
     }
   };
 

@@ -57,11 +57,7 @@ export function useSyncProgress(jobId: null | string) {
         const data = JSON.parse(event.data);
 
         if (data.error) {
-          setStatus({
-            error: data.error,
-            jobId,
-            state: "failed",
-          });
+          setStatus({ error: data.error, jobId, state: "failed" });
           eventSource.close();
           return;
         }
@@ -101,9 +97,5 @@ export function useSyncProgress(jobId: null | string) {
     setIsConnected(false);
   }, []);
 
-  return {
-    isConnected,
-    reset,
-    status,
-  };
+  return { isConnected, reset, status };
 }

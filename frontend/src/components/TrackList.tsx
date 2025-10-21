@@ -42,11 +42,7 @@ export function TrackList() {
       onDebouncedChange: (value) => {
         navigate({
           replace: value === "" && search !== "",
-          search: (prev) => ({
-            ...prev,
-            page: 1,
-            search: value,
-          }),
+          search: (prev) => ({ ...prev, page: 1, search: value }),
         });
       },
     },

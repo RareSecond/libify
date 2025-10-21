@@ -288,9 +288,7 @@ export function TracksTable({
     data: tracks,
     getCoreRowModel: getCoreRowModel(),
     onColumnOrderChange: setColumnOrder,
-    state: {
-      columnOrder,
-    },
+    state: { columnOrder },
   });
 
   const handleDragStart = (e: React.DragEvent, column: string) => {

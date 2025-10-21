@@ -5,9 +5,7 @@ import { LibrarySync } from "@/components/LibrarySync";
 import { PageTitle } from "@/components/PageTitle";
 import { UserProfile } from "@/components/UserProfile";
 
-export const Route = createFileRoute("/")({
-  component: HomePage,
-});
+export const Route = createFileRoute("/")({ component: HomePage });
 
 function HomePage() {
   return (

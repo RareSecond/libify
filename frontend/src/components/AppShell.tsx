@@ -23,11 +23,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{
-        breakpoint: "sm",
-        collapsed: { mobile: !opened },
-        width: 300,
-      }}
+      navbar={{ breakpoint: "sm", collapsed: { mobile: !opened }, width: 300 }}
       padding="md"
     >
       <AppShell.Header>
