@@ -57,6 +57,7 @@ export function RatingSelector({
           <div
             className={`relative h-4 w-4 ${isUpdating ? "cursor-default" : "cursor-pointer"}`}
             key={starIndex}
+            // eslint-disable-next-line react/forbid-dom-props
             style={{ marginLeft: starIndex > 1 ? -4 : 0 }}
           >
             {/* Left half click area */}

@@ -1,24 +1,11 @@
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Group,
-  Progress,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Alert, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Music,
-  RefreshCw,
-} from "lucide-react";
+import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useSyncProgress } from "../hooks/useSyncProgress";
+import { formatLastSync } from "../utils/format";
+import { SyncProgress } from "./sync/SyncProgress";
 
 interface SyncJobResponse {
   jobId: string;
@@ -98,21 +85,6 @@ export function LibrarySync() {
     };
   }, [syncProgress?.state, refetchStatus, resetProgress]);
 
-  const formatLastSync = (lastSync: null | string) => {
-    if (!lastSync) return "Never";
-    const date = new Date(lastSync);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} minutes ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    return `${diffDays} days ago`;
-  };
-
   return (
     <Card padding="lg" radius="md" shadow="sm" withBorder>
       <Stack gap="md">
@@ -156,51 +128,7 @@ export function LibrarySync() {
           </Group>
         )}
 
-        {syncProgress && (
-          <Stack gap="xs">
-            <Group justify="space-between">
-              <Text className="font-medium" size="sm">
-                {syncProgress.progress?.message || `Sync ${syncProgress.state}`}
-              </Text>
-              {syncProgress.progress?.itemsPerSecond && (
-                <Badge color="blue" size="sm" variant="light">
-                  {syncProgress.progress.itemsPerSecond} items/sec
-                </Badge>
-              )}
-            </Group>
-
-            <Progress
-              animated={syncProgress.state === "active"}
-              color={
-                syncProgress.state === "completed"
-                  ? "green"
-                  : syncProgress.state === "failed"
-                    ? "red"
-                    : "blue"
-              }
-              striped={syncProgress.state === "active"}
-              value={syncProgress.progress?.percentage || 0}
-            />
-
-            {syncProgress.progress && (
-              <Group justify="space-between">
-                <Text color="dimmed" size="xs">
-                  {syncProgress.progress.phase}: {syncProgress.progress.current}
-                  /{syncProgress.progress.total}
-                </Text>
-                {syncProgress.progress.estimatedTimeRemaining && (
-                  <Text color="dimmed" size="xs">
-                    <Clock className="inline mr-1" size={12} />
-                    {Math.ceil(
-                      syncProgress.progress.estimatedTimeRemaining / 60,
-                    )}{" "}
-                    min remaining
-                  </Text>
-                )}
-              </Group>
-            )}
-          </Stack>
-        )}
+        {syncProgress && <SyncProgress syncProgress={syncProgress} />}
 
         {syncLibraryMutation.isError && (
           <Alert

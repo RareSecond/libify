@@ -14,23 +14,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Music, Play, Star } from "lucide-react";
 
 import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
+import { formatDurationDetailed } from "../utils/format";
 import { TracksTable } from "./TracksTable";
 
 interface AlbumDetailProps {
   album: string;
   artist: string;
 }
-
-const formatDuration = (ms: number) => {
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
-  }
-  return `${minutes}m ${seconds}s`;
-};
 
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
@@ -127,7 +117,7 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
               <Group gap="xs">
                 <Clock className="opacity-50" size={16} />
                 <Text className="font-medium">
-                  {formatDuration(totalDuration)}
+                  {formatDurationDetailed(totalDuration)}
                 </Text>
               </Group>
 
