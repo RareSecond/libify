@@ -62,11 +62,17 @@ const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(
 interface SpotifyPlayerProviderProps {
   children: ReactNode;
 }
+
+// Global singleton to survive hot-reloads in development
+let globalPlayer: null | SpotifyPlayer = null;
+let globalDeviceId: null | string = null;
+let isInitializing = false;
+
 export function SpotifyPlayerProvider({
   children,
 }: SpotifyPlayerProviderProps) {
-  const [player, setPlayer] = useState<null | SpotifyPlayer>(null);
-  const [deviceId, setDeviceId] = useState<null | string>(null);
+  const [player, setPlayer] = useState<null | SpotifyPlayer>(globalPlayer);
+  const [deviceId, setDeviceId] = useState<null | string>(globalDeviceId);
   const [currentTrack, setCurrentTrack] = useState<null | SpotifyTrack>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -95,7 +101,22 @@ export function SpotifyPlayerProvider({
   const shuffleManager = useShuffleManager();
   useEffect(() => {
     if (!user) return;
+
     const initializePlayer = () => {
+      // If we already have a global player, reuse it
+      if (globalPlayer && globalDeviceId) {
+        setPlayer(globalPlayer);
+        setDeviceId(globalDeviceId);
+        setIsReady(true);
+        return;
+      }
+
+      // Prevent double initialization (React Strict Mode)
+      if (isInitializing) {
+        return;
+      }
+
+      isInitializing = true;
       const spotifyPlayer = new window.Spotify.Player({
         getOAuthToken: (cb) => {
           fetch(`${import.meta.env.VITE_API_URL}/auth/token`, {
@@ -108,9 +129,15 @@ export function SpotifyPlayerProvider({
         name: "Spotlib Web Player",
         volume,
       });
-      spotifyPlayer.addListener("initialization_error", () => undefined);
-      spotifyPlayer.addListener("authentication_error", () => undefined);
-      spotifyPlayer.addListener("account_error", () => undefined);
+      spotifyPlayer.addListener("initialization_error", () => {
+        isInitializing = false;
+      });
+      spotifyPlayer.addListener("authentication_error", () => {
+        isInitializing = false;
+      });
+      spotifyPlayer.addListener("account_error", () => {
+        isInitializing = false;
+      });
       spotifyPlayer.addListener("player_state_changed", async (data) => {
         const state = data as null | SpotifyPlayerState;
         if (!state) return;
@@ -139,6 +166,12 @@ export function SpotifyPlayerProvider({
       });
       spotifyPlayer.addListener("ready", (data) => {
         const { device_id } = data as { device_id: string };
+
+        // Store in global variables to survive hot-reloads
+        globalDeviceId = device_id;
+        globalPlayer = spotifyPlayer;
+        isInitializing = false;
+
         setDeviceId(device_id);
         setIsReady(true);
       });
@@ -164,10 +197,10 @@ export function SpotifyPlayerProvider({
       checkAndInitialize();
     };
     return () => {
-      if (player) player.disconnect();
       clearPlayTrackingTimer();
+      // Don't disconnect the player - let it survive for hot-reload
     };
-  }, [user, volume]);
+  }, [user]);
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -262,6 +295,8 @@ export function SpotifyPlayerProvider({
       return track;
     });
     const trackUris = normalizedTracks.map((track) => track.spotifyUri);
+
+    const token = await getAccessToken();
     const response = await fetch(
       `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
       {
@@ -270,13 +305,14 @@ export function SpotifyPlayerProvider({
           uris: trackUris,
         }),
         headers: {
-          "Authorization": `Bearer ${await getAccessToken()}`,
+          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         method: "PUT",
       },
     );
-    if (response.ok) {
+
+    if (response.ok || response.status === 204) {
       setCurrentTrackList(trackUris);
       setCurrentTrackIndex(startIndex);
       shuffleManager.setOriginalTrackList(trackUris);
@@ -287,6 +323,9 @@ export function SpotifyPlayerProvider({
       if (startingTrack?.trackId) {
         startPlayTracking(startingTrack.trackId, onPlayRecorded);
       }
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData?.error?.message || "Failed to play track");
     }
   };
   const pause = async () => {
@@ -364,9 +403,9 @@ export function SpotifyPlayerProvider({
     }
   };
   const setVolume = async (newVolume: number) => {
+    setVolumeState(newVolume);
     if (player) {
       await player.setVolume(newVolume);
-      setVolumeState(newVolume);
     }
   };
   const handleToggleShuffle = async () => {
