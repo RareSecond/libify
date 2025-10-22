@@ -1775,18 +1775,15 @@
             "format": "date-time",
             "type": "string",
             "nullable": true,
-            "description": "Last sync date",
-            "example": "2024-01-15T10:30:00.000Z"
+            "description": "Last sync timestamp"
           },
           "totalAlbums": {
             "type": "number",
-            "description": "Total number of albums synced",
-            "example": 150
+            "description": "Total number of albums in library"
           },
           "totalTracks": {
             "type": "number",
-            "description": "Total number of tracks synced",
-            "example": 2500
+            "description": "Total number of tracks in library"
           }
         },
         "required": [

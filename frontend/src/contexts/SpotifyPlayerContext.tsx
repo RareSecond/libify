@@ -9,15 +9,15 @@ import {
   useState,
 } from "react";
 
-import { useAuthControllerGetProfile } from "../data/api";
-import { usePlayTracking } from "../hooks/usePlayTracking";
-import { useShuffleManager } from "../hooks/useShuffleManager";
-import { useSpotifyAPI } from "../hooks/useSpotifyAPI";
+import { useAuthControllerGetProfile } from "@/data/api";
+import { usePlayTracking } from "@/hooks/usePlayTracking";
+import { useShuffleManager } from "@/hooks/useShuffleManager";
+import { useSpotifyAPI } from "@/hooks/useSpotifyAPI";
 import {
   SpotifyPlayer,
   SpotifyPlayerState,
   SpotifyTrack,
-} from "../types/spotify";
+} from "@/types/spotify";
 
 interface PlayContext {
   contextId?: string;

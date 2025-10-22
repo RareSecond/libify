@@ -36,7 +36,7 @@ import { GetArtistsQueryDto } from './dto/get-artists-query.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import { SyncProgressDto } from './dto/sync-progress-base.dto';
 import { SyncJobResponseDto, SyncJobStatusDto } from './dto/sync-progress.dto';
-import { SyncStatusDto } from './dto/sync-status.dto';
+import { SyncStatusDto } from './dto/sync-result.dto';
 import {
   AddTagToTrackDto,
   CreateTagDto,

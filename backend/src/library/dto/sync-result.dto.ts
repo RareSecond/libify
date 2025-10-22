@@ -18,6 +18,9 @@ export class SyncStatusDto {
   @ApiProperty({ description: 'Last sync timestamp', nullable: true })
   lastSync: Date | null;
 
+  @ApiProperty({ description: 'Total number of albums in library' })
+  totalAlbums: number;
+
   @ApiProperty({ description: 'Total number of tracks in library' })
   totalTracks: number;
 }

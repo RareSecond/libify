@@ -1,4 +1,5 @@
 import { Avatar, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { Calendar, LogOut, User } from "lucide-react";
 
 import {
@@ -21,8 +22,16 @@ export function UserProfile() {
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
-      onSettled: () => {
-        // Redirect on success or failure
+      onError: (error) => {
+        // Show error notification without redirecting
+        notifications.show({
+          color: "red",
+          message: error.message || "Please try again",
+          title: "Failed to logout",
+        });
+      },
+      onSuccess: () => {
+        // Only redirect on successful logout
         window.location.href = "/";
       },
     });
@@ -82,12 +91,14 @@ export function UserProfile() {
 
         <Button
           color="red"
+          disabled={logoutMutation.isPending}
           fullWidth
           leftSection={<LogOut size={16} />}
+          loading={logoutMutation.isPending}
           onClick={handleLogout}
           variant="outline"
         >
-          Logout
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </Button>
       </Stack>
     </Card>
