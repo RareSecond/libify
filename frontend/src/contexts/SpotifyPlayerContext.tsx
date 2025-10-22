@@ -2,6 +2,7 @@
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -89,6 +90,10 @@ export function SpotifyPlayerProvider({
   );
   const previousStateRef = useRef<null | SpotifyPlayerState>(null);
   const shouldAutoPlayNext = useRef(false);
+  const isMountedRef = useRef(true);
+  const listenersRef = useRef<
+    { event: string; handler: (data?: unknown) => void }[]
+  >([]);
   const { data: user } = useAuthControllerGetProfile();
   const {
     clearPlayTrackingTimer,
@@ -99,15 +104,130 @@ export function SpotifyPlayerProvider({
   } = usePlayTracking();
   const { fetchAllTracksForContext, getAccessToken } = useSpotifyAPI();
   const shuffleManager = useShuffleManager();
+
+  // Helper to add listener and track it for cleanup
+  const addTrackedListener = useCallback(
+    (
+      playerInstance: SpotifyPlayer,
+      event: string,
+      handler: (data?: unknown) => void,
+    ) => {
+      playerInstance.addListener(event, handler);
+      listenersRef.current.push({ event, handler });
+    },
+    [],
+  );
+
+  // Helper to remove all tracked listeners
+  const removeAllListeners = useCallback((playerInstance: SpotifyPlayer) => {
+    listenersRef.current.forEach(({ event, handler }) => {
+      playerInstance.removeListener(event, handler);
+    });
+    listenersRef.current = [];
+  }, []);
+
+  // Attach all player event listeners
+  const attachPlayerListeners = useCallback(
+    (playerInstance: SpotifyPlayer) => {
+      const initErrorHandler = () => {
+        isInitializing = false;
+      };
+
+      const playerStateChangedHandler = async (data: unknown) => {
+        if (!isMountedRef.current) return; // Guard against unmounted updates
+
+        const state = data as null | SpotifyPlayerState;
+        if (!state) return;
+
+        const newTrack = state.track_window.current_track;
+        const wasPlaying = isPlaying;
+        const newIsPlaying = !state.paused;
+        const previousState = previousStateRef.current;
+
+        if (
+          previousState &&
+          !previousState.paused &&
+          state.paused &&
+          state.position === 0
+        ) {
+          shouldAutoPlayNext.current = true;
+        }
+
+        previousStateRef.current = state;
+
+        if (!isMountedRef.current) return; // Double-check before state updates
+
+        setCurrentTrack(newTrack);
+        setIsPlaying(newIsPlaying);
+        setPosition(state.position);
+        setDuration(newTrack.duration_ms);
+
+        if (newIsPlaying && !wasPlaying) {
+          resumePlayTracking();
+        } else if (!newIsPlaying && wasPlaying) {
+          pausePlayTracking();
+        }
+      };
+
+      const readyHandler = (data: unknown) => {
+        if (!isMountedRef.current) return;
+
+        const { device_id } = data as { device_id: string };
+
+        // Store in global variables to survive hot-reloads
+        globalDeviceId = device_id;
+        globalPlayer = playerInstance;
+        isInitializing = false;
+
+        setDeviceId(device_id);
+        setIsReady(true);
+      };
+
+      const notReadyHandler = () => {
+        if (!isMountedRef.current) return;
+        setIsReady(false);
+      };
+
+      // Add all listeners using the tracked helper
+      addTrackedListener(
+        playerInstance,
+        "initialization_error",
+        initErrorHandler,
+      );
+      addTrackedListener(
+        playerInstance,
+        "authentication_error",
+        initErrorHandler,
+      );
+      addTrackedListener(playerInstance, "account_error", initErrorHandler);
+      addTrackedListener(
+        playerInstance,
+        "player_state_changed",
+        playerStateChangedHandler,
+      );
+      addTrackedListener(playerInstance, "ready", readyHandler);
+      addTrackedListener(playerInstance, "not_ready", notReadyHandler);
+    },
+    [addTrackedListener, isPlaying, pausePlayTracking, resumePlayTracking],
+  );
+
   useEffect(() => {
     if (!user) return;
+
+    isMountedRef.current = true;
 
     const initializePlayer = () => {
       // If we already have a global player, reuse it
       if (globalPlayer && globalDeviceId) {
+        // Remove any stale listeners before reusing
+        removeAllListeners(globalPlayer);
+
         setPlayer(globalPlayer);
         setDeviceId(globalDeviceId);
         setIsReady(true);
+
+        // Re-attach fresh listeners to the existing player
+        attachPlayerListeners(globalPlayer);
         return;
       }
 
@@ -129,55 +249,10 @@ export function SpotifyPlayerProvider({
         name: "Spotlib Web Player",
         volume,
       });
-      spotifyPlayer.addListener("initialization_error", () => {
-        isInitializing = false;
-      });
-      spotifyPlayer.addListener("authentication_error", () => {
-        isInitializing = false;
-      });
-      spotifyPlayer.addListener("account_error", () => {
-        isInitializing = false;
-      });
-      spotifyPlayer.addListener("player_state_changed", async (data) => {
-        const state = data as null | SpotifyPlayerState;
-        if (!state) return;
-        const newTrack = state.track_window.current_track;
-        const wasPlaying = isPlaying;
-        const newIsPlaying = !state.paused;
-        const previousState = previousStateRef.current;
-        if (
-          previousState &&
-          !previousState.paused &&
-          state.paused &&
-          state.position === 0
-        ) {
-          shouldAutoPlayNext.current = true;
-        }
-        previousStateRef.current = state;
-        setCurrentTrack(newTrack);
-        setIsPlaying(newIsPlaying);
-        setPosition(state.position);
-        setDuration(newTrack.duration_ms);
-        if (newIsPlaying && !wasPlaying) {
-          resumePlayTracking();
-        } else if (!newIsPlaying && wasPlaying) {
-          pausePlayTracking();
-        }
-      });
-      spotifyPlayer.addListener("ready", (data) => {
-        const { device_id } = data as { device_id: string };
 
-        // Store in global variables to survive hot-reloads
-        globalDeviceId = device_id;
-        globalPlayer = spotifyPlayer;
-        isInitializing = false;
+      // Attach all event listeners
+      attachPlayerListeners(spotifyPlayer);
 
-        setDeviceId(device_id);
-        setIsReady(true);
-      });
-      spotifyPlayer.addListener("not_ready", () => {
-        setIsReady(false);
-      });
       spotifyPlayer.connect();
       setPlayer(spotifyPlayer);
     };
@@ -197,7 +272,14 @@ export function SpotifyPlayerProvider({
       checkAndInitialize();
     };
     return () => {
+      isMountedRef.current = false;
       clearPlayTrackingTimer();
+
+      // Remove listeners on cleanup to prevent memory leaks
+      if (player) {
+        removeAllListeners(player);
+      }
+
       // Don't disconnect the player - let it survive for hot-reload
     };
   }, [user]);

@@ -30,10 +30,19 @@ export function useShuffleManager() {
     if (!currentTrackList.length) return;
 
     if (isShuffled) {
-      const currentTrackUri = currentTrackList[currentTrackIndex];
-      const newIndex = originalTrackList.indexOf(currentTrackUri);
+      // Guard against out-of-range index
+      let newIndex = 0;
+      if (
+        currentTrackIndex >= 0 &&
+        currentTrackIndex < currentTrackList.length
+      ) {
+        const currentTrackUri = currentTrackList[currentTrackIndex];
+        const foundIndex = originalTrackList.indexOf(currentTrackUri);
+        newIndex = foundIndex >= 0 ? foundIndex : 0;
+      }
+
       setCurrentTrackList(originalTrackList);
-      setCurrentTrackIndex(newIndex >= 0 ? newIndex : 0);
+      setCurrentTrackIndex(newIndex);
       setIsShuffled(false);
     } else {
       let tracksToShuffle = currentTrackList;
@@ -51,12 +60,22 @@ export function useShuffleManager() {
         setOriginalTrackList(currentTrackList);
       }
 
-      const currentTrackUri = currentTrackList[currentTrackIndex];
-      const remainingTracks = tracksToShuffle.filter(
-        (uri) => uri !== currentTrackUri,
-      );
-      const shuffledRemaining = shuffleArray(remainingTracks);
-      const shuffledList = [currentTrackUri, ...shuffledRemaining];
+      // Guard against out-of-range index
+      let shuffledList: string[];
+      if (
+        currentTrackIndex >= 0 &&
+        currentTrackIndex < currentTrackList.length
+      ) {
+        const currentTrackUri = currentTrackList[currentTrackIndex];
+        const remainingTracks = tracksToShuffle.filter(
+          (uri) => uri !== currentTrackUri,
+        );
+        const shuffledRemaining = shuffleArray(remainingTracks);
+        shuffledList = [currentTrackUri, ...shuffledRemaining];
+      } else {
+        // If index is invalid, just shuffle all tracks
+        shuffledList = shuffleArray(tracksToShuffle);
+      }
 
       setCurrentTrackList(shuffledList);
       setCurrentTrackIndex(0);

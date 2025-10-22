@@ -47,10 +47,18 @@ export function useAutoPlayNext(params: UseAutoPlayNextParams) {
     ) {
       shouldAutoPlayNext.current = false;
       const nextIndex = currentTrackIndex + 1;
+
       if (nextIndex < currentTrackList.length) {
-        setTimeout(async () => {
+        // Create AbortController for cleanup
+        const controller = new AbortController();
+
+        const timeoutId = setTimeout(async () => {
+          // Check if aborted before proceeding
+          if (controller.signal.aborted) return;
+
           clearPlayTrackingTimer();
           const nextUri = currentTrackList[nextIndex];
+
           try {
             const response = await fetch(
               `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
@@ -61,8 +69,13 @@ export function useAutoPlayNext(params: UseAutoPlayNextParams) {
                   "Content-Type": "application/json",
                 },
                 method: "PUT",
+                signal: controller.signal, // Pass abort signal to fetch
               },
             );
+
+            // Guard state updates - only proceed if not aborted
+            if (controller.signal.aborted) return;
+
             if (response.ok) {
               setCurrentTrackIndex(nextIndex);
               const nextTrackWithId = currentTracksWithIds[nextIndex];
@@ -73,10 +86,20 @@ export function useAutoPlayNext(params: UseAutoPlayNextParams) {
                 );
               }
             }
-          } catch {
-            // Silently fail auto-play
+          } catch (error) {
+            // Ignore AbortError - it's expected on cleanup
+            if (error instanceof Error && error.name === "AbortError") {
+              return;
+            }
+            // Silently fail other auto-play errors
           }
         }, 100);
+
+        // Cleanup function
+        return () => {
+          clearTimeout(timeoutId);
+          controller.abort();
+        };
       }
     }
   }, [

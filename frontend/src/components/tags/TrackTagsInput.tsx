@@ -1,13 +1,9 @@
 import { Badge, Group, TagsInput } from "@mantine/core";
 
-interface Tag {
-  color?: string;
-  id: string;
-  name: string;
-}
+import { TagDto } from "../../data/api";
 
 interface TrackTagsInputProps {
-  allTags: Tag[];
+  allTags: TagDto[];
   onChange: (values: string[]) => void;
   selectedTags: string[];
 }

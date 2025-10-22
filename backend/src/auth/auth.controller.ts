@@ -6,6 +6,7 @@ import { plainToInstance } from 'class-transformer';
 import { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
+import { TokenDto } from './dto/token.dto';
 import { UserDto } from './dto/user.dto';
 
 interface AuthenticatedRequest extends Request {
@@ -27,13 +28,24 @@ export class AuthController {
 
   constructor(private authService: AuthService) {}
 
+  @ApiResponse({
+    description: 'Spotify access token',
+    status: 200,
+    type: TokenDto,
+  })
   @Get('token')
   @UseGuards(AuthGuard('jwt'))
-  async getAccessToken(@Req() req: AuthenticatedRequest) {
+  async getAccessToken(@Req() req: AuthenticatedRequest): Promise<TokenDto> {
     const accessToken = await this.authService.getSpotifyAccessToken(
       req.user.id,
     );
-    return { accessToken };
+    return plainToInstance(
+      TokenDto,
+      { accessToken },
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @ApiResponse({ description: 'User profile', status: 200, type: UserDto })

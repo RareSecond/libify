@@ -28,7 +28,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Spotify access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1335,6 +1342,19 @@
   "servers": [],
   "components": {
     "schemas": {
+      "TokenDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Spotify access token",
+            "example": "BQD..."
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
+      },
       "UserDto": {
         "type": "object",
         "properties": {

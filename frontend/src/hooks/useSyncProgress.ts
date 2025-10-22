@@ -50,30 +50,24 @@ export function useSyncProgress(jobId: null | string) {
     });
 
     socket.on("connect", () => {
-      console.log("WebSocket connected");
       setIsConnected(true);
       // Subscribe to this job's updates
       socket.emit("subscribe", { jobId });
-      console.log("Subscribed to job:", jobId);
     });
 
     socket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
       setIsConnected(false);
     });
 
     socket.on("status", (data: SyncJobStatus) => {
-      console.log("Received status:", data);
       setStatus(data);
     });
 
     socket.on("progress", (data: SyncJobStatus) => {
-      console.log("Received progress:", data);
       setStatus(data);
     });
 
     socket.on("completed", (data: SyncJobStatus) => {
-      console.log("Received completed:", data);
       setStatus(data);
       // Unsubscribe and disconnect after completion
       socket.emit("unsubscribe", { jobId });
@@ -81,7 +75,6 @@ export function useSyncProgress(jobId: null | string) {
     });
 
     socket.on("failed", (data: SyncJobStatus) => {
-      console.log("Received failed:", data);
       setStatus(data);
       // Unsubscribe and disconnect after failure
       socket.emit("unsubscribe", { jobId });
@@ -89,16 +82,11 @@ export function useSyncProgress(jobId: null | string) {
     });
 
     socket.on("error", (error: { message: string }) => {
-      console.error("WebSocket error:", error);
-      setStatus({
-        error: error.message,
-        jobId,
-        state: "failed",
-      });
+      setStatus({ error: error.message, jobId, state: "failed" });
     });
 
-    socket.on("connect_error", (error) => {
-      console.error("WebSocket connection error:", error);
+    socket.on("connect_error", () => {
+      // WebSocket connection failed - silently handle
     });
 
     // Cleanup

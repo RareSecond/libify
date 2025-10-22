@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useLibraryControllerRecordPlay } from "../data/api";
 
@@ -9,7 +9,21 @@ export function usePlayTracking() {
   const [currentTrackId, setCurrentTrackId] = useState<null | string>(null);
   const [playStartTime, setPlayStartTime] = useState<null | number>(null);
   const onPlayRecordedCallbackRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef(true);
   const recordPlayMutation = useLibraryControllerRecordPlay();
+
+  // Cleanup effect to prevent setState after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      // Clear any pending timer on unmount
+      if (playTrackingTimer) {
+        window.clearTimeout(playTrackingTimer);
+      }
+    };
+  }, [playTrackingTimer]);
 
   const clearPlayTrackingTimer = () => {
     if (playTrackingTimer) {
@@ -38,10 +52,13 @@ export function usePlayTracking() {
       } catch {
         // Silently fail
       } finally {
-        setPlayTrackingTimer(null);
-        setCurrentTrackId(null);
-        setPlayStartTime(null);
-        onPlayRecordedCallbackRef.current = null;
+        // Only update state if still mounted
+        if (isMountedRef.current) {
+          setPlayTrackingTimer(null);
+          setCurrentTrackId(null);
+          setPlayStartTime(null);
+          onPlayRecordedCallbackRef.current = null;
+        }
       }
     }, 30000);
 
@@ -66,10 +83,13 @@ export function usePlayTracking() {
         } catch {
           // Silently fail
         } finally {
-          setPlayTrackingTimer(null);
-          setCurrentTrackId(null);
-          setPlayStartTime(null);
-          onPlayRecordedCallbackRef.current = null;
+          // Only update state if still mounted
+          if (isMountedRef.current) {
+            setPlayTrackingTimer(null);
+            setCurrentTrackId(null);
+            setPlayStartTime(null);
+            onPlayRecordedCallbackRef.current = null;
+          }
         }
       }, remainingTime);
       setPlayTrackingTimer(timerId);

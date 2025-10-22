@@ -1,5 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,6 +11,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Queue, QueueEvents } from 'bullmq';
+import { parse as parseCookie } from 'cookie';
 import { Server, Socket } from 'socket.io';
 
 interface JobProgressData {
@@ -48,10 +50,47 @@ export class SyncProgressGateway
   private readonly logger = new Logger(SyncProgressGateway.name);
   private queueEvents: QueueEvents;
 
-  constructor(@InjectQueue('sync') private syncQueue: Queue) {}
+  constructor(
+    @InjectQueue('sync') private syncQueue: Queue,
+    private jwtService: JwtService,
+  ) {}
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+  async handleConnection(client: Socket) {
+    try {
+      // Extract JWT from cookie
+      const cookies = client.handshake.headers.cookie;
+      if (!cookies) {
+        this.logger.warn(`Connection rejected: No cookies provided`);
+        client.disconnect();
+        return;
+      }
+
+      const parsedCookies = parseCookie(cookies);
+      const token = parsedCookies.jwt;
+
+      if (!token) {
+        this.logger.warn(`Connection rejected: No JWT token in cookies`);
+        client.disconnect();
+        return;
+      }
+
+      // Verify JWT
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
+      });
+
+      // Attach user ID to socket for later use
+      client.data.userId = String(payload.sub);
+
+      this.logger.log(
+        `Client connected: ${client.id} (user: ${client.data.userId})`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Connection rejected: Invalid JWT token - ${error.message}`,
+      );
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -72,26 +111,65 @@ export class SyncProgressGateway
     @MessageBody() data: { jobId: string },
   ) {
     const { jobId } = data;
+    const userId = client.data.userId;
 
-    this.logger.log(`Subscribe request from client ${client.id} for job ${jobId}`);
+    this.logger.log(
+      `Subscribe request from client ${client.id} (user: ${userId}) for job ${jobId}`,
+    );
 
     if (!jobId) {
       client.emit('error', { message: 'jobId is required' });
       return;
     }
 
-    // Add client to room for this job
-    client.join(`sync-${jobId}`);
-
-    // Track connection
-    if (!this.activeConnections.has(jobId)) {
-      this.activeConnections.set(jobId, new Set());
+    if (!userId) {
+      this.logger.warn(
+        `Subscribe rejected: Client ${client.id} not authenticated`,
+      );
+      client.emit('error', { message: 'Authentication required' });
+      return;
     }
-    this.activeConnections.get(jobId)?.add(client.id);
 
-    this.logger.log(
-      `Client ${client.id} subscribed to job ${jobId}, room: sync-${jobId}`,
-    );
+    // Get job and verify ownership
+    try {
+      const job = await this.syncQueue.getJob(jobId);
+
+      if (!job) {
+        this.logger.warn(`Subscribe rejected: Job ${jobId} not found`);
+        client.emit('error', { message: 'Job not found' });
+        return;
+      }
+
+      // Verify job ownership
+      if (job.data.userId !== userId) {
+        this.logger.warn(
+          `Subscribe rejected: User ${userId} does not own job ${jobId} (owned by ${job.data.userId})`,
+        );
+        client.emit('error', {
+          message: 'Unauthorized: You do not own this job',
+        });
+        return;
+      }
+
+      // Authorization passed - add client to room
+      client.join(`sync-${jobId}`);
+
+      // Track connection
+      if (!this.activeConnections.has(jobId)) {
+        this.activeConnections.set(jobId, new Set());
+      }
+      this.activeConnections.get(jobId)?.add(client.id);
+
+      this.logger.log(
+        `Client ${client.id} (user: ${userId}) subscribed to job ${jobId}, room: sync-${jobId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error during subscribe for job ${jobId}: ${error.message}`,
+      );
+      client.emit('error', { message: 'Failed to subscribe to job' });
+      return;
+    }
 
     // Send current job status immediately
     try {

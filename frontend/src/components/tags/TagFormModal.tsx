@@ -8,14 +8,10 @@ import {
 } from "@mantine/core";
 import { UseFormReturnType } from "@mantine/form";
 
-interface Tag {
-  color?: string;
-  id: string;
-  name: string;
-}
+import { TagDto } from "../../data/api";
 
 interface TagFormModalProps {
-  editingTag: null | Tag;
+  editingTag: null | TagDto;
   form: UseFormReturnType<{ color: string; name: string }>;
   onClose: () => void;
   onSubmit: (values: { color: string; name: string }) => void;

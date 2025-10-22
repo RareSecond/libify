@@ -385,7 +385,12 @@ export class LibrarySyncService {
       }
 
       // Process albums
-      await this.processAlbumBatch(userId, albumsPage.items, result, accessToken);
+      await this.processAlbumBatch(
+        userId,
+        albumsPage.items,
+        result,
+        accessToken,
+      );
 
       result.totalAlbums = albumsPage.items.length;
 
@@ -440,7 +445,8 @@ export class LibrarySyncService {
               errors: result.errors,
               message: `Syncing playlist: ${playlist.name}...`,
               percentage:
-                70 + Math.round((processedPlaylists / playlistsToSync.length) * 30),
+                70 +
+                Math.round((processedPlaylists / playlistsToSync.length) * 30),
               phase: 'playlists',
               total: playlistsToSync.length,
             });
@@ -474,7 +480,12 @@ export class LibrarySyncService {
 
           for (let i = 0; i < tracksForProcessing.length; i += batchSize) {
             const batch = tracksForProcessing.slice(i, i + batchSize);
-            await this.processBatch(userId, batch, playlistSyncResult, accessToken);
+            await this.processBatch(
+              userId,
+              batch,
+              playlistSyncResult,
+              accessToken,
+            );
           }
 
           result.newTracks += playlistSyncResult.newTracks;

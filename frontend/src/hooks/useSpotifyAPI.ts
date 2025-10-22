@@ -1,3 +1,7 @@
+import { useQueryClient } from "@tanstack/react-query";
+
+import { getAuthControllerGetAccessTokenQueryOptions } from "../data/api";
+
 interface PlayContext {
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist";
@@ -5,11 +9,16 @@ interface PlayContext {
 }
 
 export function useSpotifyAPI() {
+  const queryClient = useQueryClient();
+
   const getAccessToken = async (): Promise<string> => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/token`, {
-      credentials: "include",
+    const queryOptions = getAuthControllerGetAccessTokenQueryOptions({
+      query: {
+        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      },
     });
-    const data = await response.json();
+
+    const data = await queryClient.fetchQuery(queryOptions);
     return data.accessToken;
   };
 
