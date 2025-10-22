@@ -16,30 +16,30 @@ export class SyncCategoryProgressDto {
 }
 
 export class SyncItemCountsDto {
-  @Expose()
   @ApiProperty({ description: 'Number of albums to sync' })
+  @Expose()
   albums: number;
 
-  @Expose()
   @ApiProperty({
     description: 'Number of tracks within albums',
     required: false,
   })
+  @Expose()
   albumTracks?: number;
 
-  @Expose()
   @ApiProperty({ description: 'Number of playlists to sync' })
+  @Expose()
   playlists: number;
 
-  @Expose()
   @ApiProperty({
     description: 'Number of tracks within playlists',
     required: false,
   })
+  @Expose()
   playlistTracks?: number;
 
-  @Expose()
   @ApiProperty({ description: 'Number of liked tracks to sync' })
+  @Expose()
   tracks: number;
 }
 
