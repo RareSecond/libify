@@ -1,5 +1,5 @@
 import { registerAs } from '@nestjs/config';
-import Joi from 'joi';
+import * as Joi from 'joi';
 
 export const redisValidationSchema = Joi.object({
   REDIS_DB: Joi.number().default(0),
