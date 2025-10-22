@@ -7,6 +7,7 @@ import { AggregationService } from './aggregation.service';
 import { LibrarySyncService } from './library-sync.service';
 import { LibraryController } from './library.controller';
 import { SpotifyService } from './spotify.service';
+import { SyncProgressGateway } from './sync-progress.gateway';
 import { TagService } from './tag.service';
 import { TrackService } from './track.service';
 
@@ -26,6 +27,7 @@ import { TrackService } from './track.service';
     TrackService,
     TagService,
     AggregationService,
+    SyncProgressGateway,
   ],
 })
 export class LibraryModule {}

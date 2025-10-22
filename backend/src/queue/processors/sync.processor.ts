@@ -5,10 +5,9 @@ import { Job } from 'bullmq';
 import { AuthService } from '../../auth/auth.service';
 import { SyncProgressDto } from '../../library/dto/sync-progress-base.dto';
 import { LibrarySyncService } from '../../library/library-sync.service';
-import { ThrottledProgress } from '../utils/progress-throttle';
 
 export interface SyncJobData {
-  syncType: 'full' | 'recent';
+  syncType: 'full' | 'quick';
   userId: string;
 }
 
@@ -36,24 +35,29 @@ export class SyncProcessor extends WorkerHost {
         throw new Error('Failed to get Spotify access token');
       }
 
-      // Create throttled progress updater
-      const throttledProgress = new ThrottledProgress(job, {
-        minInterval: 2000, // Update at most every 2 seconds
-        minProgress: 5, // Or when progress changes by 5%
-      });
-
-      // Progress callback that updates job progress with throttling
+      // Progress callback that updates job progress directly (no throttling for now)
       const updateProgress = async (progress: SyncProgressDto) => {
-        await throttledProgress.update(progress.percentage);
-        this.logger.debug(
-          `Sync progress - ${progress.phase}: ${progress.current}/${progress.total} (${progress.percentage}%)`,
+        await job.updateProgress(progress);
+        this.logger.log(
+          `Sync progress - ${progress.phase}: ${progress.current}/${progress.total} (${progress.percentage}%) - ${progress.message}`,
         );
       };
 
       // Execute sync based on type
-      if (syncType === 'recent') {
-        await this.librarySyncService.syncRecentlyPlayed(userId, accessToken);
-        return { success: true, type: 'recent' };
+      if (syncType === 'quick') {
+        // Quick sync: sync first 50 liked tracks and 10 albums
+        const quickResult =
+          await this.librarySyncService.syncRecentTracksQuick(
+            userId,
+            accessToken,
+            updateProgress,
+          );
+
+        this.logger.log(
+          `Quick sync completed for user ${userId}: ${quickResult.newTracks} new tracks, ${quickResult.newAlbums} new albums`,
+        );
+
+        return quickResult;
       } else {
         const result = await this.librarySyncService.syncUserLibrary(
           userId,
@@ -64,9 +68,6 @@ export class SyncProcessor extends WorkerHost {
         this.logger.log(
           `Sync completed for user ${userId}: ${result.newTracks} new tracks, ${result.newAlbums} new albums`,
         );
-
-        // Ensure final progress is flushed
-        await throttledProgress.flush();
 
         return result;
       }

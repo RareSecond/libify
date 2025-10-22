@@ -12,7 +12,6 @@ import {
   Put,
   Query,
   Req,
-  Sse,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -24,7 +23,6 @@ import {
 import { User } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { Request } from 'express';
-import { Observable } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -224,7 +222,15 @@ export class LibraryController {
 
   // Tag management endpoints
 
-  @ApiOperation({ summary: 'Get sync job status' })
+  @ApiOperation({ summary: 'Get library sync status' })
+  @ApiResponse({ description: 'Sync status retrieved', status: 200 })
+  @Get('sync/status')
+  async getSyncLibraryStatus(@Req() req: AuthenticatedRequest) {
+    const status = await this.librarySyncService.getSyncStatus(req.user.id);
+    return status;
+  }
+
+  @ApiOperation({ summary: 'Get sync job status by job ID' })
   @ApiResponse({
     description: 'Sync job status',
     status: 200,
@@ -232,7 +238,7 @@ export class LibraryController {
   })
   @ApiResponse({ description: 'Job not found', status: 404 })
   @Get('sync/:jobId')
-  async getSyncJobStatus(
+  async getSyncStatusByJobId(
     @Param('jobId') jobId: string,
   ): Promise<SyncJobStatusDto> {
     const job = await this.syncQueue.getJob(jobId);
@@ -253,14 +259,6 @@ export class LibraryController {
       result: job.returnvalue,
       status: state as 'active' | 'completed' | 'failed' | 'queued',
     };
-  }
-
-  @ApiOperation({ summary: 'Get library sync status' })
-  @ApiResponse({ description: 'Sync status retrieved', status: 200 })
-  @Get('sync/status')
-  async getSyncStatus(@Req() req: AuthenticatedRequest) {
-    const status = await this.librarySyncService.getSyncStatus(req.user.id);
-    return status;
   }
 
   @ApiOperation({ summary: 'Get all user tags' })
@@ -462,88 +460,40 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Get real-time sync progress via Server-Sent Events',
+    summary:
+      'Start quick sync job (50 liked tracks, 10 albums, 3 playlists) - returns job ID for WebSocket progress',
   })
-  @ApiResponse({ description: 'SSE stream of sync progress', status: 200 })
-  @Sse('sync/:jobId/progress')
-  syncProgress(@Param('jobId') jobId: string): Observable<MessageEvent> {
-    return new Observable((subscriber) => {
-      const checkProgress = async () => {
-        try {
-          const job = await this.syncQueue.getJob(jobId);
-          if (!job) {
-            subscriber.next({
-              data: JSON.stringify({ error: 'Job not found' }),
-            } as MessageEvent);
-            subscriber.complete();
-            return;
-          }
-
-          const state = await job.getState();
-          const progress = job.progress;
-
-          subscriber.next({
-            data: JSON.stringify({
-              error: state === 'failed' ? job.failedReason : undefined,
-              jobId: job.id,
-              progress,
-              result: state === 'completed' ? job.returnvalue : undefined,
-              state,
-            }),
-          } as MessageEvent);
-
-          if (state === 'completed' || state === 'failed') {
-            subscriber.complete();
-          }
-        } catch (error) {
-          subscriber.error(error);
-        }
-      };
-
-      // Check immediately
-      checkProgress();
-
-      // Then check every 500ms
-      const intervalId = setInterval(checkProgress, 500);
-
-      // Cleanup on unsubscribe
-      return () => {
-        clearInterval(intervalId);
-      };
-    });
-  }
-
-  @ApiOperation({ summary: 'Sync recently played tracks from Spotify' })
-  @ApiResponse({ description: 'Recently played tracks synced', status: 200 })
+  @ApiResponse({
+    description: 'Quick sync job queued successfully',
+    status: 200,
+    type: SyncJobResponseDto,
+  })
   @ApiResponse({ description: 'Unauthorized', status: 401 })
   @Post('sync/recent')
-  async syncRecentlyPlayed(@Req() req: AuthenticatedRequest) {
+  async syncRecentlyPlayed(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<SyncJobResponseDto> {
     try {
-      const accessToken = await this.authService.getSpotifyAccessToken(
-        req.user.id,
-      );
+      // Add quick sync job to queue (with progress updates for WebSocket demo)
+      const job = await this.syncQueue.add('quick-sync', {
+        syncType: 'quick',
+        userId: req.user.id,
+      });
 
-      if (!accessToken) {
-        throw new HttpException(
-          'Spotify access token not found. Please re-authenticate.',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-
-      await this.librarySyncService.syncRecentlyPlayed(
-        req.user.id,
-        accessToken,
+      this.logger.log(
+        `Quick sync job ${job.id} queued for user ${req.user.id}`,
       );
 
       return {
-        message: 'Recently played tracks synced successfully',
+        createdAt: new Date(),
+        jobId: job.id,
+        message: 'Quick sync job queued successfully',
+        status: 'queued',
       };
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
+      this.logger.error('Failed to queue quick sync job', error);
       throw new HttpException(
-        'Failed to sync recently played tracks',
+        'Failed to start quick sync',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

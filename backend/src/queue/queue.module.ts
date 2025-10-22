@@ -91,7 +91,7 @@ import { SyncProcessor } from './processors/sync.processor';
       defaultJobOptions: {
         attempts: 1, // Sync jobs should not auto-retry
         removeOnComplete: {
-          age: 3600, // Keep completed jobs for 1 hour
+          age: 300, // Keep completed jobs for 5 minutes (reduced from 1 hour)
           count: 10, // Keep last 10 completed sync jobs
         },
         removeOnFail: {

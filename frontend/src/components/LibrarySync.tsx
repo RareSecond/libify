@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { Alert, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
@@ -37,7 +38,7 @@ export function LibrarySync() {
     queryKey: ["library-sync-status"],
   });
 
-  // Mutation for starting sync
+  // Mutation for starting full sync
   const syncLibraryMutation = useMutation<SyncJobResponse>({
     mutationFn: async () => {
       const response = await fetch(
@@ -47,6 +48,28 @@ export function LibrarySync() {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to start sync");
+      }
+      return response.json();
+    },
+    onError: () => {
+      setCurrentJobId(null);
+      resetProgress();
+    },
+    onSuccess: (data) => {
+      setCurrentJobId(data.jobId);
+    },
+  });
+
+  // Mutation for quick sync (recently played tracks only)
+  const syncRecentMutation = useMutation<SyncJobResponse>({
+    mutationFn: async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/library/sync/recent`,
+        { credentials: "include", method: "POST" },
+      );
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to start quick sync");
       }
       return response.json();
     },
@@ -142,6 +165,24 @@ export function LibrarySync() {
           </Alert>
         )}
 
+        {syncRecentMutation.isError && (
+          <Alert
+            color="red"
+            icon={<AlertCircle size={16} />}
+            title="Quick Sync Failed"
+            variant="light"
+          >
+            {syncRecentMutation.error?.message ||
+              "An error occurred while syncing recently played tracks"}
+          </Alert>
+        )}
+
+        <Text color="dimmed" size="xs">
+          <strong>Full Sync:</strong> Sync entire library (tracks, albums,
+          playlists) • <strong>Quick Sync:</strong> Sync recently played tracks
+          only (fast, shows progress)
+        </Text>
+
         {syncProgress?.state === "failed" && syncProgress.error && (
           <Alert
             color="red"
@@ -194,26 +235,45 @@ export function LibrarySync() {
           </Alert>
         )}
 
-        <Button
-          disabled={
-            syncProgress?.state === "active" ||
-            syncProgress?.state === "waiting"
-          }
-          fullWidth
-          leftSection={<RefreshCw size={16} />}
-          loading={
-            syncLibraryMutation.isPending || syncProgress?.state === "waiting"
-          }
-          onClick={() => syncLibraryMutation.mutate()}
-        >
-          {syncLibraryMutation.isPending
-            ? "Starting sync..."
-            : syncProgress?.state === "active"
-              ? "Syncing..."
-              : syncProgress?.state === "waiting"
-                ? "Queued..."
-                : "Sync Now"}
-        </Button>
+        <Group grow>
+          <Button
+            disabled={
+              syncProgress?.state === "active" ||
+              syncProgress?.state === "waiting" ||
+              syncLibraryMutation.isPending ||
+              syncRecentMutation.isPending
+            }
+            leftSection={<RefreshCw size={16} />}
+            loading={syncLibraryMutation.isPending}
+            onClick={() => syncLibraryMutation.mutate()}
+          >
+            {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
+          </Button>
+          <Button
+            color="cyan"
+            disabled={
+              syncProgress?.state === "active" ||
+              syncProgress?.state === "waiting" ||
+              syncLibraryMutation.isPending ||
+              syncRecentMutation.isPending
+            }
+            leftSection={<RefreshCw size={16} />}
+            loading={syncRecentMutation.isPending}
+            onClick={() => syncRecentMutation.mutate()}
+            variant="light"
+          >
+            {syncRecentMutation.isPending ? "Starting..." : "Quick Sync"}
+          </Button>
+        </Group>
+
+        {(syncProgress?.state === "active" ||
+          syncProgress?.state === "waiting") && (
+          <Text className="text-center" color="dimmed" size="xs">
+            {syncProgress.state === "waiting"
+              ? "Sync queued..."
+              : "Syncing in progress..."}
+          </Text>
+        )}
       </Stack>
     </Card>
   );
