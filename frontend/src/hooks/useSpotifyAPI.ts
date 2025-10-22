@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 
-import { getAuthControllerGetAccessTokenQueryOptions } from "../data/api";
+import { getAuthControllerGetAccessTokenQueryOptions } from "@/data/api";
 
 interface PlayContext {
   contextId?: string;

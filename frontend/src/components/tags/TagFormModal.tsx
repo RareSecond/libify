@@ -8,7 +8,7 @@ import {
 } from "@mantine/core";
 import { UseFormReturnType } from "@mantine/form";
 
-import { TagDto } from "../../data/api";
+import { TagDto } from "@/data/api";
 
 interface TagFormModalProps {
   editingTag: null | TagDto;

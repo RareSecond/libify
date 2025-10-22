@@ -62,10 +62,19 @@ class ThrottledProgressUpdater {
       // Schedule a deferred update if not already scheduled
       if (!this.pendingUpdate) {
         const delay = this.throttleMs - timeSinceLastUpdate;
-        this.pendingUpdate = setTimeout(() => {
+        this.pendingUpdate = setTimeout(async () => {
+          // Clear pending state before awaiting to avoid races
           this.pendingUpdate = null;
+
           if (this.latestProgress) {
-            this.sendUpdate(this.latestProgress);
+            try {
+              await this.sendUpdate(this.latestProgress);
+            } catch (error) {
+              this.logger.error(
+                `Failed to send deferred progress update: ${error.message}`,
+                error.stack,
+              );
+            }
           }
         }, delay);
       }

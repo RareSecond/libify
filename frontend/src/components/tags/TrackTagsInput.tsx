@@ -1,6 +1,6 @@
 import { Badge, Group, TagsInput } from "@mantine/core";
 
-import { TagDto } from "../../data/api";
+import { TagDto } from "@/data/api";
 
 interface TrackTagsInputProps {
   allTags: TagDto[];

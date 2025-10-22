@@ -91,6 +91,7 @@ export function SpotifyPlayerProvider({
   const previousStateRef = useRef<null | SpotifyPlayerState>(null);
   const shouldAutoPlayNext = useRef(false);
   const isMountedRef = useRef(true);
+  const attachedPlayerRef = useRef<null | SpotifyPlayer>(null);
   const listenersRef = useRef<
     { event: string; handler: (data?: unknown) => void }[]
   >([]);
@@ -223,6 +224,7 @@ export function SpotifyPlayerProvider({
         removeAllListeners(globalPlayer);
 
         setPlayer(globalPlayer);
+        attachedPlayerRef.current = globalPlayer;
         setDeviceId(globalDeviceId);
         setIsReady(true);
 
@@ -255,6 +257,7 @@ export function SpotifyPlayerProvider({
 
       spotifyPlayer.connect();
       setPlayer(spotifyPlayer);
+      attachedPlayerRef.current = spotifyPlayer;
     };
     const checkAndInitialize = () => {
       if (window.Spotify) {
@@ -276,8 +279,8 @@ export function SpotifyPlayerProvider({
       clearPlayTrackingTimer();
 
       // Remove listeners on cleanup to prevent memory leaks
-      if (player) {
-        removeAllListeners(player);
+      if (attachedPlayerRef.current) {
+        removeAllListeners(attachedPlayerRef.current);
       }
 
       // Don't disconnect the player - let it survive for hot-reload
