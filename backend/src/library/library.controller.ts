@@ -34,7 +34,10 @@ import { PaginatedArtistsDto } from './dto/artist.dto';
 import { GetAlbumsQueryDto } from './dto/get-albums-query.dto';
 import { GetArtistsQueryDto } from './dto/get-artists-query.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
-import { SyncProgressDto } from './dto/sync-progress-base.dto';
+import {
+  SyncItemCountsDto,
+  SyncProgressDto,
+} from './dto/sync-progress-base.dto';
 import { SyncJobResponseDto, SyncJobStatusDto } from './dto/sync-progress.dto';
 import { SyncStatusDto } from './dto/sync-result.dto';
 import {
@@ -223,6 +226,57 @@ export class LibraryController {
   }
 
   // Tag management endpoints
+
+  @ApiOperation({
+    summary: 'Pre-count items to be synced (tracks, albums, playlists)',
+  })
+  @ApiResponse({
+    description: 'Item counts retrieved successfully',
+    status: 200,
+    type: SyncItemCountsDto,
+  })
+  @ApiResponse({ description: 'Unauthorized', status: 401 })
+  @Get('sync/count')
+  async getSyncItemCounts(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<SyncItemCountsDto> {
+    try {
+      const accessToken = await this.authService.getSpotifyAccessToken(
+        req.user.id,
+      );
+      if (!accessToken) {
+        throw new HttpException(
+          'Spotify access token not found. Please re-authenticate.',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const counts = await this.librarySyncService.countSyncItems(
+        req.user.id,
+        accessToken,
+      );
+
+      return plainToInstance(SyncItemCountsDto, counts, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      // Preserve HttpExceptions (like 401 Unauthorized)
+      if (error instanceof HttpException) {
+        this.logger.error('Failed to count sync items', error.stack);
+        throw error;
+      }
+
+      // Log and wrap unexpected errors
+      this.logger.error(
+        'Failed to count sync items',
+        error instanceof Error ? error.stack : error,
+      );
+      throw new HttpException(
+        'Failed to count sync items',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @ApiOperation({ summary: 'Get library sync status' })
   @ApiResponse({
