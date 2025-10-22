@@ -12,6 +12,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { LibraryModule } from './library/library.module';
 import { PlaylistsModule } from './playlists/playlists.module';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   controllers: [AppController],
@@ -29,7 +30,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
     HealthModule,
     LibraryModule,
     PlaylistsModule,
-    // QueueModule is intentionally excluded from API module
+    QueueModule, // Required for Redis configuration (HealthModule & LibraryModule need it)
   ],
   providers: [AppService],
 })
