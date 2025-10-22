@@ -7,6 +7,8 @@ export const redisValidationSchema = Joi.object({
   REDIS_PASSWORD: Joi.string().optional().allow(''),
   REDIS_PORT: Joi.number().default(6379),
   REDIS_TLS: Joi.boolean().default(false),
+  REDIS_TLS_REJECT_UNAUTHORIZED: Joi.boolean().default(true),
+  REDIS_URL: Joi.string().optional(),
 });
 
 export default registerAs('redis', () => ({
