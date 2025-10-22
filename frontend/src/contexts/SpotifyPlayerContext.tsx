@@ -241,11 +241,8 @@ export function SpotifyPlayerProvider({
       isInitializing = true;
       const spotifyPlayer = new window.Spotify.Player({
         getOAuthToken: (cb) => {
-          fetch(`${import.meta.env.VITE_API_URL}/auth/token`, {
-            credentials: "include",
-          })
-            .then((response) => response.json())
-            .then((data) => cb(data.accessToken))
+          getAccessToken()
+            .then((token) => cb(token))
             .catch(() => cb(""));
         },
         name: "Spotlib Web Player",

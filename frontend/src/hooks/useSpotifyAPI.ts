@@ -1,6 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 
-import { getAuthControllerGetAccessTokenQueryOptions } from "@/data/api";
+import {
+  getAuthControllerGetAccessTokenQueryOptions,
+  getLibraryControllerGetAlbumTracksQueryOptions,
+  getLibraryControllerGetArtistTracksQueryOptions,
+  getLibraryControllerGetTracksQueryOptions,
+} from "@/data/api";
 
 interface PlayContext {
   contextId?: string;
@@ -32,7 +37,6 @@ export function useSpotifyAPI() {
 
     try {
       let allTracks: string[] = [];
-      const baseUrl = `${import.meta.env.VITE_API_URL}/library`;
 
       switch (currentContext.contextType) {
         case "album": {
@@ -42,21 +46,16 @@ export function useSpotifyAPI() {
               return currentTrackList;
             }
 
-            const url = `${baseUrl}/albums/${encodeURIComponent(artist)}/${encodeURIComponent(album)}/tracks`;
-            const response = await fetch(url, { credentials: "include" });
+            const queryOptions = getLibraryControllerGetAlbumTracksQueryOptions(
+              artist,
+              album,
+            );
+            const data = await queryClient.fetchQuery(queryOptions);
 
-            if (!response.ok) {
-              return currentTrackList;
-            }
-
-            const data = await response.json();
             allTracks = Array.isArray(data)
               ? data
-                  .filter((track: { spotifyId?: string }) => track.spotifyId)
-                  .map(
-                    (track: { spotifyId: string }) =>
-                      `spotify:track:${track.spotifyId}`,
-                  )
+                  .filter((track) => track.spotifyId)
+                  .map((track) => `spotify:track:${track.spotifyId}`)
               : [];
           }
           break;
@@ -64,54 +63,37 @@ export function useSpotifyAPI() {
 
         case "artist": {
           if (currentContext.contextId) {
-            const url = `${baseUrl}/artists/${encodeURIComponent(currentContext.contextId)}/tracks`;
-            const response = await fetch(url, { credentials: "include" });
+            const queryOptions =
+              getLibraryControllerGetArtistTracksQueryOptions(
+                currentContext.contextId,
+              );
+            const data = await queryClient.fetchQuery(queryOptions);
 
-            if (!response.ok) {
-              return currentTrackList;
-            }
-
-            const data = await response.json();
             allTracks = Array.isArray(data)
               ? data
-                  .filter((track: { spotifyId?: string }) => track.spotifyId)
-                  .map(
-                    (track: { spotifyId: string }) =>
-                      `spotify:track:${track.spotifyId}`,
-                  )
+                  .filter((track) => track.spotifyId)
+                  .map((track) => `spotify:track:${track.spotifyId}`)
               : [];
           }
           break;
         }
 
         case "library": {
-          const searchParams = new URLSearchParams({
-            page: "1",
-            pageSize: "1000",
-            sortBy: "addedAt",
-            sortOrder: "desc",
-          });
+          const params = {
+            page: 1,
+            pageSize: 1000,
+            sortBy: "addedAt" as const,
+            sortOrder: "desc" as const,
+            ...(currentContext.search && { search: currentContext.search }),
+          };
 
-          if (currentContext.search) {
-            searchParams.append("search", currentContext.search);
-          }
+          const queryOptions =
+            getLibraryControllerGetTracksQueryOptions(params);
+          const data = await queryClient.fetchQuery(queryOptions);
 
-          const response = await fetch(
-            `${baseUrl}/tracks?${searchParams.toString()}`,
-            { credentials: "include" },
-          );
-
-          if (!response.ok) {
-            return currentTrackList;
-          }
-
-          const data = await response.json();
           allTracks = data.tracks
-            .filter((track: { spotifyId?: string }) => track.spotifyId)
-            .map(
-              (track: { spotifyId: string }) =>
-                `spotify:track:${track.spotifyId}`,
-            );
+            .filter((track) => track.spotifyId)
+            .map((track) => `spotify:track:${track.spotifyId}`);
           break;
         }
       }

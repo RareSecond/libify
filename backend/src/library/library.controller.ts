@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { Queue } from 'bullmq';
+import { plainToInstance } from 'class-transformer';
 import { Request } from 'express';
 
 import { AuthService } from '../auth/auth.service';
@@ -35,6 +36,7 @@ import { GetArtistsQueryDto } from './dto/get-artists-query.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import { SyncProgressDto } from './dto/sync-progress-base.dto';
 import { SyncJobResponseDto, SyncJobStatusDto } from './dto/sync-progress.dto';
+import { SyncStatusDto } from './dto/sync-status.dto';
 import {
   AddTagToTrackDto,
   CreateTagDto,
@@ -223,11 +225,19 @@ export class LibraryController {
   // Tag management endpoints
 
   @ApiOperation({ summary: 'Get library sync status' })
-  @ApiResponse({ description: 'Sync status retrieved', status: 200 })
+  @ApiResponse({
+    description: 'Sync status retrieved',
+    status: 200,
+    type: SyncStatusDto,
+  })
   @Get('sync/status')
-  async getSyncLibraryStatus(@Req() req: AuthenticatedRequest) {
+  async getSyncLibraryStatus(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<SyncStatusDto> {
     const status = await this.librarySyncService.getSyncStatus(req.user.id);
-    return status;
+    return plainToInstance(SyncStatusDto, status, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: 'Get sync job status by job ID' })

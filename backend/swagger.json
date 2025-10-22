@@ -690,7 +690,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Sync status retrieved"
+            "description": "Sync status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStatusDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1759,6 +1766,33 @@
         },
         "required": [
           "tracks"
+        ]
+      },
+      "SyncStatusDto": {
+        "type": "object",
+        "properties": {
+          "lastSync": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Last sync date",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "totalAlbums": {
+            "type": "number",
+            "description": "Total number of albums synced",
+            "example": 150
+          },
+          "totalTracks": {
+            "type": "number",
+            "description": "Total number of tracks synced",
+            "example": 2500
+          }
+        },
+        "required": [
+          "lastSync",
+          "totalAlbums",
+          "totalTracks"
         ]
       },
       "SyncProgressDto": {

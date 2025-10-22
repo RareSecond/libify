@@ -1,24 +1,16 @@
-/* eslint-disable max-lines */
 import { Alert, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import {
+  useLibraryControllerGetSyncLibraryStatus,
+  useLibraryControllerSyncLibrary,
+  useLibraryControllerSyncRecentlyPlayed,
+} from "@/data/api";
 
 import { useSyncProgress } from "../hooks/useSyncProgress";
 import { formatLastSync } from "../utils/format";
 import { SyncProgress } from "./sync/SyncProgress";
-
-interface SyncJobResponse {
-  jobId: string;
-  message: string;
-  status: string;
-}
-
-interface SyncStatus {
-  lastSync: null | string;
-  totalAlbums: number;
-  totalTracks: number;
-}
 
 export function LibrarySync() {
   const [currentJobId, setCurrentJobId] = useState<null | string>(null);
@@ -26,59 +18,32 @@ export function LibrarySync() {
     useSyncProgress(currentJobId);
 
   // Query for sync status
-  const { data: syncStatus, refetch: refetchStatus } = useQuery<SyncStatus>({
-    queryFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/library/sync/status`,
-        { credentials: "include" },
-      );
-      if (!response.ok) throw new Error("Failed to fetch sync status");
-      return response.json();
-    },
-    queryKey: ["library-sync-status"],
-  });
+  const { data: syncStatus, refetch: refetchStatus } =
+    useLibraryControllerGetSyncLibraryStatus();
 
   // Mutation for starting full sync
-  const syncLibraryMutation = useMutation<SyncJobResponse>({
-    mutationFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/library/sync`,
-        { credentials: "include", method: "POST" },
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to start sync");
-      }
-      return response.json();
-    },
-    onError: () => {
-      setCurrentJobId(null);
-      resetProgress();
-    },
-    onSuccess: (data) => {
-      setCurrentJobId(data.jobId);
+  const syncLibraryMutation = useLibraryControllerSyncLibrary({
+    mutation: {
+      onError: () => {
+        setCurrentJobId(null);
+        resetProgress();
+      },
+      onSuccess: (data) => {
+        setCurrentJobId(data.jobId);
+      },
     },
   });
 
   // Mutation for quick sync (recently played tracks only)
-  const syncRecentMutation = useMutation<SyncJobResponse>({
-    mutationFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/library/sync/recent`,
-        { credentials: "include", method: "POST" },
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to start quick sync");
-      }
-      return response.json();
-    },
-    onError: () => {
-      setCurrentJobId(null);
-      resetProgress();
-    },
-    onSuccess: (data) => {
-      setCurrentJobId(data.jobId);
+  const syncRecentMutation = useLibraryControllerSyncRecentlyPlayed({
+    mutation: {
+      onError: () => {
+        setCurrentJobId(null);
+        resetProgress();
+      },
+      onSuccess: (data) => {
+        setCurrentJobId(data.jobId);
+      },
     },
   });
 

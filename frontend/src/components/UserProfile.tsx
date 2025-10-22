@@ -1,7 +1,10 @@
 import { Avatar, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
 import { Calendar, LogOut, User } from "lucide-react";
 
-import { useAuthControllerGetProfile } from "@/data/api";
+import {
+  useAuthControllerGetProfile,
+  useAuthControllerLogout,
+} from "@/data/api";
 
 interface UserData {
   createdAt: string;
@@ -14,17 +17,15 @@ interface UserData {
 
 export function UserProfile() {
   const { data, error, isLoading } = useAuthControllerGetProfile();
+  const logoutMutation = useAuthControllerLogout();
 
-  const handleLogout = async () => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-        credentials: "include",
-        method: "POST",
-      });
-      window.location.href = "/";
-    } catch {
-      // Logout failed - page will be refreshed anyway
-    }
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSettled: () => {
+        // Redirect on success or failure
+        window.location.href = "/";
+      },
+    });
   };
 
   if (isLoading) {
