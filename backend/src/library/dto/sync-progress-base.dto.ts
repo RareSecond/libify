@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 
 export type SyncPhase = 'albums' | 'playlists' | 'tracks';
 
@@ -15,24 +16,29 @@ export class SyncCategoryProgressDto {
 }
 
 export class SyncItemCountsDto {
+  @Expose()
   @ApiProperty({ description: 'Number of albums to sync' })
   albums: number;
 
+  @Expose()
   @ApiProperty({
     description: 'Number of tracks within albums',
     required: false,
   })
   albumTracks?: number;
 
+  @Expose()
   @ApiProperty({ description: 'Number of playlists to sync' })
   playlists: number;
 
+  @Expose()
   @ApiProperty({
     description: 'Number of tracks within playlists',
     required: false,
   })
   playlistTracks?: number;
 
+  @Expose()
   @ApiProperty({ description: 'Number of liked tracks to sync' })
   tracks: number;
 }

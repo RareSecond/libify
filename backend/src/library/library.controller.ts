@@ -256,9 +256,21 @@ export class LibraryController {
         accessToken,
       );
 
-      return counts;
+      return plainToInstance(SyncItemCountsDto, counts, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
-      this.logger.error('Failed to count sync items', error);
+      // Preserve HttpExceptions (like 401 Unauthorized)
+      if (error instanceof HttpException) {
+        this.logger.error('Failed to count sync items', error.stack);
+        throw error;
+      }
+
+      // Log and wrap unexpected errors
+      this.logger.error(
+        'Failed to count sync items',
+        error instanceof Error ? error.stack : error,
+      );
       throw new HttpException(
         'Failed to count sync items',
         HttpStatus.INTERNAL_SERVER_ERROR,

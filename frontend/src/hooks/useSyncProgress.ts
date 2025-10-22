@@ -32,6 +32,15 @@ export interface SyncResult {
   updatedTracks: number;
 }
 
+// Backend response type (uses "queued" instead of "waiting")
+interface BackendSyncJobStatus {
+  error?: string;
+  jobId: string;
+  progress?: SyncProgress;
+  result?: SyncResult;
+  state: "active" | "completed" | "failed" | "queued";
+}
+
 export function useSyncProgress(jobId: null | string) {
   const [status, setStatus] = useState<null | SyncJobStatus>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -59,23 +68,23 @@ export function useSyncProgress(jobId: null | string) {
       setIsConnected(false);
     });
 
-    socket.on("status", (data: SyncJobStatus) => {
-      setStatus(data);
+    socket.on("status", (data: BackendSyncJobStatus) => {
+      setStatus(normalizeStatus(data));
     });
 
-    socket.on("progress", (data: SyncJobStatus) => {
-      setStatus(data);
+    socket.on("progress", (data: BackendSyncJobStatus) => {
+      setStatus(normalizeStatus(data));
     });
 
-    socket.on("completed", (data: SyncJobStatus) => {
-      setStatus(data);
+    socket.on("completed", (data: BackendSyncJobStatus) => {
+      setStatus(normalizeStatus(data));
       // Unsubscribe and disconnect after completion
       socket.emit("unsubscribe", { jobId });
       socket.disconnect();
     });
 
-    socket.on("failed", (data: SyncJobStatus) => {
-      setStatus(data);
+    socket.on("failed", (data: BackendSyncJobStatus) => {
+      setStatus(normalizeStatus(data));
       // Unsubscribe and disconnect after failure
       socket.emit("unsubscribe", { jobId });
       socket.disconnect();
@@ -103,4 +112,15 @@ export function useSyncProgress(jobId: null | string) {
   }, []);
 
   return { isConnected, reset, status };
+}
+
+/**
+ * Normalize backend status values to frontend union
+ * Backend sends "queued", frontend expects "waiting"
+ */
+function normalizeStatus(backendStatus: BackendSyncJobStatus): SyncJobStatus {
+  return {
+    ...backendStatus,
+    state: backendStatus.state === "queued" ? "waiting" : backendStatus.state,
+  };
 }
