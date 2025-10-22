@@ -6,7 +6,65 @@ export interface SyncProgressCallback {
   (progress: SyncProgressDto): Promise<void>;
 }
 
+export class SyncCategoryProgressDto {
+  @ApiProperty({ description: 'Number of items processed' })
+  processed: number;
+
+  @ApiProperty({ description: 'Total items to process' })
+  total: number;
+}
+
+export class SyncItemCountsDto {
+  @ApiProperty({ description: 'Number of albums to sync' })
+  albums: number;
+
+  @ApiProperty({
+    description: 'Number of tracks within albums',
+    required: false,
+  })
+  albumTracks?: number;
+
+  @ApiProperty({ description: 'Number of playlists to sync' })
+  playlists: number;
+
+  @ApiProperty({
+    description: 'Number of tracks within playlists',
+    required: false,
+  })
+  playlistTracks?: number;
+
+  @ApiProperty({ description: 'Number of liked tracks to sync' })
+  tracks: number;
+}
+
+export class SyncProgressBreakdownDto {
+  @ApiProperty({
+    description: 'Album sync progress',
+    type: SyncCategoryProgressDto,
+  })
+  albums: SyncCategoryProgressDto;
+
+  @ApiProperty({
+    description: 'Playlist sync progress',
+    type: SyncCategoryProgressDto,
+  })
+  playlists: SyncCategoryProgressDto;
+
+  @ApiProperty({
+    description: 'Track sync progress',
+    type: SyncCategoryProgressDto,
+  })
+  tracks: SyncCategoryProgressDto;
+}
+
 export class SyncProgressDto {
+  @ApiProperty({
+    description: 'Progress breakdown by category',
+    required: false,
+    type: () => SyncProgressBreakdownDto,
+  })
+  breakdown?: SyncProgressBreakdownDto;
+
   @ApiProperty({ description: 'Number of items processed in current phase' })
   current: number;
 

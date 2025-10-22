@@ -684,6 +684,36 @@
         ]
       }
     },
+    "/library/sync/count": {
+      "get": {
+        "operationId": "LibraryController_getSyncItemCounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Item counts retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncItemCountsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pre-count items to be synced (tracks, albums, playlists)",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/status": {
       "get": {
         "operationId": "LibraryController_getSyncLibraryStatus",
@@ -1768,6 +1798,36 @@
           "tracks"
         ]
       },
+      "SyncItemCountsDto": {
+        "type": "object",
+        "properties": {
+          "albums": {
+            "type": "number",
+            "description": "Number of albums to sync"
+          },
+          "albumTracks": {
+            "type": "number",
+            "description": "Number of tracks within albums"
+          },
+          "playlists": {
+            "type": "number",
+            "description": "Number of playlists to sync"
+          },
+          "playlistTracks": {
+            "type": "number",
+            "description": "Number of tracks within playlists"
+          },
+          "tracks": {
+            "type": "number",
+            "description": "Number of liked tracks to sync"
+          }
+        },
+        "required": [
+          "albums",
+          "playlists",
+          "tracks"
+        ]
+      },
       "SyncStatusDto": {
         "type": "object",
         "properties": {
@@ -1792,9 +1852,68 @@
           "totalTracks"
         ]
       },
+      "SyncCategoryProgressDto": {
+        "type": "object",
+        "properties": {
+          "processed": {
+            "type": "number",
+            "description": "Number of items processed"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total items to process"
+          }
+        },
+        "required": [
+          "processed",
+          "total"
+        ]
+      },
+      "SyncProgressBreakdownDto": {
+        "type": "object",
+        "properties": {
+          "albums": {
+            "description": "Album sync progress",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SyncCategoryProgressDto"
+              }
+            ]
+          },
+          "playlists": {
+            "description": "Playlist sync progress",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SyncCategoryProgressDto"
+              }
+            ]
+          },
+          "tracks": {
+            "description": "Track sync progress",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SyncCategoryProgressDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "albums",
+          "playlists",
+          "tracks"
+        ]
+      },
       "SyncProgressDto": {
         "type": "object",
         "properties": {
+          "breakdown": {
+            "description": "Progress breakdown by category",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SyncProgressBreakdownDto"
+              }
+            ]
+          },
           "current": {
             "type": "number",
             "description": "Number of items processed in current phase"

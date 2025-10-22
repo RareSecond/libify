@@ -1,7 +1,19 @@
 import { Badge, Group, Progress, Stack, Text } from "@mantine/core";
-import { Clock } from "lucide-react";
+import { Album, Clock, List, Music } from "lucide-react";
+
+interface SyncCategoryProgress {
+  processed: number;
+  total: number;
+}
+
+interface SyncProgressBreakdown {
+  albums: SyncCategoryProgress;
+  playlists: SyncCategoryProgress;
+  tracks: SyncCategoryProgress;
+}
 
 interface SyncProgressData {
+  breakdown?: SyncProgressBreakdown;
   current?: number;
   estimatedTimeRemaining?: number;
   itemsPerSecond?: number;
@@ -23,6 +35,8 @@ interface SyncProgressStatus {
 }
 
 export function SyncProgress({ syncProgress }: SyncProgressProps) {
+  const breakdown = syncProgress.progress?.breakdown;
+
   return (
     <Stack gap="xs">
       <Group justify="space-between">
@@ -62,6 +76,48 @@ export function SyncProgress({ syncProgress }: SyncProgressProps) {
               remaining
             </Text>
           )}
+        </Group>
+      )}
+
+      {breakdown && (
+        <Group className="mt-2" gap="xs">
+          <Badge
+            color={
+              breakdown.tracks.processed === breakdown.tracks.total
+                ? "green"
+                : "blue"
+            }
+            leftSection={<Music size={12} />}
+            size="sm"
+            variant="light"
+          >
+            Tracks: {breakdown.tracks.processed}/{breakdown.tracks.total}
+          </Badge>
+          <Badge
+            color={
+              breakdown.albums.processed === breakdown.albums.total
+                ? "green"
+                : "blue"
+            }
+            leftSection={<Album size={12} />}
+            size="sm"
+            variant="light"
+          >
+            Albums: {breakdown.albums.processed}/{breakdown.albums.total}
+          </Badge>
+          <Badge
+            color={
+              breakdown.playlists.processed === breakdown.playlists.total
+                ? "green"
+                : "blue"
+            }
+            leftSection={<List size={12} />}
+            size="sm"
+            variant="light"
+          >
+            Playlists: {breakdown.playlists.processed}/
+            {breakdown.playlists.total}
+          </Badge>
         </Group>
       )}
     </Stack>

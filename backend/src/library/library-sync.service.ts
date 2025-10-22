@@ -4,7 +4,10 @@ import { DatabaseService } from '../database/database.service';
 import { KyselyService } from '../database/kysely/kysely.service';
 import { AggregationService } from './aggregation.service';
 import { SpotifySavedAlbum } from './dto/spotify-album.dto';
-import { SyncProgressCallback } from './dto/sync-progress-base.dto';
+import {
+  SyncItemCountsDto,
+  SyncProgressCallback,
+} from './dto/sync-progress-base.dto';
 import {
   SpotifyPlaylist,
   SpotifyService,
@@ -21,6 +24,17 @@ export interface SyncResult {
   totalTracks: number;
   updatedAlbums: number;
   updatedTracks: number;
+}
+
+interface WeightedSyncCounts {
+  albums: number;
+  albumTracks: number;
+  playlists: number;
+  playlistTracks: number;
+  processedAlbums: number;
+  processedPlaylists: number;
+  processedTracks: number;
+  tracks: number;
 }
 
 @Injectable()
@@ -43,6 +57,66 @@ export class LibrarySyncService {
     private spotifyService: SpotifyService,
     private aggregationService: AggregationService,
   ) {}
+
+  async countSyncItems(
+    userId: string,
+    accessToken: string,
+  ): Promise<SyncItemCountsDto> {
+    this.logger.log(`Counting sync items for user ${userId}`);
+
+    try {
+      // Count tracks (first page gives us total)
+      const tracksResponse = await this.spotifyService.getUserLibraryTracks(
+        accessToken,
+        1,
+        0,
+      );
+      const trackCount = tracksResponse.total;
+
+      // Count albums (first page gives us total)
+      const albumsResponse = await this.spotifyService.getUserSavedAlbums(
+        accessToken,
+        1,
+        0,
+      );
+      const albumCount = albumsResponse.total;
+
+      // Count playlists (need to fetch all to get accurate count)
+      const playlistsResponse = await this.spotifyService.getUserPlaylists(
+        accessToken,
+        50,
+        0,
+      );
+      const playlistCount = playlistsResponse.total;
+
+      // Slice 3: Count tracks within playlists for precision weighting
+      let playlistTrackCount = 0;
+      const allPlaylists =
+        await this.spotifyService.getAllUserPlaylists(accessToken);
+      for (const playlist of allPlaylists) {
+        playlistTrackCount += playlist.tracks.total;
+      }
+
+      // Slice 3: Count tracks within albums (estimate: avg 10-12 tracks per album)
+      // We use the album response total directly since we don't have track counts yet
+      const albumTrackCount = albumCount > 0 ? albumCount * 11 : 0; // Conservative estimate
+
+      this.logger.log(
+        `Counted items for user ${userId}: ${trackCount} tracks, ${albumCount} albums (est. ${albumTrackCount} tracks), ${playlistCount} playlists (${playlistTrackCount} tracks)`,
+      );
+
+      return {
+        albums: albumCount,
+        albumTracks: albumTrackCount,
+        playlists: playlistCount,
+        playlistTracks: playlistTrackCount,
+        tracks: trackCount,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to count sync items for user ${userId}`, error);
+      throw error;
+    }
+  }
 
   async getSyncStatus(userId: string): Promise<{
     lastSync: Date | null;
@@ -577,31 +651,126 @@ export class LibrarySyncService {
       this.syncArtistCache.clear();
       this.logger.log(`Starting library sync for user ${userId}`);
 
-      // Initial progress
+      // Slice 1 & 2: Pre-count items for weighted progress
       if (onProgress) {
         await onProgress({
           current: 0,
           errors: [],
-          message: 'Starting library sync...',
+          message: 'Counting items to sync...',
           percentage: 0,
           phase: 'tracks',
           total: 0,
         });
       }
 
+      const counts = await this.countSyncItems(userId, accessToken);
+
+      // Slice 3: Calculate total work with sub-item weighting
+      const totalWork =
+        counts.tracks + // Liked tracks
+        (counts.albumTracks || counts.albums * 11) + // Album complexity
+        (counts.playlistTracks || counts.playlists * 100); // Playlist complexity
+
+      // Track weighted progress across all phases
+      const weightedCounts: WeightedSyncCounts = {
+        albums: counts.albums,
+        albumTracks: counts.albumTracks || counts.albums * 11,
+        playlists: counts.playlists,
+        playlistTracks: counts.playlistTracks || counts.playlists * 100,
+        processedAlbums: 0,
+        processedPlaylists: 0,
+        processedTracks: 0,
+        tracks: counts.tracks,
+      };
+
+      // Helper function to calculate weighted percentage
+      const calculateWeightedPercentage = (): number => {
+        const processedWork =
+          weightedCounts.processedTracks +
+          weightedCounts.processedAlbums *
+            (weightedCounts.albumTracks / Math.max(weightedCounts.albums, 1)) +
+          weightedCounts.processedPlaylists *
+            (weightedCounts.playlistTracks /
+              Math.max(weightedCounts.playlists, 1));
+
+        return totalWork > 0
+          ? Math.min(Math.round((processedWork / totalWork) * 100), 100)
+          : 0;
+      };
+
+      // Initial progress with breakdown
+      if (onProgress) {
+        await onProgress({
+          breakdown: {
+            albums: { processed: 0, total: weightedCounts.albums },
+            playlists: { processed: 0, total: weightedCounts.playlists },
+            tracks: { processed: 0, total: weightedCounts.tracks },
+          },
+          current: 0,
+          errors: [],
+          message: `Starting sync: ${counts.tracks} tracks, ${counts.albums} albums, ${counts.playlists} playlists`,
+          percentage: 0,
+          phase: 'tracks',
+          total: weightedCounts.tracks,
+        });
+      }
+
       // Sync liked tracks using streaming for memory efficiency
       this.logger.log(`Syncing liked tracks for user ${userId}`);
-      await this.syncTracksStreaming(userId, accessToken, result, onProgress);
+      await this.syncTracksStreaming(
+        userId,
+        accessToken,
+        result,
+        onProgress
+          ? async (progress) => {
+              weightedCounts.processedTracks = progress.current;
+              const percentage = calculateWeightedPercentage();
+              await onProgress({
+                ...progress,
+                breakdown: {
+                  albums: {
+                    processed: weightedCounts.processedAlbums,
+                    total: weightedCounts.albums,
+                  },
+                  playlists: {
+                    processed: weightedCounts.processedPlaylists,
+                    total: weightedCounts.playlists,
+                  },
+                  tracks: {
+                    processed: weightedCounts.processedTracks,
+                    total: weightedCounts.tracks,
+                  },
+                },
+                percentage,
+                phase: 'tracks',
+              });
+            }
+          : undefined,
+      );
+
+      // Mark tracks complete
+      weightedCounts.processedTracks = weightedCounts.tracks;
 
       // Update progress for albums phase
       if (onProgress) {
         await onProgress({
+          breakdown: {
+            albums: { processed: 0, total: weightedCounts.albums },
+            playlists: {
+              processed: weightedCounts.processedPlaylists,
+              total: weightedCounts.playlists,
+            },
+            tracks: {
+              processed: weightedCounts.processedTracks,
+              total: weightedCounts.tracks,
+            },
+          },
           current: 0,
           errors: result.errors,
           message: 'Syncing saved albums...',
-          percentage: 33,
+          percentage: calculateWeightedPercentage(),
           phase: 'albums',
-          total: 0,
+          total: weightedCounts.albums,
         });
       }
 
@@ -612,12 +781,25 @@ export class LibrarySyncService {
         accessToken,
         onProgress
           ? async (progress) => {
-              // Scale album progress from 0-100% to 33-66% range
-              const scaledPercentage =
-                33 + Math.round((progress.percentage / 100) * 33);
+              weightedCounts.processedAlbums = progress.current;
+              const percentage = calculateWeightedPercentage();
               await onProgress({
                 ...progress,
-                percentage: scaledPercentage,
+                breakdown: {
+                  albums: {
+                    processed: weightedCounts.processedAlbums,
+                    total: weightedCounts.albums,
+                  },
+                  playlists: {
+                    processed: weightedCounts.processedPlaylists,
+                    total: weightedCounts.playlists,
+                  },
+                  tracks: {
+                    processed: weightedCounts.processedTracks,
+                    total: weightedCounts.tracks,
+                  },
+                },
+                percentage,
                 phase: 'albums',
               });
             }
@@ -630,15 +812,29 @@ export class LibrarySyncService {
       result.updatedAlbums = albumSyncResult.updatedAlbums;
       result.errors.push(...albumSyncResult.errors);
 
+      // Mark albums complete
+      weightedCounts.processedAlbums = weightedCounts.albums;
+
       // Update progress for playlists phase
       if (onProgress) {
         await onProgress({
+          breakdown: {
+            albums: {
+              processed: weightedCounts.processedAlbums,
+              total: weightedCounts.albums,
+            },
+            playlists: { processed: 0, total: weightedCounts.playlists },
+            tracks: {
+              processed: weightedCounts.processedTracks,
+              total: weightedCounts.tracks,
+            },
+          },
           current: 0,
           errors: result.errors,
           message: 'Syncing playlist tracks...',
-          percentage: 66,
+          percentage: calculateWeightedPercentage(),
           phase: 'playlists',
-          total: 0,
+          total: weightedCounts.playlists,
         });
       }
 
@@ -649,12 +845,25 @@ export class LibrarySyncService {
         accessToken,
         onProgress
           ? async (progress) => {
-              // Scale playlist progress from 0-100% to 66-100% range
-              const scaledPercentage =
-                66 + Math.round((progress.percentage / 100) * 34);
+              weightedCounts.processedPlaylists = progress.current;
+              const percentage = calculateWeightedPercentage();
               await onProgress({
                 ...progress,
-                percentage: scaledPercentage,
+                breakdown: {
+                  albums: {
+                    processed: weightedCounts.processedAlbums,
+                    total: weightedCounts.albums,
+                  },
+                  playlists: {
+                    processed: weightedCounts.processedPlaylists,
+                    total: weightedCounts.playlists,
+                  },
+                  tracks: {
+                    processed: weightedCounts.processedTracks,
+                    total: weightedCounts.tracks,
+                  },
+                },
+                percentage,
                 phase: 'playlists',
               });
             }
@@ -667,9 +876,26 @@ export class LibrarySyncService {
       result.totalPlaylists = playlistSyncResult.totalPlaylists;
       result.errors.push(...playlistSyncResult.errors);
 
+      // Mark playlists complete
+      weightedCounts.processedPlaylists = weightedCounts.playlists;
+
       // Final progress - update stats
       if (onProgress) {
         await onProgress({
+          breakdown: {
+            albums: {
+              processed: weightedCounts.processedAlbums,
+              total: weightedCounts.albums,
+            },
+            playlists: {
+              processed: weightedCounts.processedPlaylists,
+              total: weightedCounts.playlists,
+            },
+            tracks: {
+              processed: weightedCounts.processedTracks,
+              total: weightedCounts.tracks,
+            },
+          },
           current: result.totalTracks,
           errors: result.errors,
           message: 'Updating statistics...',
@@ -686,6 +912,20 @@ export class LibrarySyncService {
       // Final progress
       if (onProgress) {
         await onProgress({
+          breakdown: {
+            albums: {
+              processed: weightedCounts.processedAlbums,
+              total: weightedCounts.albums,
+            },
+            playlists: {
+              processed: weightedCounts.processedPlaylists,
+              total: weightedCounts.playlists,
+            },
+            tracks: {
+              processed: weightedCounts.processedTracks,
+              total: weightedCounts.tracks,
+            },
+          },
           current: result.totalTracks,
           errors: result.errors,
           message: 'Sync completed successfully!',
