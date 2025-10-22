@@ -73,7 +73,7 @@ export function SmartPlaylists() {
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -89,11 +89,11 @@ export function SmartPlaylists() {
       </Group>
 
       {playlists?.length === 0 ? (
-        <Card p="xl" radius="md" shadow="xs">
+        <Card className="p-8" radius="md" shadow="xs">
           <Center>
             <Stack align="center" gap="md">
-              <Music size={48} style={{ opacity: 0.5 }} />
-              <Text c="dimmed" size="lg">
+              <Music className="opacity-50" size={48} />
+              <Text className="text-gray-600" size="lg">
                 No smart playlists yet
               </Text>
               <Button onClick={handleCreate} variant="light">
@@ -105,10 +105,16 @@ export function SmartPlaylists() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {playlists?.map((playlist) => (
-            <Card key={playlist.id} p="lg" radius="md" shadow="xs" withBorder>
+            <Card
+              className="p-6"
+              key={playlist.id}
+              radius="md"
+              shadow="xs"
+              withBorder
+            >
               <Stack gap="sm">
                 <Group justify="space-between">
-                  <Text fw={600} size="lg">
+                  <Text className="font-semibold" size="lg">
                     {playlist.name}
                   </Text>
                   <Group gap="xs">
@@ -131,19 +137,19 @@ export function SmartPlaylists() {
                 </Group>
 
                 {playlist.description && (
-                  <Text c="dimmed" size="sm">
+                  <Text className="text-gray-600" size="sm">
                     {playlist.description}
                   </Text>
                 )}
 
                 <Box>
-                  <Text c="dimmed" size="xs" tt="uppercase">
+                  <Text className="text-xs uppercase text-gray-600">
                     {playlist.criteria.logic === "or"
                       ? "Match any"
                       : "Match all"}{" "}
                     of:
                   </Text>
-                  <Stack gap={4} mt={4}>
+                  <Stack className="mt-1" gap={4}>
                     {playlist.criteria.rules.slice(0, 3).map((rule, index) => {
                       const operatorsWithNoValue = [
                         "isNull",
@@ -167,7 +173,7 @@ export function SmartPlaylists() {
                       );
                     })}
                     {playlist.criteria.rules.length > 3 && (
-                      <Text c="dimmed" size="sm">
+                      <Text className="text-gray-600" size="sm">
                         + {playlist.criteria.rules.length - 3} more rules
                       </Text>
                     )}
@@ -175,7 +181,7 @@ export function SmartPlaylists() {
                 </Box>
 
                 <Group justify="space-between">
-                  <Text c="dimmed" size="sm">
+                  <Text className="text-gray-600" size="sm">
                     {playlist.trackCount} tracks
                   </Text>
                   <Link

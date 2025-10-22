@@ -1,232 +1,268 @@
 ---
-title: "Refactor"
-description: "Improve code quality while keeping tests passing (REFACTOR phase)"
+name: "Refactor"
+description: "Improve code quality while maintaining functionality"
 ---
 
-# 🔵 REFACTOR: Improve Code Quality (REFACTOR Phase)
+# 🔨 REFACTOR: Code Quality Improvement
 
-**Current Phase**: Implementation (TDD - REFACTOR)
-**Purpose**: Improve code quality while maintaining all tests passing
+**Purpose**: Improve code quality while maintaining all functionality
+**Previous**: `implement.md`
+**Next**: `cq-fix.md`
 
 ## Instructions
 
-I'm in the REFACTOR phase of TDD. I must improve code quality while keeping ALL tests passing. This means:
+I'm refactoring code to improve quality. My task is to:
 
-1. **Improve without breaking** - All tests must remain green
-2. **Remove duplication** - Eliminate code duplication
-3. **Enhance readability** - Make code more understandable
-4. **Optimize structure** - Improve code organization and design
-5. **Maintain behavior** - External behavior must remain unchanged
+1. **Verify code works** - Ensure current functionality
+2. **Identify improvements** - Find code to refactor
+3. **Refactor carefully** - Improve while maintaining functionality
+4. **Verify nothing breaks** - Check that everything still works
+5. **Commit refactoring** - Save improvements
 
-## Refactor Process
+## Refactoring Targets
 
-### 1. Analyze Current Code
-- [ ] **Code smells** - Identify areas needing improvement
-- [ ] **Duplication** - Find repeated code patterns
-- [ ] **Readability** - Assess code clarity and understanding
-- [ ] **Structure** - Evaluate code organization
-- [ ] **Performance** - Consider optimization opportunities
+### Code Smells to Fix
 
-### 2. Plan Refactoring
-- [ ] **Small steps** - Plan incremental changes
-- [ ] **Test safety** - Ensure each step maintains test success
-- [ ] **Priority order** - Address most important issues first
-- [ ] **Risk assessment** - Identify potential breaking changes
+#### Duplication
+```typescript
+// Before: Duplicated logic
+if (user.role === 'ADMIN') {
+  // admin logic
+}
+// ... elsewhere ...
+if (user.role === 'ADMIN') {
+  // same admin logic
+}
 
-### 3. Execute Refactoring
-- [ ] **One change at a time** - Make small, focused changes
-- [ ] **Test after each change** - Verify tests still pass
-- [ ] **Commit frequently** - Version control each improvement
-- [ ] **Rollback if needed** - Revert if tests break
+// After: Extracted method
+private isAdmin(user: User): boolean {
+  return user.role === 'ADMIN';
+}
+```
 
-## Refactoring Commands
+#### Long Methods
+```typescript
+// Before: Long method doing too much
+async processRequest(data: Data) {
+  // validation logic (10 lines)
+  // transformation logic (15 lines)
+  // persistence logic (10 lines)
+  // notification logic (8 lines)
+}
+
+// After: Extracted focused methods
+async processRequest(data: Data) {
+  const validated = await this.validate(data);
+  const transformed = this.transform(validated);
+  const saved = await this.persist(transformed);
+  await this.notify(saved);
+  return saved;
+}
+```
+
+#### Complex Conditionals
+```typescript
+// Before: Complex condition
+if (user && user.isActive && user.subscription && user.subscription.status === 'active' && !user.subscription.expired) {
+  // logic
+}
+
+// After: Extracted with meaningful name
+private hasActiveSubscription(user: User): boolean {
+  return user?.isActive && 
+         user.subscription?.status === 'active' && 
+         !user.subscription?.expired;
+}
+```
+
+### Patterns to Apply
+
+#### Extract Constants
+```typescript
+// Before: Magic numbers/strings
+if (items.length > 100) { }
+return status === 'pending';
+
+// After: Named constants
+const MAX_ITEMS = 100;
+const PENDING_STATUS = 'pending';
+
+if (items.length > MAX_ITEMS) { }
+return status === PENDING_STATUS;
+```
+
+#### Extract Types
+```typescript
+// Before: Inline type definitions
+function process(data: { id: string; name: string; items: Array<{ id: string; value: number }> }) { }
+
+// After: Named types
+interface ProcessData {
+  id: string;
+  name: string;
+  items: ProcessItem[];
+}
+
+interface ProcessItem {
+  id: string;
+  value: number;
+}
+
+function process(data: ProcessData) { }
+```
+
+#### Consolidate Imports
+```typescript
+// Before: Multiple imports from same module
+import { ServiceA } from './services';
+import { ServiceB } from './services';
+import { ServiceC } from './services';
+
+// After: Single import
+import { ServiceA, ServiceB, ServiceC } from './services';
+```
+
+### Performance Improvements
+
+#### Optimize Database Queries
+```typescript
+// Before: N+1 query problem
+const users = await this.user.findMany();
+for (const user of users) {
+  user.posts = await this.post.findMany({ where: { userId: user.id } });
+}
+
+// After: Single query with include
+const users = await this.user.findMany({
+  include: { posts: true }
+});
+```
+
+#### Memoization
+```typescript
+// Before: Repeated calculations
+function getExpensiveValue(input: string) {
+  return performExpensiveCalculation(input);
+}
+
+// After: Cached results
+const cache = new Map<string, Result>();
+
+function getExpensiveValue(input: string) {
+  if (!cache.has(input)) {
+    cache.set(input, performExpensiveCalculation(input));
+  }
+  return cache.get(input);
+}
+```
+
+## Verification During Refactor
 
 ```bash
-# Run tests continuously during refactoring
-npm run test:watch
+# From monorepo root
+cd .
 
-# Run all tests after each refactoring step
-npm run test
-
-# Type checking to catch issues early
+# Verify TypeScript compilation
 npm run typecheck
 
-# Linting to maintain code quality
+# Or check specific workspaces
+npm run typecheck -w backend
+npm run typecheck -w frontend
+
+# Run the application
+npm run dev
+
+# Check for linting issues
 npm run lint
+
+# Format code
+npm run prettier:fix
 ```
 
-## Refactor Checklist
+## Refactoring Principles
 
-- [ ] **Code smells identified** - Areas for improvement noted
-- [ ] **Refactoring plan** - Step-by-step improvement strategy
-- [ ] **Tests passing** - All tests green before starting
-- [ ] **Incremental changes** - Small, focused improvements
-- [ ] **Tests still passing** - All tests green after each step
-- [ ] **Code improved** - Measurable quality improvements
-- [ ] **Changes committed** - Each improvement committed
+### DO:
+- Maintain functionality
+- Improve readability
+- Reduce complexity
+- Extract reusable code
+- Follow SOLID principles
+- Add helpful comments
 
-## Refactor Report Format
+### DON'T:
+- Change behavior
+- Add new features
+- Break existing code
+- Over-abstract
+- Refactor everything at once
 
+## Common Refactorings
+
+1. **Extract Method** - Pull out code into focused functions
+2. **Extract Variable** - Name complex expressions
+3. **Inline Variable** - Remove unnecessary variables
+4. **Extract Type** - Create interfaces for complex types
+5. **Rename** - Use more descriptive names
+6. **Move** - Organize code in proper modules
+7. **Simplify** - Reduce conditional complexity
+
+## Commit Message
+
+```bash
+git add .
+git commit -m "refactor: improve [area] code quality
+
+- Extract [methods/types/constants]
+- Simplify [complex logic]
+- Optimize [performance area]
+- Improve [readability/maintainability]"
 ```
-🔵 REFACTOR COMPLETE
-
-Refactoring Summary:
-✅ Code smells addressed: [number] issues
-✅ Duplication removed: [description]
-✅ Readability improved: [description]
-✅ Structure enhanced: [description]
-
-Changes Made:
-- [Change 1] - [description and reason]
-- [Change 2] - [description and reason]
-- [Change 3] - [description and reason]
-
-Quality Metrics:
-✅ All tests pass: [X] passed, [Y] total
-✅ No regressions: All existing functionality preserved
-✅ Code coverage: [X]% (maintained/improved)
-✅ Linting: No new issues introduced
-
-Files Modified:
-- [file1] - [type of refactoring]
-- [file2] - [type of refactoring]
-
-All refactoring steps committed to version control
-
-Next: Continue with `/tdd-cycle` or `/task-next`
-```
-
-## Common Refactoring Patterns
-
-### 1. **Extract Method**
-```javascript
-// Before - long method
-function processOrder(order) {
-  // validate order
-  if (!order.items || order.items.length === 0) {
-    throw new Error('Order must have items');
-  }
-  
-  // calculate total
-  let total = 0;
-  for (const item of order.items) {
-    total += item.price * item.quantity;
-  }
-  
-  // apply discount
-  if (order.customerType === 'premium') {
-    total *= 0.9;
-  }
-  
-  return total;
-}
-
-// After - extracted methods
-function processOrder(order) {
-  validateOrder(order);
-  const total = calculateTotal(order.items);
-  return applyDiscount(total, order.customerType);
-}
-
-function validateOrder(order) {
-  if (!order.items || order.items.length === 0) {
-    throw new Error('Order must have items');
-  }
-}
-
-function calculateTotal(items) {
-  return items.reduce((total, item) => total + (item.price * item.quantity), 0);
-}
-
-function applyDiscount(total, customerType) {
-  return customerType === 'premium' ? total * 0.9 : total;
-}
-```
-
-### 2. **Remove Duplication**
-```javascript
-// Before - duplicated logic
-function formatUserName(user) {
-  return user.firstName + ' ' + user.lastName;
-}
-
-function formatCustomerName(customer) {
-  return customer.firstName + ' ' + customer.lastName;
-}
-
-// After - shared utility
-function formatFullName(person) {
-  return person.firstName + ' ' + person.lastName;
-}
-
-function formatUserName(user) {
-  return formatFullName(user);
-}
-
-function formatCustomerName(customer) {
-  return formatFullName(customer);
-}
-```
-
-### 3. **Improve Readability**
-```javascript
-// Before - unclear variable names
-function calc(x, y, z) {
-  return x * y * z;
-}
-
-// After - descriptive names
-function calculateVolume(length, width, height) {
-  return length * width * height;
-}
-```
-
-## Refactoring Safety Rules
-
-### 1. **Always Keep Tests Green**
-- Run tests after every small change
-- Never commit broken tests
-- Rollback if tests break
-
-### 2. **Small Steps**
-- Make one change at a time
-- Commit frequently
-- Easy to rollback if needed
-
-### 3. **Preserve Behavior**
-- External behavior must remain the same
-- Only internal structure changes
-- Tests should not need modification
-
-## What I Will Do
-
-1. Analyze current code for improvement opportunities
-2. Plan refactoring in small, safe steps
-3. Execute refactoring incrementally
-4. Run tests after each change
-5. Commit each improvement separately
-6. Ensure all tests remain green throughout
-7. Document improvements made
-
-## What I Won't Do
-
-- Make large, risky changes
-- Change external behavior
-- Skip testing between changes
-- Commit broken tests
-- Optimize prematurely
-- Add new features during refactoring
 
 ## Success Criteria
 
-- All tests remain green throughout process
-- Code quality is measurably improved
-- No regressions introduced
-- Changes are well-documented
-- Each improvement is committed separately
+- Code still works correctly ✅
+- Code is more readable
+- Reduced duplication
+- Better organization
+- Following patterns consistently
 
-## Next Steps
+## Output Format
 
-After refactoring is complete, continue with next `/tdd-cycle` or use `/task-next` if feature is complete.
+```
+🔨 REFACTORING COMPLETE
 
-!echo "📋 Workflow State: REFACTOR - REFACTOR phase complete"
+Improvements made:
+- [Refactoring 1]
+- [Refactoring 2]
+- [Refactoring 3]
+
+Code quality improvements:
+- Readability: Improved
+- Complexity: Reduced
+- Duplication: Eliminated
+
+Status: Still working ✅
+
+Refactoring committed ✅
+Ready for final checks with: cq-fix.md
+```
+
+## What I Will Do
+
+1. Identify code smells
+2. Apply refactoring patterns
+3. Verify functionality preserved
+4. Improve code organization
+5. Commit improvements
+
+## What I Won't Do
+
+- Change functionality
+- Add new features
+- Break existing code
+- Over-complicate
+- Refactor without purpose
+
+## Next Phase
+
+After refactoring, use `cq-fix.md` to run final code quality checks.

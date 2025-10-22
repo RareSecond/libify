@@ -144,9 +144,9 @@ export function InlineTagEditor({
     <Group gap={2} onClick={(e) => e.stopPropagation()}>
       {trackTags.map((tag) => (
         <Badge
+          className="pr-3"
           color={tag.color || "gray"}
           key={tag.id}
-          pr={3}
           rightSection={
             <ActionIcon
               color={tag.color || "gray"}

@@ -1,169 +1,228 @@
 ---
-title: "Execute Implementation Tasks"
-description: "Execute approved tasks using Test Driven Development cycles"
+name: "Implement"
+description: "Implement features based on requirements from GitHub issue"
 ---
 
-# 🚀 IMPLEMENTATION PHASE: TDD-Driven Task Execution
+# 🚀 IMPLEMENT: Feature Implementation
 
-**Current Phase**: Implementation
-**Previous Phase**: Scope Verification
-**Next Phase**: Quality Assurance
-**TDD Focus**: Red-Green-Refactor cycles for all implementation
+**Purpose**: Implement features directly based on requirements
+**Previous**: `read-issue.md`
+**Next**: `refactor.md` (optional)
 
 ## Instructions
 
-I'm now in IMPLEMENTATION mode with TDD at the center. I must:
+I'm implementing features from the GitHub issue. My task is to:
 
-1. **Execute ONE task at a time** - Never work on multiple tasks simultaneously
-2. **Follow TDD cycles** - Red-Green-Refactor for every implementation
-3. **Test-first approach** - Write failing tests before any production code
-4. **Update TodoWrite** - Mark tasks as in_progress and completed
-5. **Stay focused** - No scope creep or additional features
+1. **Review requirements** - From the issue summary
+2. **Write implementation** - Complete, functional code
+3. **Test manually** - Verify functionality works in browser
+4. **Commit implementation** - Save the working code
 
-## TDD Implementation Rules
+⚠️ **IMPORTANT**: Do NOT run typechecks, linting, or code quality tools during implementation. Those are handled separately in `cq-fix.md`.
 
-- **MANDATORY**: Use TodoWrite to track task progress
-- **MANDATORY**: Mark current task as "in_progress" before starting
-- **MANDATORY**: Follow Red-Green-Refactor cycle for all code changes
-- **MANDATORY**: Write failing test before any production code
-- **MANDATORY**: Check in with developer after every 2-3 TDD cycles using `/checkin`
-- **MANDATORY**: Complete current task fully before moving to next
-- **MANDATORY**: Mark task as "completed" immediately after finishing
-- **MANDATORY**: Wait for explicit permission before continuing to next task
+## Implementation Strategy
 
-## TDD Task Execution Flow
+### Complete Code Principle
+Write fully functional code that meets requirements:
+- Implement all features
+- Handle error cases
+- Follow existing patterns
+- Consider edge cases
 
-1. **Mark current task as "in_progress"** in TodoWrite
-2. **Break task into TDD cycles** - Identify testable behaviors
-3. **Execute TDD cycles** - Use `/tdd-cycle` for each behavior:
-   - 🔴 RED: Write failing test (`/test-first`)
-   - 🟢 GREEN: Minimal implementation (`/make-green`)
-   - 🔵 REFACTOR: Improve code quality (`/refactor`)
-4. **Check-in after 2-3 cycles** - Use `/checkin` to pause and get approval
-5. **Verify task completion** - All behaviors tested and implemented
-6. **Mark task as "completed"** in TodoWrite
-7. **Use `/task-next`** to move to next task
+### Backend Implementation Patterns
 
-## Implementation Strategies
+```typescript
+// Service implementation
+@Injectable()
+export class ServiceName {
+  private readonly entity: PrismaClient["entity"];
+  
+  constructor(
+    database: DatabaseService,
+    private readonly logger: LoggerService,
+  ) {
+    this.entity = database.entity;
+  }
 
-### 1. Task Decomposition
-Break each task into small, testable behaviors:
-```
-Task: "Add user authentication"
-TDD Cycles:
-- Cycle 1: User login with valid credentials
-- Cycle 2: User login with invalid credentials
-- Cycle 3: User logout functionality
-- Cycle 4: Session management
-```
-
-### 2. TDD Cycle Selection
-Choose appropriate TDD approach:
-- **`/tdd-cycle`** - Complete Red-Green-Refactor cycle
-- **`/test-first`** - Write failing test only
-- **`/make-green`** - Implement minimal code
-- **`/refactor`** - Improve code quality
-
-### 3. Test-First Mindset
-Always start with the test:
-```
-1. What behavior am I implementing?
-2. How do I test this behavior?
-3. What should the test expect?
-4. Write the failing test
-5. Make it pass with minimal code
-6. Refactor for quality
+  async methodName(dto: CreateDto): Promise<Result> {
+    // Complete implementation
+    this.logger.log('Operation started', { dto });
+    
+    // Validate input
+    if (!dto.requiredField) {
+      throw new BadRequestException('Required field missing');
+    }
+    
+    const result = await this.entity.create({
+      data: dto
+    });
+    
+    return result;
+  }
+}
 ```
 
-## Implementation Checklist
+### Frontend Implementation Patterns
 
-### Task Management
-- [ ] **Current task identified** - Know exactly what I'm working on
-- [ ] **Task marked in_progress** - TodoWrite updated
-- [ ] **Task broken into TDD cycles** - Testable behaviors identified
+```typescript
+// Component implementation
+export function ComponentName({ props }: Props) {
+  // Complete implementation with error handling
+  const [error, setError] = useState<string | null>(null);
+  
+  const handleAction = async () => {
+    try {
+      await props.onAction();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  
+  return (
+    <div>
+      <h1>{props.title}</h1>
+      {error && <div className="error">{error}</div>}
+      <button onClick={handleAction}>
+        Action
+      </button>
+    </div>
+  );
+}
+```
 
-### TDD Cycle Execution
-- [ ] **Failing test written** - Test-first approach followed
-- [ ] **Minimal implementation** - Just enough code to pass test
-- [ ] **Code refactored** - Quality improvements made
-- [ ] **All tests passing** - No regressions introduced
+### Common Patterns
 
-### Progress Management
-- [ ] **Regular check-ins** - Use `/checkin` after 2-3 TDD cycles
-- [ ] **Task completed fully** - All behaviors tested and implemented
-- [ ] **Task marked completed** - TodoWrite updated
-- [ ] **Permission requested** - Wait for approval before next task
+#### DTO Validation
+```typescript
+// Always use CUID with @IsString()
+export class CreateDto {
+  @IsString()
+  id: string;  // NOT @IsUUID()
+  
+  @IsString()
+  @MinLength(3)
+  name: string;
+}
+```
 
-## TDD Implementation Report Format
+#### Error Handling
+```typescript
+try {
+  const result = await this.operation();
+  this.logger.log('Success', { result });
+  return result;
+} catch (error) {
+  this.logger.error('Failed', error.stack);
+  throw new BadRequestException('Operation failed');
+}
+```
+
+#### Database Operations
+```typescript
+// Use transactions for related operations
+await this.prisma.$transaction(async (tx) => {
+  const parent = await tx.parent.create({ data });
+  const child = await tx.child.create({ 
+    data: { parentId: parent.id }
+  });
+  return { parent, child };
+});
+```
+
+## Running Code
+
+```bash
+# From monorepo root
+cd .
+
+# Start development servers
+npm run dev
+
+# Or run backend/frontend separately
+npm run dev -w backend
+npm run dev -w frontend
+
+# Test functionality manually in browser
+# Backend: http://127.0.0.1:3000/api
+# Frontend: http://127.0.0.1:6543
+```
+
+## Focus Areas
+
+### DO:
+- Implement all requirements
+- Use existing patterns
+- Handle errors properly
+- Log operations
+- Follow type safety
+- Consider edge cases
+
+### DON'T:
+- Run typechecks or linting (save for cq-fix.md)
+- Fix code quality issues (save for cq-fix.md)
+- Skip requirements
+- Ignore error handling
+- Break existing features
+- Over-engineer solutions
+- Add unrelated features
+
+## Commit Message
+
+```bash
+git add .
+git commit -m "feat: implement [feature]
+
+- Add [component/service]
+- Handle [requirement]
+- Process [operation]
+
+Closes #[issue-number]"
+```
+
+## Success Criteria
+
+- All requirements implemented ✅
+- Code works correctly
+- Error cases handled
+- Following existing patterns
+- Implementation committed
+
+## Output Format
 
 ```
-🚀 TDD IMPLEMENTATION PROGRESS
+🚀 IMPLEMENTATION COMPLETE
 
-Current Task: [task description]
-TDD Cycles Completed: [X] of [Y]
+Features implemented:
+- [Feature 1]
+- [Feature 2]
+- [Feature 3]
 
-Latest TDD Cycle:
-🔴 RED: [failing test description]
-🟢 GREEN: [minimal implementation]
-🔵 REFACTOR: [code improvements]
+Status: Working ✅
+Files modified: [N] files
 
-Test Results:
-✅ All tests passing: [X] passed, [Y] total
-✅ Coverage maintained: [X]%
-✅ No regressions: All existing tests pass
-
-Files Modified:
-- [file1] - [test file]
-- [file2] - [implementation file]
-
-Next: Continue with next TDD cycle or `/checkin`
+Implementation committed ✅
+Optional: Use refactor.md to improve code quality
 ```
 
 ## What I Will Do
 
-1. Focus on one task at a time
-2. Break task into small, testable behaviors
-3. Execute TDD cycles for each behavior
-4. Write failing tests before any production code
-5. Implement minimal code to pass tests
-6. Refactor for code quality
-7. Update TodoWrite for each task transition
-8. Check in with developer after every 2-3 TDD cycles
-9. Complete tasks fully before moving on
-10. Ask for permission before continuing
+1. Review requirements from issue
+2. Implement complete features
+3. Handle error cases
+4. Follow existing patterns
+5. Test functionality manually
+6. Commit implementation
 
 ## What I Won't Do
 
-- Work on multiple tasks simultaneously
-- Write production code before failing tests
-- Skip TDD cycles or phases
-- Add features not in the approved plan
-- Skip task completion verification
-- Move to next task without permission
-- Make assumptions about scope changes
-- Rush through refactoring phase
+- Run typechecks or linting commands
+- Fix code quality issues (that's for cq-fix.md)
+- Skip requirements
+- Ignore error handling
+- Break existing code
+- Over-engineer solutions
+- Add unrelated features
 
-## TDD Success Criteria
+## Next Phase
 
-- All production code has corresponding tests
-- Tests are written before implementation
-- Code follows Red-Green-Refactor cycle
-- All tests pass after each cycle
-- Code quality is maintained through refactoring
-- No regressions introduced
-
-## Available TDD Commands
-
-- **`/tdd-cycle`** - Complete Red-Green-Refactor cycle
-- **`/test-first`** - Write failing test (RED phase)
-- **`/make-green`** - Minimal implementation (GREEN phase)
-- **`/refactor`** - Code quality improvements (REFACTOR phase)
-- **`/test-coverage`** - Analyze test coverage
-- **`/checkin`** - Progress review with developer
-- **`/task-next`** - Move to next approved task
-
-## Next Steps
-
-After all tasks are complete, use `/quality-review` to verify TDD practices and code quality.
-
-!echo "📋 Workflow State: IMPLEMENTATION phase activated - TDD-driven execution"
+After implementation is complete, optionally use `refactor.md` to improve code quality.

@@ -31,10 +31,7 @@ export interface SpotifyPlayerOptions {
 }
 
 export interface SpotifyPlayerState {
-  context: {
-    metadata: unknown;
-    uri: string;
-  };
+  context: { metadata: unknown; uri: string };
   disallows: {
     pausing: boolean;
     peeking_next: boolean;
@@ -56,10 +53,7 @@ export interface SpotifyPlayerState {
 }
 
 export interface SpotifyTrack {
-  album: {
-    images: Array<{ url: string }>;
-    name: string;
-  };
+  album: { images: Array<{ url: string }>; name: string };
   artists: Array<{ name: string }>;
   duration_ms: number;
   id: string;

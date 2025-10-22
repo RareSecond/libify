@@ -1,7 +1,5 @@
 import js from "@eslint/js";
 import perfectionist from "eslint-plugin-perfectionist";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -20,9 +18,12 @@ export default [
       "coverage/**",
       "**/*.gen.ts",
       "**/*.generated.ts",
-      "frontend/src/routeTree.gen.ts",
+      "**/routeTree.gen.ts",
+      "**/playwright-report/**",
+      "**/test-results/**",
+      "e2e/.auth/**",
       "**/src/data/**",
-      "backend/prisma/migrations/**",
+      "**/prisma/migrations/**",
     ],
   },
 
@@ -31,23 +32,16 @@ export default [
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: {
-        ...globals.node,
-        ...globals.browser,
-      },
+      globals: { ...globals.node, ...globals.browser },
     },
     rules: {
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-inferrable-types": "error",
-      // General TypeScript rules
       "@typescript-eslint/no-unused-vars": [
         "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
 
       // General code quality rules
@@ -58,53 +52,25 @@ export default [
       "prefer-arrow-callback": "error",
       "prefer-const": "error",
       "prefer-template": "error",
-      "quote-props": ["error", "as-needed"],
-    },
-  },
-
-  // React-specific configuration
-  {
-    files: ["frontend/**/*.{ts,tsx}"],
-    languageOptions: {
-      globals: globals.browser,
-    },
-    plugins: {
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
-    },
-    rules: {
-      ...reactHooks.configs.recommended.rules,
-      "react-hooks/exhaustive-deps": "warn",
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
-    },
-  },
-
-  // Backend-specific configuration
-  {
-    files: ["backend/**/*.{ts,js}"],
-    languageOptions: {
-      globals: globals.node,
-    },
-    rules: {
-      "no-console": "off", // Allow console.log in backend
+      "quote-props": ["error", "consistent-as-needed"],
     },
   },
 
   // Test files configuration
   {
     files: ["**/*.{test,spec}.{ts,tsx,js}", "**/test/**/*.{ts,tsx,js}"],
-    languageOptions: {
-      globals: {
-        ...globals.jest,
-        ...globals.node,
-      },
-    },
+    languageOptions: { globals: { ...globals.jest, ...globals.node } },
+    rules: { "@typescript-eslint/no-explicit-any": "off", "no-console": "off" },
+  },
+
+  // E2E test files configuration
+  {
+    files: ["e2e/**/*.ts"],
+    languageOptions: { globals: { ...globals.node } },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "no-console": "off",
+      "perfectionist/sort-objects": "off",
     },
   },
 ];

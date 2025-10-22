@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "synced": {},
+  "variables": {
+    "MONOREPO_ROOT": ".",
+    "BACKEND_PATH": "backend",
+    "FRONTEND_PATH": "frontend",
+    "BACKEND_URL": "http://127.0.0.1:3000/api",
+    "FRONTEND_URL": "http://127.0.0.1:6543",
+    "SCRIPTS_PATH": ".claude/lib"
+  }
+}

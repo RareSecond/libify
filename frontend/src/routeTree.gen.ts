@@ -259,7 +259,7 @@ export interface FileRoutesByTo {
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
+  "__root__": typeof rootRoute;
   "/": typeof IndexRoute;
   "/albums": typeof AlbumsRouteWithChildren;
   "/artists": typeof ArtistsRouteWithChildren;

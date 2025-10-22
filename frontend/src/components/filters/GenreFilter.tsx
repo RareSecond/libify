@@ -16,10 +16,7 @@ export function GenreFilter({
   placeholder = "Filter by genres",
   value,
 }: GenreFilterProps) {
-  const data = genres.map((genre) => ({
-    label: genre,
-    value: genre,
-  }));
+  const data = genres.map((genre) => ({ label: genre, value: genre }));
 
   return (
     <MultiSelect
@@ -31,11 +28,7 @@ export function GenreFilter({
       onChange={onChange}
       placeholder={placeholder}
       searchable
-      styles={{
-        input: {
-          minWidth: 200,
-        },
-      }}
+      styles={{ input: { minWidth: 200 } }}
       value={value}
     />
   );

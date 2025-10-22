@@ -42,11 +42,7 @@ export function TrackList() {
       onDebouncedChange: (value) => {
         navigate({
           replace: value === "" && search !== "",
-          search: (prev) => ({
-            ...prev,
-            page: 1,
-            search: value,
-          }),
+          search: (prev) => ({ ...prev, page: 1, search: value }),
         });
       },
     },
@@ -101,8 +97,10 @@ export function TrackList() {
 
   if (error) {
     return (
-      <Center h={400}>
-        <Text c="red">Error loading tracks: {error.message}</Text>
+      <Center className="h-[400px]">
+        <Text className="text-red-600">
+          Error loading tracks: {error.message}
+        </Text>
       </Center>
     );
   }
@@ -110,19 +108,19 @@ export function TrackList() {
   return (
     <Stack gap="sm">
       <div>
-        <Text fw={700} mb="xs" size="lg">
+        <Text className="mb-2 font-bold" size="lg">
           My Library
         </Text>
       </div>
-      <Paper p="sm" radius="md" shadow="xs">
-        <Group justify="space-between" mb="xs">
+      <Paper className="p-4" radius="md" shadow="xs">
+        <Group className="mb-2" justify="space-between">
           <Group>
             <TextInput
+              className="w-[300px]"
               leftSection={<Search size={16} />}
               onChange={(e) => setLocalSearch(e.currentTarget.value)}
               placeholder="Search tracks..."
               value={localSearch}
-              w={300}
             />
             <ActionIcon
               onClick={() => setShowTagManager(true)}
@@ -135,6 +133,7 @@ export function TrackList() {
 
           <Group>
             <Select
+              className="w-[150px]"
               data={[
                 { label: "Title", value: "title" },
                 { label: "Artist", value: "artist" },
@@ -149,10 +148,10 @@ export function TrackList() {
                 updateSearch({ sortBy: (value as typeof sortBy) || "addedAt" })
               }
               value={sortBy}
-              w={150}
             />
 
             <Select
+              className="w-[120px]"
               data={[
                 { label: "Ascending", value: "asc" },
                 { label: "Descending", value: "desc" },
@@ -162,17 +161,16 @@ export function TrackList() {
                 updateSearch({ sortOrder: (value as "asc" | "desc") || "desc" })
               }
               value={sortOrder}
-              w={120}
             />
 
             <Select
+              className="w-[100px]"
               data={["10", "20", "50", "100"]}
               label="Page size"
               onChange={(value) =>
                 updateSearch({ page: 1, pageSize: parseInt(value || "20") })
               }
               value={pageSize.toString()}
-              w={100}
             />
 
             {genresData && genresData.length > 0 && (
@@ -185,7 +183,7 @@ export function TrackList() {
           </Group>
         </Group>
 
-        <Text c="dimmed" mb="xs" size="sm">
+        <Text className="mb-2 text-gray-600" size="sm">
           {data?.total || 0} tracks in library
         </Text>
 
@@ -198,7 +196,7 @@ export function TrackList() {
         />
 
         {data && data.totalPages > 1 && (
-          <Center mt="lg">
+          <Center className="mt-6">
             <Pagination
               boundaries={1}
               onChange={(newPage) => updateSearch({ page: newPage })}

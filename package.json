@@ -15,7 +15,8 @@
     "prettier:fix": "npm run prettier:fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "cq": "npm run typecheck && npm run lint && npm run prettier:check && npm run test",
-    "cq:local": "npm run typecheck && npm run lint && npm run prettier:fix"
+    "cq:local": "npm run typecheck && npm run lint && npm run prettier:fix",
+    "cq:fix": "jd-kit run cq-fix"
   },
   "author": "",
   "license": "ISC",
@@ -27,6 +28,7 @@
     "frontend"
   ],
   "devDependencies": {
+    "@jdansercoer/jd-kit": "github:RareSecond/jd-kit",
     "eslint-plugin-perfectionist": "^4.15.0"
   }
 }

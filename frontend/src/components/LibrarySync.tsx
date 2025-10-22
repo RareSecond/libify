@@ -1,36 +1,16 @@
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Group,
-  Progress,
-  Stack,
-  Text,
-} from "@mantine/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Music,
-  RefreshCw,
-} from "lucide-react";
+import { Alert, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
+import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import {
+  useLibraryControllerGetSyncLibraryStatus,
+  useLibraryControllerSyncLibrary,
+  useLibraryControllerSyncRecentlyPlayed,
+} from "@/data/api";
+
 import { useSyncProgress } from "../hooks/useSyncProgress";
-
-interface SyncJobResponse {
-  jobId: string;
-  message: string;
-  status: string;
-}
-
-interface SyncStatus {
-  lastSync: null | string;
-  totalAlbums: number;
-  totalTracks: number;
-}
+import { formatLastSync } from "../utils/format";
+import { SyncProgress } from "./sync/SyncProgress";
 
 export function LibrarySync() {
   const [currentJobId, setCurrentJobId] = useState<null | string>(null);
@@ -38,42 +18,32 @@ export function LibrarySync() {
     useSyncProgress(currentJobId);
 
   // Query for sync status
-  const { data: syncStatus, refetch: refetchStatus } = useQuery<SyncStatus>({
-    queryFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/library/sync/status`,
-        {
-          credentials: "include",
-        },
-      );
-      if (!response.ok) throw new Error("Failed to fetch sync status");
-      return response.json();
+  const { data: syncStatus, refetch: refetchStatus } =
+    useLibraryControllerGetSyncLibraryStatus();
+
+  // Mutation for starting full sync
+  const syncLibraryMutation = useLibraryControllerSyncLibrary({
+    mutation: {
+      onError: () => {
+        setCurrentJobId(null);
+        resetProgress();
+      },
+      onSuccess: (data) => {
+        setCurrentJobId(data.jobId);
+      },
     },
-    queryKey: ["library-sync-status"],
   });
 
-  // Mutation for starting sync
-  const syncLibraryMutation = useMutation<SyncJobResponse>({
-    mutationFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/library/sync`,
-        {
-          credentials: "include",
-          method: "POST",
-        },
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to start sync");
-      }
-      return response.json();
-    },
-    onError: () => {
-      setCurrentJobId(null);
-      resetProgress();
-    },
-    onSuccess: (data) => {
-      setCurrentJobId(data.jobId);
+  // Mutation for quick sync (recently played tracks only)
+  const syncRecentMutation = useLibraryControllerSyncRecentlyPlayed({
+    mutation: {
+      onError: () => {
+        setCurrentJobId(null);
+        resetProgress();
+      },
+      onSuccess: (data) => {
+        setCurrentJobId(data.jobId);
+      },
     },
   });
 
@@ -103,27 +73,12 @@ export function LibrarySync() {
     };
   }, [syncProgress?.state, refetchStatus, resetProgress]);
 
-  const formatLastSync = (lastSync: null | string) => {
-    if (!lastSync) return "Never";
-    const date = new Date(lastSync);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} minutes ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    return `${diffDays} days ago`;
-  };
-
   return (
     <Card padding="lg" radius="md" shadow="sm" withBorder>
       <Stack gap="md">
         <Group align="center" justify="space-between">
           <div>
-            <Text fw={500} size="lg">
+            <Text className="font-medium" size="lg">
               Library Sync
             </Text>
             <Text color="dimmed" size="sm">
@@ -155,60 +110,13 @@ export function LibrarySync() {
             <Text color="dimmed" size="sm">
               Last synced:
             </Text>
-            <Text fw={500} size="sm">
+            <Text className="font-medium" size="sm">
               {formatLastSync(syncStatus.lastSync)}
             </Text>
           </Group>
         )}
 
-        {syncProgress && (
-          <Stack gap="xs">
-            <Group justify="space-between">
-              <Text fw={500} size="sm">
-                {syncProgress.progress?.message || `Sync ${syncProgress.state}`}
-              </Text>
-              {syncProgress.progress?.itemsPerSecond && (
-                <Badge color="blue" size="sm" variant="light">
-                  {syncProgress.progress.itemsPerSecond} items/sec
-                </Badge>
-              )}
-            </Group>
-
-            <Progress
-              animated={syncProgress.state === "active"}
-              color={
-                syncProgress.state === "completed"
-                  ? "green"
-                  : syncProgress.state === "failed"
-                    ? "red"
-                    : "blue"
-              }
-              striped={syncProgress.state === "active"}
-              value={syncProgress.progress?.percentage || 0}
-            />
-
-            {syncProgress.progress && (
-              <Group justify="space-between">
-                <Text color="dimmed" size="xs">
-                  {syncProgress.progress.phase}: {syncProgress.progress.current}
-                  /{syncProgress.progress.total}
-                </Text>
-                {syncProgress.progress.estimatedTimeRemaining && (
-                  <Text color="dimmed" size="xs">
-                    <Clock
-                      size={12}
-                      style={{ display: "inline", marginRight: 4 }}
-                    />
-                    {Math.ceil(
-                      syncProgress.progress.estimatedTimeRemaining / 60,
-                    )}{" "}
-                    min remaining
-                  </Text>
-                )}
-              </Group>
-            )}
-          </Stack>
-        )}
+        {syncProgress && <SyncProgress syncProgress={syncProgress} />}
 
         {syncLibraryMutation.isError && (
           <Alert
@@ -221,6 +129,24 @@ export function LibrarySync() {
               "An error occurred while syncing"}
           </Alert>
         )}
+
+        {syncRecentMutation.isError && (
+          <Alert
+            color="red"
+            icon={<AlertCircle size={16} />}
+            title="Quick Sync Failed"
+            variant="light"
+          >
+            {syncRecentMutation.error?.message ||
+              "An error occurred while syncing recently played tracks"}
+          </Alert>
+        )}
+
+        <Text color="dimmed" size="xs">
+          <strong>Full Sync:</strong> Sync entire library (tracks, albums,
+          playlists) • <strong>Quick Sync:</strong> Sync recently played tracks
+          only (fast, shows progress)
+        </Text>
 
         {syncProgress?.state === "failed" && syncProgress.error && (
           <Alert
@@ -274,26 +200,45 @@ export function LibrarySync() {
           </Alert>
         )}
 
-        <Button
-          disabled={
-            syncProgress?.state === "active" ||
-            syncProgress?.state === "waiting"
-          }
-          fullWidth
-          leftSection={<RefreshCw size={16} />}
-          loading={
-            syncLibraryMutation.isPending || syncProgress?.state === "waiting"
-          }
-          onClick={() => syncLibraryMutation.mutate()}
-        >
-          {syncLibraryMutation.isPending
-            ? "Starting sync..."
-            : syncProgress?.state === "active"
-              ? "Syncing..."
-              : syncProgress?.state === "waiting"
-                ? "Queued..."
-                : "Sync Now"}
-        </Button>
+        <Group grow>
+          <Button
+            disabled={
+              syncProgress?.state === "active" ||
+              syncProgress?.state === "waiting" ||
+              syncLibraryMutation.isPending ||
+              syncRecentMutation.isPending
+            }
+            leftSection={<RefreshCw size={16} />}
+            loading={syncLibraryMutation.isPending}
+            onClick={() => syncLibraryMutation.mutate()}
+          >
+            {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
+          </Button>
+          <Button
+            color="cyan"
+            disabled={
+              syncProgress?.state === "active" ||
+              syncProgress?.state === "waiting" ||
+              syncLibraryMutation.isPending ||
+              syncRecentMutation.isPending
+            }
+            leftSection={<RefreshCw size={16} />}
+            loading={syncRecentMutation.isPending}
+            onClick={() => syncRecentMutation.mutate()}
+            variant="light"
+          >
+            {syncRecentMutation.isPending ? "Starting..." : "Quick Sync"}
+          </Button>
+        </Group>
+
+        {(syncProgress?.state === "active" ||
+          syncProgress?.state === "waiting") && (
+          <Text className="text-center" color="dimmed" size="xs">
+            {syncProgress.state === "waiting"
+              ? "Sync queued..."
+              : "Syncing in progress..."}
+          </Text>
+        )}
       </Stack>
     </Card>
   );

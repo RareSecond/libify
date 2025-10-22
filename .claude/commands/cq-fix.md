@@ -1,12 +1,13 @@
 ---
-title: "Code Quality Fix"
-description: "Run code quality checks, fix all issues, and prepare commit message"
+name: "Code Quality Fix"
+description: "Run code quality checks and automatically fix all issues"
 ---
 
 # 🔧 CODE QUALITY FIX: Automated Quality Checks & Fixes
 
-**Purpose**: Run all code quality checks, automatically fix issues, and prepare a commit message
-**Location**: Must be run from the root directory of the monorepo
+**Purpose**: Run all code quality checks and automatically fix issues
+**Location**: Must be run from `.`
+**Next**: Use `commit-message.md` to generate an appropriate commit message
 
 ## Instructions
 
@@ -15,12 +16,12 @@ I'm running comprehensive code quality checks and fixing all issues. This comman
 1. **Runs `npm run cq:local` from root** - Executes all code quality checks with auto-fixing enabled
 2. **Handles remaining issues** - Fix any issues that couldn't be auto-fixed
 3. **Resolves ESLint/TS conflicts in DTOs** - Extract types when ordering conflicts occur
-4. **Prepares commit message** - Analyze all changes and suggest appropriate commit
+4. **Verifies all checks pass** - Ensure clean codebase
 
 ## Process
 
 ### 1. Run Code Quality Check with Auto-Fix
-- Change to root directory if not already there
+- Change to `.` if not already there
 - Run `npm run cq:local` which includes:
   - ESLint with auto-fix
   - Prettier formatting
@@ -44,28 +45,29 @@ When ESLint alphabetical ordering conflicts with TypeScript definition order (co
 - Ensure all checks pass without errors
 - If new issues arise, repeat fixing process
 
-### 5. Prepare Commit Message
-- Run `git status` to see all modified files
-- Run `git diff` to understand all changes
-- Analyze the complete scope of modifications
-- Generate concise, accurate commit message
+### 5. Report Status
+- Confirm all checks are passing
+- List types of fixes applied
+- Indicate readiness for commit
 
 ## Commands to Execute
 
 ```bash
 # Run from root directory
-cd [project-root]
+cd .
 
 # Run code quality with auto-fix
 npm run cq:local        # Runs all checks with auto-fixing enabled
 
+# Or run for specific workspaces
+npm run cq:local -w backend
+npm run cq:local -w frontend
+
 # If issues remain after auto-fix, run again
 npm run cq:local        # Verify all pass
 
-# Analyze changes
-git status              # All modified files
-git diff --name-only    # Files changed
-git log -1 --pretty=format:"%s"    # Last commit for context
+# Verify all checks pass
+git status              # See what was fixed
 ```
 
 ## Conflict Resolution Strategy
@@ -79,7 +81,7 @@ For ESLint/TypeScript ordering conflicts in DTOs:
 
 Example: If `create-product.dto.ts` has ordering conflicts, extract types to `create-product.types.ts`
 
-## Commit Message Format
+## Output Format
 
 ```
 🔧 CODE QUALITY COMPLETE
@@ -89,15 +91,14 @@ All checks passing:
 ✅ Prettier: Formatted
 ✅ TypeScript: Compiles successfully
 
-Changes made:
-- [Summary of fixes applied]
-- [Files modified]
-- [Any extractions for conflicts]
+Fixes applied:
+- [Summary of auto-fixes]
+- [Manual fixes if any]
+- [Conflict resolutions if any]
 
-Proposed commit message:
-'[concise message covering all changes]'
+Files modified: [N] files
 
-Ready for you to commit when convenient.
+Ready for commit. Use commit-message.md to generate message.
 ```
 
 ## What I Will Do
@@ -107,18 +108,16 @@ Ready for you to commit when convenient.
 3. Manually fix TypeScript errors
 4. Extract types/interfaces to resolve ordering conflicts
 5. Re-run checks until all pass
-6. Analyze all changes made
-7. Generate appropriate commit message
-8. Present results without committing
+6. Report completion status
 
 ## What I Won't Do
 
+- Generate commit messages (use commit-message.md)
 - Commit changes automatically
 - Skip fixing any issues
 - Ignore ESLint/TS conflicts
 - Make unnecessary changes
 - Modify functionality (only fix quality issues)
-- Create commits without user approval
 
 ## Success Criteria
 
@@ -127,6 +126,11 @@ Ready for you to commit when convenient.
 - No Prettier formatting issues
 - TypeScript compiles without errors
 - All conflicts resolved appropriately
-- Commit message accurately reflects all changes
+- Ready for commit
 
-!echo "📋 Running code quality fixes and preparing commit"
+## Next Step
+
+After all quality checks pass, use `commit-message.md` to:
+- Analyze all changes
+- Generate appropriate commit message
+- Prepare for commit

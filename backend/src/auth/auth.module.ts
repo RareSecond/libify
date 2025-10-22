@@ -10,7 +10,7 @@ import { SpotifyStrategy } from './strategies/spotify.strategy';
 
 @Module({
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
   imports: [
     PassportModule,
     JwtModule.register({

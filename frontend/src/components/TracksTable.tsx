@@ -1,19 +1,16 @@
-import { Box, Center, Group, Image, Loader, Table, Text } from "@mantine/core";
+import { Center, Loader, Table } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Music, Volume2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
-import { InlineTagEditor } from "./InlineTagEditor";
-import { RatingSelector } from "./RatingSelector";
+import { useTracksTableColumns } from "../hooks/useTracksTableColumns";
 
 interface TracksTableProps {
   contextId?: string;
@@ -23,17 +20,6 @@ interface TracksTableProps {
   search?: string;
   tracks: TrackDto[];
 }
-
-const formatDuration = (ms: number) => {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
-
-const formatDate = (date: null | string | undefined) => {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString();
-};
 
 export function TracksTable({
   contextId,
@@ -112,175 +98,11 @@ export function TracksTable({
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
 
-  const columns = useMemo<ColumnDef<TrackDto>[]>(
-    () => [
-      {
-        cell: ({ row }) => {
-          const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
-          return (
-            <Group gap="xs" wrap="nowrap">
-              {row.original.albumArt ? (
-                <Box
-                  h={36}
-                  style={{
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    position: "relative",
-                  }}
-                  w={36}
-                >
-                  <Image
-                    alt={row.original.album || row.original.title}
-                    fallbackSrc="/placeholder-album.svg"
-                    fit="cover"
-                    h={36}
-                    src={row.original.albumArt}
-                    style={{ objectFit: "cover" }}
-                    w={36}
-                  />
-                  {isCurrentTrack && isPlaying && (
-                    <Center
-                      style={{
-                        backgroundColor: "rgba(0, 0, 0, 0.6)",
-                        bottom: 0,
-                        color: "white",
-                        left: 0,
-                        position: "absolute",
-                        right: 0,
-                        top: 0,
-                      }}
-                    >
-                      <Volume2 size={20} />
-                    </Center>
-                  )}
-                </Box>
-              ) : (
-                <Center
-                  bg="gray.2"
-                  h={36}
-                  style={{ borderRadius: "4px" }}
-                  w={36}
-                >
-                  {isCurrentTrack && isPlaying ? (
-                    <Volume2 size={18} />
-                  ) : (
-                    <Music color="gray" size={18} />
-                  )}
-                </Center>
-              )}
-            </Group>
-          );
-        },
-        enableSorting: false,
-        header: "",
-        id: "albumArt",
-        size: 50,
-      },
-      {
-        accessorKey: "title",
-        cell: ({ getValue, row }) => {
-          const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
-          return (
-            <Text
-              c={isCurrentTrack && isPlaying ? "blue" : undefined}
-              fw={500}
-              lineClamp={1}
-              size="sm"
-            >
-              {getValue() as string}
-            </Text>
-          );
-        },
-        header: "Title",
-        id: "title",
-        size: 200,
-      },
-      {
-        accessorKey: "artist",
-        cell: ({ getValue }) => (
-          <Text lineClamp={1} size="sm">
-            {getValue() as string}
-          </Text>
-        ),
-        header: "Artist",
-        id: "artist",
-        size: 150,
-      },
-      {
-        accessorKey: "album",
-        cell: ({ getValue }) => (
-          <Text c="dimmed" lineClamp={1} size="sm">
-            {(getValue() as string) || "-"}
-          </Text>
-        ),
-        header: "Album",
-        id: "album",
-        size: 150,
-      },
-      {
-        accessorKey: "duration",
-        cell: ({ getValue }) => (
-          <Text c="dimmed" size="sm">
-            {formatDuration(getValue() as number)}
-          </Text>
-        ),
-        header: "Duration",
-        id: "duration",
-        size: 80,
-      },
-      {
-        accessorKey: "totalPlayCount",
-        cell: ({ getValue }) => (
-          <Text size="sm" ta="center">
-            {getValue() as number}
-          </Text>
-        ),
-        header: "Plays",
-        id: "totalPlayCount",
-        size: 60,
-      },
-      {
-        accessorKey: "lastPlayedAt",
-        cell: ({ getValue }) => (
-          <Text c="dimmed" size="xs">
-            {formatDate(getValue() as string | undefined)}
-          </Text>
-        ),
-        header: "Last Played",
-        id: "lastPlayedAt",
-        size: 100,
-      },
-      {
-        accessorKey: "rating",
-        cell: ({ row }) => (
-          <RatingSelector
-            onRatingChange={onRefetch}
-            rating={row.original.rating ?? null}
-            trackId={row.original.id}
-          />
-        ),
-        enableSorting: false,
-        header: "Rating",
-        id: "rating",
-        size: 120,
-      },
-      {
-        accessorKey: "tags",
-        cell: ({ row }) => (
-          <InlineTagEditor
-            onTagsChange={onRefetch}
-            trackId={row.original.id}
-            trackTags={row.original.tags}
-          />
-        ),
-        enableSorting: false,
-        header: "Tags",
-        id: "tags",
-        size: 150,
-      },
-    ],
-    [onRefetch, currentTrack, isPlaying],
-  );
+  const columns = useTracksTableColumns({
+    currentTrack: currentTrack ? { id: currentTrack.id } : undefined,
+    isPlaying,
+    onRefetch,
+  });
 
   const table = useReactTable({
     columnResizeMode: "onChange",
@@ -288,9 +110,7 @@ export function TracksTable({
     data: tracks,
     getCoreRowModel: getCoreRowModel(),
     onColumnOrderChange: setColumnOrder,
-    state: {
-      columnOrder,
-    },
+    state: { columnOrder },
   });
 
   const handleDragStart = (e: React.DragEvent, column: string) => {
@@ -329,7 +149,7 @@ export function TracksTable({
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -348,6 +168,7 @@ export function TracksTable({
           <Table.Tr>
             {table.getFlatHeaders().map((header) => (
               <Table.Th
+                className={`relative select-none transition-opacity duration-200 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"}`}
                 draggable
                 key={header.id}
                 onDragEnd={handleDragEnd}
@@ -355,12 +176,9 @@ export function TracksTable({
                 onDragOver={handleDragOver}
                 onDragStart={(e) => handleDragStart(e, header.column.id)}
                 onDrop={handleDrop}
+                // eslint-disable-next-line react/forbid-component-props
                 style={{
-                  cursor: draggedColumn ? "grabbing" : "grab",
                   opacity: draggedColumn === header.column.id ? 0.5 : 1,
-                  position: "relative",
-                  transition: "opacity 0.2s",
-                  userSelect: "none",
                   width: header.getSize(),
                 }}
               >
@@ -377,18 +195,11 @@ export function TracksTable({
             const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
             return (
               <Table.Tr
-                className="hover:bg-gray-50"
+                className={`cursor-pointer hover:bg-gray-50 ${isCurrentTrack && isPlaying ? "bg-blue-50/50" : ""}`}
                 key={row.id}
                 onClick={() =>
                   handlePlayTrack(row.original.title, row.original.spotifyId)
                 }
-                style={{
-                  backgroundColor:
-                    isCurrentTrack && isPlaying
-                      ? "rgba(0, 123, 255, 0.05)"
-                      : undefined,
-                  cursor: "pointer",
-                }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <Table.Td key={cell.id}>

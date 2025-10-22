@@ -1,10 +1,7 @@
 import {
-  Box,
-  Card,
   Center,
   Grid,
   Group,
-  Image,
   Loader,
   Pagination,
   Select,
@@ -14,7 +11,7 @@ import {
   Title,
 } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Music, Play, Search, Star } from "lucide-react";
+import { Music, Search } from "lucide-react";
 
 import {
   useLibraryControllerGetAlbums,
@@ -22,22 +19,8 @@ import {
 } from "../data/api";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~albums.index";
+import { AlbumCard } from "./cards/AlbumCard";
 import { GenreFilter } from "./filters/GenreFilter";
-
-const formatDuration = (ms: number) => {
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
-};
-
-const formatDate = (date: null | string | undefined) => {
-  if (!date) return "Never";
-  return new Date(date).toLocaleDateString();
-};
 
 export function AlbumsOverview() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -56,11 +39,7 @@ export function AlbumsOverview() {
       onDebouncedChange: (value) => {
         navigate({
           replace: value === "" && search !== "",
-          search: (prev) => ({
-            ...prev,
-            page: 1,
-            search: value,
-          }),
+          search: (prev) => ({ ...prev, page: 1, search: value }),
         });
       },
     },
@@ -101,15 +80,17 @@ export function AlbumsOverview() {
 
   if (error) {
     return (
-      <Center h={400}>
-        <Text c="red">Error loading albums: {error.message}</Text>
+      <Center className="h-[400px]">
+        <Text className="text-red-600">
+          Error loading albums: {error.message}
+        </Text>
       </Center>
     );
   }
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -119,19 +100,20 @@ export function AlbumsOverview() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={2}>My Albums</Title>
-        <Text c="dimmed">{data?.total || 0} albums</Text>
+        <Text className="text-gray-600">{data?.total || 0} albums</Text>
       </Group>
 
       <Group>
         <TextInput
+          className="w-[300px]"
           leftSection={<Search size={16} />}
           onChange={(e) => setLocalSearch(e.currentTarget.value)}
           placeholder="Search albums or artists..."
           value={localSearch}
-          w={300}
         />
 
         <Select
+          className="w-[150px]"
           data={[
             { label: "Album Name", value: "name" },
             { label: "Artist", value: "artist" },
@@ -153,10 +135,10 @@ export function AlbumsOverview() {
             })
           }
           value={sortBy}
-          w={150}
         />
 
         <Select
+          className="w-[120px]"
           data={[
             { label: "Ascending", value: "asc" },
             { label: "Descending", value: "desc" },
@@ -166,17 +148,16 @@ export function AlbumsOverview() {
             updateSearch({ sortOrder: value as "asc" | "desc" })
           }
           value={sortOrder}
-          w={120}
         />
 
         <Select
+          className="w-[100px]"
           data={["12", "24", "48", "96"]}
           label="Page size"
           onChange={(value) =>
             updateSearch({ page: 1, pageSize: parseInt(value || "24") })
           }
           value={pageSize.toString()}
-          w={100}
         />
 
         {genresData && genresData.length > 0 && (
@@ -195,99 +176,21 @@ export function AlbumsOverview() {
             span={{ base: 12, lg: 3, md: 4, sm: 6 }}
           >
             <Link
-              params={{
-                album: album.name,
-                artist: album.artist,
-              }}
-              style={{ textDecoration: "none" }}
+              className="no-underline"
+              params={{ album: album.name, artist: album.artist }}
               to="/albums/$artist/$album"
             >
-              <Card
-                className="hover:shadow-lg hover:-translate-y-1"
-                h="100%"
-                p="md"
-                radius="md"
-                shadow="sm"
-                style={{
-                  cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                }}
-                withBorder
-              >
-                <Card.Section mb="md">
-                  <Box pos="relative">
-                    {album.albumArt ? (
-                      <Image
-                        alt={album.name}
-                        fallbackSrc="/placeholder-album.svg"
-                        h={200}
-                        src={album.albumArt}
-                        style={{ objectFit: "cover" }}
-                      />
-                    ) : (
-                      <Center bg="gray.2" h={200}>
-                        <Music color="gray" size={48} />
-                      </Center>
-                    )}
-                    <Box
-                      bg="dark.7"
-                      pos="absolute"
-                      px="xs"
-                      py={4}
-                      right={8}
-                      style={{ borderRadius: 4, opacity: 0.9 }}
-                      top={8}
-                    >
-                      <Text c="white" fw={600} size="xs">
-                        {album.trackCount} tracks
-                      </Text>
-                    </Box>
-                  </Box>
-                </Card.Section>
-
-                <Stack gap="xs">
-                  <div>
-                    <Text fw={600} lineClamp={1} size="md">
-                      {album.name}
-                    </Text>
-                    <Text c="dimmed" lineClamp={1} size="sm">
-                      {album.artist}
-                    </Text>
-                  </div>
-
-                  <Group gap="xs" wrap="nowrap">
-                    <Group gap={4}>
-                      <Play size={14} />
-                      <Text size="xs">{album.totalPlayCount}</Text>
-                    </Group>
-
-                    {album.avgRating && (
-                      <Group gap={4}>
-                        <Star size={14} />
-                        <Text size="xs">{album.avgRating}</Text>
-                      </Group>
-                    )}
-
-                    <Text c="dimmed" size="xs" style={{ marginLeft: "auto" }}>
-                      {formatDuration(album.totalDuration)}
-                    </Text>
-                  </Group>
-
-                  <Text c="dimmed" size="xs">
-                    Last played: {formatDate(album.lastPlayed)}
-                  </Text>
-                </Stack>
-              </Card>
+              <AlbumCard album={album} />
             </Link>
           </Grid.Col>
         ))}
       </Grid>
 
       {(!data?.albums || data.albums.length === 0) && (
-        <Center h={200}>
+        <Center className="h-[200px]">
           <Stack align="center" gap="md">
-            <Music size={48} style={{ opacity: 0.5 }} />
-            <Text c="dimmed" size="lg">
+            <Music className="opacity-50" size={48} />
+            <Text className="text-lg text-gray-600">
               {debouncedSearch
                 ? "No albums found matching your search"
                 : "No albums in your library yet"}
@@ -297,7 +200,7 @@ export function AlbumsOverview() {
       )}
 
       {data && data.totalPages > 1 && (
-        <Center mt="lg">
+        <Center className="mt-6">
           <Pagination
             boundaries={1}
             onChange={(newPage) => updateSearch({ page: newPage })}

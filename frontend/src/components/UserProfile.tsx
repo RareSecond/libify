@@ -1,7 +1,11 @@
 import { Avatar, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { Calendar, LogOut, User } from "lucide-react";
 
-import { useAuthControllerGetProfile } from "@/data/api";
+import {
+  useAuthControllerGetProfile,
+  useAuthControllerLogout,
+} from "@/data/api";
 
 interface UserData {
   createdAt: string;
@@ -14,17 +18,23 @@ interface UserData {
 
 export function UserProfile() {
   const { data, error, isLoading } = useAuthControllerGetProfile();
+  const logoutMutation = useAuthControllerLogout();
 
-  const handleLogout = async () => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-        credentials: "include",
-        method: "POST",
-      });
-      window.location.href = "/";
-    } catch {
-      // Logout failed - page will be refreshed anyway
-    }
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onError: (error) => {
+        // Show error notification without redirecting
+        notifications.show({
+          color: "red",
+          message: error.message || "Please try again",
+          title: "Failed to logout",
+        });
+      },
+      onSuccess: () => {
+        // Only redirect on successful logout
+        window.location.href = "/";
+      },
+    });
   };
 
   if (isLoading) {
@@ -57,7 +67,7 @@ export function UserProfile() {
             <User size={24} />
           </Avatar>
           <div>
-            <Text fw={500} size="lg">
+            <Text className="font-medium" size="lg">
               {user.name || "Anonymous User"}
             </Text>
             <Text color="dimmed" size="sm">
@@ -81,12 +91,14 @@ export function UserProfile() {
 
         <Button
           color="red"
+          disabled={logoutMutation.isPending}
           fullWidth
           leftSection={<LogOut size={16} />}
+          loading={logoutMutation.isPending}
           onClick={handleLogout}
           variant="outline"
         >
-          Logout
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </Button>
       </Stack>
     </Card>

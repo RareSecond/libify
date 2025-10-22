@@ -10,9 +10,7 @@ import { useAuthControllerGetProfile } from "../data/api";
 
 const queryClient = new QueryClient();
 
-export const Route = createRootRoute({
-  component: RootComponent,
-});
+export const Route = createRootRoute({ component: RootComponent });
 
 function AuthWrapper() {
   const {
@@ -28,7 +26,7 @@ function AuthWrapper() {
 
   if (isLoading) {
     return (
-      <Center h="100vh">
+      <Center className="h-screen">
         <Loader size="lg" />
       </Center>
     );
@@ -37,7 +35,7 @@ function AuthWrapper() {
   // Not authenticated - show login page
   if (error || !profile) {
     return (
-      <Center h="100vh">
+      <Center className="h-screen">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Welcome to Spotlib</h1>
           <p className="text-gray-600 mb-8">

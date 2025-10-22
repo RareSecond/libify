@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
 
 export interface SyncJobStatus {
   error?: string;
@@ -42,56 +43,56 @@ export function useSyncProgress(jobId: null | string) {
       return;
     }
 
-    // Create EventSource for SSE
-    const eventSource = new EventSource(
-      `${import.meta.env.VITE_API_URL}/library/sync/${jobId}/progress`,
-      { withCredentials: true },
-    );
+    // Create WebSocket connection
+    const socket: Socket = io(`${import.meta.env.VITE_API_URL}/sync`, {
+      transports: ["websocket"],
+      withCredentials: true,
+    });
 
-    eventSource.onopen = () => {
+    socket.on("connect", () => {
       setIsConnected(true);
-    };
+      // Subscribe to this job's updates
+      socket.emit("subscribe", { jobId });
+    });
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.error) {
-          setStatus({
-            error: data.error,
-            jobId,
-            state: "failed",
-          });
-          eventSource.close();
-          return;
-        }
-
-        setStatus({
-          error: data.error,
-          jobId: data.jobId,
-          progress: data.progress,
-          result: data.result,
-          state: data.state,
-        });
-
-        // Close connection when job is done
-        if (data.state === "completed" || data.state === "failed") {
-          eventSource.close();
-        }
-      } catch {
-        // Failed to parse SSE data
-      }
-    };
-
-    eventSource.onerror = () => {
-      // SSE connection error
+    socket.on("disconnect", () => {
       setIsConnected(false);
-      eventSource.close();
-    };
+    });
+
+    socket.on("status", (data: SyncJobStatus) => {
+      setStatus(data);
+    });
+
+    socket.on("progress", (data: SyncJobStatus) => {
+      setStatus(data);
+    });
+
+    socket.on("completed", (data: SyncJobStatus) => {
+      setStatus(data);
+      // Unsubscribe and disconnect after completion
+      socket.emit("unsubscribe", { jobId });
+      socket.disconnect();
+    });
+
+    socket.on("failed", (data: SyncJobStatus) => {
+      setStatus(data);
+      // Unsubscribe and disconnect after failure
+      socket.emit("unsubscribe", { jobId });
+      socket.disconnect();
+    });
+
+    socket.on("error", (error: { message: string }) => {
+      setStatus({ error: error.message, jobId, state: "failed" });
+    });
+
+    socket.on("connect_error", () => {
+      // WebSocket connection failed - silently handle
+    });
 
     // Cleanup
     return () => {
-      eventSource.close();
+      socket.emit("unsubscribe", { jobId });
+      socket.disconnect();
       setIsConnected(false);
     };
   }, [jobId]);
@@ -101,9 +102,5 @@ export function useSyncProgress(jobId: null | string) {
     setIsConnected(false);
   }, []);
 
-  return {
-    isConnected,
-    reset,
-    status,
-  };
+  return { isConnected, reset, status };
 }

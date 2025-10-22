@@ -13,7 +13,7 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
 
   if (isLoading) {
     return (
-      <Center h={400}>
+      <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
@@ -21,8 +21,10 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
 
   if (error) {
     return (
-      <Center h={400}>
-        <Text c="red">Error loading artist tracks: {error.message}</Text>
+      <Center className="h-[400px]">
+        <Text className="text-red-600">
+          Error loading artist tracks: {error.message}
+        </Text>
       </Center>
     );
   }
@@ -31,8 +33,8 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
 
   if (tracks.length === 0) {
     return (
-      <Center h={400}>
-        <Text c="dimmed" size="lg">
+      <Center className="h-[400px]">
+        <Text className="text-lg text-gray-600">
           No tracks found for this artist
         </Text>
       </Center>

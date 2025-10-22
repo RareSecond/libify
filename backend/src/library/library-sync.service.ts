@@ -284,6 +284,245 @@ export class LibrarySyncService {
     }
   }
 
+  async syncRecentTracksQuick(
+    userId: string,
+    accessToken: string,
+    onProgress?: SyncProgressCallback,
+  ): Promise<SyncResult> {
+    const result: SyncResult = {
+      errors: [],
+      newAlbums: 0,
+      newTracks: 0,
+      playlistTracks: 0,
+      totalAlbums: 0,
+      totalPlaylists: 0,
+      totalTracks: 0,
+      updatedAlbums: 0,
+      updatedTracks: 0,
+    };
+
+    try {
+      this.logger.log(`Starting quick sync for user ${userId}`);
+      this.syncArtistCache.clear();
+
+      // Phase 1: Sync first 50 liked tracks (0-40%)
+      if (onProgress) {
+        await onProgress({
+          current: 0,
+          errors: [],
+          message: 'Fetching liked tracks...',
+          percentage: 0,
+          phase: 'tracks',
+          total: 100,
+        });
+      }
+
+      const likedTracksPage = await this.spotifyService.getUserLibraryTracks(
+        accessToken,
+        50, // Limit to first 50 tracks
+        0,
+      );
+
+      if (onProgress) {
+        await onProgress({
+          current: 10,
+          errors: [],
+          message: `Processing ${likedTracksPage.items.length} liked tracks...`,
+          percentage: 10,
+          phase: 'tracks',
+          total: 100,
+        });
+      }
+
+      // Process liked tracks
+      await this.processBatchOptimized(
+        userId,
+        likedTracksPage.items,
+        result,
+        accessToken,
+      );
+
+      result.totalTracks = likedTracksPage.items.length;
+
+      if (onProgress) {
+        await onProgress({
+          current: result.totalTracks,
+          errors: result.errors,
+          message: `Synced ${result.totalTracks} liked tracks`,
+          percentage: 40,
+          phase: 'tracks',
+          total: result.totalTracks,
+        });
+      }
+
+      // Phase 2: Sync first 10 albums (40-70%)
+      if (onProgress) {
+        await onProgress({
+          current: 0,
+          errors: result.errors,
+          message: 'Fetching saved albums...',
+          percentage: 40,
+          phase: 'albums',
+          total: 100,
+        });
+      }
+
+      const albumsPage = await this.spotifyService.getUserSavedAlbums(
+        accessToken,
+        10, // Limit to first 10 albums
+        0,
+      );
+
+      if (onProgress) {
+        await onProgress({
+          current: 5,
+          errors: result.errors,
+          message: `Processing ${albumsPage.items.length} albums...`,
+          percentage: 50,
+          phase: 'albums',
+          total: 100,
+        });
+      }
+
+      // Process albums
+      await this.processAlbumBatch(
+        userId,
+        albumsPage.items,
+        result,
+        accessToken,
+      );
+
+      result.totalAlbums = albumsPage.items.length;
+
+      if (onProgress) {
+        await onProgress({
+          current: result.totalAlbums,
+          errors: result.errors,
+          message: `Synced ${result.newAlbums} albums`,
+          percentage: 70,
+          phase: 'albums',
+          total: result.totalAlbums,
+        });
+      }
+
+      // Phase 3: Sync first 3 playlists (70-100%)
+      if (onProgress) {
+        await onProgress({
+          current: 0,
+          errors: result.errors,
+          message: 'Fetching playlists...',
+          percentage: 70,
+          phase: 'playlists',
+          total: 100,
+        });
+      }
+
+      const allPlaylists =
+        await this.spotifyService.getAllUserPlaylists(accessToken);
+      const playlistsToSync = allPlaylists.slice(0, 3); // Take first 3 playlists
+
+      result.totalPlaylists = playlistsToSync.length;
+
+      let processedPlaylists = 0;
+      for (const playlist of playlistsToSync) {
+        try {
+          this.logger.log(
+            `Processing playlist: ${playlist.name} (${playlist.id})`,
+          );
+
+          // Update playlist metadata
+          await this.upsertUserPlaylist(userId, playlist);
+
+          // Skip empty playlists
+          if (playlist.tracks.total === 0) {
+            processedPlaylists++;
+            continue;
+          }
+
+          if (onProgress) {
+            await onProgress({
+              current: processedPlaylists,
+              errors: result.errors,
+              message: `Syncing playlist: ${playlist.name}...`,
+              percentage:
+                70 +
+                Math.round((processedPlaylists / playlistsToSync.length) * 30),
+              phase: 'playlists',
+              total: playlistsToSync.length,
+            });
+          }
+
+          // Fetch tracks from the playlist
+          const playlistTracks = await this.spotifyService.getPlaylistTracks(
+            accessToken,
+            playlist.id,
+          );
+
+          result.playlistTracks += playlistTracks.length;
+
+          // Convert to the format expected by processBatch
+          const tracksForProcessing = playlistTracks.map((item) => ({
+            added_at: item.added_at,
+            track: item.track,
+          }));
+
+          // Process tracks in batches using existing logic
+          const batchSize = 100;
+          const playlistSyncResult: SyncResult = {
+            errors: [],
+            newAlbums: 0,
+            newTracks: 0,
+            totalAlbums: 0,
+            totalTracks: 0,
+            updatedAlbums: 0,
+            updatedTracks: 0,
+          };
+
+          for (let i = 0; i < tracksForProcessing.length; i += batchSize) {
+            const batch = tracksForProcessing.slice(i, i + batchSize);
+            await this.processBatch(
+              userId,
+              batch,
+              playlistSyncResult,
+              accessToken,
+            );
+          }
+
+          result.newTracks += playlistSyncResult.newTracks;
+          result.errors.push(...playlistSyncResult.errors);
+
+          processedPlaylists++;
+        } catch (error) {
+          this.logger.error(
+            `Failed to process playlist ${playlist.name} (${playlist.id})`,
+            error,
+          );
+          result.errors.push(`Playlist ${playlist.name}: ${error.message}`);
+        }
+      }
+
+      if (onProgress) {
+        await onProgress({
+          current: result.totalPlaylists,
+          errors: result.errors,
+          message: `Quick sync complete! ${result.newTracks} new tracks, ${result.newAlbums} new albums, ${result.totalPlaylists} playlists`,
+          percentage: 100,
+          phase: 'playlists',
+          total: result.totalPlaylists,
+        });
+      }
+
+      this.logger.log(
+        `Quick sync completed for user ${userId}: ${result.newTracks} new tracks (${result.totalTracks} liked + ${result.playlistTracks} from playlists), ${result.newAlbums} new albums, ${result.totalPlaylists} playlists`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to quick sync for user ${userId}`, error);
+      result.errors.push(`Quick sync failed: ${error.message}`);
+      return result;
+    }
+  }
+
   async syncUserAlbums(
     userId: string,
     accessToken: string,
