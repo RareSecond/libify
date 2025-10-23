@@ -161,7 +161,7 @@ model TrackTag {
 model PlayHistory {
   id          String   @id @default(uuid())
   userTrackId String
-  playedAt    DateTime @default(now())
+  playedAt    DateTime
   duration    Int? // How long the track was played (milliseconds)
 
   // Relations

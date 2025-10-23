@@ -739,7 +739,7 @@ export class TrackService {
     if (sourceTypes && sourceTypes.length > 0) {
       where.sources = {
         some: {
-          sourceType: { in: sourceTypes as SourceType[] },
+          sourceType: { in: sourceTypes },
         },
       };
     }

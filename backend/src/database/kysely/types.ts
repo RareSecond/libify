@@ -10,7 +10,7 @@ import type { SourceType } from "./enums";
 export type PlayHistory = {
   id: string;
   userTrackId: string;
-  playedAt: Generated<Timestamp>;
+  playedAt: Timestamp;
   duration: number | null;
 };
 export type SmartPlaylist = {

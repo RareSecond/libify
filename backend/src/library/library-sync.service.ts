@@ -1611,6 +1611,8 @@ export class LibrarySyncService {
 
   /**
    * Create or update a track source entry
+   * Note: Prisma doesn't support null in unique constraint where clauses,
+   * so we use findFirst + create/update for null sourceId cases
    */
   private async upsertTrackSource(
     userTrackId: string,
@@ -1619,27 +1621,60 @@ export class LibrarySyncService {
     sourceId?: string,
   ): Promise<void> {
     try {
-      // Use empty string for sourceId if not provided (Prisma doesn't allow null in unique constraints)
-      const sourceIdValue = sourceId || '';
+      const sourceIdValue = sourceId ?? null;
+      const sourceNameValue = sourceName ?? null;
 
-      await this.databaseService.trackSource.upsert({
-        create: {
-          sourceId: sourceIdValue,
-          sourceName: sourceName || null,
-          sourceType,
-          userTrackId,
-        },
-        update: {
-          sourceName: sourceName || null,
-        },
-        where: {
-          userTrackId_sourceType_sourceId: {
-            sourceId: sourceIdValue,
+      if (sourceIdValue === null) {
+        // Prisma doesn't allow null in unique constraint where clauses
+        // Use findFirst + create/update instead
+        const existing = await this.databaseService.trackSource.findFirst({
+          where: {
+            sourceId: null,
             sourceType,
             userTrackId,
           },
-        },
-      });
+        });
+
+        if (existing) {
+          await this.databaseService.trackSource.update({
+            data: {
+              sourceName: sourceNameValue,
+            },
+            where: {
+              id: existing.id,
+            },
+          });
+        } else {
+          await this.databaseService.trackSource.create({
+            data: {
+              sourceId: null,
+              sourceName: sourceNameValue,
+              sourceType,
+              userTrackId,
+            },
+          });
+        }
+      } else {
+        // sourceId is not null, can use upsert normally
+        await this.databaseService.trackSource.upsert({
+          create: {
+            sourceId: sourceIdValue,
+            sourceName: sourceNameValue,
+            sourceType,
+            userTrackId,
+          },
+          update: {
+            sourceName: sourceNameValue,
+          },
+          where: {
+            userTrackId_sourceType_sourceId: {
+              sourceId: sourceIdValue,
+              sourceType,
+              userTrackId,
+            },
+          },
+        });
+      }
     } catch (error) {
       this.logger.warn(
         `Failed to upsert track source for userTrack ${userTrackId}`,

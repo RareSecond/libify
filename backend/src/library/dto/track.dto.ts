@@ -3,6 +3,7 @@ import { SourceType } from '@prisma/client';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -118,7 +119,7 @@ export class GetTracksQueryDto {
   })
   @IsArray()
   @IsOptional()
-  @IsString({ each: true })
+  @IsEnum(SourceType, { each: true })
   @Transform(({ obj, value }) => {
     // Handle sourceTypes[] format from frontend
     if (obj['sourceTypes[]']) {
@@ -135,7 +136,7 @@ export class GetTracksQueryDto {
     }
     return value;
   })
-  sourceTypes?: string[];
+  sourceTypes?: SourceType[];
 
   @ApiPropertyOptional({ description: 'Filter by tag IDs', type: [String] })
   @IsArray()

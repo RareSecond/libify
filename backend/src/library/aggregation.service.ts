@@ -482,7 +482,6 @@ export class AggregationService {
         totalDuration: stats.totalDuration ?? 0,
         totalPlayCount: stats.totalPlayCount ?? 0,
         trackCount: stats.trackCount,
-        updatedAt: new Date(),
         userId,
       })
       .onConflict((oc) =>
@@ -493,7 +492,6 @@ export class AggregationService {
           totalDuration: stats.totalDuration ?? 0,
           totalPlayCount: stats.totalPlayCount ?? 0,
           trackCount: stats.trackCount,
-          updatedAt: new Date(),
         }),
       )
       .execute();
@@ -552,7 +550,6 @@ export class AggregationService {
         totalDuration: stats.totalDuration ?? 0,
         totalPlayCount: stats.totalPlayCount ?? 0,
         trackCount: stats.trackCount,
-        updatedAt: new Date(),
         userId,
       })
       .onConflict((oc) =>
@@ -564,7 +561,6 @@ export class AggregationService {
           totalDuration: stats.totalDuration ?? 0,
           totalPlayCount: stats.totalPlayCount ?? 0,
           trackCount: stats.trackCount,
-          updatedAt: new Date(),
         }),
       )
       .execute();
