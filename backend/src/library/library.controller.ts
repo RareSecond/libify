@@ -525,7 +525,9 @@ export class LibraryController {
     }
   }
 
-  @ApiOperation({ summary: 'Manually sync recently played tracks from Spotify' })
+  @ApiOperation({
+    summary: 'Manually sync recently played tracks from Spotify',
+  })
   @ApiResponse({
     description: 'Play sync completed successfully',
     status: 200,

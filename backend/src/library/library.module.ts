@@ -15,13 +15,16 @@ import { TrackService } from './track.service';
 
 @Module({
   controllers: [LibraryController],
-  exports: [SpotifyService, LibrarySyncService],
+  exports: [SpotifyService, LibrarySyncService, AggregationService],
   imports: [
     DatabaseModule,
     AuthModule,
     ScheduleModule.forRoot(),
     BullModule.registerQueue({
       name: 'sync',
+    }),
+    BullModule.registerQueue({
+      name: 'play-sync',
     }),
   ],
   providers: [
