@@ -48,6 +48,7 @@ import {
 } from './dto/tag.dto';
 import { GetTracksQueryDto, PaginatedTracksDto } from './dto/track.dto';
 import { LibrarySyncService } from './library-sync.service';
+import { PlaySyncService } from './play-sync.service';
 import { SpotifyService } from './spotify.service';
 import { TagService } from './tag.service';
 import { TrackService } from './track.service';
@@ -69,6 +70,7 @@ export class LibraryController {
     private trackService: TrackService,
     private spotifyService: SpotifyService,
     private tagService: TagService,
+    private playSyncService: PlaySyncService,
     @InjectQueue('sync') private syncQueue: Queue,
   ) {}
 
@@ -518,6 +520,27 @@ export class LibraryController {
       this.logger.error('Failed to queue sync job', error);
       throw new HttpException(
         'Failed to start sync',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @ApiOperation({ summary: 'Manually sync recently played tracks from Spotify' })
+  @ApiResponse({
+    description: 'Play sync completed successfully',
+    status: 200,
+  })
+  @Post('sync-plays')
+  async syncPlays(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ message: string }> {
+    try {
+      await this.playSyncService.triggerManualSync(req.user.id);
+      return { message: 'Play sync completed successfully' };
+    } catch (error) {
+      this.logger.error('Failed to sync plays', error);
+      throw new HttpException(
+        'Failed to sync plays',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

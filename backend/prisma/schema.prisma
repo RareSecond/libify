@@ -24,6 +24,7 @@ model User {
   spotifyAccessToken  String? // Spotify access token
   spotifyRefreshToken String? // Spotify refresh token
   tokenExpiresAt      DateTime? // Token expiration time
+  lastPlaySyncedAt    DateTime? // Timestamp of the most recent play synced from Spotify
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

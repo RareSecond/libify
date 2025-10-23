@@ -88,6 +88,7 @@ export type User = {
   spotifyAccessToken: string | null;
   spotifyRefreshToken: string | null;
   tokenExpiresAt: Timestamp | null;
+  lastPlaySyncedAt: Timestamp | null;
   createdAt: Generated<Timestamp>;
   updatedAt: Timestamp;
 };
