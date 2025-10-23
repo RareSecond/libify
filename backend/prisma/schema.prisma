@@ -24,6 +24,7 @@ model User {
   spotifyAccessToken  String? // Spotify access token
   spotifyRefreshToken String? // Spotify refresh token
   tokenExpiresAt      DateTime? // Token expiration time
+  lastPlaySyncedAt    DateTime? // Timestamp of the most recent play synced from Spotify
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -167,6 +168,7 @@ model PlayHistory {
   // Relations
   userTrack UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
 
+  @@unique([userTrackId, playedAt])
   @@index([userTrackId, playedAt])
   @@index([userTrackId, playedAt(sort: Desc)], name: "idx_track_played_desc")
   @@index([playedAt], name: "idx_played_at")

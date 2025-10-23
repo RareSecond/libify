@@ -6,6 +6,7 @@ import { DatabaseModule } from '../database/database.module';
 import { AggregationService } from './aggregation.service';
 import { LibrarySyncService } from './library-sync.service';
 import { LibraryController } from './library.controller';
+import { PlaySyncService } from './play-sync.service';
 import { SpotifyService } from './spotify.service';
 import { SyncProgressGateway } from './sync-progress.gateway';
 import { TagService } from './tag.service';
@@ -13,12 +14,20 @@ import { TrackService } from './track.service';
 
 @Module({
   controllers: [LibraryController],
-  exports: [SpotifyService, LibrarySyncService],
+  exports: [
+    SpotifyService,
+    LibrarySyncService,
+    AggregationService,
+    PlaySyncService,
+  ],
   imports: [
     DatabaseModule,
     AuthModule,
     BullModule.registerQueue({
       name: 'sync',
+    }),
+    BullModule.registerQueue({
+      name: 'play-sync',
     }),
   ],
   providers: [
@@ -28,6 +37,7 @@ import { TrackService } from './track.service';
     TagService,
     AggregationService,
     SyncProgressGateway,
+    PlaySyncService,
   ],
 })
 export class LibraryModule {}

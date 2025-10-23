@@ -1079,6 +1079,29 @@
         ]
       }
     },
+    "/library/sync-plays": {
+      "post": {
+        "operationId": "LibraryController_syncPlays",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Play sync completed successfully"
+          },
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Manually sync recently played tracks from Spotify",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/recent": {
       "post": {
         "operationId": "LibraryController_syncRecentlyPlayed",

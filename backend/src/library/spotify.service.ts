@@ -238,11 +238,17 @@ export class SpotifyService {
   async getRecentlyPlayed(
     accessToken: string,
     limit = 50,
+    after?: number,
   ): Promise<Array<{ played_at: string; track: SpotifyTrackData }>> {
     try {
+      const params: { after?: number; limit: number } = { limit };
+      if (after !== undefined) {
+        params.after = after;
+      }
+
       const response = await this.spotifyApi.get('/me/player/recently-played', {
         headers: { Authorization: `Bearer ${accessToken}` },
-        params: { limit },
+        params,
       });
       return response.data.items;
     } catch (error) {

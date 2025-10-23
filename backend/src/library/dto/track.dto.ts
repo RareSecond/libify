@@ -118,8 +118,8 @@ export class GetTracksQueryDto {
     isArray: true,
   })
   @IsArray()
-  @IsOptional()
   @IsEnum(SourceType, { each: true })
+  @IsOptional()
   @Transform(({ obj, value }) => {
     // Handle sourceTypes[] format from frontend
     if (obj['sourceTypes[]']) {
