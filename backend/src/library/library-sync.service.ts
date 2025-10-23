@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { SourceType } from '@prisma/client';
 
 import { DatabaseService } from '../database/database.service';
 import { KyselyService } from '../database/kysely/kysely.service';
@@ -269,7 +270,15 @@ export class LibrarySyncService {
 
           for (let i = 0; i < tracksForProcessing.length; i += batchSize) {
             const batch = tracksForProcessing.slice(i, i + batchSize);
-            await this.processBatch(userId, batch, syncResult, accessToken);
+            await this.processBatch(
+              userId,
+              batch,
+              syncResult,
+              accessToken,
+              SourceType.PLAYLIST,
+              playlist.name,
+              playlist.id,
+            );
           }
 
           result.newTracks += syncResult.newTracks;
@@ -414,6 +423,7 @@ export class LibrarySyncService {
         likedTracksPage.items,
         result,
         accessToken,
+        SourceType.LIKED_SONGS,
       );
 
       result.totalTracks = likedTracksPage.items.length;
@@ -559,6 +569,9 @@ export class LibrarySyncService {
               batch,
               playlistSyncResult,
               accessToken,
+              SourceType.PLAYLIST,
+              playlist.name,
+              playlist.id,
             );
           }
 
@@ -1146,13 +1159,29 @@ export class LibrarySyncService {
             });
 
           if (!existingUserTrack) {
-            await this.databaseService.userTrack.create({
+            const userTrack = await this.databaseService.userTrack.create({
               data: {
                 addedAt: new Date(savedAlbum.added_at),
                 spotifyTrackId,
                 userId,
               },
             });
+
+            // Add source tracking for album
+            await this.upsertTrackSource(
+              userTrack.id,
+              SourceType.ALBUM,
+              savedAlbum.album.name,
+              savedAlbum.album.id,
+            );
+          } else {
+            // Track already exists, ensure source is recorded
+            await this.upsertTrackSource(
+              existingUserTrack.id,
+              SourceType.ALBUM,
+              savedAlbum.album.name,
+              savedAlbum.album.id,
+            );
           }
         }
 
@@ -1173,6 +1202,9 @@ export class LibrarySyncService {
     tracks: Array<{ added_at: string; track: SpotifyTrackData }>,
     result: SyncResult,
     accessToken: string,
+    sourceType?: SourceType,
+    sourceName?: string,
+    sourceId?: string,
   ): Promise<void> {
     // First, collect all unique artist IDs from this batch
     const uniqueArtistIds = new Set<string>();
@@ -1212,7 +1244,7 @@ export class LibrarySyncService {
           });
 
         if (!existingUserTrack) {
-          await this.databaseService.userTrack.create({
+          const userTrack = await this.databaseService.userTrack.create({
             data: {
               addedAt: new Date(added_at),
               spotifyTrackId,
@@ -1221,6 +1253,16 @@ export class LibrarySyncService {
           });
           result.newTracks++;
 
+          // Add source tracking if provided
+          if (sourceType) {
+            await this.upsertTrackSource(
+              userTrack.id,
+              sourceType,
+              sourceName,
+              sourceId,
+            );
+          }
+
           // Stats updates are now batched at the end of sync
           // await this.aggregationService.updateStatsForTrack(
           //   userId,
@@ -1228,6 +1270,16 @@ export class LibrarySyncService {
           // );
         } else {
           result.updatedTracks++;
+
+          // Track already exists, ensure source is recorded if provided
+          if (sourceType) {
+            await this.upsertTrackSource(
+              existingUserTrack.id,
+              sourceType,
+              sourceName,
+              sourceId,
+            );
+          }
         }
       } catch (error) {
         this.logger.error(`Failed to process track ${track.id}`, error);
@@ -1245,6 +1297,9 @@ export class LibrarySyncService {
     tracks: Array<{ added_at: string; track: SpotifyTrackData }>,
     result: SyncResult,
     accessToken: string,
+    sourceType?: SourceType,
+    sourceName?: string,
+    sourceId?: string,
   ): Promise<void> {
     const db = this.kyselyService.database;
 
@@ -1317,7 +1372,7 @@ export class LibrarySyncService {
 
         // Create UserTrack only if it doesn't exist
         if (!existingUserTrackIds.has(track.id)) {
-          await this.databaseService.userTrack.create({
+          const userTrack = await this.databaseService.userTrack.create({
             data: {
               addedAt: new Date(added_at),
               spotifyTrackId,
@@ -1326,6 +1381,16 @@ export class LibrarySyncService {
           });
           result.newTracks++;
 
+          // Add source tracking if provided
+          if (sourceType) {
+            await this.upsertTrackSource(
+              userTrack.id,
+              sourceType,
+              sourceName,
+              sourceId,
+            );
+          }
+
           // Stats updates are now batched at the end of sync
           // await this.aggregationService.updateStatsForTrack(
           //   userId,
@@ -1333,6 +1398,28 @@ export class LibrarySyncService {
           // );
         } else {
           result.updatedTracks++;
+
+          // Track already exists, ensure source is recorded if provided
+          if (sourceType) {
+            const existingUserTrack =
+              await this.databaseService.userTrack.findUnique({
+                where: {
+                  userId_spotifyTrackId: {
+                    spotifyTrackId,
+                    userId,
+                  },
+                },
+              });
+
+            if (existingUserTrack) {
+              await this.upsertTrackSource(
+                existingUserTrack.id,
+                sourceType,
+                sourceName,
+                sourceId,
+              );
+            }
+          }
         }
       } catch (error) {
         this.logger.error(`Failed to process track ${track.id}`, error);
@@ -1468,7 +1555,13 @@ export class LibrarySyncService {
 
       // Process batch when it reaches the desired size
       if (batch.length >= batchSize) {
-        await this.processBatchOptimized(userId, batch, result, accessToken);
+        await this.processBatchOptimized(
+          userId,
+          batch,
+          result,
+          accessToken,
+          SourceType.LIKED_SONGS,
+        );
         batch = []; // Clear batch to free memory
 
         // Report progress
@@ -1503,10 +1596,52 @@ export class LibrarySyncService {
 
     // Process remaining tracks in the last batch
     if (batch.length > 0) {
-      await this.processBatchOptimized(userId, batch, result, accessToken);
+      await this.processBatchOptimized(
+        userId,
+        batch,
+        result,
+        accessToken,
+        SourceType.LIKED_SONGS,
+      );
     }
 
     result.totalTracks = totalProcessed;
     this.logger.log(`Streamed and processed ${totalProcessed} tracks`);
+  }
+
+  /**
+   * Create or update a track source entry
+   */
+  private async upsertTrackSource(
+    userTrackId: string,
+    sourceType: SourceType,
+    sourceName?: string,
+    sourceId?: string,
+  ): Promise<void> {
+    try {
+      await this.databaseService.trackSource.upsert({
+        create: {
+          sourceId: sourceId || null,
+          sourceName: sourceName || null,
+          sourceType,
+          userTrackId,
+        },
+        update: {
+          sourceName: sourceName || null,
+        },
+        where: {
+          userTrackId_sourceType_sourceId: {
+            sourceId: sourceId || null,
+            sourceType,
+            userTrackId,
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to upsert track source for userTrack ${userTrackId}`,
+        error,
+      );
+    }
   }
 }

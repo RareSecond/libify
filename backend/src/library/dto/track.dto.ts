@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SourceType } from '@prisma/client';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -9,6 +10,9 @@ import {
   Max,
   Min,
 } from 'class-validator';
+
+import { TagDto } from './tag.dto';
+import { TrackSourceDto } from './track-source.dto';
 
 export class GetTracksQueryDto {
   @ApiPropertyOptional({
@@ -107,6 +111,32 @@ export class GetTracksQueryDto {
   @IsString()
   sortOrder?: 'asc' | 'desc' = 'desc';
 
+  @ApiPropertyOptional({
+    description: 'Filter by source types',
+    enum: SourceType,
+    isArray: true,
+  })
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  @Transform(({ obj, value }) => {
+    // Handle sourceTypes[] format from frontend
+    if (obj['sourceTypes[]']) {
+      const sourceTypesArray = obj['sourceTypes[]'];
+      if (typeof sourceTypesArray === 'string') {
+        return [sourceTypesArray];
+      }
+      return sourceTypesArray;
+    }
+    // Handle normal sourceTypes format
+    if (!value) return [];
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  sourceTypes?: string[];
+
   @ApiPropertyOptional({ description: 'Filter by tag IDs', type: [String] })
   @IsArray()
   @IsOptional()
@@ -153,20 +183,6 @@ export class PaginatedTracksDto {
   tracks: TrackDto[];
 }
 
-export class TagDto {
-  @ApiPropertyOptional()
-  @Expose()
-  color?: string;
-
-  @ApiProperty()
-  @Expose()
-  id: string;
-
-  @ApiProperty()
-  @Expose()
-  name: string;
-}
-
 export class TrackDto {
   @ApiProperty()
   @Expose()
@@ -211,6 +227,11 @@ export class TrackDto {
   @ApiPropertyOptional({ maximum: 5, minimum: 1 })
   @Expose()
   rating?: number;
+
+  @ApiProperty({ type: [TrackSourceDto] })
+  @Expose()
+  @Type(() => TrackSourceDto)
+  sources: TrackSourceDto[];
 
   @ApiProperty()
   @Expose()

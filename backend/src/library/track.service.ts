@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, SourceType } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { sql } from 'kysely';
 
@@ -41,6 +41,7 @@ export class TrackService {
       .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
       .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
       .leftJoin('Tag as t', 'tt.tagId', 't.id')
+      .leftJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
       .select([
         'ut.id',
         'ut.addedAt',
@@ -67,6 +68,28 @@ export class TrackService {
             ) FILTER (WHERE t.id IS NOT NULL),
             '[]'::json
           )`.as('tags'),
+        // Aggregate sources into array
+        sql<
+          Array<{
+            createdAt: Date;
+            id: string;
+            sourceId: null | string;
+            sourceName: null | string;
+            sourceType: string;
+          }>
+        >`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', ts.id,
+                'sourceType', ts."sourceType",
+                'sourceName', ts."sourceName",
+                'sourceId', ts."sourceId",
+                'createdAt', ts."createdAt"
+              )
+            ) FILTER (WHERE ts.id IS NOT NULL),
+            '[]'::json
+          )`.as('sources'),
       ])
       .where('ut.userId', '=', userId)
       .where('sar.name', '=', artist)
@@ -102,6 +125,7 @@ export class TrackService {
         lastPlayedAt: track.lastPlayedAt,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        sources: track.sources,
         spotifyId: track.spotifyId,
         tags: track.tags,
         title: track.title,
@@ -126,6 +150,7 @@ export class TrackService {
       .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
       .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
       .leftJoin('Tag as t', 'tt.tagId', 't.id')
+      .leftJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
       .select([
         'ut.id',
         'ut.addedAt',
@@ -151,6 +176,27 @@ export class TrackService {
             ) FILTER (WHERE t.id IS NOT NULL),
             '[]'::json
           )`.as('tags'),
+        sql<
+          Array<{
+            createdAt: Date;
+            id: string;
+            sourceId: null | string;
+            sourceName: null | string;
+            sourceType: string;
+          }>
+        >`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', ts.id,
+                'sourceType', ts."sourceType",
+                'sourceName', ts."sourceName",
+                'sourceId', ts."sourceId",
+                'createdAt', ts."createdAt"
+              )
+            ) FILTER (WHERE ts.id IS NOT NULL),
+            '[]'::json
+          )`.as('sources'),
       ])
       .where('ut.userId', '=', userId)
       .where('sar.name', '=', artist)
@@ -185,6 +231,7 @@ export class TrackService {
         lastPlayedAt: track.lastPlayedAt,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        sources: track.sources,
         spotifyId: track.spotifyId,
         tags: track.tags,
         title: track.title,
@@ -202,6 +249,7 @@ export class TrackService {
   ): Promise<null | TrackDto> {
     const track = await this.databaseService.userTrack.findFirst({
       include: {
+        sources: true,
         spotifyTrack: {
           include: {
             album: {
@@ -239,6 +287,13 @@ export class TrackService {
       lastPlayedAt: track.lastPlayedAt,
       ratedAt: track.ratedAt,
       rating: track.rating,
+      sources: track.sources.map((s) => ({
+        createdAt: s.createdAt,
+        id: s.id,
+        sourceId: s.sourceId,
+        sourceName: s.sourceName,
+        sourceType: s.sourceType,
+      })),
       spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((t) => ({
         color: t.tag.color,
@@ -638,6 +693,7 @@ export class TrackService {
       search,
       sortBy = 'addedAt',
       sortOrder = 'desc',
+      sourceTypes,
       tagIds,
     } = query;
 
@@ -676,6 +732,15 @@ export class TrackService {
     if (minRating) {
       where.rating = {
         gte: minRating,
+      };
+    }
+
+    // Add source type filter
+    if (sourceTypes && sourceTypes.length > 0) {
+      where.sources = {
+        some: {
+          sourceType: { in: sourceTypes as SourceType[] },
+        },
       };
     }
 
@@ -734,6 +799,7 @@ export class TrackService {
     const [tracks, total] = await Promise.all([
       this.databaseService.userTrack.findMany({
         include: {
+          sources: true,
           spotifyTrack: {
             include: {
               album: {
@@ -771,6 +837,13 @@ export class TrackService {
         lastPlayedAt: track.lastPlayedAt,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        sources: track.sources.map((s) => ({
+          createdAt: s.createdAt,
+          id: s.id,
+          sourceId: s.sourceId,
+          sourceName: s.sourceName,
+          sourceType: s.sourceType,
+        })),
         spotifyId: track.spotifyTrack.spotifyId,
         tags: track.tags.map((t) => ({
           color: t.tag.color,

@@ -117,6 +117,7 @@ model UserTrack {
   spotifyTrack SpotifyTrack  @relation(fields: [spotifyTrackId], references: [id])
   tags         TrackTag[]
   playHistory  PlayHistory[]
+  sources      TrackSource[]
 
   @@unique([userId, spotifyTrackId])
   @@index([userId])
@@ -262,4 +263,28 @@ model UserPlaylist {
   @@unique([userId, spotifyId])
   @@index([userId])
   @@index([snapshotId])
+}
+
+// Track source tracking - where did this track come from?
+model TrackSource {
+  id          String     @id @default(uuid())
+  userTrackId String
+  sourceType  SourceType
+  sourceName  String? // e.g., "Road Trip Playlist", "Chill Vibes"
+  sourceId    String? // Spotify playlist/album ID
+  createdAt   DateTime   @default(now())
+
+  // Relations
+  userTrack UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
+
+  @@unique([userTrackId, sourceType, sourceId])
+  @@index([userTrackId])
+  @@index([sourceType])
+}
+
+enum SourceType {
+  LIKED_SONGS
+  PLAYLIST
+  ALBUM
+  ARTIST_TOP_TRACKS
 }
