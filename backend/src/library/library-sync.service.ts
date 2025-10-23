@@ -1619,9 +1619,12 @@ export class LibrarySyncService {
     sourceId?: string,
   ): Promise<void> {
     try {
+      // Use empty string for sourceId if not provided (Prisma doesn't allow null in unique constraints)
+      const sourceIdValue = sourceId || '';
+
       await this.databaseService.trackSource.upsert({
         create: {
-          sourceId: sourceId || null,
+          sourceId: sourceIdValue,
           sourceName: sourceName || null,
           sourceType,
           userTrackId,
@@ -1631,7 +1634,7 @@ export class LibrarySyncService {
         },
         where: {
           userTrackId_sourceType_sourceId: {
-            sourceId: sourceId || null,
+            sourceId: sourceIdValue,
             sourceType,
             userTrackId,
           },
