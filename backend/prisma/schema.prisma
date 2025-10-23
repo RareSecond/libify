@@ -168,6 +168,7 @@ model PlayHistory {
   // Relations
   userTrack UserTrack @relation(fields: [userTrackId], references: [id], onDelete: Cascade)
 
+  @@unique([userTrackId, playedAt])
   @@index([userTrackId, playedAt])
   @@index([userTrackId, playedAt(sort: Desc)], name: "idx_track_played_desc")
   @@index([playedAt], name: "idx_played_at")

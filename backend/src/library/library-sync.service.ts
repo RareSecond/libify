@@ -337,23 +337,40 @@ export class LibrarySyncService {
         });
 
         if (userTrack) {
-          // Record play history
-          await this.databaseService.playHistory.create({
-            data: {
-              duration: track.duration_ms,
-              playedAt: new Date(played_at),
-              userTrackId: userTrack.id,
-            },
-          });
+          const playedAt = new Date(played_at);
 
-          // Update play count and last played
-          await this.databaseService.userTrack.update({
-            data: {
-              lastPlayedAt: new Date(played_at),
-              totalPlayCount: { increment: 1 },
-            },
-            where: { id: userTrack.id },
-          });
+          // Record play atomically: create PlayHistory + update UserTrack
+          // P2002 errors (duplicate play) are silently skipped for idempotency
+          try {
+            await this.databaseService.$transaction([
+              this.databaseService.playHistory.create({
+                data: {
+                  duration: track.duration_ms,
+                  playedAt,
+                  userTrackId: userTrack.id,
+                },
+              }),
+              this.databaseService.userTrack.update({
+                data: {
+                  lastPlayedAt: playedAt,
+                  totalPlayCount: { increment: 1 },
+                },
+                where: { id: userTrack.id },
+              }),
+            ]);
+          } catch (error: unknown) {
+            // P2002: Unique constraint violation (duplicate play)
+            // Silently skip - this is expected for idempotency
+            if (
+              typeof error === 'object' &&
+              error !== null &&
+              'code' in error &&
+              error.code === 'P2002'
+            ) {
+              continue; // Already recorded, skip to next track
+            }
+            throw error; // Rethrow other errors
+          }
         }
       }
 

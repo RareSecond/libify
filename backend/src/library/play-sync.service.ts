@@ -1,13 +1,11 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bullmq';
 
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
-export class PlaySyncService {
-  private isSyncing = false;
+export class PlaySyncService implements OnModuleInit {
   private readonly logger = new Logger(PlaySyncService.name);
 
   constructor(
@@ -16,46 +14,10 @@ export class PlaySyncService {
   ) {}
 
   /**
-   * Enqueue a play sync job for a single user
+   * Enqueue play sync jobs for all users
+   * Called by the repeatable Bull job or manually
    */
-  async enqueueSyncForUser(userId: string): Promise<void> {
-    await this.playSyncQueue.add(
-      'sync-user-plays',
-      { userId },
-      {
-        attempts: 3,
-        backoff: {
-          delay: 60000, // 1 minute
-          type: 'exponential',
-        },
-        removeOnComplete: {
-          age: 3600,
-          count: 50,
-        },
-        removeOnFail: {
-          age: 86400,
-        },
-      },
-    );
-
-    this.logger.log(`Enqueued play sync job for user ${userId}`);
-  }
-
-  /**
-   * Cron job that runs every 100 minutes to enqueue play sync jobs for all users.
-   * 50 tracks × 3 min average = ~150 minutes of listening, so 100 min provides overlap buffer.
-   */
-  @Cron('0 */100 * * * *', {
-    name: 'syncRecentlyPlayed',
-  })
-  async syncRecentlyPlayedForAllUsers(): Promise<void> {
-    // Prevent overlapping executions
-    if (this.isSyncing) {
-      this.logger.warn('Previous sync still running, skipping this execution');
-      return;
-    }
-
-    this.isSyncing = true;
+  async enqueueAllUserSyncs(): Promise<number> {
     const startTime = Date.now();
     this.logger.log('Enqueueing play sync jobs for all users');
 
@@ -63,7 +25,6 @@ export class PlaySyncService {
       // Get all users with refresh tokens
       const users = await this.databaseService.user.findMany({
         select: {
-          email: true,
           id: true,
         },
         where: {
@@ -87,6 +48,9 @@ export class PlaySyncService {
                 delay: 60000, // 1 minute
                 type: 'exponential',
               },
+              // Deterministic jobId ensures only one job per user exists in queue
+              // This prevents race conditions and duplicate play entries
+              jobId: `play-sync-user-${user.id}`,
               removeOnComplete: {
                 age: 3600, // Keep completed jobs for 1 hour
                 count: 50,
@@ -99,7 +63,7 @@ export class PlaySyncService {
           enqueuedCount++;
         } catch (error) {
           this.logger.error(
-            `Failed to enqueue play sync for user ${user.email}`,
+            `Failed to enqueue play sync for userId ${user.id}`,
             error,
           );
         }
@@ -109,11 +73,64 @@ export class PlaySyncService {
       this.logger.log(
         `Enqueued ${enqueuedCount} play sync jobs in ${duration}ms`,
       );
+
+      return enqueuedCount;
     } catch (error) {
       this.logger.error('Fatal error during play sync job enqueueing', error);
-    } finally {
-      this.isSyncing = false;
+      throw error;
     }
+  }
+
+  /**
+   * Enqueue a play sync job for a single user
+   */
+  async enqueueSyncForUser(userId: string): Promise<void> {
+    await this.playSyncQueue.add(
+      'sync-user-plays',
+      { userId },
+      {
+        attempts: 3,
+        backoff: {
+          delay: 60000, // 1 minute
+          type: 'exponential',
+        },
+        // Deterministic jobId ensures only one job per user exists in queue
+        // This prevents race conditions and duplicate play entries
+        jobId: `play-sync-user-${userId}`,
+        removeOnComplete: {
+          age: 3600,
+          count: 50,
+        },
+        removeOnFail: {
+          age: 86400,
+        },
+      },
+    );
+
+    this.logger.log(`Enqueued play sync job for user ${userId}`);
+  }
+
+  /**
+   * Bootstrap repeatable job on module initialization
+   */
+  async onModuleInit() {
+    // Create a repeatable job that runs every 100 minutes
+    // This job will enqueue individual sync jobs for each user
+    await this.playSyncQueue.add(
+      'sync-all-users',
+      {},
+      {
+        // Single instance - only one scheduler runs across all app instances
+        jobId: 'play-sync-scheduler',
+        repeat: {
+          every: 100 * 60 * 1000, // 100 minutes in milliseconds
+        },
+      },
+    );
+
+    this.logger.log(
+      'Play sync scheduler initialized (runs every 100 minutes)',
+    );
   }
 
   /**
@@ -125,7 +142,7 @@ export class PlaySyncService {
       await this.enqueueSyncForUser(userId);
     } else {
       this.logger.log('Manual sync triggered for all users');
-      await this.syncRecentlyPlayedForAllUsers();
+      await this.enqueueAllUserSyncs();
     }
   }
 }

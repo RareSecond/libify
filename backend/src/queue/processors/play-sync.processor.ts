@@ -5,10 +5,11 @@ import { Job } from 'bullmq';
 import { AuthService } from '../../auth/auth.service';
 import { DatabaseService } from '../../database/database.service';
 import { AggregationService } from '../../library/aggregation.service';
+import { PlaySyncService } from '../../library/play-sync.service';
 import { SpotifyService } from '../../library/spotify.service';
 
 export interface PlaySyncJobData {
-  userId: string;
+  userId?: string;
 }
 
 @Processor('play-sync')
@@ -20,12 +21,33 @@ export class PlaySyncProcessor extends WorkerHost {
     private spotifyService: SpotifyService,
     private authService: AuthService,
     private aggregationService: AggregationService,
+    private playSyncService: PlaySyncService,
   ) {
     super();
   }
 
-  async process(job: Job<PlaySyncJobData>): Promise<{ newPlaysCount: number }> {
+  async process(
+    job: Job<PlaySyncJobData>,
+  ): Promise<{ enqueuedCount?: number; newPlaysCount?: number }> {
+    // Handle scheduler job that enqueues all user syncs
+    if (job.name === 'sync-all-users') {
+      this.logger.log(`Starting scheduler job to enqueue all user syncs`);
+      try {
+        const enqueuedCount = await this.playSyncService.enqueueAllUserSyncs();
+        this.logger.log(`Scheduler job completed: ${enqueuedCount} jobs enqueued`);
+        return { enqueuedCount };
+      } catch (error) {
+        this.logger.error(`Scheduler job failed: ${error.message}`, error.stack);
+        throw error;
+      }
+    }
+
+    // Handle individual user sync job
     const { userId } = job.data;
+    if (!userId) {
+      throw new Error('userId is required for sync-user-plays job');
+    }
+
     this.logger.log(`Starting play sync for user ${userId} (Job: ${job.id})`);
 
     try {
@@ -98,31 +120,54 @@ export class PlaySyncProcessor extends WorkerHost {
             continue;
           }
 
-          // Create new play history entry
-          await this.databaseService.playHistory.create({
-            data: {
-              duration: null, // Spotify doesn't provide actual listen duration
-              playedAt,
-              userTrackId: userTrack.id,
-            },
-          });
+          // Record play atomically: create PlayHistory + update UserTrack
+          // P2002 errors (duplicate play) are silently skipped for idempotency
+          try {
+            await this.databaseService.$transaction([
+              this.databaseService.playHistory.create({
+                data: {
+                  duration: null, // Spotify doesn't provide actual listen duration
+                  playedAt,
+                  userTrackId: userTrack.id,
+                },
+              }),
+              this.databaseService.userTrack.update({
+                data: {
+                  lastPlayedAt: playedAt,
+                  totalPlayCount: { increment: 1 },
+                },
+                where: { id: userTrack.id },
+              }),
+            ]);
 
-          // Update UserTrack play count and last played timestamp
-          await this.databaseService.userTrack.update({
-            data: {
-              lastPlayedAt: playedAt,
-              totalPlayCount: { increment: 1 },
-            },
-            where: { id: userTrack.id },
-          });
+            // Update artist/album aggregated stats
+            await this.aggregationService.updateStatsForTrack(
+              userId,
+              userTrack.spotifyTrackId,
+            );
 
-          // Update artist/album aggregated stats
-          await this.aggregationService.updateStatsForTrack(
-            userId,
-            userTrack.spotifyTrackId,
-          );
+            newPlaysCount++;
+          } catch (error: unknown) {
+            // P2002: Unique constraint violation (duplicate play)
+            // Silently skip - this is expected for idempotency
+            if (
+              typeof error === 'object' &&
+              error !== null &&
+              'code' in error &&
+              error.code === 'P2002'
+            ) {
+              this.logger.debug(
+                `Duplicate play detected for track ${item.track.id} at ${playedAt.toISOString()}, skipping`,
+              );
+              continue;
+            }
 
-          newPlaysCount++;
+            // Log other errors but continue processing
+            this.logger.error(
+              `Failed to process play for track ${item.track.id}`,
+              error,
+            );
+          }
         } catch (error) {
           this.logger.error(
             `Failed to process play for track ${item.track.id}`,
