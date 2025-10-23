@@ -15,40 +15,13 @@ import { SyncProcessor } from './processors/sync.processor';
       useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
 
-        console.log('=== Redis Configuration Debug ===');
-        console.log(
-          '[Redis Config] REDIS_URL from ConfigService:',
-          redisUrl ? '***SET***' : 'NOT SET',
-        );
-        console.log(
-          '[Redis Config] REDIS_URL from process.env:',
-          process.env.REDIS_URL ? '***SET***' : 'NOT SET',
-        );
-        console.log('[Redis Config] Environment:', process.env.NODE_ENV);
-
         if (redisUrl) {
           // Parse Redis URL for external managed Redis services
           try {
             const url = new URL(redisUrl);
             const useTls = url.protocol === 'rediss:';
 
-            console.log('[Redis Config] Using REDIS_URL connection');
-            console.log('[Redis Config] Host:', url.hostname);
-            console.log(
-              '[Redis Config] Port:',
-              url.port || (useTls ? 6380 : 6379),
-            );
-            console.log('[Redis Config] TLS:', useTls);
-            console.log(
-              '[Redis Config] Username:',
-              url.username ? '***SET***' : 'NOT SET',
-            );
-            console.log(
-              '[Redis Config] Password:',
-              url.password ? '***SET***' : 'NOT SET',
-            );
-
-            const config = {
+            return {
               connection: {
                 enableReadyCheck: false,
                 host: url.hostname,
@@ -60,6 +33,7 @@ import { SyncProcessor } from './processors/sync.processor';
                       rejectUnauthorized:
                         configService.get('REDIS_TLS_REJECT_UNAUTHORIZED') !==
                         'false',
+                      servername: url.hostname, // Required for SNI (Server Name Indication)
                     }
                   : undefined,
                 username: url.username || undefined,
@@ -79,12 +53,7 @@ import { SyncProcessor } from './processors/sync.processor';
                 },
               },
             };
-
-            console.log('[Redis Config] Configuration created successfully');
-            console.log('=================================\n');
-            return config;
           } catch (error) {
-            console.error('[Redis Config] ERROR parsing REDIS_URL:', error);
             throw new Error(
               `Invalid REDIS_URL format: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
@@ -92,26 +61,15 @@ import { SyncProcessor } from './processors/sync.processor';
         }
 
         // Fallback to individual config values for local development
-        const host = configService.get('redis.host');
-        const port = configService.get('redis.port');
-        const db = configService.get('redis.db');
-        const tls = configService.get('redis.tls');
-
-        console.log('[Redis Config] Using fallback individual config values');
-        console.log('[Redis Config] Host:', host);
-        console.log('[Redis Config] Port:', port);
-        console.log('[Redis Config] DB:', db);
-        console.log('[Redis Config] TLS:', tls);
-
-        const fallbackConfig = {
+        return {
           connection: {
-            db,
+            db: configService.get('redis.db'),
             enableReadyCheck: false,
-            host,
+            host: configService.get('redis.host'),
             maxRetriesPerRequest: null,
             password: configService.get('redis.password'),
-            port,
-            tls: tls ? {} : undefined,
+            port: configService.get('redis.port'),
+            tls: configService.get('redis.tls') ? {} : undefined,
           },
           defaultJobOptions: {
             attempts: 3,
@@ -128,10 +86,6 @@ import { SyncProcessor } from './processors/sync.processor';
             },
           },
         };
-
-        console.log('[Redis Config] Fallback configuration created');
-        console.log('=================================\n');
-        return fallbackConfig;
       },
     }),
     BullModule.registerQueue({

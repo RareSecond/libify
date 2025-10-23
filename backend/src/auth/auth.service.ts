@@ -161,7 +161,7 @@ export class AuthService {
         }),
         {
           headers: {
-            Authorization: `Basic ${credentials}`,
+            "Authorization": `Basic ${credentials}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
         },
