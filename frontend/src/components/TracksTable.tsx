@@ -94,6 +94,7 @@ export function TracksTable({
     "lastPlayedAt",
     "rating",
     "tags",
+    "sources",
   ];
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);

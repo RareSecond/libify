@@ -25,6 +25,20 @@ export class RemoveTagFromTrackDto {
   tagId: string;
 }
 
+export class TagDto {
+  @ApiPropertyOptional()
+  @Expose()
+  color?: string;
+
+  @ApiProperty()
+  @Expose()
+  id: string;
+
+  @ApiProperty()
+  @Expose()
+  name: string;
+}
+
 export class TagResponseDto {
   @ApiPropertyOptional()
   @Expose()

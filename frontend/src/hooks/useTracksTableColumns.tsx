@@ -5,6 +5,7 @@ import { useMemo } from "react";
 
 import { InlineTagEditor } from "../components/InlineTagEditor";
 import { RatingSelector } from "../components/RatingSelector";
+import { TrackSources } from "../components/TrackSources";
 import { TrackDto } from "../data/api";
 import { formatTime } from "../utils/format";
 
@@ -163,6 +164,14 @@ export function useTracksTableColumns({
         header: "Tags",
         id: "tags",
         size: 150,
+      },
+      {
+        accessorKey: "sources",
+        cell: ({ row }) => <TrackSources sources={row.original.sources} />,
+        enableSorting: false,
+        header: "Sources",
+        id: "sources",
+        size: 200,
       },
     ],
     [currentTrack?.id, isPlaying, onRefetch],

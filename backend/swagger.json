@@ -872,6 +872,24 @@
             }
           },
           {
+            "name": "sourceTypes",
+            "required": false,
+            "in": "query",
+            "description": "Filter by source types",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "LIKED_SONGS",
+                  "PLAYLIST",
+                  "ALBUM",
+                  "ARTIST_TOP_TRACKS"
+                ]
+              }
+            }
+          },
+          {
             "name": "tagIds",
             "required": false,
             "in": "query",
@@ -1579,6 +1597,41 @@
           "totalPages"
         ]
       },
+      "TrackSourceDto": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Spotify ID of the source"
+          },
+          "sourceName": {
+            "type": "string",
+            "description": "Name of the source (e.g., playlist name)"
+          },
+          "sourceType": {
+            "type": "string",
+            "description": "Type of source",
+            "enum": [
+              "LIKED_SONGS",
+              "PLAYLIST",
+              "ALBUM",
+              "ARTIST_TOP_TRACKS"
+            ]
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "sourceType"
+        ]
+      },
       "TagDto": {
         "type": "object",
         "properties": {
@@ -1641,6 +1694,12 @@
             "maximum": 5,
             "minimum": 1
           },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackSourceDto"
+            }
+          },
           "spotifyId": {
             "type": "string"
           },
@@ -1663,6 +1722,7 @@
           "artistGenres",
           "duration",
           "id",
+          "sources",
           "spotifyId",
           "tags",
           "title",
