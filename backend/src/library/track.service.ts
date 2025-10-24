@@ -871,59 +871,6 @@ export class TrackService {
     );
   }
 
-  async recordPlay(userId: string, trackId: string): Promise<void> {
-    // Get the user track to ensure it exists and belongs to the user
-    const userTrack = await this.databaseService.userTrack.findFirst({
-      where: { id: trackId, userId },
-    });
-
-    if (!userTrack) {
-      throw new Error('Track not found');
-    }
-
-    const playedAt = new Date();
-
-    // Record play atomically: create PlayHistory + update UserTrack
-    // P2002 errors (duplicate play) are silently skipped for idempotency
-    try {
-      await this.databaseService.$transaction([
-        this.databaseService.playHistory.create({
-          data: {
-            playedAt,
-            userTrackId: trackId,
-          },
-        }),
-        this.databaseService.userTrack.update({
-          data: {
-            lastPlayedAt: playedAt,
-            totalPlayCount: {
-              increment: 1,
-            },
-          },
-          where: { id: trackId },
-        }),
-      ]);
-
-      // Update aggregated stats for the artist and album
-      await this.aggregationService.updateStatsForTrack(
-        userId,
-        userTrack.spotifyTrackId,
-      );
-    } catch (error: unknown) {
-      // P2002: Unique constraint violation (duplicate play)
-      // Silently skip - this is expected for idempotency
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2002'
-      ) {
-        return; // Already recorded, do nothing
-      }
-      throw error; // Rethrow other errors
-    }
-  }
-
   async updateTrackRating(
     userId: string,
     trackId: string,

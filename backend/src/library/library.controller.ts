@@ -408,22 +408,13 @@ export class LibraryController {
         );
       }
 
-      // Play the track
+      // Play the track on Spotify
+      // Plays will be synced automatically from Spotify's play history
       const trackUri = `spotify:track:${track.spotifyId}`;
       await this.spotifyService.playTrack(accessToken, trackUri);
 
-      // Record the play locally
-      await this.trackService.recordPlay(req.user.id, trackId);
-
-      // Get updated track to return current play count
-      const updatedTrack = await this.trackService.getTrackById(
-        req.user.id,
-        trackId,
-      );
-
       return {
         message: 'Track started playing',
-        playCount: updatedTrack?.totalPlayCount || 0,
         trackId: track.id,
       };
     } catch (error) {
@@ -433,43 +424,6 @@ export class LibraryController {
       this.logger.error('Failed to play track', error);
       throw new HttpException(
         error.message || 'Failed to play track',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
-  @ApiOperation({
-    summary: 'Record a play for statistics (without starting playback)',
-  })
-  @ApiResponse({ description: 'Play recorded successfully', status: 200 })
-  @ApiResponse({ description: 'Track not found', status: 404 })
-  @Post('tracks/:trackId/record-play')
-  async recordPlay(
-    @Req() req: AuthenticatedRequest,
-    @Param('trackId') trackId: string,
-  ) {
-    try {
-      // Record the play locally
-      await this.trackService.recordPlay(req.user.id, trackId);
-
-      // Get updated track to return current play count
-      const updatedTrack = await this.trackService.getTrackById(
-        req.user.id,
-        trackId,
-      );
-
-      return {
-        message: 'Play recorded successfully',
-        playCount: updatedTrack?.totalPlayCount || 0,
-        trackId,
-      };
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      this.logger.error('Failed to record play', error);
-      throw new HttpException(
-        error.message || 'Failed to record play',
         HttpStatus.BAD_REQUEST,
       );
     }

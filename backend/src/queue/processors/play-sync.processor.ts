@@ -34,10 +34,15 @@ export class PlaySyncProcessor extends WorkerHost {
       this.logger.log(`Starting scheduler job to enqueue all user syncs`);
       try {
         const enqueuedCount = await this.playSyncService.enqueueAllUserSyncs();
-        this.logger.log(`Scheduler job completed: ${enqueuedCount} jobs enqueued`);
+        this.logger.log(
+          `Scheduler job completed: ${enqueuedCount} jobs enqueued`,
+        );
         return { enqueuedCount };
       } catch (error) {
-        this.logger.error(`Scheduler job failed: ${error.message}`, error.stack);
+        this.logger.error(
+          `Scheduler job failed: ${error.message}`,
+          error.stack,
+        );
         throw error;
       }
     }
