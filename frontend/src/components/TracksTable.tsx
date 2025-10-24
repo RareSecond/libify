@@ -58,7 +58,6 @@ export function TracksTable({
             tracksWithIds,
             trackIndex >= 0 ? trackIndex : 0,
             context,
-            onRefetch,
           );
 
           notifications.show({

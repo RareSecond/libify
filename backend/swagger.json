@@ -964,41 +964,6 @@
         ]
       }
     },
-    "/library/tracks/{trackId}/record-play": {
-      "post": {
-        "operationId": "LibraryController_recordPlay",
-        "parameters": [
-          {
-            "name": "trackId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Play recorded successfully"
-          },
-          "201": {
-            "description": ""
-          },
-          "404": {
-            "description": "Track not found"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Record a play for statistics (without starting playback)",
-        "tags": [
-          "library"
-        ]
-      }
-    },
     "/library/tracks/{trackId}/tags/{tagId}": {
       "delete": {
         "operationId": "LibraryController_removeTagFromTrack",

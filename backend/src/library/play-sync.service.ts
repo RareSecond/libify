@@ -128,9 +128,7 @@ export class PlaySyncService implements OnModuleInit {
       },
     );
 
-    this.logger.log(
-      'Play sync scheduler initialized (runs every 100 minutes)',
-    );
+    this.logger.log('Play sync scheduler initialized (runs every 100 minutes)');
   }
 
   /**
