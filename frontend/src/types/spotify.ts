@@ -57,6 +57,7 @@ export interface SpotifyTrack {
   artists: Array<{ name: string }>;
   duration_ms: number;
   id: string;
+  linked_from?: { id: string; uri: string };
   name: string;
   uri: string;
 }

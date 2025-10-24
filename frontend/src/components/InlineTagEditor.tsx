@@ -172,6 +172,7 @@ export function InlineTagEditor({
         position="bottom-start"
         width={300}
         withArrow
+        zIndex={300}
       >
         <Popover.Target>
           <ActionIcon
@@ -189,6 +190,7 @@ export function InlineTagEditor({
         <Popover.Dropdown>
           <TagsInput
             clearable
+            comboboxProps={{ zIndex: 350 }}
             data={allTags.map((tag) => tag.name)}
             disabled={isUpdating}
             onChange={handleTagsChange}
