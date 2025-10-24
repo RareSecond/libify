@@ -55,12 +55,11 @@ export function MediaPlayer() {
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
-  const originalTrackId = currentTrack?.linked_from?.id || currentTrack?.id;
+  const originalSpotifyId = currentTrack?.linked_from?.id || currentTrack?.id;
 
   // Fetch library track data using the original (pre-relink) Spotify ID
   const { libraryTrack, refetchLibraryTrack } = useLibraryTrack({
-    currentTrackId: originalTrackId,
-    internalTrackId: undefined,
+    spotifyId: originalSpotifyId,
   });
 
   // Invalidate tracks query when library track is updated (ratings/tags changed)

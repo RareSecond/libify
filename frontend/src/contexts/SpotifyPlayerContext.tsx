@@ -28,7 +28,6 @@ interface SpotifyPlayerContextType {
   currentTrack: null | SpotifyTrack;
   currentTrackIndex: number;
   currentTrackList: string[];
-  currentTracksWithIds: TrackWithId[];
   deviceId: null | string;
   duration: number;
   isPlaying: boolean;
@@ -480,7 +479,6 @@ export function SpotifyPlayerProvider({
     currentTrack,
     currentTrackIndex,
     currentTrackList,
-    currentTracksWithIds,
     deviceId,
     duration,
     isPlaying,

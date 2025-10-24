@@ -342,27 +342,6 @@ export class LibraryController {
     return this.tagService.getUserTags(req.user.id);
   }
 
-  @ApiOperation({ summary: 'Get track by internal ID' })
-  @ApiResponse({
-    description: 'Track details',
-    status: 200,
-    type: TrackDto,
-  })
-  @ApiResponse({ description: 'Track not found', status: 404 })
-  @Get('tracks/:trackId')
-  async getTrack(
-    @Req() req: AuthenticatedRequest,
-    @Param('trackId') trackId: string,
-  ): Promise<TrackDto> {
-    const track = await this.trackService.getTrackById(req.user.id, trackId);
-
-    if (!track) {
-      throw new HttpException('Track not found', HttpStatus.NOT_FOUND);
-    }
-
-    return track;
-  }
-
   @ApiOperation({ summary: 'Get track by Spotify ID' })
   @ApiResponse({
     description: 'Track details',

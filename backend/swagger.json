@@ -780,45 +780,6 @@
         ]
       }
     },
-    "/library/tracks/{trackId}": {
-      "get": {
-        "operationId": "LibraryController_getTrack",
-        "parameters": [
-          {
-            "name": "trackId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Track details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TrackDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Track not found"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get track by internal ID",
-        "tags": [
-          "library"
-        ]
-      }
-    },
     "/library/tracks/spotify/{spotifyId}": {
       "get": {
         "operationId": "LibraryController_getTrackBySpotifyId",
