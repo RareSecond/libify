@@ -780,6 +780,45 @@
         ]
       }
     },
+    "/library/tracks/spotify/{spotifyId}": {
+      "get": {
+        "operationId": "LibraryController_getTrackBySpotifyId",
+        "parameters": [
+          {
+            "name": "spotifyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Track details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Track not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get track by Spotify ID",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/tracks": {
       "get": {
         "operationId": "LibraryController_getTracks",

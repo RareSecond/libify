@@ -307,6 +307,72 @@ export class TrackService {
     return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
   }
 
+  async getTrackBySpotifyId(
+    userId: string,
+    spotifyId: string,
+  ): Promise<null | TrackDto> {
+    const track = await this.databaseService.userTrack.findFirst({
+      include: {
+        sources: true,
+        spotifyTrack: {
+          include: {
+            album: {
+              include: {
+                artist: true,
+              },
+            },
+            artist: true,
+          },
+        },
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+      where: {
+        spotifyTrack: {
+          spotifyId,
+        },
+        userId,
+      },
+    });
+
+    if (!track) {
+      return null;
+    }
+
+    const dto = {
+      addedAt: track.addedAt,
+      album: track.spotifyTrack.album?.name || null,
+      albumArt: track.spotifyTrack.album?.imageUrl || null,
+      artist: track.spotifyTrack.artist.name,
+      artistGenres: track.spotifyTrack.artist.genres,
+      duration: track.spotifyTrack.duration,
+      id: track.id,
+      lastPlayedAt: track.lastPlayedAt,
+      ratedAt: track.ratedAt,
+      rating: track.rating,
+      sources: track.sources.map((s) => ({
+        createdAt: s.createdAt,
+        id: s.id,
+        sourceId: s.sourceId,
+        sourceName: s.sourceName,
+        sourceType: s.sourceType,
+      })),
+      spotifyId: track.spotifyTrack.spotifyId,
+      tags: track.tags.map((t) => ({
+        color: t.tag.color,
+        id: t.tag.id,
+        name: t.tag.name,
+      })),
+      title: track.spotifyTrack.title,
+      totalPlayCount: track.totalPlayCount,
+    };
+
+    return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+  }
+
   /**
    * Get tracks with cursor-based pagination for better performance
    * Implements solution from PRODUCTION_DATA_ARCHITECTURE_GUIDE.md
