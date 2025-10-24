@@ -219,17 +219,30 @@ export function SpotifyPlayerProvider({
 
       // Prevent double initialization (React Strict Mode)
       if (isInitializing) {
+        // If we have a player instance that's initializing, re-attach listeners
+        // (they may have been removed by cleanup in Strict Mode)
+        if (attachedPlayerRef.current) {
+          // Remove any stale listeners first
+          removeAllListeners(attachedPlayerRef.current);
+          // Re-attach fresh listeners
+          attachPlayerListeners(attachedPlayerRef.current);
+          // Also update the state reference
+          setPlayer(attachedPlayerRef.current);
+        }
         return;
       }
 
       isInitializing = true;
+      const playerName = import.meta.env.DEV
+        ? "Spotlib Web Player (Dev)"
+        : "Spotlib Web Player";
       const spotifyPlayer = new window.Spotify.Player({
         getOAuthToken: (cb) => {
           getAccessToken()
             .then((token) => cb(token))
             .catch(() => cb(""));
         },
-        name: "Spotlib Web Player",
+        name: playerName,
         volume,
       });
 
@@ -345,7 +358,14 @@ export function SpotifyPlayerProvider({
     startIndex = 0,
     context?: PlayContext,
   ) => {
-    if (!player || !deviceId || tracks.length === 0) return;
+    if (!player || !deviceId) {
+      throw new Error(
+        "Spotify player not ready. Please make sure Spotify is open on one of your devices.",
+      );
+    }
+    if (tracks.length === 0) {
+      throw new Error("No tracks to play");
+    }
     const normalizedTracks: TrackWithId[] = tracks.map((track) => {
       if (typeof track === "string") return { spotifyUri: track };
       return track;
