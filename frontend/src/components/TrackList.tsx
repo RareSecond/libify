@@ -57,6 +57,7 @@ export function TrackList() {
       | "addedAt"
       | "album"
       | "artist"
+      | "duration"
       | "lastPlayedAt"
       | "rating"
       | "title"
@@ -76,6 +77,7 @@ export function TrackList() {
         | "addedAt"
         | "album"
         | "artist"
+        | "duration"
         | "lastPlayedAt"
         | "rating"
         | "title"
@@ -133,37 +135,6 @@ export function TrackList() {
 
           <Group>
             <Select
-              className="w-[150px]"
-              data={[
-                { label: "Title", value: "title" },
-                { label: "Artist", value: "artist" },
-                { label: "Album", value: "album" },
-                { label: "Date Added", value: "addedAt" },
-                { label: "Last Played", value: "lastPlayedAt" },
-                { label: "Play Count", value: "totalPlayCount" },
-                { label: "Rating", value: "rating" },
-              ]}
-              label="Sort by"
-              onChange={(value) =>
-                updateSearch({ sortBy: (value as typeof sortBy) || "addedAt" })
-              }
-              value={sortBy}
-            />
-
-            <Select
-              className="w-[120px]"
-              data={[
-                { label: "Ascending", value: "asc" },
-                { label: "Descending", value: "desc" },
-              ]}
-              label="Order"
-              onChange={(value) =>
-                updateSearch({ sortOrder: (value as "asc" | "desc") || "desc" })
-              }
-              value={sortOrder}
-            />
-
-            <Select
               className="w-[100px]"
               data={["10", "20", "50", "100"]}
               label="Page size"
@@ -191,7 +162,21 @@ export function TrackList() {
           contextType="library"
           isLoading={isLoading}
           onRefetch={refetch}
+          onSortChange={(columnId) => {
+            // If clicking the same column, toggle sort order
+            if (columnId === sortBy) {
+              updateSearch({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
+            } else {
+              // If clicking a new column, set to desc by default
+              updateSearch({
+                sortBy: columnId as typeof sortBy,
+                sortOrder: "desc",
+              });
+            }
+          }}
           search={debouncedSearch}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
           tracks={data?.tracks || []}
         />
 

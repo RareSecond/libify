@@ -18,6 +18,7 @@ const tracksSearchSchema = z.object({
       "lastPlayedAt",
       "totalPlayCount",
       "rating",
+      "duration",
     ])
     .optional()
     .catch("addedAt"),

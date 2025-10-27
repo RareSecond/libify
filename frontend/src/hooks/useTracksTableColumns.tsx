@@ -146,7 +146,6 @@ export function useTracksTableColumns({
             trackId={row.original.id}
           />
         ),
-        enableSorting: false,
         header: "Rating",
         id: "rating",
         size: 120,
