@@ -38,6 +38,7 @@ import {
   PaginatedPlayHistoryDto,
 } from './dto/play-history.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
+import { SyncOptionsDto } from './dto/sync-options.dto';
 import {
   SyncItemCountsDto,
   SyncProgressDto,
@@ -489,7 +490,7 @@ export class LibraryController {
   }
 
   @ApiOperation({
-    summary: 'Start library sync job (non-blocking)',
+    summary: 'Start library sync job (non-blocking) with optional sync options',
   })
   @ApiResponse({
     description: 'Sync job queued successfully',
@@ -500,10 +501,12 @@ export class LibraryController {
   @Post('sync')
   async syncLibrary(
     @Req() req: AuthenticatedRequest,
+    @Body() options?: SyncOptionsDto,
   ): Promise<SyncJobResponseDto> {
     try {
       // Add sync job to queue
       const job = await this.syncQueue.add('sync-library', {
+        options: options || {},
         syncType: 'full',
         userId: req.user.id,
       });

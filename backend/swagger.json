@@ -1116,6 +1116,16 @@
       "post": {
         "operationId": "LibraryController_syncLibrary",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncOptionsDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Sync job queued successfully",
@@ -1146,7 +1156,7 @@
             "bearer": []
           }
         ],
-        "summary": "Start library sync job (non-blocking)",
+        "summary": "Start library sync job (non-blocking) with optional sync options",
         "tags": [
           "library"
         ]
@@ -2285,6 +2295,35 @@
           "totalPages",
           "tracks"
         ]
+      },
+      "SyncOptionsDto": {
+        "type": "object",
+        "properties": {
+          "forceRefreshPlaylists": {
+            "type": "boolean",
+            "default": false,
+            "description": "Force refresh all playlists, ignoring snapshot-based change detection. By default, playlists are only synced if their snapshot ID has changed since the last sync. Set to true to re-sync all playlists regardless of changes.",
+            "example": false
+          },
+          "syncAlbums": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include saved albums in sync. When false, only liked tracks and playlists will be synced.",
+            "example": true
+          },
+          "syncLikedTracks": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include liked tracks (saved songs) in sync. When false, only albums and playlists will be synced.",
+            "example": true
+          },
+          "syncPlaylists": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include playlists in sync. When false, only liked tracks and albums will be synced.",
+            "example": true
+          }
+        }
       },
       "SyncJobResponseDto": {
         "type": "object",
