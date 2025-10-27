@@ -684,6 +684,75 @@
         ]
       }
     },
+    "/library/play-history": {
+      "get": {
+        "operationId": "LibraryController_getPlayHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search query for title, artist or album",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trackId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by track ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of play history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPlayHistoryDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user play history",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/count": {
       "get": {
         "operationId": "LibraryController_getSyncItemCounts",
@@ -1883,6 +1952,84 @@
         },
         "required": [
           "tracks"
+        ]
+      },
+      "PlayHistoryItemDto": {
+        "type": "object",
+        "properties": {
+          "duration": {
+            "type": "number",
+            "description": "Duration listened in milliseconds",
+            "nullable": true
+          },
+          "id": {
+            "type": "string"
+          },
+          "playedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "trackAlbum": {
+            "type": "string"
+          },
+          "trackAlbumArt": {
+            "type": "string"
+          },
+          "trackArtist": {
+            "type": "string"
+          },
+          "trackDuration": {
+            "type": "number",
+            "description": "Track duration in milliseconds"
+          },
+          "trackId": {
+            "type": "string"
+          },
+          "trackSpotifyId": {
+            "type": "string"
+          },
+          "trackTitle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "playedAt",
+          "trackArtist",
+          "trackDuration",
+          "trackId",
+          "trackSpotifyId",
+          "trackTitle"
+        ]
+      },
+      "PaginatedPlayHistoryDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayHistoryItemDto"
+            }
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "totalPages"
         ]
       },
       "SyncItemCountsDto": {

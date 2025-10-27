@@ -1,7 +1,7 @@
 import { AppShell, Burger, Group, NavLink, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Disc, Home, Library, ListMusic, User } from "lucide-react";
+import { Disc, History, Home, Library, ListMusic, User } from "lucide-react";
 import { ReactNode } from "react";
 
 interface AppShellLayoutProps {
@@ -18,6 +18,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
     { icon: Disc, label: "Albums", to: "/albums" },
     { icon: User, label: "Artists", to: "/artists" },
     { icon: ListMusic, label: "Smart Playlists", to: "/playlists" },
+    { icon: History, label: "Play History", to: "/play-history" },
   ];
 
   return (

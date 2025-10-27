@@ -215,8 +215,15 @@ export class LibrarySyncService {
           // Calculate percentage, ensuring it's finite and clamped 66-100
           let percentage = 66;
           if (playlists.length > 0) {
-            const rawPercentage = 66 + (processedPlaylists / playlists.length) * 34;
-            percentage = Math.min(100, Math.max(66, Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 66));
+            const rawPercentage =
+              66 + (processedPlaylists / playlists.length) * 34;
+            percentage = Math.min(
+              100,
+              Math.max(
+                66,
+                Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 66,
+              ),
+            );
           }
 
           await onProgress({
@@ -1498,7 +1505,8 @@ export class LibrarySyncService {
       if (!forceEmit && estimatedTotal === 0) return;
 
       const elapsed = Date.now() - startTime;
-      const rawItemsPerSecond = totalProcessed / Math.max(elapsed / 1000, 0.001);
+      const rawItemsPerSecond =
+        totalProcessed / Math.max(elapsed / 1000, 0.001);
       const itemsPerSecond = Math.max(0, rawItemsPerSecond);
       const remaining = Math.max(0, estimatedTotal - totalProcessed);
 
@@ -1506,21 +1514,31 @@ export class LibrarySyncService {
       let estimatedTimeRemaining: number | undefined;
       if (itemsPerSecond > 0 && remaining > 0) {
         const rawEtr = remaining / itemsPerSecond;
-        estimatedTimeRemaining = Number.isFinite(rawEtr) ? Math.round(Math.max(0, rawEtr)) : undefined;
+        estimatedTimeRemaining = Number.isFinite(rawEtr)
+          ? Math.round(Math.max(0, rawEtr))
+          : undefined;
       }
 
       // Calculate percentage, ensuring it's finite and clamped 0-100
       let percentage = 33;
       if (estimatedTotal > 0) {
         const rawPercentage = 33 + (totalProcessed / estimatedTotal) * 33;
-        percentage = Math.min(66, Math.max(33, Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 33));
+        percentage = Math.min(
+          66,
+          Math.max(
+            33,
+            Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 33,
+          ),
+        );
       }
 
       await onProgress({
         current: totalProcessed,
         errorCount: result.errors.length,
         estimatedTimeRemaining,
-        itemsPerSecond: Number.isFinite(itemsPerSecond) ? Math.round(itemsPerSecond) : 0,
+        itemsPerSecond: Number.isFinite(itemsPerSecond)
+          ? Math.round(itemsPerSecond)
+          : 0,
         message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
         percentage,
         phase: 'albums',
@@ -1608,7 +1626,8 @@ export class LibrarySyncService {
       if (!forceEmit && estimatedTotal === 0) return;
 
       const elapsed = Date.now() - startTime;
-      const rawItemsPerSecond = totalProcessed / Math.max(elapsed / 1000, 0.001);
+      const rawItemsPerSecond =
+        totalProcessed / Math.max(elapsed / 1000, 0.001);
       const itemsPerSecond = Math.max(0, rawItemsPerSecond);
       const remaining = Math.max(0, estimatedTotal - totalProcessed);
 
@@ -1616,21 +1635,31 @@ export class LibrarySyncService {
       let estimatedTimeRemaining: number | undefined;
       if (itemsPerSecond > 0 && remaining > 0) {
         const rawEtr = remaining / itemsPerSecond;
-        estimatedTimeRemaining = Number.isFinite(rawEtr) ? Math.round(Math.max(0, rawEtr)) : undefined;
+        estimatedTimeRemaining = Number.isFinite(rawEtr)
+          ? Math.round(Math.max(0, rawEtr))
+          : undefined;
       }
 
       // Calculate percentage, ensuring it's finite and clamped 0-100
       let percentage = 0;
       if (estimatedTotal > 0) {
         const rawPercentage = (totalProcessed / estimatedTotal) * 33;
-        percentage = Math.min(33, Math.max(0, Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 0));
+        percentage = Math.min(
+          33,
+          Math.max(
+            0,
+            Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 0,
+          ),
+        );
       }
 
       await onProgress({
         current: totalProcessed,
         errorCount: result.errors.length,
         estimatedTimeRemaining,
-        itemsPerSecond: Number.isFinite(itemsPerSecond) ? Math.round(itemsPerSecond) : 0,
+        itemsPerSecond: Number.isFinite(itemsPerSecond)
+          ? Math.round(itemsPerSecond)
+          : 0,
         message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
         percentage,
         phase: 'tracks',
