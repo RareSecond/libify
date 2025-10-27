@@ -943,10 +943,14 @@ export class TrackService {
       case 'artist':
         orderBy = { spotifyTrack: { artist: { name: sortOrder } } };
         break;
+      case 'duration':
+        orderBy = { spotifyTrack: { duration: sortOrder } };
+        break;
       case 'lastPlayedAt':
         orderBy = { lastPlayedAt: sortOrder };
         break;
       case 'rating':
+        // NULLS LAST behavior will be applied below
         orderBy = { rating: sortOrder };
         break;
       case 'title':
@@ -960,7 +964,28 @@ export class TrackService {
     // Calculate pagination
     const skip = (page - 1) * pageSize;
 
-    // Execute queries
+    // For rating and lastPlayedAt, we need NULLS LAST behavior
+    // Prisma doesn't support this, so use Kysely for these sorts
+    if (sortBy === 'rating' || sortBy === 'lastPlayedAt') {
+      return this.getUserTracksWithKysely(
+        userId,
+        {
+          genres,
+          minRating,
+          page,
+          pageSize,
+          search,
+          sortBy,
+          sortOrder,
+          sourceTypes,
+          tagIds,
+        },
+        where,
+        skip,
+      );
+    }
+
+    // Execute queries with Prisma for other sort fields
     const [tracks, total] = await Promise.all([
       this.databaseService.userTrack.findMany({
         include: {
@@ -1064,5 +1089,186 @@ export class TrackService {
     );
 
     return updated.rating;
+  }
+
+  private async getUserTracksWithKysely(
+    userId: string,
+    query: GetTracksQueryDto,
+    where: Prisma.UserTrackWhereInput,
+    skip: number,
+  ): Promise<PaginatedTracksDto> {
+    const { page = 1, pageSize = 20, sortBy, sortOrder = 'desc' } = query;
+
+    const db = this.kyselyService.database;
+
+    // Build base query with all joins
+    let baseQuery = db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
+      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
+      .leftJoin('Tag as t', 'tt.tagId', 't.id')
+      .leftJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
+      .where('ut.userId', '=', userId);
+
+    // Apply search filter
+    if (query.search) {
+      baseQuery = baseQuery.where((eb) =>
+        eb.or([
+          eb('st.title', 'ilike', `%${query.search}%`),
+          eb('sar.name', 'ilike', `%${query.search}%`),
+          eb('sa.name', 'ilike', `%${query.search}%`),
+        ]),
+      );
+    }
+
+    // Apply genre filter
+    if (query.genres && query.genres.length > 0) {
+      baseQuery = baseQuery.where(({ eb }) =>
+        eb(
+          sql`sar.genres && ARRAY[${sql.join(query.genres.map((g) => sql.lit(g)))}]::text[]`,
+          '=',
+          sql`true`,
+        ),
+      );
+    }
+
+    // Apply rating filter
+    if (query.minRating) {
+      baseQuery = baseQuery.where('ut.rating', '>=', query.minRating);
+    }
+
+    // Apply tag filter (if any tags, track must have at least one)
+    if (query.tagIds && query.tagIds.length > 0) {
+      baseQuery = baseQuery.where('tt.tagId', 'in', query.tagIds);
+    }
+
+    // Apply source type filter
+    if (query.sourceTypes && query.sourceTypes.length > 0) {
+      baseQuery = baseQuery.where('ts.sourceType', 'in', query.sourceTypes);
+    }
+
+    // Get total count (use DISTINCT to handle joins that create duplicates)
+    const countResult = await baseQuery
+      .select((eb) => eb.fn.count<number>('ut.id').distinct().as('count'))
+      .executeTakeFirst();
+
+    const total = Number(countResult?.count || 0);
+
+    // Build query with aggregations
+    let tracksQuery = baseQuery
+      .select([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name as albumName',
+        'sa.imageUrl as albumImageUrl',
+        'sar.name as artistName',
+        'sar.genres as artistGenres',
+        sql<Array<{ color: null | string; id: string; name: string }>>`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', t.id,
+                'name', t.name,
+                'color', t.color
+              )
+            ) FILTER (WHERE t.id IS NOT NULL),
+            '[]'::json
+          )`.as('tags'),
+        sql<
+          Array<{
+            createdAt: Date;
+            id: string;
+            sourceId: null | string;
+            sourceName: null | string;
+            sourceType: string;
+          }>
+        >`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', ts.id,
+                'sourceType', ts."sourceType",
+                'sourceName', ts."sourceName",
+                'sourceId', ts."sourceId",
+                'createdAt', ts."createdAt"
+              )
+            ) FILTER (WHERE ts.id IS NOT NULL),
+            '[]'::json
+          )`.as('sources'),
+      ])
+      .groupBy([
+        'ut.id',
+        'ut.addedAt',
+        'ut.lastPlayedAt',
+        'ut.totalPlayCount',
+        'ut.rating',
+        'ut.ratedAt',
+        'st.spotifyId',
+        'st.title',
+        'st.duration',
+        'sa.name',
+        'sa.imageUrl',
+        'sar.name',
+        'sar.genres',
+      ]);
+
+    // Apply ordering with NULLS LAST for nullable fields
+    if (sortBy === 'rating') {
+      tracksQuery = tracksQuery.orderBy(
+        sql`ut.rating ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+      );
+    } else if (sortBy === 'lastPlayedAt') {
+      tracksQuery = tracksQuery.orderBy(
+        sql`ut."lastPlayedAt" ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+      );
+    }
+
+    // Apply pagination
+    const tracks = await tracksQuery.limit(pageSize).offset(skip).execute();
+
+    // Transform to DTOs
+    const trackDtos = tracks.map((track) => {
+      const dto = {
+        addedAt: track.addedAt,
+        album: track.albumName,
+        albumArt: track.albumImageUrl,
+        artist: track.artistName,
+        artistGenres: track.artistGenres,
+        duration: track.duration,
+        id: track.id,
+        lastPlayedAt: track.lastPlayedAt,
+        ratedAt: track.ratedAt,
+        rating: track.rating,
+        sources: track.sources,
+        spotifyId: track.spotifyId,
+        tags: track.tags,
+        title: track.title,
+        totalPlayCount: track.totalPlayCount,
+      };
+      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+    });
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    return plainToInstance(
+      PaginatedTracksDto,
+      {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        tracks: trackDtos,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 }

@@ -90,6 +90,7 @@ export class GetTracksQueryDto {
       'lastPlayedAt',
       'totalPlayCount',
       'rating',
+      'duration',
     ],
   })
   @IsOptional()
@@ -98,6 +99,7 @@ export class GetTracksQueryDto {
     | 'addedAt'
     | 'album'
     | 'artist'
+    | 'duration'
     | 'lastPlayedAt'
     | 'rating'
     | 'title'

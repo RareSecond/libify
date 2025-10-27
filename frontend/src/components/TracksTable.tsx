@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
@@ -17,7 +18,10 @@ interface TracksTableProps {
   contextType?: "album" | "artist" | "library" | "playlist";
   isLoading?: boolean;
   onRefetch?: () => void;
+  onSortChange?: (columnId: string) => void;
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   tracks: TrackDto[];
 }
 
@@ -26,7 +30,10 @@ export function TracksTable({
   contextType,
   isLoading,
   onRefetch,
+  onSortChange,
   search,
+  sortBy,
+  sortOrder,
   tracks,
 }: TracksTableProps) {
   const [draggedColumn, setDraggedColumn] = useState<null | string>(null);
@@ -108,9 +115,14 @@ export function TracksTable({
     columnResizeMode: "onChange",
     columns,
     data: tracks,
+    enableSortingRemoval: false,
     getCoreRowModel: getCoreRowModel(),
+    manualSorting: true,
     onColumnOrderChange: setColumnOrder,
-    state: { columnOrder },
+    state: {
+      columnOrder,
+      sorting: sortBy ? [{ desc: sortOrder === "desc", id: sortBy }] : [],
+    },
   });
 
   const handleDragStart = (e: React.DragEvent, column: string) => {
@@ -166,28 +178,55 @@ export function TracksTable({
       >
         <Table.Thead>
           <Table.Tr>
-            {table.getFlatHeaders().map((header) => (
-              <Table.Th
-                className={`relative select-none transition-opacity duration-200 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"}`}
-                draggable
-                key={header.id}
-                onDragEnd={handleDragEnd}
-                onDragEnter={(e) => handleDragEnter(e, header.column.id)}
-                onDragOver={handleDragOver}
-                onDragStart={(e) => handleDragStart(e, header.column.id)}
-                onDrop={handleDrop}
-                // eslint-disable-next-line react/forbid-component-props
-                style={{
-                  opacity: draggedColumn === header.column.id ? 0.5 : 1,
-                  width: header.getSize(),
-                }}
-              >
-                {flexRender(
-                  header.column.columnDef.header,
-                  header.getContext(),
-                )}
-              </Table.Th>
-            ))}
+            {table.getFlatHeaders().map((header) => {
+              const canSort = header.column.getCanSort();
+              const isSorted = header.column.getIsSorted();
+
+              return (
+                <Table.Th
+                  className={`relative select-none transition-opacity duration-200 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"}`}
+                  draggable
+                  key={header.id}
+                  onDragEnd={handleDragEnd}
+                  onDragEnter={(e) => handleDragEnter(e, header.column.id)}
+                  onDragOver={handleDragOver}
+                  onDragStart={(e) => handleDragStart(e, header.column.id)}
+                  onDrop={handleDrop}
+                  // eslint-disable-next-line react/forbid-component-props
+                  style={{
+                    opacity: draggedColumn === header.column.id ? 0.5 : 1,
+                    width: header.getSize(),
+                  }}
+                >
+                  <div
+                    className={`flex items-center gap-2 ${canSort ? "cursor-pointer" : ""}`}
+                    onClick={(e) => {
+                      if (canSort && onSortChange) {
+                        e.stopPropagation();
+                        onSortChange(header.column.id);
+                      }
+                    }}
+                    onDragStart={(e) => e.stopPropagation()}
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                    {canSort && (
+                      <span className="text-gray-400">
+                        {isSorted === "desc" ? (
+                          <ArrowDown size={14} />
+                        ) : isSorted === "asc" ? (
+                          <ArrowUp size={14} />
+                        ) : (
+                          <ArrowUpDown size={14} />
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </Table.Th>
+              );
+            })}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
