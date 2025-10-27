@@ -1117,7 +1117,8 @@
         "operationId": "LibraryController_syncLibrary",
         "parameters": [],
         "requestBody": {
-          "required": true,
+          "required": false,
+          "description": "Sync options to control what gets synced",
           "content": {
             "application/json": {
               "schema": {

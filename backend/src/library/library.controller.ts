@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -489,6 +490,11 @@ export class LibraryController {
     return { message: 'Tag removed from track' };
   }
 
+  @ApiBody({
+    description: 'Sync options to control what gets synced',
+    required: false,
+    type: SyncOptionsDto,
+  })
   @ApiOperation({
     summary: 'Start library sync job (non-blocking) with optional sync options',
   })
