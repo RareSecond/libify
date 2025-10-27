@@ -3,10 +3,12 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 
 import { AuthService } from '../../auth/auth.service';
+import { SyncOptionsDto } from '../../library/dto/sync-options.dto';
 import { SyncProgressDto } from '../../library/dto/sync-progress-base.dto';
 import { LibrarySyncService } from '../../library/library-sync.service';
 
 export interface SyncJobData {
+  options?: SyncOptionsDto;
   syncType: 'full' | 'quick';
   userId: string;
 }
@@ -104,7 +106,7 @@ export class SyncProcessor extends WorkerHost {
   }
 
   async process(job: Job<SyncJobData>): Promise<unknown> {
-    const { syncType, userId } = job.data;
+    const { options, syncType, userId } = job.data;
     this.logger.log(
       `Starting ${syncType} sync for user ${userId} (Job: ${job.id})`,
     );
@@ -145,6 +147,7 @@ export class SyncProcessor extends WorkerHost {
           userId,
           accessToken,
           updateProgress,
+          options,
         );
 
         this.logger.log(

@@ -5,6 +5,7 @@ import { DatabaseService } from '../database/database.service';
 import { KyselyService } from '../database/kysely/kysely.service';
 import { AggregationService } from './aggregation.service';
 import { SpotifySavedAlbum } from './dto/spotify-album.dto';
+import { SyncOptionsDto } from './dto/sync-options.dto';
 import {
   SyncItemCountsDto,
   SyncProgressCallback,
@@ -169,6 +170,7 @@ export class LibrarySyncService {
     userId: string,
     accessToken: string,
     onProgress?: SyncProgressCallback,
+    forceRefresh = false,
   ): Promise<{
     errors: string[];
     newTracks: number;
@@ -249,9 +251,10 @@ export class LibrarySyncService {
 
           processedPlaylists++;
 
-          // Check if playlist has changed by comparing snapshot IDs
+          // Check if playlist has changed by comparing snapshot IDs (unless forceRefresh is enabled)
           const storedPlaylist = storedPlaylists.get(playlist.id);
           if (
+            !forceRefresh &&
             storedPlaylist &&
             storedPlaylist.snapshotId === playlist.snapshot_id
           ) {
@@ -693,7 +696,16 @@ export class LibrarySyncService {
     userId: string,
     accessToken: string,
     onProgress?: SyncProgressCallback,
+    options?: SyncOptionsDto,
   ): Promise<SyncResult> {
+    // Set default options
+    const syncOptions = {
+      forceRefreshPlaylists: options?.forceRefreshPlaylists ?? false,
+      syncAlbums: options?.syncAlbums ?? true,
+      syncLikedTracks: options?.syncLikedTracks ?? true,
+      syncPlaylists: options?.syncPlaylists ?? true,
+    };
+
     const result: SyncResult = {
       errors: [],
       newAlbums: 0,
@@ -707,7 +719,10 @@ export class LibrarySyncService {
     try {
       // Clear artist cache at start of sync to avoid stale data across sync sessions
       this.syncArtistCache.clear();
-      this.logger.log(`Starting library sync for user ${userId}`);
+      this.logger.log(
+        `Starting library sync for user ${userId} with options:`,
+        syncOptions,
+      );
 
       // Slice 1 & 2: Pre-count items for weighted progress
       if (onProgress) {
@@ -723,22 +738,35 @@ export class LibrarySyncService {
 
       const counts = await this.countSyncItems(userId, accessToken);
 
+      // Adjust counts based on sync options
+      const adjustedCounts = {
+        albums: syncOptions.syncAlbums ? counts.albums : 0,
+        albumTracks: syncOptions.syncAlbums
+          ? counts.albumTracks || counts.albums * 11
+          : 0,
+        playlists: syncOptions.syncPlaylists ? counts.playlists : 0,
+        playlistTracks: syncOptions.syncPlaylists
+          ? counts.playlistTracks || counts.playlists * 100
+          : 0,
+        tracks: syncOptions.syncLikedTracks ? counts.tracks : 0,
+      };
+
       // Slice 3: Calculate total work with sub-item weighting
       const totalWork =
-        counts.tracks + // Liked tracks
-        (counts.albumTracks || counts.albums * 11) + // Album complexity
-        (counts.playlistTracks || counts.playlists * 100); // Playlist complexity
+        adjustedCounts.tracks + // Liked tracks
+        adjustedCounts.albumTracks + // Album complexity
+        adjustedCounts.playlistTracks; // Playlist complexity
 
       // Track weighted progress across all phases
       const weightedCounts: WeightedSyncCounts = {
-        albums: counts.albums,
-        albumTracks: counts.albumTracks || counts.albums * 11,
-        playlists: counts.playlists,
-        playlistTracks: counts.playlistTracks || counts.playlists * 100,
+        albums: adjustedCounts.albums,
+        albumTracks: adjustedCounts.albumTracks,
+        playlists: adjustedCounts.playlists,
+        playlistTracks: adjustedCounts.playlistTracks,
         processedAlbums: 0,
         processedPlaylists: 0,
         processedTracks: 0,
-        tracks: counts.tracks,
+        tracks: adjustedCounts.tracks,
       };
 
       // Helper function to calculate weighted percentage
@@ -766,48 +794,53 @@ export class LibrarySyncService {
           },
           current: 0,
           errorCount: 0,
-          message: `Starting sync: ${counts.tracks} tracks, ${counts.albums} albums, ${counts.playlists} playlists`,
+          message: `Starting sync: ${adjustedCounts.tracks} tracks, ${adjustedCounts.albums} albums, ${adjustedCounts.playlists} playlists`,
           percentage: 0,
           phase: 'tracks',
           total: weightedCounts.tracks,
         });
       }
 
-      // Sync liked tracks using streaming for memory efficiency
-      this.logger.log(`Syncing liked tracks for user ${userId}`);
-      await this.syncTracksStreaming(
-        userId,
-        accessToken,
-        result,
-        onProgress
-          ? async (progress) => {
-              weightedCounts.processedTracks = progress.current;
-              const percentage = calculateWeightedPercentage();
-              await onProgress({
-                ...progress,
-                breakdown: {
-                  albums: {
-                    processed: weightedCounts.processedAlbums,
-                    total: weightedCounts.albums,
+      // Sync liked tracks using streaming for memory efficiency (if enabled)
+      if (syncOptions.syncLikedTracks) {
+        this.logger.log(`Syncing liked tracks for user ${userId}`);
+        await this.syncTracksStreaming(
+          userId,
+          accessToken,
+          result,
+          onProgress
+            ? async (progress) => {
+                weightedCounts.processedTracks = progress.current;
+                const percentage = calculateWeightedPercentage();
+                await onProgress({
+                  ...progress,
+                  breakdown: {
+                    albums: {
+                      processed: weightedCounts.processedAlbums,
+                      total: weightedCounts.albums,
+                    },
+                    playlists: {
+                      processed: weightedCounts.processedPlaylists,
+                      total: weightedCounts.playlists,
+                    },
+                    tracks: {
+                      processed: weightedCounts.processedTracks,
+                      total: weightedCounts.tracks,
+                    },
                   },
-                  playlists: {
-                    processed: weightedCounts.processedPlaylists,
-                    total: weightedCounts.playlists,
-                  },
-                  tracks: {
-                    processed: weightedCounts.processedTracks,
-                    total: weightedCounts.tracks,
-                  },
-                },
-                percentage,
-                phase: 'tracks',
-              });
-            }
-          : undefined,
-      );
+                  percentage,
+                  phase: 'tracks',
+                });
+              }
+            : undefined,
+        );
 
-      // Mark tracks complete
-      weightedCounts.processedTracks = weightedCounts.tracks;
+        // Mark tracks complete
+        weightedCounts.processedTracks = weightedCounts.tracks;
+      } else {
+        this.logger.log(`Skipping liked tracks sync (disabled by options)`);
+        weightedCounts.processedTracks = weightedCounts.tracks;
+      }
 
       // Update progress for albums phase
       if (onProgress) {
@@ -832,46 +865,51 @@ export class LibrarySyncService {
         });
       }
 
-      // Sync saved albums
-      this.logger.log(`Syncing saved albums for user ${userId}`);
-      const albumSyncResult = await this.syncUserAlbums(
-        userId,
-        accessToken,
-        onProgress
-          ? async (progress) => {
-              weightedCounts.processedAlbums = progress.current;
-              const percentage = calculateWeightedPercentage();
-              await onProgress({
-                ...progress,
-                breakdown: {
-                  albums: {
-                    processed: weightedCounts.processedAlbums,
-                    total: weightedCounts.albums,
+      // Sync saved albums (if enabled)
+      if (syncOptions.syncAlbums) {
+        this.logger.log(`Syncing saved albums for user ${userId}`);
+        const albumSyncResult = await this.syncUserAlbums(
+          userId,
+          accessToken,
+          onProgress
+            ? async (progress) => {
+                weightedCounts.processedAlbums = progress.current;
+                const percentage = calculateWeightedPercentage();
+                await onProgress({
+                  ...progress,
+                  breakdown: {
+                    albums: {
+                      processed: weightedCounts.processedAlbums,
+                      total: weightedCounts.albums,
+                    },
+                    playlists: {
+                      processed: weightedCounts.processedPlaylists,
+                      total: weightedCounts.playlists,
+                    },
+                    tracks: {
+                      processed: weightedCounts.processedTracks,
+                      total: weightedCounts.tracks,
+                    },
                   },
-                  playlists: {
-                    processed: weightedCounts.processedPlaylists,
-                    total: weightedCounts.playlists,
-                  },
-                  tracks: {
-                    processed: weightedCounts.processedTracks,
-                    total: weightedCounts.tracks,
-                  },
-                },
-                percentage,
-                phase: 'albums',
-              });
-            }
-          : undefined,
-      );
+                  percentage,
+                  phase: 'albums',
+                });
+              }
+            : undefined,
+        );
 
-      // Merge album sync results
-      result.newAlbums = albumSyncResult.newAlbums;
-      result.totalAlbums = albumSyncResult.totalAlbums;
-      result.updatedAlbums = albumSyncResult.updatedAlbums;
-      result.errors.push(...albumSyncResult.errors);
+        // Merge album sync results
+        result.newAlbums = albumSyncResult.newAlbums;
+        result.totalAlbums = albumSyncResult.totalAlbums;
+        result.updatedAlbums = albumSyncResult.updatedAlbums;
+        result.errors.push(...albumSyncResult.errors);
 
-      // Mark albums complete
-      weightedCounts.processedAlbums = weightedCounts.albums;
+        // Mark albums complete
+        weightedCounts.processedAlbums = weightedCounts.albums;
+      } else {
+        this.logger.log(`Skipping albums sync (disabled by options)`);
+        weightedCounts.processedAlbums = weightedCounts.albums;
+      }
 
       // Update progress for playlists phase
       if (onProgress) {
@@ -896,46 +934,52 @@ export class LibrarySyncService {
         });
       }
 
-      // Sync playlist tracks
-      this.logger.log(`Syncing playlist tracks for user ${userId}`);
-      const playlistSyncResult = await this.syncPlaylistTracks(
-        userId,
-        accessToken,
-        onProgress
-          ? async (progress) => {
-              weightedCounts.processedPlaylists = progress.current;
-              const percentage = calculateWeightedPercentage();
-              await onProgress({
-                ...progress,
-                breakdown: {
-                  albums: {
-                    processed: weightedCounts.processedAlbums,
-                    total: weightedCounts.albums,
+      // Sync playlist tracks (if enabled)
+      if (syncOptions.syncPlaylists) {
+        this.logger.log(`Syncing playlist tracks for user ${userId}`);
+        const playlistSyncResult = await this.syncPlaylistTracks(
+          userId,
+          accessToken,
+          onProgress
+            ? async (progress) => {
+                weightedCounts.processedPlaylists = progress.current;
+                const percentage = calculateWeightedPercentage();
+                await onProgress({
+                  ...progress,
+                  breakdown: {
+                    albums: {
+                      processed: weightedCounts.processedAlbums,
+                      total: weightedCounts.albums,
+                    },
+                    playlists: {
+                      processed: weightedCounts.processedPlaylists,
+                      total: weightedCounts.playlists,
+                    },
+                    tracks: {
+                      processed: weightedCounts.processedTracks,
+                      total: weightedCounts.tracks,
+                    },
                   },
-                  playlists: {
-                    processed: weightedCounts.processedPlaylists,
-                    total: weightedCounts.playlists,
-                  },
-                  tracks: {
-                    processed: weightedCounts.processedTracks,
-                    total: weightedCounts.tracks,
-                  },
-                },
-                percentage,
-                phase: 'playlists',
-              });
-            }
-          : undefined,
-      );
+                  percentage,
+                  phase: 'playlists',
+                });
+              }
+            : undefined,
+          syncOptions.forceRefreshPlaylists,
+        );
 
-      // Merge playlist sync results
-      result.newTracks += playlistSyncResult.newTracks;
-      result.playlistTracks = playlistSyncResult.totalPlaylistTracks;
-      result.totalPlaylists = playlistSyncResult.totalPlaylists;
-      result.errors.push(...playlistSyncResult.errors);
+        // Merge playlist sync results
+        result.newTracks += playlistSyncResult.newTracks;
+        result.playlistTracks = playlistSyncResult.totalPlaylistTracks;
+        result.totalPlaylists = playlistSyncResult.totalPlaylists;
+        result.errors.push(...playlistSyncResult.errors);
 
-      // Mark playlists complete
-      weightedCounts.processedPlaylists = weightedCounts.playlists;
+        // Mark playlists complete
+        weightedCounts.processedPlaylists = weightedCounts.playlists;
+      } else {
+        this.logger.log(`Skipping playlists sync (disabled by options)`);
+        weightedCounts.processedPlaylists = weightedCounts.playlists;
+      }
 
       // Final progress - update stats
       if (onProgress) {

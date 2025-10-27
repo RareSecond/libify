@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -38,6 +39,7 @@ import {
   PaginatedPlayHistoryDto,
 } from './dto/play-history.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
+import { SyncOptionsDto } from './dto/sync-options.dto';
 import {
   SyncItemCountsDto,
   SyncProgressDto,
@@ -488,8 +490,13 @@ export class LibraryController {
     return { message: 'Tag removed from track' };
   }
 
+  @ApiBody({
+    description: 'Sync options to control what gets synced',
+    required: false,
+    type: SyncOptionsDto,
+  })
   @ApiOperation({
-    summary: 'Start library sync job (non-blocking)',
+    summary: 'Start library sync job (non-blocking) with optional sync options',
   })
   @ApiResponse({
     description: 'Sync job queued successfully',
@@ -500,10 +507,12 @@ export class LibraryController {
   @Post('sync')
   async syncLibrary(
     @Req() req: AuthenticatedRequest,
+    @Body() options?: SyncOptionsDto,
   ): Promise<SyncJobResponseDto> {
     try {
       // Add sync job to queue
       const job = await this.syncQueue.add('sync-library', {
+        options: options || {},
         syncType: 'full',
         userId: req.user.id,
       });

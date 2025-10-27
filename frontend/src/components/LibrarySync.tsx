@@ -10,12 +10,21 @@ import {
 
 import { useSyncProgress } from "../hooks/useSyncProgress";
 import { formatLastSync } from "../utils/format";
+import { SyncOptionsAccordion } from "./sync/SyncOptionsAccordion";
 import { SyncProgress } from "./sync/SyncProgress";
 
 export function LibrarySync() {
   const [currentJobId, setCurrentJobId] = useState<null | string>(null);
   const { reset: resetProgress, status: syncProgress } =
     useSyncProgress(currentJobId);
+
+  // Sync options state
+  const [syncOptions, setSyncOptions] = useState({
+    forceRefreshPlaylists: false,
+    syncAlbums: true,
+    syncLikedTracks: true,
+    syncPlaylists: true,
+  });
 
   // Query for sync status
   const { data: syncStatus, refetch: refetchStatus } =
@@ -148,6 +157,8 @@ export function LibrarySync() {
           only (fast, shows progress)
         </Text>
 
+        <SyncOptionsAccordion onChange={setSyncOptions} options={syncOptions} />
+
         {syncProgress?.state === "failed" && syncProgress.error && (
           <Alert
             color="red"
@@ -210,7 +221,7 @@ export function LibrarySync() {
             }
             leftSection={<RefreshCw size={16} />}
             loading={syncLibraryMutation.isPending}
-            onClick={() => syncLibraryMutation.mutate()}
+            onClick={() => syncLibraryMutation.mutate({ data: syncOptions })}
           >
             {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
           </Button>
