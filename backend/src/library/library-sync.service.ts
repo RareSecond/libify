@@ -206,18 +206,24 @@ export class LibrarySyncService {
       // Helper function to report progress
       const reportProgress = async (
         message: string,
-        forceUpdate = false,
+        forceEmit = false,
       ): Promise<boolean> => {
         if (!onProgress) return false;
 
         const now = Date.now();
-        if (forceUpdate || now - lastProgressUpdate >= progressThrottleMs) {
+        if (forceEmit || now - lastProgressUpdate >= progressThrottleMs) {
+          // Calculate percentage, ensuring it's finite and clamped 66-100
+          let percentage = 66;
+          if (playlists.length > 0) {
+            const rawPercentage = 66 + (processedPlaylists / playlists.length) * 34;
+            percentage = Math.min(100, Math.max(66, Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 66));
+          }
+
           await onProgress({
             current: processedPlaylists,
-            errors: result.errors,
+            errorCount: result.errors.length,
             message,
-            percentage:
-              66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
+            percentage,
             phase: 'playlists',
             total: playlists.length,
           });
@@ -423,7 +429,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: 0,
-          errors: [],
+          errorCount: 0,
           message: 'Fetching liked tracks...',
           percentage: 0,
           phase: 'tracks',
@@ -440,7 +446,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: 10,
-          errors: [],
+          errorCount: 0,
           message: `Processing ${likedTracksPage.items.length} liked tracks...`,
           percentage: 10,
           phase: 'tracks',
@@ -462,7 +468,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: result.totalTracks,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: `Synced ${result.totalTracks} liked tracks`,
           percentage: 40,
           phase: 'tracks',
@@ -474,7 +480,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: 0,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: 'Fetching saved albums...',
           percentage: 40,
           phase: 'albums',
@@ -491,7 +497,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: 5,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: `Processing ${albumsPage.items.length} albums...`,
           percentage: 50,
           phase: 'albums',
@@ -512,7 +518,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: result.totalAlbums,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: `Synced ${result.newAlbums} albums`,
           percentage: 70,
           phase: 'albums',
@@ -524,7 +530,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: 0,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: 'Fetching playlists...',
           percentage: 70,
           phase: 'playlists',
@@ -557,7 +563,7 @@ export class LibrarySyncService {
           if (onProgress) {
             await onProgress({
               current: processedPlaylists,
-              errors: result.errors,
+              errorCount: result.errors.length,
               message: `Syncing playlist: ${playlist.name}...`,
               percentage:
                 70 +
@@ -622,7 +628,8 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: result.totalPlaylists,
-          errors: result.errors,
+          errorCount: result.errors.length,
+          errors: result.errors, // Include full errors array in final status
           message: `Quick sync complete! ${result.newTracks} new tracks, ${result.newAlbums} new albums, ${result.totalPlaylists} playlists`,
           percentage: 100,
           phase: 'playlists',
@@ -699,7 +706,7 @@ export class LibrarySyncService {
       if (onProgress) {
         await onProgress({
           current: 0,
-          errors: [],
+          errorCount: 0,
           message: 'Counting items to sync...',
           percentage: 0,
           phase: 'tracks',
@@ -751,7 +758,7 @@ export class LibrarySyncService {
             tracks: { processed: 0, total: weightedCounts.tracks },
           },
           current: 0,
-          errors: [],
+          errorCount: 0,
           message: `Starting sync: ${counts.tracks} tracks, ${counts.albums} albums, ${counts.playlists} playlists`,
           percentage: 0,
           phase: 'tracks',
@@ -810,7 +817,7 @@ export class LibrarySyncService {
             },
           },
           current: 0,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: 'Syncing saved albums...',
           percentage: calculateWeightedPercentage(),
           phase: 'albums',
@@ -874,7 +881,7 @@ export class LibrarySyncService {
             },
           },
           current: 0,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: 'Syncing playlist tracks...',
           percentage: calculateWeightedPercentage(),
           phase: 'playlists',
@@ -941,7 +948,7 @@ export class LibrarySyncService {
             },
           },
           current: result.totalTracks,
-          errors: result.errors,
+          errorCount: result.errors.length,
           message: 'Updating statistics...',
           percentage: 95,
           phase: 'playlists',
@@ -971,7 +978,8 @@ export class LibrarySyncService {
             },
           },
           current: result.totalTracks,
-          errors: result.errors,
+          errorCount: result.errors.length,
+          errors: result.errors, // Include full errors array in final status
           message: 'Sync completed successfully!',
           percentage: 100,
           phase: 'playlists',
@@ -1485,25 +1493,40 @@ export class LibrarySyncService {
     const progressThrottleMs = 1000; // Update at most once per second
 
     // Helper function to report progress
-    const reportProgress = async () => {
-      if (onProgress && estimatedTotal > 0) {
-        const elapsed = Date.now() - startTime;
-        const itemsPerSecond = totalProcessed / (elapsed / 1000);
-        const remaining = estimatedTotal - totalProcessed;
-        const estimatedTimeRemaining = remaining / itemsPerSecond;
+    const reportProgress = async (forceEmit = false) => {
+      if (!onProgress) return;
+      if (!forceEmit && estimatedTotal === 0) return;
 
-        await onProgress({
-          current: totalProcessed,
-          errors: result.errors,
-          estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
-          itemsPerSecond: Math.round(itemsPerSecond),
-          message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
-          percentage: 33 + Math.round((totalProcessed / estimatedTotal) * 33), // 33-66% for albums phase
-          phase: 'albums',
-          total: estimatedTotal,
-        });
-        lastProgressUpdate = Date.now();
+      const elapsed = Date.now() - startTime;
+      const rawItemsPerSecond = totalProcessed / Math.max(elapsed / 1000, 0.001);
+      const itemsPerSecond = Math.max(0, rawItemsPerSecond);
+      const remaining = Math.max(0, estimatedTotal - totalProcessed);
+
+      // Guard against divide-by-zero for estimated time remaining
+      let estimatedTimeRemaining: number | undefined;
+      if (itemsPerSecond > 0 && remaining > 0) {
+        const rawEtr = remaining / itemsPerSecond;
+        estimatedTimeRemaining = Number.isFinite(rawEtr) ? Math.round(Math.max(0, rawEtr)) : undefined;
       }
+
+      // Calculate percentage, ensuring it's finite and clamped 0-100
+      let percentage = 33;
+      if (estimatedTotal > 0) {
+        const rawPercentage = 33 + (totalProcessed / estimatedTotal) * 33;
+        percentage = Math.min(66, Math.max(33, Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 33));
+      }
+
+      await onProgress({
+        current: totalProcessed,
+        errorCount: result.errors.length,
+        estimatedTimeRemaining,
+        itemsPerSecond: Number.isFinite(itemsPerSecond) ? Math.round(itemsPerSecond) : 0,
+        message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
+        percentage,
+        phase: 'albums',
+        total: estimatedTotal,
+      });
+      lastProgressUpdate = Date.now();
     };
 
     // Get estimated total for progress calculation
@@ -1555,7 +1578,7 @@ export class LibrarySyncService {
     }
 
     // Always send final progress update
-    await reportProgress();
+    await reportProgress(true);
 
     result.totalAlbums = totalProcessed;
     this.logger.log(`Streamed and processed ${totalProcessed} albums`);
@@ -1580,25 +1603,40 @@ export class LibrarySyncService {
     const progressThrottleMs = 1000; // Update at most once per second
 
     // Helper function to report progress
-    const reportProgress = async () => {
-      if (onProgress && estimatedTotal > 0) {
-        const elapsed = Date.now() - startTime;
-        const itemsPerSecond = totalProcessed / (elapsed / 1000);
-        const remaining = estimatedTotal - totalProcessed;
-        const estimatedTimeRemaining = remaining / itemsPerSecond;
+    const reportProgress = async (forceEmit = false) => {
+      if (!onProgress) return;
+      if (!forceEmit && estimatedTotal === 0) return;
 
-        await onProgress({
-          current: totalProcessed,
-          errors: result.errors,
-          estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
-          itemsPerSecond: Math.round(itemsPerSecond),
-          message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
-          percentage: Math.round((totalProcessed / estimatedTotal) * 33), // 0-33% for tracks phase
-          phase: 'tracks',
-          total: estimatedTotal,
-        });
-        lastProgressUpdate = Date.now();
+      const elapsed = Date.now() - startTime;
+      const rawItemsPerSecond = totalProcessed / Math.max(elapsed / 1000, 0.001);
+      const itemsPerSecond = Math.max(0, rawItemsPerSecond);
+      const remaining = Math.max(0, estimatedTotal - totalProcessed);
+
+      // Guard against divide-by-zero for estimated time remaining
+      let estimatedTimeRemaining: number | undefined;
+      if (itemsPerSecond > 0 && remaining > 0) {
+        const rawEtr = remaining / itemsPerSecond;
+        estimatedTimeRemaining = Number.isFinite(rawEtr) ? Math.round(Math.max(0, rawEtr)) : undefined;
       }
+
+      // Calculate percentage, ensuring it's finite and clamped 0-100
+      let percentage = 0;
+      if (estimatedTotal > 0) {
+        const rawPercentage = (totalProcessed / estimatedTotal) * 33;
+        percentage = Math.min(33, Math.max(0, Number.isFinite(rawPercentage) ? Math.round(rawPercentage) : 0));
+      }
+
+      await onProgress({
+        current: totalProcessed,
+        errorCount: result.errors.length,
+        estimatedTimeRemaining,
+        itemsPerSecond: Number.isFinite(itemsPerSecond) ? Math.round(itemsPerSecond) : 0,
+        message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
+        percentage,
+        phase: 'tracks',
+        total: estimatedTotal,
+      });
+      lastProgressUpdate = Date.now();
     };
 
     // Get estimated total for progress calculation
@@ -1662,7 +1700,7 @@ export class LibrarySyncService {
     }
 
     // Always send final progress update
-    await reportProgress();
+    await reportProgress(true);
 
     result.totalTracks = totalProcessed;
     this.logger.log(`Streamed and processed ${totalProcessed} tracks`);

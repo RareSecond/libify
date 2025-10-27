@@ -2005,8 +2005,12 @@
             "type": "number",
             "description": "Number of items processed in current phase"
           },
+          "errorCount": {
+            "type": "number",
+            "description": "Number of non-fatal errors encountered"
+          },
           "errors": {
-            "description": "List of non-fatal errors encountered",
+            "description": "List of non-fatal errors encountered (deprecated, use errorCount for progress updates)",
             "type": "array",
             "items": {
               "type": "string"
@@ -2044,7 +2048,7 @@
         },
         "required": [
           "current",
-          "errors",
+          "errorCount",
           "message",
           "percentage",
           "phase",

@@ -74,8 +74,14 @@ export class SyncProgressDto {
   @ApiProperty({ description: 'Number of items processed in current phase' })
   current: number;
 
-  @ApiProperty({ description: 'List of non-fatal errors encountered' })
-  errors: string[];
+  @ApiProperty({ description: 'Number of non-fatal errors encountered' })
+  errorCount: number;
+
+  @ApiProperty({
+    description: 'List of non-fatal errors encountered (deprecated, use errorCount for progress updates)',
+    required: false,
+  })
+  errors?: string[];
 
   @ApiProperty({
     description: 'Estimated time remaining in seconds',
