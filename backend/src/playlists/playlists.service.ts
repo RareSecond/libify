@@ -74,12 +74,21 @@ export class PlaylistsService {
     };
   }
 
-  async getTracks(userId: string, playlistId: string, page = 1, pageSize = 20) {
+  async getTracks(
+    userId: string,
+    playlistId: string,
+    page = 1,
+    pageSize = 20,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ) {
     const playlist = await this.findOne(userId, playlistId);
     const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
 
     const where = this.buildWhereClause(userId, criteria);
-    const orderBy = this.buildOrderBy(criteria);
+    const orderBy = sortBy
+      ? this.buildDynamicOrderBy(sortBy, sortOrder || 'desc')
+      : this.buildOrderBy(criteria);
 
     const skip = (page - 1) * pageSize;
     const take = criteria.limit
@@ -243,6 +252,32 @@ export class PlaylistsService {
         return { rating: direction };
       case 'title':
         return { spotifyTrack: { title: direction } };
+      default:
+        return { addedAt: 'desc' };
+    }
+  }
+
+  private buildDynamicOrderBy(
+    sortBy: string,
+    sortOrder: 'asc' | 'desc',
+  ): Prisma.UserTrackOrderByWithRelationInput {
+    switch (sortBy) {
+      case 'album':
+        return { spotifyTrack: { album: { name: sortOrder } } };
+      case 'artist':
+        return { spotifyTrack: { artist: { name: sortOrder } } };
+      case 'addedAt':
+        return { addedAt: sortOrder };
+      case 'duration':
+        return { spotifyTrack: { duration: sortOrder } };
+      case 'lastPlayedAt':
+        return { lastPlayedAt: sortOrder };
+      case 'totalPlayCount':
+        return { totalPlayCount: sortOrder };
+      case 'rating':
+        return { rating: sortOrder };
+      case 'title':
+        return { spotifyTrack: { title: sortOrder } };
       default:
         return { addedAt: 'desc' };
     }

@@ -1,17 +1,6 @@
-import {
-  ActionIcon,
-  Center,
-  Group,
-  Modal,
-  Pagination,
-  Paper,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from "@mantine/core";
+import { ActionIcon, Group, Modal, Stack, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
-import { Search, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -22,7 +11,7 @@ import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~tracks";
 import { GenreFilter } from "./filters/GenreFilter";
 import { TagManager } from "./TagManager";
-import { TracksTable } from "./TracksTable";
+import { TracksTableWithControls } from "./TracksTableWithControls";
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -36,17 +25,14 @@ export function TrackList() {
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
 
-  const { debouncedSearch, localSearch, setLocalSearch } = useDebouncedSearch(
-    search,
-    {
-      onDebouncedChange: (value) => {
-        navigate({
-          replace: value === "" && search !== "",
-          search: (prev) => ({ ...prev, page: 1, search: value }),
-        });
-      },
+  const { debouncedSearch, setLocalSearch } = useDebouncedSearch(search, {
+    onDebouncedChange: (value) => {
+      navigate({
+        replace: value === "" && search !== "",
+        search: (prev) => ({ ...prev, page: 1, search: value }),
+      });
     },
-  );
+  });
 
   const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
     genres,
@@ -97,16 +83,6 @@ export function TrackList() {
     });
   };
 
-  if (error) {
-    return (
-      <Center className="h-[400px]">
-        <Text className="text-red-600">
-          Error loading tracks: {error.message}
-        </Text>
-      </Center>
-    );
-  }
-
   return (
     <Stack gap="sm">
       <div>
@@ -114,16 +90,13 @@ export function TrackList() {
           My Library
         </Text>
       </div>
-      <Paper className="p-4" radius="md" shadow="xs">
-        <Group className="mb-2" justify="space-between">
+
+      <TracksTableWithControls
+        contextType="library"
+        data={data}
+        error={error}
+        extraControls={
           <Group>
-            <TextInput
-              className="w-[300px]"
-              leftSection={<Search size={16} />}
-              onChange={(e) => setLocalSearch(e.currentTarget.value)}
-              placeholder="Search tracks..."
-              value={localSearch}
-            />
             <ActionIcon
               onClick={() => setShowTagManager(true)}
               size="lg"
@@ -131,19 +104,6 @@ export function TrackList() {
             >
               <Tag size={20} />
             </ActionIcon>
-          </Group>
-
-          <Group>
-            <Select
-              className="w-[100px]"
-              data={["10", "20", "50", "100"]}
-              label="Page size"
-              onChange={(value) =>
-                updateSearch({ page: 1, pageSize: parseInt(value || "20") })
-              }
-              value={pageSize.toString()}
-            />
-
             {genresData && genresData.length > 0 && (
               <GenreFilter
                 genres={genresData}
@@ -152,46 +112,32 @@ export function TrackList() {
               />
             )}
           </Group>
-        </Group>
-
-        <Text className="mb-2 text-gray-600" size="sm">
-          {data?.total || 0} tracks in library
-        </Text>
-
-        <TracksTable
-          contextType="library"
-          isLoading={isLoading}
-          onRefetch={refetch}
-          onSortChange={(columnId) => {
-            // If clicking the same column, toggle sort order
-            if (columnId === sortBy) {
-              updateSearch({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
-            } else {
-              // If clicking a new column, set to desc by default
-              updateSearch({
-                sortBy: columnId as typeof sortBy,
-                sortOrder: "desc",
-              });
-            }
-          }}
-          search={debouncedSearch}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          tracks={data?.tracks || []}
-        />
-
-        {data && data.totalPages > 1 && (
-          <Center className="mt-6">
-            <Pagination
-              boundaries={1}
-              onChange={(newPage) => updateSearch({ page: newPage })}
-              siblings={1}
-              total={data.totalPages}
-              value={page}
-            />
-          </Center>
-        )}
-      </Paper>
+        }
+        isLoading={isLoading}
+        onPageChange={(newPage) => updateSearch({ page: newPage })}
+        onPageSizeChange={(newPageSize) =>
+          updateSearch({ page: 1, pageSize: newPageSize })
+        }
+        onRefetch={refetch}
+        onSearchChange={setLocalSearch}
+        onSortChange={(columnId) => {
+          // If clicking the same column, toggle sort order
+          if (columnId === sortBy) {
+            updateSearch({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
+          } else {
+            // If clicking a new column, set to desc by default
+            updateSearch({
+              sortBy: columnId as typeof sortBy,
+              sortOrder: "desc",
+            });
+          }
+        }}
+        page={page}
+        pageSize={pageSize}
+        search={search}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+      />
 
       <Modal
         onClose={() => setShowTagManager(false)}

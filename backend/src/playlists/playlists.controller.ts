@@ -77,18 +77,24 @@ export class PlaylistsController {
   @ApiOperation({ summary: 'Get tracks for a smart playlist' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, type: String })
   @Get(':id/tracks')
   async getTracks(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
     return this.playlistsService.getTracks(
       req.user.id,
       id,
       page ? parseInt(page) : 1,
       pageSize ? parseInt(pageSize) : 20,
+      sortBy,
+      sortOrder as 'asc' | 'desc' | undefined,
     );
   }
 
