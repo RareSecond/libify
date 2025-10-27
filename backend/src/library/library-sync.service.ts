@@ -184,6 +184,9 @@ export class LibrarySyncService {
       totalPlaylistTracks: 0,
     };
 
+    let lastProgressUpdate = 0;
+    const progressThrottleMs = 1000; // Update at most once per second
+
     try {
       this.logger.log(`Starting playlist track sync for user ${userId}`);
 
@@ -199,6 +202,30 @@ export class LibrarySyncService {
       result.totalPlaylists = playlists.length;
       let processedPlaylists = 0;
       let skippedPlaylists = 0;
+
+      // Helper function to report progress
+      const reportProgress = async (
+        message: string,
+        forceUpdate = false,
+      ): Promise<boolean> => {
+        if (!onProgress) return false;
+
+        const now = Date.now();
+        if (forceUpdate || now - lastProgressUpdate >= progressThrottleMs) {
+          await onProgress({
+            current: processedPlaylists,
+            errors: result.errors,
+            message,
+            percentage:
+              66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
+            phase: 'playlists',
+            total: playlists.length,
+          });
+          lastProgressUpdate = now;
+          return true;
+        }
+        return false;
+      };
 
       // Process each playlist
       for (const playlist of playlists) {
@@ -220,17 +247,9 @@ export class LibrarySyncService {
             );
             skippedPlaylists++;
 
-            if (onProgress) {
-              await onProgress({
-                current: processedPlaylists,
-                errors: result.errors,
-                message: `Skipped unchanged playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
-                percentage:
-                  66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
-                phase: 'playlists',
-                total: playlists.length,
-              });
-            }
+            await reportProgress(
+              `Skipped unchanged playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
+            );
             continue;
           }
 
@@ -284,21 +303,10 @@ export class LibrarySyncService {
           result.newTracks += syncResult.newTracks;
           result.errors.push(...syncResult.errors);
 
-          // Report progress after each playlist, but only if we found new tracks or it's every 10th playlist
-          if (
-            onProgress &&
-            (syncResult.newTracks > 0 || processedPlaylists % 10 === 0)
-          ) {
-            await onProgress({
-              current: processedPlaylists,
-              errors: result.errors,
-              message: `Processed playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
-              percentage:
-                66 + Math.round((processedPlaylists / playlists.length) * 34), // 66-100% for playlists
-              phase: 'playlists',
-              total: playlists.length,
-            });
-          }
+          // Report progress after each playlist (time-based throttling)
+          await reportProgress(
+            `Processed playlist ${processedPlaylists}/${playlists.length}: ${playlist.name}`,
+          );
         } catch (error) {
           this.logger.error(
             `Failed to process playlist ${playlist.name} (${playlist.id})`,
@@ -307,6 +315,12 @@ export class LibrarySyncService {
           result.errors.push(`Playlist ${playlist.name}: ${error.message}`);
         }
       }
+
+      // Always send final progress update
+      await reportProgress(
+        `Completed all playlists: ${processedPlaylists}/${playlists.length}`,
+        true,
+      );
 
       this.logger.log(
         `Playlist sync completed for user ${userId}. Processed: ${processedPlaylists}, Skipped: ${skippedPlaylists}, New tracks: ${result.newTracks}`,
@@ -1467,6 +1481,30 @@ export class LibrarySyncService {
     let totalProcessed = 0;
     let estimatedTotal = 0;
     const startTime = Date.now();
+    let lastProgressUpdate = 0;
+    const progressThrottleMs = 1000; // Update at most once per second
+
+    // Helper function to report progress
+    const reportProgress = async () => {
+      if (onProgress && estimatedTotal > 0) {
+        const elapsed = Date.now() - startTime;
+        const itemsPerSecond = totalProcessed / (elapsed / 1000);
+        const remaining = estimatedTotal - totalProcessed;
+        const estimatedTimeRemaining = remaining / itemsPerSecond;
+
+        await onProgress({
+          current: totalProcessed,
+          errors: result.errors,
+          estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+          itemsPerSecond: Math.round(itemsPerSecond),
+          message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
+          percentage: 33 + Math.round((totalProcessed / estimatedTotal) * 33), // 33-66% for albums phase
+          phase: 'albums',
+          total: estimatedTotal,
+        });
+        lastProgressUpdate = Date.now();
+      }
+    };
 
     // Get estimated total for progress calculation
     try {
@@ -1494,23 +1532,10 @@ export class LibrarySyncService {
         await this.processAlbumBatch(userId, batch, result, accessToken);
         batch = []; // Clear batch to free memory
 
-        // Report progress
-        if (onProgress && estimatedTotal > 0) {
-          const elapsed = Date.now() - startTime;
-          const itemsPerSecond = totalProcessed / (elapsed / 1000);
-          const remaining = estimatedTotal - totalProcessed;
-          const estimatedTimeRemaining = remaining / itemsPerSecond;
-
-          await onProgress({
-            current: totalProcessed,
-            errors: result.errors,
-            estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
-            itemsPerSecond: Math.round(itemsPerSecond),
-            message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
-            percentage: 33 + Math.round((totalProcessed / estimatedTotal) * 33), // 33-66% for albums phase
-            phase: 'albums',
-            total: estimatedTotal,
-          });
+        // Report progress if enough time has passed (time-based throttling)
+        const now = Date.now();
+        if (now - lastProgressUpdate >= progressThrottleMs) {
+          await reportProgress();
         }
 
         // Force garbage collection if available (for development)
@@ -1528,6 +1553,9 @@ export class LibrarySyncService {
     if (batch.length > 0) {
       await this.processAlbumBatch(userId, batch, result, accessToken);
     }
+
+    // Always send final progress update
+    await reportProgress();
 
     result.totalAlbums = totalProcessed;
     this.logger.log(`Streamed and processed ${totalProcessed} albums`);
@@ -1548,6 +1576,30 @@ export class LibrarySyncService {
     let totalProcessed = 0;
     let estimatedTotal = 0;
     const startTime = Date.now();
+    let lastProgressUpdate = 0;
+    const progressThrottleMs = 1000; // Update at most once per second
+
+    // Helper function to report progress
+    const reportProgress = async () => {
+      if (onProgress && estimatedTotal > 0) {
+        const elapsed = Date.now() - startTime;
+        const itemsPerSecond = totalProcessed / (elapsed / 1000);
+        const remaining = estimatedTotal - totalProcessed;
+        const estimatedTimeRemaining = remaining / itemsPerSecond;
+
+        await onProgress({
+          current: totalProcessed,
+          errors: result.errors,
+          estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+          itemsPerSecond: Math.round(itemsPerSecond),
+          message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
+          percentage: Math.round((totalProcessed / estimatedTotal) * 33), // 0-33% for tracks phase
+          phase: 'tracks',
+          total: estimatedTotal,
+        });
+        lastProgressUpdate = Date.now();
+      }
+    };
 
     // Get estimated total for progress calculation
     try {
@@ -1581,23 +1633,10 @@ export class LibrarySyncService {
         );
         batch = []; // Clear batch to free memory
 
-        // Report progress
-        if (onProgress && estimatedTotal > 0) {
-          const elapsed = Date.now() - startTime;
-          const itemsPerSecond = totalProcessed / (elapsed / 1000);
-          const remaining = estimatedTotal - totalProcessed;
-          const estimatedTimeRemaining = remaining / itemsPerSecond;
-
-          await onProgress({
-            current: totalProcessed,
-            errors: result.errors,
-            estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
-            itemsPerSecond: Math.round(itemsPerSecond),
-            message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
-            percentage: Math.round((totalProcessed / estimatedTotal) * 33), // 0-33% for tracks phase
-            phase: 'tracks',
-            total: estimatedTotal,
-          });
+        // Report progress if enough time has passed (time-based throttling)
+        const now = Date.now();
+        if (now - lastProgressUpdate >= progressThrottleMs) {
+          await reportProgress();
         }
 
         // Force garbage collection if available (for development)
@@ -1621,6 +1660,9 @@ export class LibrarySyncService {
         SourceType.LIKED_SONGS,
       );
     }
+
+    // Always send final progress update
+    await reportProgress();
 
     result.totalTracks = totalProcessed;
     this.logger.log(`Streamed and processed ${totalProcessed} tracks`);
