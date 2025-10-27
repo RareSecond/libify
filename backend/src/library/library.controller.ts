@@ -33,6 +33,10 @@ import { ArtistTracksResponseDto } from './dto/artist-tracks.dto';
 import { PaginatedArtistsDto } from './dto/artist.dto';
 import { GetAlbumsQueryDto } from './dto/get-albums-query.dto';
 import { GetArtistsQueryDto } from './dto/get-artists-query.dto';
+import {
+  GetPlayHistoryQueryDto,
+  PaginatedPlayHistoryDto,
+} from './dto/play-history.dto';
 import { UpdateRatingDto } from './dto/rating.dto';
 import {
   SyncItemCountsDto,
@@ -229,6 +233,20 @@ export class LibraryController {
   @Get('genres')
   async getGenres(@Req() req: AuthenticatedRequest): Promise<string[]> {
     return this.trackService.getUserGenres(req.user.id);
+  }
+
+  @ApiOperation({ summary: 'Get user play history' })
+  @ApiResponse({
+    description: 'Paginated list of play history',
+    status: 200,
+    type: PaginatedPlayHistoryDto,
+  })
+  @Get('play-history')
+  async getPlayHistory(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: GetPlayHistoryQueryDto,
+  ): Promise<PaginatedPlayHistoryDto> {
+    return this.trackService.getPlayHistory(req.user.id, query);
   }
 
   // Tag management endpoints

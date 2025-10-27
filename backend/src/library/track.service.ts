@@ -9,6 +9,11 @@ import { AggregationService } from './aggregation.service';
 import { AlbumDto, PaginatedAlbumsDto } from './dto/album.dto';
 import { ArtistDto, PaginatedArtistsDto } from './dto/artist.dto';
 import {
+  GetPlayHistoryQueryDto,
+  PaginatedPlayHistoryDto,
+  PlayHistoryItemDto,
+} from './dto/play-history.dto';
+import {
   GetTracksQueryDto,
   PaginatedTracksDto,
   TrackDto,
@@ -241,6 +246,100 @@ export class TrackService {
     });
 
     return { tracks: trackDtos };
+  }
+
+  async getPlayHistory(
+    userId: string,
+    query: GetPlayHistoryQueryDto,
+  ): Promise<PaginatedPlayHistoryDto> {
+    const { page = 1, pageSize = 50, search, trackId } = query;
+
+    const db = this.kyselyService.database;
+
+    // Build the base query
+    let baseQuery = db
+      .selectFrom('PlayHistory as ph')
+      .innerJoin('UserTrack as ut', 'ph.userTrackId', 'ut.id')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
+      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .where('ut.userId', '=', userId);
+
+    // Add search filter
+    if (search) {
+      baseQuery = baseQuery.where((eb) =>
+        eb.or([
+          eb('st.title', 'ilike', `%${search}%`),
+          eb('sar.name', 'ilike', `%${search}%`),
+          eb('sa.name', 'ilike', `%${search}%`),
+        ]),
+      );
+    }
+
+    // Add track filter
+    if (trackId) {
+      baseQuery = baseQuery.where('ut.id', '=', trackId);
+    }
+
+    // Get total count
+    const countResult = await baseQuery
+      .select((eb) => eb.fn.countAll<number>().as('count'))
+      .executeTakeFirst();
+
+    const total = Number(countResult?.count || 0);
+
+    // Get paginated results
+    const skip = (page - 1) * pageSize;
+    const plays = await baseQuery
+      .select([
+        'ph.id',
+        'ph.playedAt',
+        'ph.duration',
+        'ut.id as trackId',
+        'st.title as trackTitle',
+        'st.duration as trackDuration',
+        'st.spotifyId as trackSpotifyId',
+        'sar.name as trackArtist',
+        'sa.name as trackAlbum',
+        'sa.imageUrl as trackAlbumArt',
+      ])
+      .orderBy('ph.playedAt', 'desc')
+      .limit(pageSize)
+      .offset(skip)
+      .execute();
+
+    // Transform to DTOs
+    const items = plays.map((play) => {
+      const dto = {
+        duration: play.duration,
+        id: play.id,
+        playedAt: play.playedAt,
+        trackAlbum: play.trackAlbum,
+        trackAlbumArt: play.trackAlbumArt,
+        trackArtist: play.trackArtist,
+        trackDuration: play.trackDuration,
+        trackId: play.trackId,
+        trackSpotifyId: play.trackSpotifyId,
+        trackTitle: play.trackTitle,
+      };
+      return plainToInstance(PlayHistoryItemDto, dto, {
+        excludeExtraneousValues: true,
+      });
+    });
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    return plainToInstance(
+      PaginatedPlayHistoryDto,
+      {
+        items,
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   async getTrackById(

@@ -78,7 +78,8 @@ export class SyncProgressDto {
   errorCount: number;
 
   @ApiProperty({
-    description: 'List of non-fatal errors encountered (deprecated, use errorCount for progress updates)',
+    description:
+      'List of non-fatal errors encountered (deprecated, use errorCount for progress updates)',
     required: false,
   })
   errors?: string[];
