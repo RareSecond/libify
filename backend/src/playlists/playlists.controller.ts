@@ -77,8 +77,30 @@ export class PlaylistsController {
   @ApiOperation({ summary: 'Get tracks for a smart playlist' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
-  @ApiQuery({ name: 'sortBy', required: false, type: String })
-  @ApiQuery({ name: 'sortOrder', required: false, type: String })
+  @ApiQuery({
+    description:
+      'Field to sort tracks by. If not provided, uses the playlist default order.',
+    enum: [
+      'title',
+      'artist',
+      'album',
+      'duration',
+      'totalPlayCount',
+      'lastPlayedAt',
+      'rating',
+      'addedAt',
+    ],
+    name: 'sortBy',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    description: 'Sort direction (ascending or descending)',
+    enum: ['asc', 'desc'],
+    name: 'sortOrder',
+    required: false,
+    type: String,
+  })
   @Get(':id/tracks')
   async getTracks(
     @Req() req: AuthenticatedRequest,
@@ -88,13 +110,23 @@ export class PlaylistsController {
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
   ) {
+    // Validate sortOrder to prevent invalid values from being passed
+    let normalizedSortOrder: 'asc' | 'desc' | undefined;
+    if (sortOrder === 'asc') {
+      normalizedSortOrder = 'asc';
+    } else if (sortOrder === 'desc') {
+      normalizedSortOrder = 'desc';
+    } else {
+      normalizedSortOrder = undefined;
+    }
+
     return this.playlistsService.getTracks(
       req.user.id,
       id,
       page ? parseInt(page) : 1,
       pageSize ? parseInt(pageSize) : 20,
       sortBy,
-      sortOrder as 'asc' | 'desc' | undefined,
+      normalizedSortOrder,
     );
   }
 

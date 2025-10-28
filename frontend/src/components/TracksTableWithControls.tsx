@@ -4,7 +4,6 @@ import {
   Pagination,
   Paper,
   Select,
-  Stack,
   Text,
   TextInput,
 } from "@mantine/core";
@@ -95,9 +94,7 @@ export function TracksTableWithControls({
               className="w-[100px]"
               data={["10", "20", "50", "100"]}
               label="Page size"
-              onChange={(value) =>
-                onPageSizeChange?.(parseInt(value || "20"))
-              }
+              onChange={(value) => onPageSizeChange?.(parseInt(value || "20"))}
               value={pageSize.toString()}
             />
           )}

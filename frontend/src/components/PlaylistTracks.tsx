@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 import {
+  PaginatedTracksDto,
+  PlaylistsControllerGetTracksSortBy,
   usePlaylistsControllerFindOne,
   usePlaylistsControllerGetTracks,
 } from "../data/api";
@@ -17,13 +19,15 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [sortBy, setSortBy] = useState<string>();
+  const [sortBy, setSortBy] = useState<
+    PlaylistsControllerGetTracksSortBy | undefined
+  >();
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data: playlist, isLoading: playlistLoading } =
     usePlaylistsControllerFindOne(playlistId);
   const { data, error, isLoading, refetch } =
-    usePlaylistsControllerGetTracks(playlistId, {
+    usePlaylistsControllerGetTracks<PaginatedTracksDto>(playlistId, {
       page,
       pageSize,
       sortBy,
@@ -81,7 +85,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
             setSortOrder(sortOrder === "asc" ? "desc" : "asc");
           } else {
             // If clicking a new column, set to desc by default
-            setSortBy(columnId);
+            setSortBy(columnId as PlaylistsControllerGetTracksSortBy);
             setSortOrder("desc");
           }
         }}
