@@ -1,21 +1,15 @@
-import {
-  Button,
-  Center,
-  Group,
-  Loader,
-  Paper,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Button, Center, Group, Loader, Stack, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
 
 import {
   PaginatedTracksDto,
+  PlaylistsControllerGetTracksSortBy,
   usePlaylistsControllerFindOne,
   usePlaylistsControllerGetTracks,
 } from "../data/api";
-import { TracksTable } from "./TracksTable";
+import { TracksTableWithControls } from "./TracksTableWithControls";
 
 interface PlaylistTracksProps {
   playlistId: string;
@@ -23,30 +17,30 @@ interface PlaylistTracksProps {
 
 export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<
+    PlaylistsControllerGetTracksSortBy | undefined
+  >();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   const { data: playlist, isLoading: playlistLoading } =
     usePlaylistsControllerFindOne(playlistId);
   const { data, error, isLoading, refetch } =
-    usePlaylistsControllerGetTracks(playlistId);
+    usePlaylistsControllerGetTracks<PaginatedTracksDto>(playlistId, {
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
+    });
 
-  if (error) {
-    return (
-      <Center className="h-[400px]">
-        <Text className="text-red-600">
-          Error loading tracks: {error.message}
-        </Text>
-      </Center>
-    );
-  }
-
-  if (playlistLoading || isLoading || !data) {
+  if (playlistLoading) {
     return (
       <Center className="h-[400px]">
         <Loader size="lg" />
       </Center>
     );
   }
-
-  const tracks = (data as PaginatedTracksDto).tracks || [];
 
   return (
     <Stack gap="sm">
@@ -72,13 +66,34 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
         </div>
       </Group>
 
-      <Paper className="p-4" radius="md" shadow="xs">
-        <Text className="mb-2 text-gray-600" size="sm">
-          {tracks.length} tracks
-        </Text>
-
-        <TracksTable isLoading={false} onRefetch={refetch} tracks={tracks} />
-      </Paper>
+      <TracksTableWithControls
+        contextId={playlistId}
+        contextType="playlist"
+        data={data}
+        error={error}
+        hideSearch
+        isLoading={isLoading}
+        onPageChange={(newPage) => setPage(newPage)}
+        onPageSizeChange={(newPageSize) => {
+          setPage(1);
+          setPageSize(newPageSize);
+        }}
+        onRefetch={refetch}
+        onSortChange={(columnId) => {
+          // If clicking the same column, toggle sort order
+          if (columnId === sortBy) {
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+          } else {
+            // If clicking a new column, set to desc by default
+            setSortBy(columnId as PlaylistsControllerGetTracksSortBy);
+            setSortOrder("desc");
+          }
+        }}
+        page={page}
+        pageSize={pageSize}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+      />
     </Stack>
   );
 }

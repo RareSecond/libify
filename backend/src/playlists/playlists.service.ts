@@ -74,12 +74,21 @@ export class PlaylistsService {
     };
   }
 
-  async getTracks(userId: string, playlistId: string, page = 1, pageSize = 20) {
+  async getTracks(
+    userId: string,
+    playlistId: string,
+    page = 1,
+    pageSize = 20,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ) {
     const playlist = await this.findOne(userId, playlistId);
     const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
 
     const where = this.buildWhereClause(userId, criteria);
-    const orderBy = this.buildOrderBy(criteria);
+    const orderBy = sortBy
+      ? this.buildOrderByClause(sortBy, sortOrder || 'desc')
+      : this.buildOrderBy(criteria);
 
     const skip = (page - 1) * pageSize;
     const take = criteria.limit
@@ -225,24 +234,37 @@ export class PlaylistsService {
     }
 
     const direction = criteria.orderDirection || 'desc';
+    return this.buildOrderByClause(criteria.orderBy, direction);
+  }
 
-    switch (criteria.orderBy) {
+  /**
+   * Builds a Prisma orderBy clause based on field name and direction.
+   * Handles field name normalization for both API and criteria formats.
+   */
+  private buildOrderByClause(
+    field: string,
+    direction: 'asc' | 'desc',
+  ): Prisma.UserTrackOrderByWithRelationInput {
+    // Normalize field names from criteria format to database field format
+    const normalizedField = this.normalizeFieldName(field);
+
+    switch (normalizedField) {
+      case 'addedAt':
+        return { addedAt: direction };
       case 'album':
         return { spotifyTrack: { album: { name: direction } } };
       case 'artist':
         return { spotifyTrack: { artist: { name: direction } } };
-      case 'dateAdded':
-        return { addedAt: direction };
       case 'duration':
         return { spotifyTrack: { duration: direction } };
-      case 'lastPlayed':
+      case 'lastPlayedAt':
         return { lastPlayedAt: direction };
-      case 'playCount':
-        return { totalPlayCount: direction };
       case 'rating':
         return { rating: direction };
       case 'title':
         return { spotifyTrack: { title: direction } };
+      case 'totalPlayCount':
+        return { totalPlayCount: direction };
       default:
         return { addedAt: 'desc' };
     }
@@ -420,5 +442,19 @@ export class PlaylistsService {
     const where = this.buildWhereClause(userId, criteria);
     const count = await this.prisma.userTrack.count({ where });
     return criteria.limit ? Math.min(count, criteria.limit) : count;
+  }
+
+  /**
+   * Normalizes field names from criteria format to database field format.
+   * Maps: dateAdded -> addedAt, playCount -> totalPlayCount, lastPlayed -> lastPlayedAt
+   */
+  private normalizeFieldName(field: string): string {
+    const fieldMap: Record<string, string> = {
+      dateAdded: 'addedAt',
+      lastPlayed: 'lastPlayedAt',
+      playCount: 'totalPlayCount',
+    };
+
+    return fieldMap[field] || field;
   }
 }

@@ -1460,6 +1460,7 @@
             "name": "page",
             "required": false,
             "in": "query",
+            "description": "Page number for pagination (minimum: 1)",
             "schema": {
               "type": "number"
             }
@@ -1468,8 +1469,41 @@
             "name": "pageSize",
             "required": false,
             "in": "query",
+            "description": "Number of items per page (minimum: 1, maximum: 100)",
             "schema": {
               "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Field to sort tracks by. If not provided, uses the playlist default order.",
+            "schema": {
+              "enum": [
+                "title",
+                "artist",
+                "album",
+                "duration",
+                "totalPlayCount",
+                "lastPlayedAt",
+                "rating",
+                "addedAt"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort direction (ascending or descending)",
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
             }
           }
         ],
