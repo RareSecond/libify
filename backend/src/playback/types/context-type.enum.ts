@@ -1,0 +1,8 @@
+export enum ContextType {
+  ALBUM = 'ALBUM',
+  ARTIST = 'ARTIST',
+  LIBRARY = 'LIBRARY',
+  PLAYLIST = 'PLAYLIST',
+  SMART_PLAYLIST = 'SMART_PLAYLIST',
+  TRACK = 'TRACK',
+}
