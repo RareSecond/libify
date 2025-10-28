@@ -1509,7 +1509,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedTracksDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1518,6 +1525,53 @@
           }
         ],
         "summary": "Get tracks for a smart playlist",
+        "tags": [
+          "playlists"
+        ]
+      }
+    },
+    "/playlists/{id}/tracks/play": {
+      "get": {
+        "operationId": "PlaylistsController_getTracksForPlay",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "shuffle",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all track URIs for playing a playlist",
         "tags": [
           "playlists"
         ]

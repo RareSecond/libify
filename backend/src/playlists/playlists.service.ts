@@ -98,6 +98,7 @@ export class PlaylistsService {
     const [tracks, total] = await Promise.all([
       this.prisma.userTrack.findMany({
         include: {
+          sources: true,
           spotifyTrack: {
             include: {
               album: {
@@ -123,15 +124,23 @@ export class PlaylistsService {
     ]);
 
     const formattedTracks = tracks.map((track) => ({
-      addedAt: track.addedAt.toISOString(),
+      addedAt: track.addedAt,
       album: track.spotifyTrack.album.name,
       albumArt: track.spotifyTrack.album.imageUrl || null,
       artist: track.spotifyTrack.artist.name,
+      artistGenres: track.spotifyTrack.artist.genres || [],
       duration: track.spotifyTrack.duration,
       id: track.id,
-      lastPlayedAt: track.lastPlayedAt?.toISOString(),
-      ratedAt: track.ratedAt?.toISOString(),
-      rating: track.rating,
+      lastPlayedAt: track.lastPlayedAt || null,
+      ratedAt: track.ratedAt || null,
+      rating: track.rating || null,
+      sources: track.sources.map((s) => ({
+        createdAt: s.createdAt,
+        id: s.id,
+        sourceId: s.sourceId,
+        sourceName: s.sourceName,
+        sourceType: s.sourceType,
+      })),
       spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((tt) => ({
         color: tt.tag.color,
@@ -153,6 +162,48 @@ export class PlaylistsService {
       totalPages: Math.ceil(totalToReturn / pageSize),
       tracks: formattedTracks,
     };
+  }
+
+  async getTracksForPlay(
+    userId: string,
+    playlistId: string,
+    shuffle = false,
+  ): Promise<string[]> {
+    const playlist = await this.findOne(userId, playlistId);
+    const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
+
+    const where = this.buildWhereClause(userId, criteria);
+    const orderBy = this.buildOrderBy(criteria);
+
+    // Get all tracks up to playlist limit (or 500 max for Spotify API compatibility)
+    const maxTracks = criteria.limit ? Math.min(criteria.limit, 500) : 500;
+
+    const tracks = await this.prisma.userTrack.findMany({
+      include: {
+        spotifyTrack: {
+          select: {
+            spotifyId: true,
+          },
+        },
+      },
+      orderBy,
+      take: maxTracks,
+      where,
+    });
+
+    const spotifyUris = tracks
+      .filter((track) => track.spotifyTrack.spotifyId)
+      .map((track) => `spotify:track:${track.spotifyTrack.spotifyId}`);
+
+    // Shuffle if requested
+    if (shuffle) {
+      for (let i = spotifyUris.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
+      }
+    }
+
+    return spotifyUris;
   }
 
   async remove(userId: string, playlistId: string) {

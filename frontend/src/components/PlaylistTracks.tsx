@@ -1,9 +1,13 @@
 import { Button, Center, Group, Loader, Stack, Text } from "@mantine/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Play, Shuffle } from "lucide-react";
 import { useState } from "react";
 
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+
 import {
+  getPlaylistsControllerGetTracksForPlayQueryOptions,
   PaginatedTracksDto,
   PlaylistsControllerGetTracksSortBy,
   usePlaylistsControllerFindOne,
@@ -17,6 +21,8 @@ interface PlaylistTracksProps {
 
 export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { playTrackList } = useSpotifyPlayer();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState<
@@ -33,6 +39,32 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
       sortBy,
       sortOrder,
     });
+
+  const handlePlayFromBeginning = async () => {
+    const queryOptions = getPlaylistsControllerGetTracksForPlayQueryOptions(
+      playlistId,
+      { shuffle: "false" },
+    );
+    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
+
+    await playTrackList(uris, 0, {
+      contextId: playlistId,
+      contextType: "playlist",
+    });
+  };
+
+  const handlePlayShuffled = async () => {
+    const queryOptions = getPlaylistsControllerGetTracksForPlayQueryOptions(
+      playlistId,
+      { shuffle: "true" },
+    );
+    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
+
+    await playTrackList(uris, 0, {
+      contextId: playlistId,
+      contextType: "playlist",
+    });
+  };
 
   if (playlistLoading) {
     return (
@@ -64,6 +96,24 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
             </Text>
           )}
         </div>
+        <Group gap="sm">
+          <Button
+            disabled={!data?.tracks || data.tracks.length === 0}
+            leftSection={<Play size={16} />}
+            onClick={handlePlayFromBeginning}
+            variant="filled"
+          >
+            Play
+          </Button>
+          <Button
+            disabled={!data?.tracks || data.tracks.length === 0}
+            leftSection={<Shuffle size={16} />}
+            onClick={handlePlayShuffled}
+            variant="outline"
+          >
+            Shuffle
+          </Button>
+        </Group>
       </Group>
 
       <TracksTableWithControls

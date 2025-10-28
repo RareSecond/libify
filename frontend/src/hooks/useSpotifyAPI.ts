@@ -5,6 +5,7 @@ import {
   getLibraryControllerGetAlbumTracksQueryOptions,
   getLibraryControllerGetArtistTracksQueryOptions,
   getLibraryControllerGetTracksQueryOptions,
+  getPlaylistsControllerGetTracksQueryOptions,
 } from "@/data/api";
 
 interface PlayContext {
@@ -94,6 +95,23 @@ export function useSpotifyAPI() {
           allTracks = data.tracks
             .filter((track) => track.spotifyId)
             .map((track) => `spotify:track:${track.spotifyId}`);
+          break;
+        }
+
+        case "playlist": {
+          if (currentContext.contextId) {
+            const params = { page: 1, pageSize: 1000 };
+
+            const queryOptions = getPlaylistsControllerGetTracksQueryOptions(
+              currentContext.contextId,
+              params,
+            );
+            const data = await queryClient.fetchQuery(queryOptions);
+
+            allTracks = data.tracks
+              .filter((track) => track.spotifyId)
+              .map((track) => `spotify:track:${track.spotifyId}`);
+          }
           break;
         }
       }
