@@ -84,6 +84,7 @@ export class QueueService {
         // Get user tracks with skip and limit
         trackUris = await this.trackService.getTracksForPlay(userId, {
           pageSize: limit,
+          search: context.contextName, // contextName contains the search string
           shouldShuffle: context.shuffle,
           skip,
           sortBy: context.sortBy as
