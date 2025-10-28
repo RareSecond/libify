@@ -1,9 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -75,8 +78,18 @@ export class PlaylistsController {
   }
 
   @ApiOperation({ summary: 'Get tracks for a smart playlist' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({
+    description: 'Page number for pagination (minimum: 1)',
+    name: 'page',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    description: 'Number of items per page (minimum: 1, maximum: 100)',
+    name: 'pageSize',
+    required: false,
+    type: Number,
+  })
   @ApiQuery({
     description:
       'Field to sort tracks by. If not provided, uses the playlist default order.',
@@ -105,11 +118,20 @@ export class PlaylistsController {
   async getTracks(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe)
+    pageSize: number,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
   ) {
+    // Validate pagination parameters
+    if (page < 1) {
+      throw new BadRequestException('Page must be at least 1');
+    }
+    if (pageSize < 1 || pageSize > 100) {
+      throw new BadRequestException('Page size must be between 1 and 100');
+    }
+
     // Validate sortOrder to prevent invalid values from being passed
     let normalizedSortOrder: 'asc' | 'desc' | undefined;
     if (sortOrder === 'asc') {
@@ -123,8 +145,8 @@ export class PlaylistsController {
     return this.playlistsService.getTracks(
       req.user.id,
       id,
-      page ? parseInt(page) : 1,
-      pageSize ? parseInt(pageSize) : 20,
+      page,
+      pageSize,
       sortBy,
       normalizedSortOrder,
     );
