@@ -31,6 +31,42 @@ export class TrackService {
     private aggregationService: AggregationService,
   ) {}
 
+  /**
+   * Helper method to fetch tracks for playback - used by both library and playlist endpoints
+   */
+  async fetchTracksForPlay(
+    userId: string,
+    where: Prisma.UserTrackWhereInput,
+    orderBy: Prisma.UserTrackOrderByWithRelationInput,
+    maxTracks: number,
+    shuffle: boolean,
+  ): Promise<string[]> {
+    const tracks = await this.databaseService.userTrack.findMany({
+      include: {
+        spotifyTrack: {
+          select: { spotifyId: true },
+        },
+      },
+      orderBy,
+      take: maxTracks,
+      where: { ...where, userId },
+    });
+
+    const spotifyUris = tracks
+      .filter((track) => track.spotifyTrack.spotifyId)
+      .map((track) => `spotify:track:${track.spotifyTrack.spotifyId}`);
+
+    // Shuffle if requested using Fisher-Yates algorithm
+    if (shuffle) {
+      for (let i = spotifyUris.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
+      }
+    }
+
+    return spotifyUris;
+  }
+
   async getAlbumTracks(
     userId: string,
     artist: string,
@@ -570,30 +606,7 @@ export class TrackService {
     }
 
     // Get tracks up to 500 max for Spotify API compatibility
-    const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: {
-          select: { spotifyId: true },
-        },
-      },
-      orderBy,
-      take: 500,
-      where,
-    });
-
-    const spotifyUris = tracks
-      .filter((track) => track.spotifyTrack.spotifyId)
-      .map((track) => `spotify:track:${track.spotifyTrack.spotifyId}`);
-
-    // Shuffle if requested
-    if (shouldShuffle) {
-      for (let i = spotifyUris.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
-      }
-    }
-
-    return spotifyUris;
+    return this.fetchTracksForPlay(userId, where, orderBy, 500, shouldShuffle);
   }
 
   /**

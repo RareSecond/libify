@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { DatabaseService } from '../database/database.service';
+import { TrackService } from '../library/track.service';
 import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
 import {
   PlaylistRuleDto,
@@ -15,7 +16,10 @@ import {
 
 @Injectable()
 export class PlaylistsService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(
+    private readonly prisma: DatabaseService,
+    private readonly trackService: TrackService,
+  ) {}
 
   async create(userId: string, createDto: CreateSmartPlaylistDto) {
     return this.prisma.smartPlaylist.create({
@@ -178,32 +182,14 @@ export class PlaylistsService {
     // Get all tracks up to playlist limit (or 500 max for Spotify API compatibility)
     const maxTracks = criteria.limit ? Math.min(criteria.limit, 500) : 500;
 
-    const tracks = await this.prisma.userTrack.findMany({
-      include: {
-        spotifyTrack: {
-          select: {
-            spotifyId: true,
-          },
-        },
-      },
-      orderBy,
-      take: maxTracks,
+    // Use TrackService helper to fetch and optionally shuffle tracks
+    return this.trackService.fetchTracksForPlay(
+      userId,
       where,
-    });
-
-    const spotifyUris = tracks
-      .filter((track) => track.spotifyTrack.spotifyId)
-      .map((track) => `spotify:track:${track.spotifyTrack.spotifyId}`);
-
-    // Shuffle if requested
-    if (shuffle) {
-      for (let i = spotifyUris.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
-      }
-    }
-
-    return spotifyUris;
+      orderBy,
+      maxTracks,
+      shuffle,
+    );
   }
 
   async remove(userId: string, playlistId: string) {
