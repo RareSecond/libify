@@ -85,7 +85,11 @@ export class PlaybackService {
 
       // Send all tracks to Spotify in one call
       const spotifyStart = Date.now();
-      await this.spotifyService.playTracks(accessToken, trackUris);
+      await this.spotifyService.playTracks(
+        accessToken,
+        trackUris,
+        context.deviceId,
+      );
       const spotifyDuration = Date.now() - spotifyStart;
 
       const totalDuration = Date.now() - totalStart;

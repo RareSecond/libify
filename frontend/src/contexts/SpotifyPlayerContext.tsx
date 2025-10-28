@@ -390,6 +390,7 @@ export function SpotifyPlayerProvider({
         contextName: context?.search,
         contextType: (context?.contextType?.toUpperCase() ||
           "LIBRARY") as "ALBUM" | "ARTIST" | "LIBRARY" | "PLAYLIST" | "SMART_PLAYLIST" | "TRACK",
+        deviceId: deviceId || undefined,
         pageNumber: context?.pageNumber,
         pageSize: context?.pageSize,
         shuffle: context?.shuffle || false,

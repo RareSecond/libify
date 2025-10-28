@@ -9,6 +9,7 @@ export interface PlayContext {
   contextId?: string;
   contextName?: string;
   contextType: ContextType;
+  deviceId?: string;
   pageNumber?: number;
   pageSize?: number;
   shuffle?: boolean;
