@@ -2,12 +2,14 @@ import { InjectQueue } from '@nestjs/bullmq';
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpException,
   HttpStatus,
   Logger,
   Param,
+  ParseBoolPipe,
   Post,
   Put,
   Query,
@@ -18,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -430,44 +433,23 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: 'Get all track URIs for playing library' })
+  @ApiQuery({
+    description: 'Shuffle the tracks',
+    name: 'shuffle',
+    required: false,
+    type: Boolean,
+  })
   @ApiResponse({ status: 200, type: [String] })
   @Get('tracks/play')
   async getTracksForPlay(
     @Req() req: AuthenticatedRequest,
     @Query() query: GetTracksQueryDto,
-    @Query('shuffle') shuffle?: string,
+    @Query('shuffle', new DefaultValuePipe(false), ParseBoolPipe)
+    shuffle: boolean,
   ): Promise<string[]> {
-    // Manually handle genres[] and tagIds[] parameters
-    let genres: string[] = [];
-    if (req.query['genres[]']) {
-      const genresParam = req.query['genres[]'];
-      if (Array.isArray(genresParam)) {
-        genres = genresParam as string[];
-      } else if (typeof genresParam === 'string') {
-        genres = [genresParam];
-      }
-    } else if (query.genres) {
-      genres = query.genres;
-    }
-
-    let tagIds: string[] = [];
-    if (req.query['tagIds[]']) {
-      const tagIdsParam = req.query['tagIds[]'];
-      if (Array.isArray(tagIdsParam)) {
-        tagIds = tagIdsParam as string[];
-      } else if (typeof tagIdsParam === 'string') {
-        tagIds = [tagIdsParam];
-      }
-    } else if (query.tagIds) {
-      tagIds = query.tagIds;
-    }
-
-    const shouldShuffle = shuffle === 'true';
     return this.trackService.getTracksForPlay(req.user.id, {
       ...query,
-      genres,
-      shouldShuffle,
-      tagIds,
+      shouldShuffle: shuffle,
     });
   }
 

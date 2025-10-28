@@ -1160,10 +1160,11 @@
           },
           {
             "name": "shuffle",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Shuffle the tracks",
             "schema": {
-              "type": "string"
+              "type": "boolean"
             }
           }
         ],
@@ -1702,10 +1703,11 @@
           },
           {
             "name": "shuffle",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Shuffle the tracks",
             "schema": {
-              "type": "string"
+              "type": "boolean"
             }
           }
         ],

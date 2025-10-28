@@ -93,7 +93,7 @@ export function TrackList() {
     const queryOptions = getLibraryControllerGetTracksForPlayQueryOptions({
       genres,
       search: debouncedSearch || undefined,
-      shuffle: "false",
+      shuffle: false,
       sortBy: sortBy as
         | "addedAt"
         | "album"
@@ -117,7 +117,7 @@ export function TrackList() {
     const queryOptions = getLibraryControllerGetTracksForPlayQueryOptions({
       genres,
       search: debouncedSearch || undefined,
-      shuffle: "true",
+      shuffle: true,
       sortBy: sortBy as
         | "addedAt"
         | "album"

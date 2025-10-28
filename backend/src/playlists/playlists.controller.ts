@@ -6,6 +6,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Put,
@@ -155,19 +156,21 @@ export class PlaylistsController {
   }
 
   @ApiOperation({ summary: 'Get all track URIs for playing a playlist' })
+  @ApiQuery({
+    description: 'Shuffle the tracks',
+    name: 'shuffle',
+    required: false,
+    type: Boolean,
+  })
   @ApiResponse({ status: 200, type: [String] })
   @Get(':id/tracks/play')
   async getTracksForPlay(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Query('shuffle') shuffle?: string,
+    @Query('shuffle', new DefaultValuePipe(false), ParseBoolPipe)
+    shuffle: boolean,
   ): Promise<string[]> {
-    const shouldShuffle = shuffle === 'true';
-    return this.playlistsService.getTracksForPlay(
-      req.user.id,
-      id,
-      shouldShuffle,
-    );
+    return this.playlistsService.getTracksForPlay(req.user.id, id, shuffle);
   }
 
   @ApiOperation({ summary: 'Delete a smart playlist' })

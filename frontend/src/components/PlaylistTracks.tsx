@@ -43,7 +43,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const handlePlayFromBeginning = async () => {
     const queryOptions = getPlaylistsControllerGetTracksForPlayQueryOptions(
       playlistId,
-      { shuffle: "false" },
+      { shuffle: false },
     );
     const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
 
@@ -56,7 +56,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const handlePlayShuffled = async () => {
     const queryOptions = getPlaylistsControllerGetTracksForPlayQueryOptions(
       playlistId,
-      { shuffle: "true" },
+      { shuffle: true },
     );
     const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
 

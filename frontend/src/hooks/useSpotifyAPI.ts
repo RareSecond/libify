@@ -82,7 +82,7 @@ export function useSpotifyAPI() {
         case "library": {
           const params = {
             page: 1,
-            pageSize: 1000,
+            pageSize: 500,
             sortBy: "addedAt" as const,
             sortOrder: "desc" as const,
             ...(currentContext.search && { search: currentContext.search }),
@@ -100,7 +100,7 @@ export function useSpotifyAPI() {
 
         case "playlist": {
           if (currentContext.contextId) {
-            const params = { page: 1, pageSize: 1000 };
+            const params = { page: 1, pageSize: 500 };
 
             const queryOptions = getPlaylistsControllerGetTracksQueryOptions(
               currentContext.contextId,
