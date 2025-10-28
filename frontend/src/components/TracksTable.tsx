@@ -67,6 +67,13 @@ export function TracksTable({
               }
             : undefined;
 
+          console.log(
+            `[TracksTable] Playing track at index ${trackIndex}, page ${page}, pageSize ${pageSize}`,
+            `sortBy: "${sortBy}", sortOrder: "${sortOrder}"`,
+            `track: "${trackTitle}" (${spotifyId})`,
+            `skip will be: ${(page - 1) * pageSize + trackIndex}`,
+          );
+
           // Pass placeholder - backend ignores this and builds its own queue
           await playTrackList(["placeholder"], 0, context);
 

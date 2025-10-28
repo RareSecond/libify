@@ -34,7 +34,11 @@ export class QueueService {
     const startTime = Date.now();
     this.logger.log(
       `Building queue for user ${userId} with limit ${limit}`,
-      context,
+      {
+        ...context,
+        sortBy: context.sortBy || '(undefined)',
+        sortOrder: context.sortOrder || '(undefined)',
+      },
     );
 
     // Calculate skip amount based on pagination
