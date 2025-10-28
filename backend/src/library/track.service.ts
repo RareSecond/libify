@@ -40,6 +40,7 @@ export class TrackService {
     orderBy: Prisma.UserTrackOrderByWithRelationInput,
     maxTracks: number,
     shuffle: boolean,
+    skip = 0,
   ): Promise<string[]> {
     const tracks = await this.databaseService.userTrack.findMany({
       include: {
@@ -48,6 +49,7 @@ export class TrackService {
         },
       },
       orderBy,
+      skip: shuffle ? 0 : skip,
       take: maxTracks,
       where: { ...where, userId },
     });
@@ -510,9 +512,9 @@ export class TrackService {
 
   async getTracksForPlay(
     userId: string,
-    query: GetTracksQueryDto & { shouldShuffle?: boolean },
+    query: GetTracksQueryDto & { shouldShuffle?: boolean; skip?: number },
   ): Promise<string[]> {
-    const { shouldShuffle, ...trackQuery } = query;
+    const { shouldShuffle, skip = 0, ...trackQuery } = query;
 
     // Build where clause similar to getUserTracks
     const where: Prisma.UserTrackWhereInput = { userId };
@@ -606,7 +608,14 @@ export class TrackService {
     }
 
     // Get tracks up to 500 max for Spotify API compatibility
-    return this.fetchTracksForPlay(userId, where, orderBy, 500, shouldShuffle);
+    return this.fetchTracksForPlay(
+      userId,
+      where,
+      orderBy,
+      500,
+      shouldShuffle,
+      skip,
+    );
   }
 
   /**

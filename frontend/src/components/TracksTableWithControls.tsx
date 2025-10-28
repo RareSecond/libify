@@ -111,6 +111,8 @@ export function TracksTableWithControls({
         isLoading={isLoading}
         onRefetch={onRefetch}
         onSortChange={onSortChange}
+        page={page}
+        pageSize={pageSize}
         search={search}
         sortBy={sortBy}
         sortOrder={sortOrder}

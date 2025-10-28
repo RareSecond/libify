@@ -12,6 +12,7 @@ export interface PlaybackResponse {
     spotifyCall: number;
     total: number;
   };
+  trackUris: string[];
 }
 
 @Injectable()
@@ -97,6 +98,7 @@ export class PlaybackService {
           spotifyCall: spotifyDuration,
           total: totalDuration,
         },
+        trackUris,
       };
     } catch (error) {
       this.logger.error('Failed to start playback', error);

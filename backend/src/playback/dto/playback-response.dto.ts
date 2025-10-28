@@ -22,4 +22,12 @@ export class PlaybackResponseDto {
   @Expose()
   @Type(() => PlaybackTimingsDto)
   timings: PlaybackTimingsDto;
+
+  @ApiProperty({
+    example: ['spotify:track:abc123', 'spotify:track:def456'],
+    isArray: true,
+    type: String,
+  })
+  @Expose()
+  trackUris: string[];
 }

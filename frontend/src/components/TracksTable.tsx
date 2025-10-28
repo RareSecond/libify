@@ -19,6 +19,8 @@ interface TracksTableProps {
   isLoading?: boolean;
   onRefetch?: () => void;
   onSortChange?: (columnId: string) => void;
+  page?: number;
+  pageSize?: number;
   search?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
@@ -31,6 +33,8 @@ export function TracksTable({
   isLoading,
   onRefetch,
   onSortChange,
+  page = 1,
+  pageSize = 20,
   search,
   sortBy,
   sortOrder,
@@ -42,30 +46,29 @@ export function TracksTable({
   const handlePlayTrack = async (trackTitle: string, spotifyId?: string) => {
     try {
       if (spotifyId && tracks.length > 0) {
-        // Build list of tracks with both Spotify URIs and internal track IDs
-        const tracksWithIds = tracks
-          .filter((track) => track.spotifyId)
-          .map((track) => ({
-            spotifyUri: `spotify:track:${track.spotifyId}`,
-            trackId: track.id,
-          }));
+        // Find the index of the clicked track in the current page
+        const trackIndex = tracks.findIndex(
+          (track) => track.spotifyId === spotifyId,
+        );
 
-        if (tracksWithIds.length > 0) {
-          // Find the index of the clicked track in the filtered list
-          const clickedTrackUri = `spotify:track:${spotifyId}`;
-          const trackIndex = tracksWithIds.findIndex(
-            (track) => track.spotifyUri === clickedTrackUri,
-          );
-
-          // Play the entire track list starting from the clicked track
+        if (trackIndex >= 0) {
+          // Backend will build queue and skip to correct position based on pagination
           const context = contextType
-            ? { contextId, contextType, search }
+            ? {
+                clickedIndex: trackIndex,
+                contextId,
+                contextType,
+                pageNumber: page,
+                pageSize,
+                search,
+                shuffle: false,
+                sortBy,
+                sortOrder,
+              }
             : undefined;
-          await playTrackList(
-            tracksWithIds,
-            trackIndex >= 0 ? trackIndex : 0,
-            context,
-          );
+
+          // Pass placeholder - backend ignores this and builds its own queue
+          await playTrackList(["placeholder"], 0, context);
 
           notifications.show({
             color: "green",

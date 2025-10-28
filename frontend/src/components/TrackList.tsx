@@ -1,5 +1,4 @@
 import { ActionIcon, Button, Group, Modal, Stack, Text } from "@mantine/core";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Play, Shuffle, Tag } from "lucide-react";
 import { useState } from "react";
@@ -7,7 +6,6 @@ import { useState } from "react";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 
 import {
-  getLibraryControllerGetTracksForPlayQueryOptions,
   useLibraryControllerGetGenres,
   useLibraryControllerGetTracks,
 } from "../data/api";
@@ -19,7 +17,6 @@ import { TracksTableWithControls } from "./TracksTableWithControls";
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const queryClient = useQueryClient();
   const { playTrackList } = useSpotifyPlayer();
   const {
     genres = [],
@@ -90,50 +87,23 @@ export function TrackList() {
   };
 
   const handlePlayFromBeginning = async () => {
-    const queryOptions = getLibraryControllerGetTracksForPlayQueryOptions({
-      genres,
-      search: debouncedSearch || undefined,
-      shuffle: false,
-      sortBy: sortBy as
-        | "addedAt"
-        | "album"
-        | "artist"
-        | "duration"
-        | "lastPlayedAt"
-        | "rating"
-        | "title"
-        | "totalPlayCount",
-      sortOrder,
-    });
-    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
-
-    await playTrackList(uris, 0, {
+    // Backend will build the queue based on context
+    await playTrackList(["placeholder"], 0, {
       contextType: "library",
       search: debouncedSearch || undefined,
+      shuffle: false,
+      sortBy,
+      sortOrder,
     });
   };
 
   const handlePlayShuffled = async () => {
-    const queryOptions = getLibraryControllerGetTracksForPlayQueryOptions({
-      genres,
-      search: debouncedSearch || undefined,
-      shuffle: true,
-      sortBy: sortBy as
-        | "addedAt"
-        | "album"
-        | "artist"
-        | "duration"
-        | "lastPlayedAt"
-        | "rating"
-        | "title"
-        | "totalPlayCount",
-      sortOrder,
-    });
-    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
-
-    await playTrackList(uris, 0, {
+    // Backend will build the shuffled queue based on context
+    await playTrackList(["placeholder"], 0, {
       contextType: "library",
       search: debouncedSearch || undefined,
+      shuffle: true,
+      // Note: sortBy/sortOrder ignored when shuffle is true
     });
   };
 

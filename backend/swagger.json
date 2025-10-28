@@ -1428,6 +1428,179 @@
         ]
       }
     },
+    "/playback/next": {
+      "post": {
+        "operationId": "PlaybackController_next",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Skipped to next track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Skip to next track",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/playback/pause": {
+      "post": {
+        "operationId": "PlaybackController_pause",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Playback paused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pause playback",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/playback/play": {
+      "post": {
+        "operationId": "PlaybackController_play",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayContextDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Playback started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start playback with queue generation",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/playback/resume": {
+      "post": {
+        "operationId": "PlaybackController_resume",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Playback resumed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resume playback",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
     "/playlists": {
       "post": {
         "operationId": "PlaylistsController_create",
@@ -2635,6 +2808,146 @@
         },
         "required": [
           "rating"
+        ]
+      },
+      "PlaybackControlResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Playback paused"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "PlayContextDto": {
+        "type": "object",
+        "properties": {
+          "clickedIndex": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Index of clicked track in current page (0-based)",
+            "example": 10
+          },
+          "contextId": {
+            "type": "string",
+            "description": "ID of the context (playlist, album, artist, etc.)",
+            "example": "abc123"
+          },
+          "contextName": {
+            "type": "string",
+            "description": "Name of the context for display",
+            "example": "My Favorite Songs"
+          },
+          "contextType": {
+            "enum": [
+              "ALBUM",
+              "ARTIST",
+              "LIBRARY",
+              "PLAYLIST",
+              "SMART_PLAYLIST",
+              "TRACK"
+            ],
+            "type": "string",
+            "description": "Type of context to play",
+            "example": "LIBRARY"
+          },
+          "pageNumber": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Current page number (1-based)",
+            "example": 4
+          },
+          "pageSize": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Number of items per page",
+            "example": 20
+          },
+          "shuffle": {
+            "type": "boolean",
+            "description": "Whether to shuffle the queue",
+            "example": true
+          },
+          "sortBy": {
+            "type": "string",
+            "description": "Field to sort by",
+            "example": "addedAt"
+          },
+          "sortOrder": {
+            "type": "string",
+            "description": "Sort order",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "example": "desc"
+          },
+          "startPosition": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Position to start playing from (deprecated - use pagination fields)",
+            "example": 0
+          }
+        },
+        "required": [
+          "contextType"
+        ]
+      },
+      "PlaybackTimingsDto": {
+        "type": "object",
+        "properties": {
+          "queueGeneration": {
+            "type": "number",
+            "example": 150
+          },
+          "spotifyCall": {
+            "type": "number",
+            "example": 300
+          },
+          "total": {
+            "type": "number",
+            "example": 450
+          }
+        },
+        "required": [
+          "queueGeneration",
+          "spotifyCall",
+          "total"
+        ]
+      },
+      "PlaybackResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Playback started"
+          },
+          "queueLength": {
+            "type": "number",
+            "example": 200
+          },
+          "timings": {
+            "$ref": "#/components/schemas/PlaybackTimingsDto"
+          },
+          "trackUris": {
+            "example": [
+              "spotify:track:abc123",
+              "spotify:track:def456"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "message",
+          "queueLength",
+          "timings",
+          "trackUris"
         ]
       },
       "PlaylistRuleDto": {

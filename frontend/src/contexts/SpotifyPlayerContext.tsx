@@ -9,7 +9,10 @@ import {
   useState,
 } from "react";
 
-import { useAuthControllerGetProfile } from "@/data/api";
+import {
+  useAuthControllerGetProfile,
+  usePlaybackControllerPlay,
+} from "@/data/api";
 import { useShuffleManager } from "@/hooks/useShuffleManager";
 import { useSpotifyAPI } from "@/hooks/useSpotifyAPI";
 import {
@@ -19,9 +22,15 @@ import {
 } from "@/types/spotify";
 
 interface PlayContext {
+  clickedIndex?: number;
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist";
+  pageNumber?: number;
+  pageSize?: number;
   search?: string;
+  shuffle?: boolean;
+  sortBy?: string;
+  sortOrder?: string;
 }
 interface SpotifyPlayerContextType {
   currentContext: null | PlayContext;
@@ -96,6 +105,7 @@ export function SpotifyPlayerProvider({
   const { data: user } = useAuthControllerGetProfile();
   const { fetchAllTracksForContext, getAccessToken } = useSpotifyAPI();
   const shuffleManager = useShuffleManager();
+  const { mutateAsync: playbackPlay } = usePlaybackControllerPlay();
 
   // Helper to add listener and track it for cleanup
   const addTrackedListener = useCallback(
@@ -372,33 +382,38 @@ export function SpotifyPlayerProvider({
     });
     const trackUris = normalizedTracks.map((track) => track.spotifyUri);
 
-    const token = await getAccessToken();
-    const response = await fetch(
-      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-      {
-        body: JSON.stringify({
-          offset: { position: startIndex },
-          uris: trackUris,
-        }),
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        method: "PUT",
+    // Use backend playback endpoint via generated hook
+    const data = await playbackPlay({
+      data: {
+        clickedIndex: context?.clickedIndex,
+        contextId: context?.contextId,
+        contextName: context?.search,
+        contextType: (context?.contextType?.toUpperCase() ||
+          "LIBRARY") as "ALBUM" | "ARTIST" | "LIBRARY" | "PLAYLIST" | "SMART_PLAYLIST" | "TRACK",
+        pageNumber: context?.pageNumber,
+        pageSize: context?.pageSize,
+        shuffle: context?.shuffle || false,
+        sortBy: context?.sortBy,
+        sortOrder: context?.sortOrder as "asc" | "desc" | undefined,
       },
+    });
+
+    console.log(
+      `Playback started: ${data.queueLength} tracks (queue: ${data.timings.queueGeneration}ms, spotify: ${data.timings.spotifyCall}ms, total: ${data.timings.total}ms)`,
     );
 
-    if (response.ok || response.status === 204) {
-      setCurrentTrackList(trackUris);
-      setCurrentTrackIndex(startIndex);
-      shuffleManager.setOriginalTrackList(trackUris);
-      setCurrentTracksWithIds(normalizedTracks);
-      shuffleManager.setIsShuffled(false);
-      setCurrentContext(context || null);
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData?.error?.message || "Failed to play track");
-    }
+    // Use the track URIs returned from backend
+    const backendTrackUris = data.trackUris || trackUris;
+    const backendNormalizedTracks = backendTrackUris.map((uri: string) => ({
+      spotifyUri: uri,
+    }));
+
+    setCurrentTrackList(backendTrackUris);
+    setCurrentTrackIndex(startIndex);
+    shuffleManager.setOriginalTrackList(backendTrackUris);
+    setCurrentTracksWithIds(backendNormalizedTracks);
+    shuffleManager.setIsShuffled(context?.shuffle || false);
+    setCurrentContext(context || null);
   };
   const pause = async () => {
     if (player) await player.pause();

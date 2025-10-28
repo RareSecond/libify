@@ -1,5 +1,4 @@
 import { Button, Center, Group, Loader, Stack, Text } from "@mantine/core";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
 import { useState } from "react";
@@ -7,7 +6,6 @@ import { useState } from "react";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 
 import {
-  getPlaylistsControllerGetTracksForPlayQueryOptions,
   PaginatedTracksDto,
   PlaylistsControllerGetTracksSortBy,
   usePlaylistsControllerFindOne,
@@ -21,7 +19,6 @@ interface PlaylistTracksProps {
 
 export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { playTrackList } = useSpotifyPlayer();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -41,28 +38,20 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
     });
 
   const handlePlayFromBeginning = async () => {
-    const queryOptions = getPlaylistsControllerGetTracksForPlayQueryOptions(
-      playlistId,
-      { shuffle: false },
-    );
-    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
-
-    await playTrackList(uris, 0, {
+    // Backend will build the queue based on context
+    await playTrackList(["placeholder"], 0, {
       contextId: playlistId,
       contextType: "playlist",
+      shuffle: false,
     });
   };
 
   const handlePlayShuffled = async () => {
-    const queryOptions = getPlaylistsControllerGetTracksForPlayQueryOptions(
-      playlistId,
-      { shuffle: true },
-    );
-    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
-
-    await playTrackList(uris, 0, {
+    // Backend will build the shuffled queue based on context
+    await playTrackList(["placeholder"], 0, {
       contextId: playlistId,
       contextType: "playlist",
+      shuffle: true,
     });
   };
 

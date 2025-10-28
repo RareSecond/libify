@@ -13,6 +13,16 @@ import { ContextType } from '../types/context-type.enum';
 
 export class PlayContextDto {
   @ApiPropertyOptional({
+    description: 'Index of clicked track in current page (0-based)',
+    example: 10,
+  })
+  @Expose()
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  clickedIndex?: number;
+
+  @ApiPropertyOptional({
     description: 'ID of the context (playlist, album, artist, etc.)',
     example: 'abc123',
   })
@@ -40,6 +50,26 @@ export class PlayContextDto {
   contextType: ContextType;
 
   @ApiPropertyOptional({
+    description: 'Current page number (1-based)',
+    example: 4,
+  })
+  @Expose()
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  pageNumber?: number;
+
+  @ApiPropertyOptional({
+    description: 'Number of items per page',
+    example: 20,
+  })
+  @Expose()
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  pageSize?: number;
+
+  @ApiPropertyOptional({
     description: 'Whether to shuffle the queue',
     example: true,
   })
@@ -49,7 +79,27 @@ export class PlayContextDto {
   shuffle?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Position to start playing from',
+    description: 'Field to sort by',
+    example: 'addedAt',
+  })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+    example: 'desc',
+  })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  sortOrder?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Position to start playing from (deprecated - use pagination fields)',
     example: 0,
   })
   @Expose()
