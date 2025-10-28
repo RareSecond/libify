@@ -429,6 +429,48 @@ export class LibraryController {
     });
   }
 
+  @ApiOperation({ summary: 'Get all track URIs for playing library' })
+  @ApiResponse({ status: 200, type: [String] })
+  @Get('tracks/play')
+  async getTracksForPlay(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: GetTracksQueryDto,
+    @Query('shuffle') shuffle?: string,
+  ): Promise<string[]> {
+    // Manually handle genres[] and tagIds[] parameters
+    let genres: string[] = [];
+    if (req.query['genres[]']) {
+      const genresParam = req.query['genres[]'];
+      if (Array.isArray(genresParam)) {
+        genres = genresParam as string[];
+      } else if (typeof genresParam === 'string') {
+        genres = [genresParam];
+      }
+    } else if (query.genres) {
+      genres = query.genres;
+    }
+
+    let tagIds: string[] = [];
+    if (req.query['tagIds[]']) {
+      const tagIdsParam = req.query['tagIds[]'];
+      if (Array.isArray(tagIdsParam)) {
+        tagIds = tagIdsParam as string[];
+      } else if (typeof tagIdsParam === 'string') {
+        tagIds = [tagIdsParam];
+      }
+    } else if (query.tagIds) {
+      tagIds = query.tagIds;
+    }
+
+    const shouldShuffle = shuffle === 'true';
+    return this.trackService.getTracksForPlay(req.user.id, {
+      ...query,
+      genres,
+      shouldShuffle,
+      tagIds,
+    });
+  }
+
   @ApiOperation({ summary: 'Play a track on Spotify' })
   @ApiResponse({ description: 'Track started playing', status: 200 })
   @ApiResponse({ description: 'Unauthorized', status: 401 })

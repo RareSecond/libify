@@ -1,9 +1,13 @@
-import { ActionIcon, Group, Modal, Stack, Text } from "@mantine/core";
+import { ActionIcon, Button, Group, Modal, Stack, Text } from "@mantine/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Tag } from "lucide-react";
+import { Play, Shuffle, Tag } from "lucide-react";
 import { useState } from "react";
 
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+
 import {
+  getLibraryControllerGetTracksForPlayQueryOptions,
   useLibraryControllerGetGenres,
   useLibraryControllerGetTracks,
 } from "../data/api";
@@ -15,6 +19,8 @@ import { TracksTableWithControls } from "./TracksTableWithControls";
 
 export function TrackList() {
   const navigate = useNavigate({ from: Route.fullPath });
+  const queryClient = useQueryClient();
+  const { playTrackList } = useSpotifyPlayer();
   const {
     genres = [],
     page = 1,
@@ -83,13 +89,81 @@ export function TrackList() {
     });
   };
 
+  const handlePlayFromBeginning = async () => {
+    const queryOptions = getLibraryControllerGetTracksForPlayQueryOptions({
+      genres,
+      search: debouncedSearch || undefined,
+      shuffle: "false",
+      sortBy: sortBy as
+        | "addedAt"
+        | "album"
+        | "artist"
+        | "duration"
+        | "lastPlayedAt"
+        | "rating"
+        | "title"
+        | "totalPlayCount",
+      sortOrder,
+    });
+    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
+
+    await playTrackList(uris, 0, {
+      contextType: "library",
+      search: debouncedSearch || undefined,
+    });
+  };
+
+  const handlePlayShuffled = async () => {
+    const queryOptions = getLibraryControllerGetTracksForPlayQueryOptions({
+      genres,
+      search: debouncedSearch || undefined,
+      shuffle: "true",
+      sortBy: sortBy as
+        | "addedAt"
+        | "album"
+        | "artist"
+        | "duration"
+        | "lastPlayedAt"
+        | "rating"
+        | "title"
+        | "totalPlayCount",
+      sortOrder,
+    });
+    const uris = (await queryClient.fetchQuery(queryOptions)) as string[];
+
+    await playTrackList(uris, 0, {
+      contextType: "library",
+      search: debouncedSearch || undefined,
+    });
+  };
+
   return (
     <Stack gap="sm">
-      <div>
-        <Text className="mb-2 font-bold" size="lg">
-          My Library
-        </Text>
-      </div>
+      <Group justify="space-between">
+        <div>
+          <Text className="mb-2 font-bold" size="lg">
+            My Library
+          </Text>
+        </div>
+        <Group gap="sm">
+          <Button
+            disabled={!data?.tracks || data.tracks.length === 0}
+            leftSection={<Play size={16} />}
+            onClick={handlePlayFromBeginning}
+            variant="filled"
+          >
+            Play
+          </Button>
+          <Button
+            disabled={!data?.tracks || data.tracks.length === 0}
+            leftSection={<Shuffle size={16} />}
+            onClick={handlePlayShuffled}
+            variant="outline"
+          >
+            Shuffle
+          </Button>
+        </Group>
+      </Group>
 
       <TracksTableWithControls
         contextType="library"
