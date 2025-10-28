@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { DatabaseService } from '../database/database.service';
+import { TrackService } from '../library/track.service';
 import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
 import {
   PlaylistRuleDto,
@@ -15,7 +16,10 @@ import {
 
 @Injectable()
 export class PlaylistsService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(
+    private readonly prisma: DatabaseService,
+    private readonly trackService: TrackService,
+  ) {}
 
   async create(userId: string, createDto: CreateSmartPlaylistDto) {
     return this.prisma.smartPlaylist.create({
@@ -98,6 +102,7 @@ export class PlaylistsService {
     const [tracks, total] = await Promise.all([
       this.prisma.userTrack.findMany({
         include: {
+          sources: true,
           spotifyTrack: {
             include: {
               album: {
@@ -123,15 +128,23 @@ export class PlaylistsService {
     ]);
 
     const formattedTracks = tracks.map((track) => ({
-      addedAt: track.addedAt.toISOString(),
+      addedAt: track.addedAt,
       album: track.spotifyTrack.album.name,
       albumArt: track.spotifyTrack.album.imageUrl || null,
       artist: track.spotifyTrack.artist.name,
+      artistGenres: track.spotifyTrack.artist.genres || [],
       duration: track.spotifyTrack.duration,
       id: track.id,
-      lastPlayedAt: track.lastPlayedAt?.toISOString(),
-      ratedAt: track.ratedAt?.toISOString(),
-      rating: track.rating,
+      lastPlayedAt: track.lastPlayedAt || null,
+      ratedAt: track.ratedAt || null,
+      rating: track.rating || null,
+      sources: track.sources.map((s) => ({
+        createdAt: s.createdAt,
+        id: s.id,
+        sourceId: s.sourceId,
+        sourceName: s.sourceName,
+        sourceType: s.sourceType,
+      })),
       spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((tt) => ({
         color: tt.tag.color,
@@ -153,6 +166,30 @@ export class PlaylistsService {
       totalPages: Math.ceil(totalToReturn / pageSize),
       tracks: formattedTracks,
     };
+  }
+
+  async getTracksForPlay(
+    userId: string,
+    playlistId: string,
+    shuffle = false,
+  ): Promise<string[]> {
+    const playlist = await this.findOne(userId, playlistId);
+    const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
+
+    const where = this.buildWhereClause(userId, criteria);
+    const orderBy = this.buildOrderBy(criteria);
+
+    // Get all tracks up to playlist limit (or 500 max for Spotify API compatibility)
+    const maxTracks = criteria.limit ? Math.min(criteria.limit, 500) : 500;
+
+    // Use TrackService helper to fetch and optionally shuffle tracks
+    return this.trackService.fetchTracksForPlay(
+      userId,
+      where,
+      orderBy,
+      maxTracks,
+      shuffle,
+    );
   }
 
   async remove(userId: string, playlistId: string) {

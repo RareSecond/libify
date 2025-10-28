@@ -31,6 +31,42 @@ export class TrackService {
     private aggregationService: AggregationService,
   ) {}
 
+  /**
+   * Helper method to fetch tracks for playback - used by both library and playlist endpoints
+   */
+  async fetchTracksForPlay(
+    userId: string,
+    where: Prisma.UserTrackWhereInput,
+    orderBy: Prisma.UserTrackOrderByWithRelationInput,
+    maxTracks: number,
+    shuffle: boolean,
+  ): Promise<string[]> {
+    const tracks = await this.databaseService.userTrack.findMany({
+      include: {
+        spotifyTrack: {
+          select: { spotifyId: true },
+        },
+      },
+      orderBy,
+      take: maxTracks,
+      where: { ...where, userId },
+    });
+
+    const spotifyUris = tracks
+      .filter((track) => track.spotifyTrack.spotifyId)
+      .map((track) => `spotify:track:${track.spotifyTrack.spotifyId}`);
+
+    // Shuffle if requested using Fisher-Yates algorithm
+    if (shuffle) {
+      for (let i = spotifyUris.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
+      }
+    }
+
+    return spotifyUris;
+  }
+
   async getAlbumTracks(
     userId: string,
     artist: string,
@@ -470,6 +506,107 @@ export class TrackService {
     };
 
     return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+  }
+
+  async getTracksForPlay(
+    userId: string,
+    query: GetTracksQueryDto & { shouldShuffle?: boolean },
+  ): Promise<string[]> {
+    const { shouldShuffle, ...trackQuery } = query;
+
+    // Build where clause similar to getUserTracks
+    const where: Prisma.UserTrackWhereInput = { userId };
+
+    if (trackQuery.search) {
+      where.OR = [
+        {
+          spotifyTrack: {
+            title: { contains: trackQuery.search, mode: 'insensitive' },
+          },
+        },
+        {
+          spotifyTrack: {
+            artist: {
+              name: { contains: trackQuery.search, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          spotifyTrack: {
+            album: {
+              name: { contains: trackQuery.search, mode: 'insensitive' },
+            },
+          },
+        },
+      ];
+    }
+
+    if (trackQuery.tagIds && trackQuery.tagIds.length > 0) {
+      where.tags = { some: { tagId: { in: trackQuery.tagIds } } };
+    }
+
+    if (trackQuery.minRating) {
+      where.rating = { gte: trackQuery.minRating };
+    }
+
+    if (trackQuery.sourceTypes && trackQuery.sourceTypes.length > 0) {
+      where.sources = { some: { sourceType: { in: trackQuery.sourceTypes } } };
+    }
+
+    if (trackQuery.genres && trackQuery.genres.length > 0) {
+      const genreFilter: Prisma.UserTrackWhereInput = {
+        spotifyTrack: {
+          artist: { genres: { hasSome: trackQuery.genres } },
+        },
+      };
+
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, genreFilter];
+        delete where.OR;
+      } else {
+        Object.assign(where, genreFilter);
+      }
+    }
+
+    // Build orderBy clause
+    let orderBy: Prisma.UserTrackOrderByWithRelationInput = {};
+    switch (trackQuery.sortBy || 'addedAt') {
+      case 'addedAt':
+        orderBy = { addedAt: trackQuery.sortOrder || 'desc' };
+        break;
+      case 'album':
+        orderBy = {
+          spotifyTrack: { album: { name: trackQuery.sortOrder || 'desc' } },
+        };
+        break;
+      case 'artist':
+        orderBy = {
+          spotifyTrack: { artist: { name: trackQuery.sortOrder || 'desc' } },
+        };
+        break;
+      case 'duration':
+        orderBy = {
+          spotifyTrack: { duration: trackQuery.sortOrder || 'desc' },
+        };
+        break;
+      case 'lastPlayedAt':
+        orderBy = { lastPlayedAt: trackQuery.sortOrder || 'desc' };
+        break;
+      case 'rating':
+        orderBy = { rating: trackQuery.sortOrder || 'desc' };
+        break;
+      case 'title':
+        orderBy = {
+          spotifyTrack: { title: trackQuery.sortOrder || 'desc' },
+        };
+        break;
+      case 'totalPlayCount':
+        orderBy = { totalPlayCount: trackQuery.sortOrder || 'desc' };
+        break;
+    }
+
+    // Get tracks up to 500 max for Spotify API compatibility
+    return this.fetchTracksForPlay(userId, where, orderBy, 500, shouldShuffle);
   }
 
   /**

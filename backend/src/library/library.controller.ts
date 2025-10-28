@@ -2,12 +2,14 @@ import { InjectQueue } from '@nestjs/bullmq';
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpException,
   HttpStatus,
   Logger,
   Param,
+  ParseBoolPipe,
   Post,
   Put,
   Query,
@@ -18,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -426,6 +429,27 @@ export class LibraryController {
       ...query,
       genres,
       tagIds,
+    });
+  }
+
+  @ApiOperation({ summary: 'Get all track URIs for playing library' })
+  @ApiQuery({
+    description: 'Shuffle the tracks',
+    name: 'shuffle',
+    required: false,
+    type: Boolean,
+  })
+  @ApiResponse({ status: 200, type: [String] })
+  @Get('tracks/play')
+  async getTracksForPlay(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: GetTracksQueryDto,
+    @Query('shuffle', new DefaultValuePipe(false), ParseBoolPipe)
+    shuffle: boolean,
+  ): Promise<string[]> {
+    return this.trackService.getTracksForPlay(req.user.id, {
+      ...query,
+      shouldShuffle: shuffle,
     });
   }
 

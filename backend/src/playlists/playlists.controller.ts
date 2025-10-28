@@ -6,6 +6,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Put,
@@ -24,6 +25,7 @@ import { User } from '@prisma/client';
 import { Request } from 'express';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginatedTracksDto } from '../library/dto/track.dto';
 import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
 import {
   CreateSmartPlaylistDto,
@@ -114,6 +116,7 @@ export class PlaylistsController {
     required: false,
     type: String,
   })
+  @ApiResponse({ status: 200, type: PaginatedTracksDto })
   @Get(':id/tracks')
   async getTracks(
     @Req() req: AuthenticatedRequest,
@@ -123,7 +126,7 @@ export class PlaylistsController {
     pageSize: number,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
-  ) {
+  ): Promise<PaginatedTracksDto> {
     // Validate pagination parameters
     if (page < 1) {
       throw new BadRequestException('Page must be at least 1');
@@ -150,6 +153,24 @@ export class PlaylistsController {
       sortBy,
       normalizedSortOrder,
     );
+  }
+
+  @ApiOperation({ summary: 'Get all track URIs for playing a playlist' })
+  @ApiQuery({
+    description: 'Shuffle the tracks',
+    name: 'shuffle',
+    required: false,
+    type: Boolean,
+  })
+  @ApiResponse({ status: 200, type: [String] })
+  @Get(':id/tracks/play')
+  async getTracksForPlay(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Query('shuffle', new DefaultValuePipe(false), ParseBoolPipe)
+    shuffle: boolean,
+  ): Promise<string[]> {
+    return this.playlistsService.getTracksForPlay(req.user.id, id, shuffle);
   }
 
   @ApiOperation({ summary: 'Delete a smart playlist' })

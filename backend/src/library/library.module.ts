@@ -19,6 +19,7 @@ import { TrackService } from './track.service';
     LibrarySyncService,
     AggregationService,
     PlaySyncService,
+    TrackService,
   ],
   imports: [
     DatabaseModule,
