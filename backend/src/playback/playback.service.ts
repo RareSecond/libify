@@ -1,19 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 
 import { AuthService } from '../auth/auth.service';
 import { SpotifyService } from '../library/spotify.service';
+import {
+  PlaybackControlResponseDto,
+  PlaybackResponseDto,
+} from './dto/playback-response.dto';
 import { PlayContext, QueueService } from './queue.service';
-
-export interface PlaybackResponse {
-  message: string;
-  queueLength: number;
-  timings: {
-    queueGeneration: number;
-    spotifyCall: number;
-    total: number;
-  };
-  trackUris: string[];
-}
 
 @Injectable()
 export class PlaybackService {
@@ -25,7 +19,7 @@ export class PlaybackService {
     private readonly authService: AuthService,
   ) {}
 
-  async next(userId: string): Promise<{ message: string }> {
+  async next(userId: string): Promise<PlaybackControlResponseDto> {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
@@ -33,14 +27,20 @@ export class PlaybackService {
       }
 
       await this.spotifyService.nextTrack(accessToken);
-      return { message: 'Skipped to next track' };
+      return plainToInstance(
+        PlaybackControlResponseDto,
+        {
+          message: 'Skipped to next track',
+        },
+        { excludeExtraneousValues: true },
+      );
     } catch (error) {
       this.logger.error('Failed to skip to next track', error);
       throw error;
     }
   }
 
-  async pause(userId: string): Promise<{ message: string }> {
+  async pause(userId: string): Promise<PlaybackControlResponseDto> {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
@@ -48,14 +48,23 @@ export class PlaybackService {
       }
 
       await this.spotifyService.pausePlayback(accessToken);
-      return { message: 'Playback paused' };
+      return plainToInstance(
+        PlaybackControlResponseDto,
+        {
+          message: 'Playback paused',
+        },
+        { excludeExtraneousValues: true },
+      );
     } catch (error) {
       this.logger.error('Failed to pause playback', error);
       throw error;
     }
   }
 
-  async play(userId: string, context: PlayContext): Promise<PlaybackResponse> {
+  async play(
+    userId: string,
+    context: PlayContext,
+  ): Promise<PlaybackResponseDto> {
     const totalStart = Date.now();
     this.logger.log(`Starting playback for user ${userId}`, { context });
 
@@ -94,23 +103,27 @@ export class PlaybackService {
         `Started playback for user ${userId}: ${trackUris.length} tracks (queue: ${queueDuration}ms, spotify: ${spotifyDuration}ms, total: ${totalDuration}ms)`,
       );
 
-      return {
-        message: 'Playback started',
-        queueLength: trackUris.length,
-        timings: {
-          queueGeneration: queueDuration,
-          spotifyCall: spotifyDuration,
-          total: totalDuration,
+      return plainToInstance(
+        PlaybackResponseDto,
+        {
+          message: 'Playback started',
+          queueLength: trackUris.length,
+          timings: {
+            queueGeneration: queueDuration,
+            spotifyCall: spotifyDuration,
+            total: totalDuration,
+          },
+          trackUris,
         },
-        trackUris,
-      };
+        { excludeExtraneousValues: true },
+      );
     } catch (error) {
       this.logger.error('Failed to start playback', error);
       throw error;
     }
   }
 
-  async resume(userId: string): Promise<{ message: string }> {
+  async resume(userId: string): Promise<PlaybackControlResponseDto> {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
@@ -118,7 +131,13 @@ export class PlaybackService {
       }
 
       await this.spotifyService.resumePlayback(accessToken);
-      return { message: 'Playback resumed' };
+      return plainToInstance(
+        PlaybackControlResponseDto,
+        {
+          message: 'Playback resumed',
+        },
+        { excludeExtraneousValues: true },
+      );
     } catch (error) {
       this.logger.error('Failed to resume playback', error);
       throw error;
