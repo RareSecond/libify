@@ -388,8 +388,13 @@ export function SpotifyPlayerProvider({
         clickedIndex: context?.clickedIndex,
         contextId: context?.contextId,
         contextName: context?.search,
-        contextType: (context?.contextType?.toUpperCase() ||
-          "LIBRARY") as "ALBUM" | "ARTIST" | "LIBRARY" | "PLAYLIST" | "SMART_PLAYLIST" | "TRACK",
+        contextType: (context?.contextType?.toUpperCase() || "LIBRARY") as
+          | "ALBUM"
+          | "ARTIST"
+          | "LIBRARY"
+          | "PLAYLIST"
+          | "SMART_PLAYLIST"
+          | "TRACK",
         deviceId: deviceId || undefined,
         pageNumber: context?.pageNumber,
         pageSize: context?.pageSize,
@@ -398,10 +403,6 @@ export function SpotifyPlayerProvider({
         sortOrder: context?.sortOrder as "asc" | "desc" | undefined,
       },
     });
-
-    console.log(
-      `Playback started: ${data.queueLength} tracks (queue: ${data.timings.queueGeneration}ms, spotify: ${data.timings.spotifyCall}ms, total: ${data.timings.total}ms)`,
-    );
 
     // Use the track URIs returned from backend
     const backendTrackUris = data.trackUris || trackUris;

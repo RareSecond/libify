@@ -32,15 +32,6 @@ export class PlayContextDto {
   contextId?: string;
 
   @ApiPropertyOptional({
-    description: 'Spotify device ID to play on',
-    example: 'b980b2daec2c8e1df7fe2677c0fd4421ae0ae013',
-  })
-  @Expose()
-  @IsOptional()
-  @IsString()
-  deviceId?: string;
-
-  @ApiPropertyOptional({
     description: 'Name of the context for display',
     example: 'My Favorite Songs',
   })
@@ -57,6 +48,15 @@ export class PlayContextDto {
   @Expose()
   @IsEnum(ContextType)
   contextType: ContextType;
+
+  @ApiPropertyOptional({
+    description: 'Spotify device ID to play on',
+    example: 'b980b2daec2c8e1df7fe2677c0fd4421ae0ae013',
+  })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 
   @ApiPropertyOptional({
     description: 'Current page number (1-based)',

@@ -33,14 +33,11 @@ export class QueueService {
     limit = 200,
   ): Promise<string[]> {
     const startTime = Date.now();
-    this.logger.log(
-      `Building queue for user ${userId} with limit ${limit}`,
-      {
-        ...context,
-        sortBy: context.sortBy || '(undefined)',
-        sortOrder: context.sortOrder || '(undefined)',
-      },
-    );
+    this.logger.log(`Building queue for user ${userId} with limit ${limit}`, {
+      ...context,
+      sortBy: context.sortBy || '(undefined)',
+      sortOrder: context.sortOrder || '(undefined)',
+    });
 
     // Calculate skip amount based on pagination
     let skip = 0;
