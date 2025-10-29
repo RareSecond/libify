@@ -108,8 +108,12 @@ export function TracksTable({
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
 
+  // Handle Spotify track relinking: If linked_from exists, use the original track ID
+  // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
+  const originalSpotifyId = currentTrack?.linked_from?.id || currentTrack?.id;
+
   const columns = useTracksTableColumns({
-    currentTrack: currentTrack ? { id: currentTrack.id } : undefined,
+    currentTrack: currentTrack ? { id: originalSpotifyId } : undefined,
     isPlaying,
     onRefetch,
   });
@@ -234,7 +238,7 @@ export function TracksTable({
         </Table.Thead>
         <Table.Tbody>
           {table.getRowModel().rows.map((row) => {
-            const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
+            const isCurrentTrack = originalSpotifyId === row.original.spotifyId;
             return (
               <Table.Tr
                 className={`cursor-pointer hover:bg-gray-50 ${isCurrentTrack && isPlaying ? "bg-blue-50/50" : ""}`}
