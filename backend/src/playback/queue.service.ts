@@ -7,11 +7,11 @@ import { ContextType } from './types/context-type.enum';
 export interface PlayContext {
   clickedIndex?: number;
   contextId?: string;
-  contextName?: string;
   contextType: ContextType;
   deviceId?: string;
   pageNumber?: number;
   pageSize?: number;
+  search?: string;
   shuffle?: boolean;
   sortBy?: string;
   sortOrder?: string;
@@ -86,7 +86,7 @@ export class QueueService {
         // Get user tracks with skip and limit
         trackUris = await this.trackService.getTracksForPlay(userId, {
           pageSize: limit,
-          search: context.contextName, // contextName contains the search string
+          search: context.search,
           shouldShuffle: context.shuffle,
           skip,
           sortBy: context.sortBy as

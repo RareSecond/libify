@@ -1,0 +1,11 @@
+export interface PlayContext {
+  clickedIndex?: number;
+  contextId?: string;
+  contextType?: "album" | "artist" | "library" | "playlist";
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+  shuffle?: boolean;
+  sortBy?: string;
+  sortOrder?: string;
+}

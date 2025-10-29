@@ -7,18 +7,7 @@ import {
   getLibraryControllerGetTracksQueryOptions,
   getPlaylistsControllerGetTracksQueryOptions,
 } from "@/data/api";
-
-interface PlayContext {
-  clickedIndex?: number;
-  contextId?: string;
-  contextType?: "album" | "artist" | "library" | "playlist";
-  pageNumber?: number;
-  pageSize?: number;
-  search?: string;
-  shuffle?: boolean;
-  sortBy?: string;
-  sortOrder?: string;
-}
+import { PlayContext } from "@/types/playback.types";
 
 export function useSpotifyAPI() {
   const queryClient = useQueryClient();

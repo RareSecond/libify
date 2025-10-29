@@ -15,23 +15,13 @@ import {
 } from "@/data/api";
 import { useShuffleManager } from "@/hooks/useShuffleManager";
 import { useSpotifyAPI } from "@/hooks/useSpotifyAPI";
+import { PlayContext } from "@/types/playback.types";
 import {
   SpotifyPlayer,
   SpotifyPlayerState,
   SpotifyTrack,
 } from "@/types/spotify";
 
-interface PlayContext {
-  clickedIndex?: number;
-  contextId?: string;
-  contextType?: "album" | "artist" | "library" | "playlist";
-  pageNumber?: number;
-  pageSize?: number;
-  search?: string;
-  shuffle?: boolean;
-  sortBy?: string;
-  sortOrder?: string;
-}
 interface SpotifyPlayerContextType {
   currentContext: null | PlayContext;
   currentTrack: null | SpotifyTrack;
@@ -387,7 +377,6 @@ export function SpotifyPlayerProvider({
       data: {
         clickedIndex: context?.clickedIndex,
         contextId: context?.contextId,
-        contextName: context?.search,
         contextType: (context?.contextType?.toUpperCase() || "LIBRARY") as
           | "ALBUM"
           | "ARTIST"
@@ -398,6 +387,7 @@ export function SpotifyPlayerProvider({
         deviceId: deviceId || undefined,
         pageNumber: context?.pageNumber,
         pageSize: context?.pageSize,
+        search: context?.search,
         shuffle: context?.shuffle || false,
         sortBy: context?.sortBy,
         sortOrder: context?.sortOrder as "asc" | "desc" | undefined,

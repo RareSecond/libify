@@ -31,15 +31,6 @@ export class PlayContextDto {
   @IsString()
   contextId?: string;
 
-  @ApiPropertyOptional({
-    description: 'Name of the context for display',
-    example: 'My Favorite Songs',
-  })
-  @Expose()
-  @IsOptional()
-  @IsString()
-  contextName?: string;
-
   @ApiProperty({
     description: 'Type of context to play',
     enum: ContextType,
@@ -77,6 +68,15 @@ export class PlayContextDto {
   @IsOptional()
   @Min(1)
   pageSize?: number;
+
+  @ApiPropertyOptional({
+    description: 'Search query string to filter tracks',
+    example: 'Beatles',
+  })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({
     description: 'Whether to shuffle the queue',

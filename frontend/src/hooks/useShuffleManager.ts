@@ -1,16 +1,6 @@
 import { useState } from "react";
 
-interface PlayContext {
-  clickedIndex?: number;
-  contextId?: string;
-  contextType?: "album" | "artist" | "library" | "playlist";
-  pageNumber?: number;
-  pageSize?: number;
-  search?: string;
-  shuffle?: boolean;
-  sortBy?: string;
-  sortOrder?: string;
-}
+import { PlayContext } from "@/types/playback.types";
 
 export function useShuffleManager() {
   const [isShuffled, setIsShuffled] = useState(false);

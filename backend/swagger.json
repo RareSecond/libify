@@ -2836,11 +2836,6 @@
             "description": "ID of the context (playlist, album, artist, etc.)",
             "example": "abc123"
           },
-          "contextName": {
-            "type": "string",
-            "description": "Name of the context for display",
-            "example": "My Favorite Songs"
-          },
           "contextType": {
             "enum": [
               "ALBUM",
@@ -2870,6 +2865,11 @@
             "minimum": 1,
             "description": "Number of items per page",
             "example": 20
+          },
+          "search": {
+            "type": "string",
+            "description": "Search query string to filter tracks",
+            "example": "Beatles"
           },
           "shuffle": {
             "type": "boolean",
