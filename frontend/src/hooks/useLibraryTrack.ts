@@ -16,6 +16,7 @@ export function useLibraryTrack({ spotifyId }: UseLibraryTrackOptions) {
   } = useLibraryControllerGetTrackBySpotifyId(spotifyId || "", {
     query: {
       enabled: !!spotifyId,
+      placeholderData: (previousData) => previousData,
       retry: (failureCount, error: unknown) => {
         // Don't retry on 404 - track not in library
         if (error && typeof error === "object" && "status" in error) {

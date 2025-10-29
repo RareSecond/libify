@@ -28,14 +28,17 @@ export function TrackList() {
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
 
-  const { debouncedSearch, setLocalSearch } = useDebouncedSearch(search, {
-    onDebouncedChange: (value) => {
-      navigate({
-        replace: value === "" && search !== "",
-        search: (prev) => ({ ...prev, page: 1, search: value }),
-      });
+  const { debouncedSearch, localSearch, setLocalSearch } = useDebouncedSearch(
+    search,
+    {
+      onDebouncedChange: (value) => {
+        navigate({
+          replace: value === "" && search !== "",
+          search: (prev) => ({ ...prev, page: 1, search: value }),
+        });
+      },
     },
-  });
+  );
 
   const { data, error, isLoading, refetch } = useLibraryControllerGetTracks({
     genres,
@@ -178,7 +181,7 @@ export function TrackList() {
         }}
         page={page}
         pageSize={pageSize}
-        search={search}
+        search={localSearch}
         sortBy={sortBy}
         sortOrder={sortOrder}
       />

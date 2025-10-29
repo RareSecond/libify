@@ -62,7 +62,7 @@ export function MediaPlayer() {
     spotifyId: originalSpotifyId,
   });
 
-  // Invalidate tracks query when library track is updated (ratings/tags changed)
+  // Invalidate tracks query when library track is updated (tags changed)
   const handleLibraryTrackUpdate = async () => {
     await refetchLibraryTrack();
     // Invalidate all tracks queries to refresh the table
@@ -235,7 +235,6 @@ export function MediaPlayer() {
                   Rating:
                 </Text>
                 <RatingSelector
-                  onRatingChange={handleLibraryTrackUpdate}
                   rating={libraryTrack.rating ?? null}
                   trackId={libraryTrack.id}
                 />
