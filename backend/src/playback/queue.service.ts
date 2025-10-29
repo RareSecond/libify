@@ -101,6 +101,10 @@ export class QueueService {
             | undefined,
           sortOrder: context.sortOrder as 'asc' | 'desc' | undefined,
         });
+        // Enforce the requested limit (getTracksForPlay may return up to 500 items)
+        if (trackUris.length > limit) {
+          trackUris = trackUris.slice(0, limit);
+        }
         break;
 
       case ContextType.PLAYLIST:

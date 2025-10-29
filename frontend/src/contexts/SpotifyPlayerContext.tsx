@@ -394,15 +394,21 @@ export function SpotifyPlayerProvider({
       },
     });
 
-    // Use the track URIs returned from backend
-    const backendTrackUris = data.trackUris || trackUris;
-    const backendNormalizedTracks = backendTrackUris.map((uri: string) => ({
+    // Require backend to return track URIs - fail fast if missing
+    if (!data.trackUris || data.trackUris.length === 0) {
+      throw new Error(
+        "Backend did not return track URIs. Cannot build playback queue.",
+      );
+    }
+
+    const backendNormalizedTracks = data.trackUris.map((uri: string) => ({
       spotifyUri: uri,
     }));
 
-    setCurrentTrackList(backendTrackUris);
-    setCurrentTrackIndex(startIndex);
-    shuffleManager.setOriginalTrackList(backendTrackUris);
+    setCurrentTrackList(data.trackUris);
+    // Use clickedIndex from context for proper next/prev navigation alignment
+    setCurrentTrackIndex(context?.clickedIndex ?? 0);
+    shuffleManager.setOriginalTrackList(data.trackUris);
     setCurrentTracksWithIds(backendNormalizedTracks);
     shuffleManager.setIsShuffled(context?.shuffle || false);
     setCurrentContext(context || null);
