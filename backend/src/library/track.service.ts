@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
+import { Prisma, SourceType } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { sql } from 'kysely';
 
@@ -24,6 +24,8 @@ import { SpotifyService } from './spotify.service';
 
 @Injectable()
 export class TrackService {
+  private readonly logger = new Logger(TrackService.name);
+
   constructor(
     private databaseService: DatabaseService,
     private kyselyService: KyselyService,
@@ -37,9 +39,12 @@ export class TrackService {
   async fetchTracksForPlay(
     userId: string,
     where: Prisma.UserTrackWhereInput,
-    orderBy: Prisma.UserTrackOrderByWithRelationInput,
+    orderBy:
+      | Prisma.UserTrackOrderByWithRelationInput
+      | Prisma.UserTrackOrderByWithRelationInput[],
     maxTracks: number,
     shuffle: boolean,
+    skip = 0,
   ): Promise<string[]> {
     const tracks = await this.databaseService.userTrack.findMany({
       include: {
@@ -48,6 +53,7 @@ export class TrackService {
         },
       },
       orderBy,
+      skip: shuffle ? 0 : skip,
       take: maxTracks,
       where: { ...where, userId },
     });
@@ -63,6 +69,164 @@ export class TrackService {
         [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
       }
     }
+
+    return spotifyUris;
+  }
+
+  /**
+   * Helper method to fetch tracks for playback using Kysely with NULLS LAST support
+   * Used for rating and lastPlayedAt sorts to ensure consistency with getUserTracksWithKysely
+   */
+  async fetchTracksForPlayWithKysely(
+    userId: string,
+    where: Prisma.UserTrackWhereInput,
+    sortBy: 'lastPlayedAt' | 'rating',
+    sortOrder: 'asc' | 'desc',
+    maxTracks: number,
+    shuffle: boolean,
+    skip = 0,
+  ): Promise<string[]> {
+    const db = this.kyselyService.database;
+
+    // Build base query
+    let query = db
+      .selectFrom('UserTrack as ut')
+      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
+      .select('st.spotifyId')
+      .where('ut.userId', '=', userId);
+
+    // Apply search filter from where clause
+    if (where.OR && Array.isArray(where.OR)) {
+      const searchConditions = where.OR as Array<Record<string, unknown>>;
+      // Extract search term from title condition
+      const titleCondition = searchConditions.find((cond) => {
+        const trackCond = cond as {
+          spotifyTrack?: { title?: { contains?: string } };
+        };
+        return trackCond.spotifyTrack?.title?.contains;
+      });
+      if (titleCondition) {
+        const trackCond = titleCondition as {
+          spotifyTrack: { title: { contains: string } };
+        };
+        const searchTerm = trackCond.spotifyTrack.title.contains;
+        query = query.where((eb) =>
+          eb.or([
+            eb('st.title', 'ilike', `%${searchTerm}%`),
+            eb(
+              sql`EXISTS (
+                SELECT 1 FROM "SpotifyArtist" sar
+                WHERE sar.id = st."artistId"
+                AND sar.name ILIKE ${`%${searchTerm}%`}
+              )`,
+              '=',
+              sql`true`,
+            ),
+            eb(
+              sql`EXISTS (
+                SELECT 1 FROM "SpotifyAlbum" sa
+                WHERE sa.id = st."albumId"
+                AND sa.name ILIKE ${`%${searchTerm}%`}
+              )`,
+              '=',
+              sql`true`,
+            ),
+          ]),
+        );
+      }
+    }
+
+    // Apply tag filter
+    if (where.tags?.some) {
+      const tagCondition = where.tags.some as { tagId?: { in?: string[] } };
+      if (tagCondition.tagId?.in) {
+        query = query
+          .innerJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
+          .where('tt.tagId', 'in', tagCondition.tagId.in);
+      }
+    }
+
+    // Apply rating filter
+    if (
+      where.rating &&
+      typeof where.rating === 'object' &&
+      'gte' in where.rating
+    ) {
+      const minRating = where.rating.gte as number;
+      query = query.where('ut.rating', '>=', minRating);
+    }
+
+    // Apply source type filter
+    if (where.sources?.some) {
+      const sourceCondition = where.sources.some as {
+        sourceType?: { in?: string[] };
+      };
+      if (
+        sourceCondition.sourceType?.in &&
+        sourceCondition.sourceType.in.length > 0
+      ) {
+        const sourceTypes = sourceCondition.sourceType.in as SourceType[];
+        query = query
+          .innerJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
+          .where('ts.sourceType', 'in', sourceTypes);
+      }
+    }
+
+    // Apply genre filter
+    if (where.spotifyTrack?.artist?.genres?.hasSome) {
+      const genres = where.spotifyTrack.artist.genres.hasSome as string[];
+      query = query.where(({ eb }) =>
+        eb(
+          sql`EXISTS (
+            SELECT 1 FROM "SpotifyArtist" sar
+            WHERE sar.id = st."artistId"
+            AND sar.genres && ARRAY[${sql.join(genres.map((g) => sql.lit(g)))}]::text[]
+          )`,
+          '=',
+          sql`true`,
+        ),
+      );
+    }
+
+    // Apply ordering with NULLS LAST
+    if (sortBy === 'rating') {
+      query = query
+        .orderBy(
+          sql`ut.rating ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+        )
+        .orderBy('ut.addedAt', 'desc')
+        .orderBy('ut.id', 'asc');
+    } else if (sortBy === 'lastPlayedAt') {
+      query = query
+        .orderBy(
+          sql`ut."lastPlayedAt" ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+        )
+        .orderBy('ut.id', 'asc');
+    }
+
+    // Apply pagination
+    if (!shuffle) {
+      query = query.offset(skip);
+    }
+    query = query.limit(maxTracks);
+
+    const tracks = await query.execute();
+
+    const spotifyUris = tracks
+      .filter((track) => track.spotifyId)
+      .map((track) => `spotify:track:${track.spotifyId}`);
+
+    // Shuffle if requested using Fisher-Yates algorithm
+    if (shuffle) {
+      for (let i = spotifyUris.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
+      }
+    }
+
+    this.logger.log(
+      `First 5 track URIs after skip=${skip} (Kysely, sortBy=${sortBy}): ${spotifyUris.slice(0, 5).join(', ')}`,
+    );
 
     return spotifyUris;
   }
@@ -510,9 +674,9 @@ export class TrackService {
 
   async getTracksForPlay(
     userId: string,
-    query: GetTracksQueryDto & { shouldShuffle?: boolean },
+    query: GetTracksQueryDto & { shouldShuffle?: boolean; skip?: number },
   ): Promise<string[]> {
-    const { shouldShuffle, ...trackQuery } = query;
+    const { shouldShuffle, skip = 0, ...trackQuery } = query;
 
     // Build where clause similar to getUserTracks
     const where: Prisma.UserTrackWhereInput = { userId };
@@ -568,45 +732,92 @@ export class TrackService {
       }
     }
 
-    // Build orderBy clause
-    let orderBy: Prisma.UserTrackOrderByWithRelationInput = {};
-    switch (trackQuery.sortBy || 'addedAt') {
+    // Build orderBy clause with secondary sort for deterministic ordering
+    let orderBy: Prisma.UserTrackOrderByWithRelationInput[] = [];
+    const sortOrder = trackQuery.sortOrder || 'desc';
+    const sortBy = trackQuery.sortBy || 'addedAt';
+
+    this.logger.log(
+      `Building orderBy for sortBy="${sortBy}", sortOrder="${sortOrder}", skip=${skip}`,
+    );
+
+    switch (sortBy) {
       case 'addedAt':
-        orderBy = { addedAt: trackQuery.sortOrder || 'desc' };
+        orderBy = [
+          { addedAt: sortOrder },
+          { spotifyTrack: { album: { name: 'asc' } } },
+          { spotifyTrack: { trackNumber: 'asc' } },
+          { id: 'asc' },
+        ];
         break;
       case 'album':
-        orderBy = {
-          spotifyTrack: { album: { name: trackQuery.sortOrder || 'desc' } },
-        };
+        orderBy = [
+          { spotifyTrack: { album: { name: sortOrder } } },
+          { spotifyTrack: { trackNumber: 'asc' } },
+          { id: 'asc' },
+        ];
         break;
       case 'artist':
-        orderBy = {
-          spotifyTrack: { artist: { name: trackQuery.sortOrder || 'desc' } },
-        };
+        orderBy = [
+          { spotifyTrack: { artist: { name: sortOrder } } },
+          { spotifyTrack: { album: { name: 'asc' } } },
+          { spotifyTrack: { trackNumber: 'asc' } },
+          { id: 'asc' },
+        ];
         break;
       case 'duration':
-        orderBy = {
-          spotifyTrack: { duration: trackQuery.sortOrder || 'desc' },
-        };
+        orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: 'asc' }];
         break;
       case 'lastPlayedAt':
-        orderBy = { lastPlayedAt: trackQuery.sortOrder || 'desc' };
+        orderBy = [{ lastPlayedAt: sortOrder }, { id: 'asc' }];
         break;
       case 'rating':
-        orderBy = { rating: trackQuery.sortOrder || 'desc' };
+        orderBy = [{ rating: sortOrder }, { addedAt: 'desc' }, { id: 'asc' }];
         break;
       case 'title':
-        orderBy = {
-          spotifyTrack: { title: trackQuery.sortOrder || 'desc' },
-        };
+        orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: 'asc' }];
         break;
       case 'totalPlayCount':
-        orderBy = { totalPlayCount: trackQuery.sortOrder || 'desc' };
+        orderBy = [
+          { totalPlayCount: sortOrder },
+          { lastPlayedAt: 'desc' },
+          { id: 'asc' },
+        ];
         break;
     }
 
+    this.logger.log(`Final orderBy:`, JSON.stringify(orderBy, null, 2));
+
+    // For rating and lastPlayedAt, use Kysely to ensure NULLS LAST behavior
+    // matches getUserTracksWithKysely (Prisma doesn't support NULLS LAST)
+    if (sortBy === 'rating' || sortBy === 'lastPlayedAt') {
+      return this.fetchTracksForPlayWithKysely(
+        userId,
+        where,
+        sortBy,
+        sortOrder,
+        500,
+        shouldShuffle,
+        skip,
+      );
+    }
+
     // Get tracks up to 500 max for Spotify API compatibility
-    return this.fetchTracksForPlay(userId, where, orderBy, 500, shouldShuffle);
+    const trackUris = await this.fetchTracksForPlay(
+      userId,
+      where,
+      orderBy,
+      500,
+      shouldShuffle,
+      skip,
+    );
+
+    // Log first few tracks for debugging
+    this.logger.log(
+      `First 5 track URIs after skip=${skip}: ${trackUris.slice(0, 5).join(', ')}`,
+    );
+
+    return trackUris;
   }
 
   /**
@@ -1068,33 +1279,52 @@ export class TrackService {
       }
     }
 
-    // Build orderBy clause
-    let orderBy: Prisma.UserTrackOrderByWithRelationInput = {};
+    // Build orderBy clause with multi-level sort for deterministic ordering
+    // MUST match the orderBy in getTracksForPlay() to ensure consistency
+    let orderBy: Prisma.UserTrackOrderByWithRelationInput[] = [];
     switch (sortBy) {
       case 'addedAt':
-        orderBy = { addedAt: sortOrder };
+        orderBy = [
+          { addedAt: sortOrder },
+          { spotifyTrack: { album: { name: 'asc' } } },
+          { spotifyTrack: { trackNumber: 'asc' } },
+          { id: 'asc' },
+        ];
         break;
       case 'album':
-        orderBy = { spotifyTrack: { album: { name: sortOrder } } };
+        orderBy = [
+          { spotifyTrack: { album: { name: sortOrder } } },
+          { spotifyTrack: { trackNumber: 'asc' } },
+          { id: 'asc' },
+        ];
         break;
       case 'artist':
-        orderBy = { spotifyTrack: { artist: { name: sortOrder } } };
+        orderBy = [
+          { spotifyTrack: { artist: { name: sortOrder } } },
+          { spotifyTrack: { album: { name: 'asc' } } },
+          { spotifyTrack: { trackNumber: 'asc' } },
+          { id: 'asc' },
+        ];
         break;
       case 'duration':
-        orderBy = { spotifyTrack: { duration: sortOrder } };
+        orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: 'asc' }];
         break;
       case 'lastPlayedAt':
-        orderBy = { lastPlayedAt: sortOrder };
+        orderBy = [{ lastPlayedAt: sortOrder }, { id: 'asc' }];
         break;
       case 'rating':
         // NULLS LAST behavior will be applied below
-        orderBy = { rating: sortOrder };
+        orderBy = [{ rating: sortOrder }, { addedAt: 'desc' }, { id: 'asc' }];
         break;
       case 'title':
-        orderBy = { spotifyTrack: { title: sortOrder } };
+        orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: 'asc' }];
         break;
       case 'totalPlayCount':
-        orderBy = { totalPlayCount: sortOrder };
+        orderBy = [
+          { totalPlayCount: sortOrder },
+          { lastPlayedAt: 'desc' },
+          { id: 'asc' },
+        ];
         break;
     }
 
@@ -1359,14 +1589,20 @@ export class TrackService {
       ]);
 
     // Apply ordering with NULLS LAST for nullable fields
+    // MUST match the orderBy in getTracksForPlay() to ensure consistency
     if (sortBy === 'rating') {
-      tracksQuery = tracksQuery.orderBy(
-        sql`ut.rating ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
-      );
+      tracksQuery = tracksQuery
+        .orderBy(
+          sql`ut.rating ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+        )
+        .orderBy('ut.addedAt', 'desc')
+        .orderBy('ut.id', 'asc');
     } else if (sortBy === 'lastPlayedAt') {
-      tracksQuery = tracksQuery.orderBy(
-        sql`ut."lastPlayedAt" ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
-      );
+      tracksQuery = tracksQuery
+        .orderBy(
+          sql`ut."lastPlayedAt" ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+        )
+        .orderBy('ut.id', 'asc');
     }
 
     // Apply pagination

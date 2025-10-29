@@ -11,6 +11,7 @@ import redisConfig, { redisValidationSchema } from './config/redis.config';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { LibraryModule } from './library/library.module';
+import { PlaybackModule } from './playback/playback.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { QueueModule } from './queue/queue.module';
 
@@ -29,6 +30,7 @@ import { QueueModule } from './queue/queue.module';
     AuthModule,
     HealthModule,
     LibraryModule,
+    PlaybackModule,
     PlaylistsModule,
     QueueModule, // Required for Redis configuration (HealthModule & LibraryModule need it)
   ],

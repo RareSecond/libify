@@ -55,6 +55,7 @@ export class SpotifyService {
   constructor() {
     this.spotifyApi = axios.create({
       baseURL: 'https://api.spotify.com/v1',
+      timeout: 10000, // 10 seconds
     });
   }
 
@@ -342,30 +343,68 @@ export class SpotifyService {
     }
   }
 
+  async nextTrack(accessToken: string): Promise<void> {
+    try {
+      await this.spotifyApi.post(
+        '/me/player/next',
+        {},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
+
+      this.logger.log('Skipped to next track');
+    } catch (error) {
+      const axiosError = error as {
+        message: string;
+        response?: { data?: unknown; status?: number };
+        stack?: string;
+      };
+      const errorDetails = {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        stack: axiosError.stack,
+        status: axiosError.response?.status,
+      };
+      this.logger.error(
+        'Failed to skip to next track',
+        JSON.stringify(errorDetails, null, 2),
+      );
+      throw error;
+    }
+  }
+
+  async pausePlayback(accessToken: string): Promise<void> {
+    try {
+      await this.spotifyApi.put(
+        '/me/player/pause',
+        {},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
+
+      this.logger.log('Paused playback');
+    } catch (error) {
+      this.logger.error('Failed to pause playback', error);
+      throw error;
+    }
+  }
+
   async playTrack(
     accessToken: string,
     trackUri: string,
     deviceId?: string,
   ): Promise<void> {
     try {
-      // If no device ID provided, get the first available device
-      let targetDeviceId = deviceId;
-      if (!targetDeviceId) {
-        const devices = await this.getAvailableDevices(accessToken);
-        if (devices.length === 0) {
-          throw new Error(
-            'No Spotify devices available. Please open Spotify on one of your devices.',
-          );
-        }
-        // Prefer active device, otherwise use the first available
-        const activeDevice = devices.find((d) => d.is_active);
-        targetDeviceId = activeDevice?.id || devices[0].id;
-      }
+      const targetDeviceId = await this.resolveTargetDeviceId(
+        accessToken,
+        deviceId,
+      );
 
       await this.spotifyApi.put(
         '/me/player/play',
         {
-          device_id: targetDeviceId,
           uris: [trackUri],
         },
         {
@@ -379,6 +418,76 @@ export class SpotifyService {
       );
     } catch (error) {
       this.logger.error('Failed to play track', error);
+      throw error;
+    }
+  }
+
+  async playTracks(
+    accessToken: string,
+    trackUris: string[],
+    deviceId?: string,
+  ): Promise<void> {
+    const startTime = Date.now();
+
+    // Validate input: early return if trackUris is empty
+    if (!trackUris || trackUris.length === 0) {
+      throw new Error('Cannot play tracks: trackUris array is empty');
+    }
+
+    try {
+      const targetDeviceId = await this.resolveTargetDeviceId(
+        accessToken,
+        deviceId,
+      );
+
+      await this.spotifyApi.put(
+        '/me/player/play',
+        {
+          uris: trackUris,
+        },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: { device_id: targetDeviceId },
+        },
+      );
+
+      const duration = Date.now() - startTime;
+      this.logger.log(
+        `Started playing ${trackUris.length} tracks on device ${targetDeviceId} (took ${duration}ms)`,
+      );
+    } catch (error) {
+      const axiosError = error as {
+        message: string;
+        response?: { data?: unknown; status?: number };
+        stack?: string;
+      };
+      const errorDetails = {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        stack: axiosError.stack,
+        status: axiosError.response?.status,
+      };
+      this.logger.error(
+        'Failed to play tracks',
+        JSON.stringify(errorDetails, null, 2),
+      );
+      throw error;
+    }
+  }
+
+  async resumePlayback(accessToken: string): Promise<void> {
+    try {
+      await this.spotifyApi.put(
+        '/me/player/play',
+        {},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
+
+      this.logger.log('Resumed playback');
+    } catch (error) {
+      this.logger.error('Failed to resume playback', error);
       throw error;
     }
   }
@@ -479,5 +588,30 @@ export class SpotifyService {
     }
 
     this.logger.log(`Streamed ${totalFetched} albums from Spotify library`);
+  }
+
+  /**
+   * Resolves the target device ID for playback.
+   * If deviceId is provided, returns it. Otherwise, fetches available devices
+   * and returns the active device or first available device.
+   */
+  private async resolveTargetDeviceId(
+    accessToken: string,
+    deviceId?: string,
+  ): Promise<string> {
+    if (deviceId) {
+      return deviceId;
+    }
+
+    const devices = await this.getAvailableDevices(accessToken);
+    if (devices.length === 0) {
+      throw new Error(
+        'No Spotify devices available. Please open Spotify on one of your devices.',
+      );
+    }
+
+    // Prefer active device, otherwise use the first available
+    const activeDevice = devices.find((d) => d.is_active);
+    return activeDevice?.id || devices[0].id;
   }
 }

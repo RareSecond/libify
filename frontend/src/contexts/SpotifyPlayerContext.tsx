@@ -9,20 +9,19 @@ import {
   useState,
 } from "react";
 
-import { useAuthControllerGetProfile } from "@/data/api";
+import {
+  useAuthControllerGetProfile,
+  usePlaybackControllerPlay,
+} from "@/data/api";
 import { useShuffleManager } from "@/hooks/useShuffleManager";
 import { useSpotifyAPI } from "@/hooks/useSpotifyAPI";
+import { PlayContext } from "@/types/playback.types";
 import {
   SpotifyPlayer,
   SpotifyPlayerState,
   SpotifyTrack,
 } from "@/types/spotify";
 
-interface PlayContext {
-  contextId?: string;
-  contextType?: "album" | "artist" | "library" | "playlist";
-  search?: string;
-}
 interface SpotifyPlayerContextType {
   currentContext: null | PlayContext;
   currentTrack: null | SpotifyTrack;
@@ -40,7 +39,6 @@ interface SpotifyPlayerContextType {
   player: null | SpotifyPlayer;
   playTrackList: (
     tracks: string[] | TrackWithId[],
-    startIndex?: number,
     context?: PlayContext,
   ) => Promise<void>;
   position: number;
@@ -96,6 +94,7 @@ export function SpotifyPlayerProvider({
   const { data: user } = useAuthControllerGetProfile();
   const { fetchAllTracksForContext, getAccessToken } = useSpotifyAPI();
   const shuffleManager = useShuffleManager();
+  const { mutateAsync: playbackPlay } = usePlaybackControllerPlay();
 
   // Helper to add listener and track it for cleanup
   const addTrackedListener = useCallback(
@@ -355,7 +354,6 @@ export function SpotifyPlayerProvider({
   };
   const playTrackList = async (
     tracks: string[] | TrackWithId[],
-    startIndex = 0,
     context?: PlayContext,
   ) => {
     if (!player || !deviceId) {
@@ -366,39 +364,47 @@ export function SpotifyPlayerProvider({
     if (tracks.length === 0) {
       throw new Error("No tracks to play");
     }
-    const normalizedTracks: TrackWithId[] = tracks.map((track) => {
-      if (typeof track === "string") return { spotifyUri: track };
-      return track;
-    });
-    const trackUris = normalizedTracks.map((track) => track.spotifyUri);
 
-    const token = await getAccessToken();
-    const response = await fetch(
-      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-      {
-        body: JSON.stringify({
-          offset: { position: startIndex },
-          uris: trackUris,
-        }),
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        method: "PUT",
+    // Use backend playback endpoint via generated hook
+    const data = await playbackPlay({
+      data: {
+        clickedIndex: context?.clickedIndex,
+        contextId: context?.contextId,
+        contextType: (context?.contextType?.toUpperCase() || "LIBRARY") as
+          | "ALBUM"
+          | "ARTIST"
+          | "LIBRARY"
+          | "PLAYLIST"
+          | "SMART_PLAYLIST"
+          | "TRACK",
+        deviceId: deviceId || undefined,
+        pageNumber: context?.pageNumber,
+        pageSize: context?.pageSize,
+        search: context?.search,
+        shuffle: context?.shuffle || false,
+        sortBy: context?.sortBy,
+        sortOrder: context?.sortOrder as "asc" | "desc" | undefined,
       },
-    );
+    });
 
-    if (response.ok || response.status === 204) {
-      setCurrentTrackList(trackUris);
-      setCurrentTrackIndex(startIndex);
-      shuffleManager.setOriginalTrackList(trackUris);
-      setCurrentTracksWithIds(normalizedTracks);
-      shuffleManager.setIsShuffled(false);
-      setCurrentContext(context || null);
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData?.error?.message || "Failed to play track");
+    // Require backend to return track URIs - fail fast if missing
+    if (!data.trackUris || data.trackUris.length === 0) {
+      throw new Error(
+        "Backend did not return track URIs. Cannot build playback queue.",
+      );
     }
+
+    const backendNormalizedTracks = data.trackUris.map((uri: string) => ({
+      spotifyUri: uri,
+    }));
+
+    setCurrentTrackList(data.trackUris);
+    // Use clickedIndex from context for proper next/prev navigation alignment
+    setCurrentTrackIndex(context?.clickedIndex ?? 0);
+    shuffleManager.setOriginalTrackList(data.trackUris);
+    setCurrentTracksWithIds(backendNormalizedTracks);
+    shuffleManager.setIsShuffled(context?.shuffle || false);
+    setCurrentContext(context || null);
   };
   const pause = async () => {
     if (player) await player.pause();
