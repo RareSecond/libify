@@ -88,7 +88,7 @@ export function TrackList() {
 
   const handlePlayFromBeginning = async () => {
     // Backend will build the queue based on context
-    await playTrackList(["placeholder"], 0, {
+    await playTrackList(["placeholder"], {
       contextType: "library",
       search: debouncedSearch || undefined,
       shuffle: false,
@@ -99,7 +99,7 @@ export function TrackList() {
 
   const handlePlayShuffled = async () => {
     // Backend will build the shuffled queue based on context
-    await playTrackList(["placeholder"], 0, {
+    await playTrackList(["placeholder"], {
       contextType: "library",
       search: debouncedSearch || undefined,
       shuffle: true,

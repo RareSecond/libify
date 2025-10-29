@@ -39,18 +39,18 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
 
   const handlePlayFromBeginning = async () => {
     // Backend will build the queue based on context
-    await playTrackList(["placeholder"], 0, {
+    await playTrackList(["placeholder"], {
       contextId: playlistId,
-      contextType: "playlist",
+      contextType: "smart_playlist",
       shuffle: false,
     });
   };
 
   const handlePlayShuffled = async () => {
     // Backend will build the shuffled queue based on context
-    await playTrackList(["placeholder"], 0, {
+    await playTrackList(["placeholder"], {
       contextId: playlistId,
-      contextType: "playlist",
+      contextType: "smart_playlist",
       shuffle: true,
     });
   };
@@ -107,7 +107,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
 
       <TracksTableWithControls
         contextId={playlistId}
-        contextType="playlist"
+        contextType="smart_playlist"
         data={data}
         error={error}
         hideSearch

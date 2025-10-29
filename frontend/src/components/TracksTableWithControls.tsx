@@ -23,7 +23,7 @@ export interface PaginatedTracksResponse {
 
 interface TracksTableWithControlsProps {
   contextId?: string;
-  contextType?: "album" | "artist" | "library" | "playlist";
+  contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   data?: PaginatedTracksResponse;
   error?: Error | null;
   extraControls?: ReactNode;

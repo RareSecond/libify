@@ -79,10 +79,6 @@ export class PlaybackService {
         throw new Error('No tracks found for the given context');
       }
 
-      this.logger.log(
-        `First track to play: ${trackUris[0]}, Expected: spotify:track:0G4vIThVoxutgk984KTkmm`,
-      );
-
       // Send all tracks to Spotify in one call
       const spotifyStart = Date.now();
       await this.spotifyService.playTracks(

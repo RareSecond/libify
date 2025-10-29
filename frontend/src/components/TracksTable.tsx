@@ -15,7 +15,7 @@ import { useTracksTableColumns } from "../hooks/useTracksTableColumns";
 
 interface TracksTableProps {
   contextId?: string;
-  contextType?: "album" | "artist" | "library" | "playlist";
+  contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   isLoading?: boolean;
   onRefetch?: () => void;
   onSortChange?: (columnId: string) => void;
@@ -68,7 +68,7 @@ export function TracksTable({
             : undefined;
 
           // Pass placeholder - backend ignores this and builds its own queue
-          await playTrackList(["placeholder"], 0, context);
+          await playTrackList(["placeholder"], context);
 
           notifications.show({
             color: "green",

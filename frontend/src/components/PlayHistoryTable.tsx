@@ -43,10 +43,9 @@ export function PlayHistoryTable() {
     trackId: string,
   ) => {
     try {
-      await playTrackList(
-        [{ spotifyUri: `spotify:track:${spotifyId}`, trackId }],
-        0,
-      );
+      await playTrackList([
+        { spotifyUri: `spotify:track:${spotifyId}`, trackId },
+      ]);
 
       notifications.show({
         color: "green",

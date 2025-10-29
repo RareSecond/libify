@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service';
 import { TrackService } from '../library/track.service';
+import { PlaylistsService } from '../playlists/playlists.service';
 import { ContextType } from './types/context-type.enum';
 
 export interface PlayContext {
@@ -25,6 +26,7 @@ export class QueueService {
   constructor(
     private readonly database: DatabaseService,
     private readonly trackService: TrackService,
+    private readonly playlistsService: PlaylistsService,
   ) {}
 
   async buildQueue(
@@ -125,6 +127,7 @@ export class QueueService {
           trackUris = await this.getSmartPlaylistTracks(
             userId,
             context.contextId,
+            context.shuffle,
             skip,
             limit,
           );
@@ -224,15 +227,27 @@ export class QueueService {
   private async getSmartPlaylistTracks(
     userId: string,
     smartPlaylistId: string,
-    _skip = 0,
-    _limit = 200,
+    shuffle?: boolean,
+    skip = 0,
+    limit = 200,
   ): Promise<string[]> {
-    // This would evaluate smart playlist criteria
-    // For now, return empty array
-    this.logger.warn(
-      `Smart playlist tracks not yet implemented for playlist ${smartPlaylistId}`,
-    );
-    return [];
+    try {
+      // Use PlaylistsService which has full criteria evaluation logic
+      const allTracks = await this.playlistsService.getTracksForPlay(
+        userId,
+        smartPlaylistId,
+        shuffle || false,
+      );
+
+      // Apply skip and limit to match pagination
+      return allTracks.slice(skip, skip + limit);
+    } catch (error) {
+      this.logger.error(
+        `Failed to get smart playlist tracks for ${smartPlaylistId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return [];
+    }
   }
 
   private shuffleArray<T>(array: T[]): T[] {

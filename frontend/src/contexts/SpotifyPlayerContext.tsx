@@ -39,7 +39,6 @@ interface SpotifyPlayerContextType {
   player: null | SpotifyPlayer;
   playTrackList: (
     tracks: string[] | TrackWithId[],
-    startIndex?: number,
     context?: PlayContext,
   ) => Promise<void>;
   position: number;
@@ -355,7 +354,6 @@ export function SpotifyPlayerProvider({
   };
   const playTrackList = async (
     tracks: string[] | TrackWithId[],
-    startIndex = 0,
     context?: PlayContext,
   ) => {
     if (!player || !deviceId) {
@@ -366,11 +364,6 @@ export function SpotifyPlayerProvider({
     if (tracks.length === 0) {
       throw new Error("No tracks to play");
     }
-    const normalizedTracks: TrackWithId[] = tracks.map((track) => {
-      if (typeof track === "string") return { spotifyUri: track };
-      return track;
-    });
-    const trackUris = normalizedTracks.map((track) => track.spotifyUri);
 
     // Use backend playback endpoint via generated hook
     const data = await playbackPlay({
