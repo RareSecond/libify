@@ -141,7 +141,6 @@ export function useTracksTableColumns({
         accessorKey: "rating",
         cell: ({ row }) => (
           <RatingSelector
-            onRatingChange={onRefetch}
             rating={row.original.rating ?? null}
             trackId={row.original.id}
           />
