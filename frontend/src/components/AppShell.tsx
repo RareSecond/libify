@@ -27,30 +27,40 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
       navbar={{ breakpoint: "sm", collapsed: { mobile: !opened }, width: 300 }}
       padding="md"
     >
-      <AppShell.Header>
+      <AppShell.Header className="border-b border-dark-5 bg-gradient-to-r from-dark-8 via-dark-7 to-dark-8">
         <Group className="h-full px-4">
-          <Burger hiddenFrom="sm" onClick={toggle} opened={opened} size="sm" />
-          <Text className="font-bold" size="xl">
+          <Burger
+            color="var(--color-orange-5)"
+            hiddenFrom="sm"
+            onClick={toggle}
+            opened={opened}
+            size="sm"
+          />
+          <Text className="font-bold bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent" size="xl">
             Spotlib
           </Text>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar className="p-4">
+      <AppShell.Navbar className="p-4 border-r border-dark-5 bg-dark-8">
         {navItems.map((item) => (
           <NavLink
             active={location.pathname === item.to}
-            className="mb-2"
+            className="mb-2 rounded-md hover:bg-dark-6 transition-colors"
+            color="orange"
             component={Link}
             key={item.to}
             label={item.label}
             leftSection={<item.icon size={20} />}
             to={item.to}
+            variant="subtle"
           />
         ))}
       </AppShell.Navbar>
 
-      <AppShell.Main className="pb-[200px]">{children}</AppShell.Main>
+      <AppShell.Main className="pb-[200px] bg-gradient-to-br from-dark-9 via-dark-8 to-dark-9">
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 }

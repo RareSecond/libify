@@ -163,7 +163,7 @@ export function RatingSelector({ rating, trackId }: RatingSelectorProps) {
               {/* Background star (empty) */}
               <Star
                 className="absolute left-0.5 top-0.5"
-                color="gray"
+                color="var(--color-dark-3)"
                 fill="transparent"
                 size={12}
               />
@@ -174,8 +174,8 @@ export function RatingSelector({ rating, trackId }: RatingSelectorProps) {
                 >
                   <Star
                     className="absolute left-0.5 top-0.5"
-                    color="gold"
-                    fill="gold"
+                    color="var(--color-orange-5)"
+                    fill="var(--color-orange-5)"
                     size={12}
                   />
                 </div>

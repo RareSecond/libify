@@ -11,9 +11,9 @@ interface AlbumCardProps {
 export function AlbumCard({ album }: AlbumCardProps) {
   return (
     <Card
-      className="h-full cursor-pointer p-4 hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+      className="h-full cursor-pointer p-4 hover:-translate-y-1 transition-all duration-200 bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
       radius="md"
-      shadow="sm"
+      shadow="md"
       withBorder
     >
       <Card.Section className="mb-4">
@@ -26,11 +26,11 @@ export function AlbumCard({ album }: AlbumCardProps) {
               src={album.albumArt}
             />
           ) : (
-            <Center className="h-[200px] bg-gray-200">
-              <Music color="gray" size={48} />
+            <Center className="h-[200px] bg-dark-6">
+              <Music color="var(--color-dark-3)" size={48} />
             </Center>
           )}
-          <Box className="absolute right-2 top-2 rounded bg-gray-900 px-2 py-1 opacity-90">
+          <Box className="absolute right-2 top-2 rounded bg-gradient-to-br from-orange-7 to-orange-8 px-2 py-1 opacity-95">
             <Text className="text-xs font-semibold text-white">
               {album.trackCount} tracks
             </Text>
@@ -40,33 +40,37 @@ export function AlbumCard({ album }: AlbumCardProps) {
 
       <Stack gap="xs">
         <div>
-          <Text className="font-semibold" lineClamp={1} size="md">
+          <Text className="font-semibold text-dark-0" lineClamp={1} size="md">
             {album.name}
           </Text>
-          <Text className="text-gray-600" lineClamp={1} size="sm">
+          <Text c="dimmed" lineClamp={1} size="sm">
             {album.artist}
           </Text>
         </div>
 
         <Group gap="xs" wrap="nowrap">
           <Group gap={4}>
-            <Play size={14} />
-            <Text size="xs">{album.totalPlayCount}</Text>
+            <Play color="var(--color-orange-5)" size={14} />
+            <Text c="dimmed" size="xs">
+              {album.totalPlayCount}
+            </Text>
           </Group>
 
           {album.avgRating && (
             <Group gap={4}>
-              <Star size={14} />
-              <Text size="xs">{album.avgRating}</Text>
+              <Star color="var(--color-orange-5)" fill="var(--color-orange-5)" size={14} />
+              <Text c="dimmed" size="xs">
+                {album.avgRating}
+              </Text>
             </Group>
           )}
 
-          <Text className="ml-auto text-xs text-gray-600">
+          <Text c="dimmed" className="ml-auto" size="xs">
             {formatDuration(album.totalDuration)}
           </Text>
         </Group>
 
-        <Text className="text-xs text-gray-600">
+        <Text c="dimmed" size="xs">
           Last played: {formatDate(album.lastPlayed)}
         </Text>
       </Stack>

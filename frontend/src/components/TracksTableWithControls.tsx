@@ -65,15 +65,18 @@ export function TracksTableWithControls({
   if (error) {
     return (
       <Center className="h-[400px]">
-        <Text className="text-red-600">
-          Error loading tracks: {error.message}
-        </Text>
+        <Text c="red">Error loading tracks: {error.message}</Text>
       </Center>
     );
   }
 
   return (
-    <Paper className="p-4" radius="md" shadow="xs">
+    <Paper
+      className="p-4 bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      radius="md"
+      shadow="md"
+      withBorder
+    >
       {(!hideSearch || !hidePageSize || extraControls) && (
         <Group className="mb-2" justify="space-between">
           <Group>

@@ -71,7 +71,7 @@ export function TracksTable({
           await playTrackList(["placeholder"], context);
 
           notifications.show({
-            color: "green",
+            color: "orange",
             message: trackTitle,
             title: "Now playing",
           });
@@ -220,7 +220,7 @@ export function TracksTable({
                       header.getContext(),
                     )}
                     {canSort && (
-                      <span className="text-gray-400">
+                      <span className="text-dark-2">
                         {isSorted === "desc" ? (
                           <ArrowDown size={14} />
                         ) : isSorted === "asc" ? (
@@ -241,7 +241,7 @@ export function TracksTable({
             const isCurrentTrack = originalSpotifyId === row.original.spotifyId;
             return (
               <Table.Tr
-                className={`cursor-pointer hover:bg-gray-50 ${isCurrentTrack && isPlaying ? "bg-blue-50/50" : ""}`}
+                className={`cursor-pointer hover:bg-dark-6 transition-colors ${isCurrentTrack && isPlaying ? "bg-orange-9/20 border-l-2 border-l-orange-5" : ""}`}
                 key={row.id}
                 onClick={() =>
                   handlePlayTrack(row.original.title, row.original.spotifyId)

@@ -83,20 +83,26 @@ export function LibrarySync() {
   }, [syncProgress?.state, refetchStatus, resetProgress]);
 
   return (
-    <Card padding="lg" radius="md" shadow="sm" withBorder>
+    <Card
+      className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      padding="lg"
+      radius="md"
+      shadow="md"
+      withBorder
+    >
       <Stack gap="md">
         <Group align="center" justify="space-between">
           <div>
-            <Text className="font-medium" size="lg">
+            <Text className="font-medium text-dark-0" size="lg">
               Library Sync
             </Text>
-            <Text color="dimmed" size="sm">
+            <Text c="dimmed" size="sm">
               Keep your Spotify library in sync
             </Text>
           </div>
           <div className="flex gap-2">
             <Badge
-              color="blue"
+              color="orange"
               leftSection={<Music size={14} />}
               size="lg"
               variant="light"
@@ -104,10 +110,10 @@ export function LibrarySync() {
               {syncStatus?.totalTracks || 0} tracks
             </Badge>
             <Badge
-              color="teal"
+              color="orange"
               leftSection={<Music size={14} />}
               size="lg"
-              variant="light"
+              variant="dot"
             >
               {syncStatus?.totalAlbums || 0} albums
             </Badge>
@@ -214,6 +220,7 @@ export function LibrarySync() {
 
         <Group grow>
           <Button
+            color="orange"
             disabled={
               syncProgress?.state === "active" ||
               syncProgress?.state === "waiting" ||
@@ -223,12 +230,14 @@ export function LibrarySync() {
             leftSection={<RefreshCw size={16} />}
             loading={syncLibraryMutation.isPending}
             onClick={() => syncLibraryMutation.mutate({ data: syncOptions })}
+            variant="gradient"
+            gradient={{ from: "orange.6", to: "orange.8", deg: 135 }}
           >
             {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
           </Button>
           {import.meta.env.DEV && (
             <Button
-              color="cyan"
+              color="orange"
               disabled={
                 syncProgress?.state === "active" ||
                 syncProgress?.state === "waiting" ||

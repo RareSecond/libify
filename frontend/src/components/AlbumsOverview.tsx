@@ -81,9 +81,7 @@ export function AlbumsOverview() {
   if (error) {
     return (
       <Center className="h-[400px]">
-        <Text className="text-red-600">
-          Error loading albums: {error.message}
-        </Text>
+        <Text c="red">Error loading albums: {error.message}</Text>
       </Center>
     );
   }
@@ -91,7 +89,7 @@ export function AlbumsOverview() {
   if (isLoading) {
     return (
       <Center className="h-[400px]">
-        <Loader size="lg" />
+        <Loader color="orange" size="lg" />
       </Center>
     );
   }
@@ -99,8 +97,10 @@ export function AlbumsOverview() {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Title order={2}>My Albums</Title>
-        <Text className="text-gray-600">{data?.total || 0} albums</Text>
+        <Title className="text-dark-0" order={2}>
+          My Albums
+        </Title>
+        <Text c="dimmed">{data?.total || 0} albums</Text>
       </Group>
 
       <Group>
@@ -189,8 +189,8 @@ export function AlbumsOverview() {
       {(!data?.albums || data.albums.length === 0) && (
         <Center className="h-[200px]">
           <Stack align="center" gap="md">
-            <Music className="opacity-50" size={48} />
-            <Text className="text-lg text-gray-600">
+            <Music color="var(--color-dark-3)" size={48} />
+            <Text c="dimmed" className="text-lg">
               {debouncedSearch
                 ? "No albums found matching your search"
                 : "No albums in your library yet"}
@@ -203,6 +203,7 @@ export function AlbumsOverview() {
         <Center className="mt-6">
           <Pagination
             boundaries={1}
+            color="orange"
             onChange={(newPage) => updateSearch({ page: newPage })}
             siblings={1}
             total={data.totalPages}

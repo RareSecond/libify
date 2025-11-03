@@ -178,7 +178,7 @@ export function MediaPlayer() {
 
   return (
     <Card
-      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-gray-200 p-4 z-[250]"
+      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-dark-5 p-4 z-[250] bg-gradient-to-t from-dark-8 via-dark-7 to-dark-8"
       shadow="lg"
     >
       <Stack gap="sm">
@@ -187,15 +187,15 @@ export function MediaPlayer() {
           <Group className="flex-1 min-w-0" gap="md">
             <Image
               alt={trackToDisplay.album.name}
-              className="h-[60px] w-[60px]"
+              className="h-[60px] w-[60px] border border-dark-5"
               radius="sm"
               src={trackToDisplay.album.images[0]?.url}
             />
             <Box className="flex-1 min-w-0">
-              <Text className="font-semibold" lineClamp={1}>
+              <Text className="font-semibold text-dark-0" lineClamp={1}>
                 {trackToDisplay.name}
               </Text>
-              <Text className="text-gray-600" lineClamp={1} size="sm">
+              <Text c="dimmed" lineClamp={1} size="sm">
                 {trackToDisplay.artists.map((artist) => artist.name).join(", ")}
               </Text>
             </Box>
@@ -205,7 +205,9 @@ export function MediaPlayer() {
           <Stack align="center" className="flex-1 max-w-[500px]" gap="sm">
             {!hasWebPlayerTrack && hasCrossDevicePlayback && deviceId ? (
               <Button
+                color="orange"
                 disabled={!deviceId || transferPlaybackMutation.isPending}
+                leftSection={<Monitor size={16} />}
                 loading={transferPlaybackMutation.isPending}
                 onClick={handleTransferPlayback}
                 size="md"
@@ -216,7 +218,7 @@ export function MediaPlayer() {
             ) : (
               <Group gap="xs">
                 <ActionIcon
-                  color={isShuffled ? "blue" : undefined}
+                  color={isShuffled ? "orange" : undefined}
                   disabled={!hasWebPlayerTrack}
                   onClick={toggleShuffle}
                   size="lg"
@@ -226,6 +228,7 @@ export function MediaPlayer() {
                 </ActionIcon>
 
                 <ActionIcon
+                  color="orange"
                   disabled={!hasWebPlayerTrack}
                   onClick={previousTrack}
                   size="lg"
@@ -235,6 +238,7 @@ export function MediaPlayer() {
                 </ActionIcon>
 
                 <ActionIcon
+                  className="bg-gradient-to-br from-orange-6 to-orange-8"
                   disabled={!hasWebPlayerTrack}
                   onClick={handlePlayPause}
                   size="xl"
@@ -244,6 +248,7 @@ export function MediaPlayer() {
                 </ActionIcon>
 
                 <ActionIcon
+                  color="orange"
                   disabled={!hasWebPlayerTrack}
                   onClick={nextTrack}
                   size="lg"
@@ -256,11 +261,12 @@ export function MediaPlayer() {
 
             {/* Progress Bar */}
             <Group className="w-full" gap="sm">
-              <Text className="min-w-10 text-right text-gray-600" size="xs">
+              <Text c="dimmed" className="min-w-10 text-right" size="xs">
                 {formatTime(currentPosition)}
               </Text>
               <Slider
                 className="flex-1"
+                color="orange"
                 disabled={!hasWebPlayerTrack}
                 label={null}
                 max={100}
@@ -272,7 +278,7 @@ export function MediaPlayer() {
                 thumbSize={12}
                 value={progressPercent}
               />
-              <Text className="min-w-10 text-gray-600" size="xs">
+              <Text c="dimmed" className="min-w-10" size="xs">
                 {formatTime(displayDuration)}
               </Text>
             </Group>
@@ -284,8 +290,8 @@ export function MediaPlayer() {
               {/* Device indicator */}
               <Tooltip label={displayDeviceName}>
                 <Group align="center" gap={4}>
-                  <Monitor className="text-gray-500" size={16} />
-                  <Text className="text-gray-600" size="xs">
+                  <Monitor color="var(--color-orange-5)" size={16} />
+                  <Text c="dimmed" size="xs">
                     {displayDeviceName}
                   </Text>
                 </Group>
@@ -294,6 +300,7 @@ export function MediaPlayer() {
               {hasWebPlayerTrack && (
                 <>
                   <ActionIcon
+                    color="orange"
                     onClick={() => setIsVolumeSliderVisible(!isVolumeSliderVisible)}
                     size="md"
                     variant="subtle"
@@ -304,6 +311,7 @@ export function MediaPlayer() {
                   {isVolumeSliderVisible && (
                     <Box className="w-[100px]">
                       <Slider
+                        color="orange"
                         label={null}
                         max={100}
                         min={0}
@@ -324,11 +332,11 @@ export function MediaPlayer() {
         {/* Track Metadata Section (Sources, Rating, Tags) - Only show for web player */}
         {hasWebPlayerTrack && libraryTrack && (
           <>
-            <Divider />
+            <Divider color="var(--color-dark-5)" />
             <Group align="center" gap="xl" justify="space-between">
               {/* Sources */}
               <Group gap="xs">
-                <Text className="text-gray-600 font-medium" size="xs">
+                <Text c="dimmed" className="font-medium" size="xs">
                   From:
                 </Text>
                 <TrackSources sources={libraryTrack.sources} />
@@ -336,7 +344,7 @@ export function MediaPlayer() {
 
               {/* Rating */}
               <Group gap="xs">
-                <Text className="text-gray-600 font-medium" size="xs">
+                <Text c="dimmed" className="font-medium" size="xs">
                   Rating:
                 </Text>
                 <RatingSelector
@@ -347,7 +355,7 @@ export function MediaPlayer() {
 
               {/* Tags */}
               <Group className="flex-1" gap="xs">
-                <Text className="text-gray-600 font-medium" size="xs">
+                <Text c="dimmed" className="font-medium" size="xs">
                   Tags:
                 </Text>
                 <InlineTagEditor
