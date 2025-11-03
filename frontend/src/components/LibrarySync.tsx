@@ -153,8 +153,9 @@ export function LibrarySync() {
 
         <Text color="dimmed" size="xs">
           <strong>Full Sync:</strong> Sync entire library (tracks, albums,
-          playlists) • <strong>Quick Sync:</strong> Sync recently played tracks
-          only (fast, shows progress)
+          playlists)
+          {import.meta.env.DEV &&
+            " • Quick Sync: Sync recently played tracks only (fast, shows progress)"}
         </Text>
 
         <SyncOptionsAccordion onChange={setSyncOptions} options={syncOptions} />
@@ -225,21 +226,23 @@ export function LibrarySync() {
           >
             {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
           </Button>
-          <Button
-            color="cyan"
-            disabled={
-              syncProgress?.state === "active" ||
-              syncProgress?.state === "waiting" ||
-              syncLibraryMutation.isPending ||
-              syncRecentMutation.isPending
-            }
-            leftSection={<RefreshCw size={16} />}
-            loading={syncRecentMutation.isPending}
-            onClick={() => syncRecentMutation.mutate()}
-            variant="light"
-          >
-            {syncRecentMutation.isPending ? "Starting..." : "Quick Sync"}
-          </Button>
+          {import.meta.env.DEV && (
+            <Button
+              color="cyan"
+              disabled={
+                syncProgress?.state === "active" ||
+                syncProgress?.state === "waiting" ||
+                syncLibraryMutation.isPending ||
+                syncRecentMutation.isPending
+              }
+              leftSection={<RefreshCw size={16} />}
+              loading={syncRecentMutation.isPending}
+              onClick={() => syncRecentMutation.mutate()}
+              variant="light"
+            >
+              {syncRecentMutation.isPending ? "Starting..." : "Quick Sync"}
+            </Button>
+          )}
         </Group>
 
         {(syncProgress?.state === "active" ||

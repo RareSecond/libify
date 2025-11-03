@@ -1428,6 +1428,36 @@
         ]
       }
     },
+    "/playback/current": {
+      "get": {
+        "operationId": "PlaybackController_getCurrentPlayback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current playback state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentPlaybackStateDto"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No active playback"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current playback state",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
     "/playback/next": {
       "post": {
         "operationId": "PlaybackController_next",
@@ -1596,6 +1626,56 @@
           }
         ],
         "summary": "Resume playback",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
+    "/playback/transfer": {
+      "post": {
+        "operationId": "PlaybackController_transferPlayback",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferPlaybackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Playback transferred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transfer playback to a device",
         "tags": [
           "playback"
         ]
@@ -2810,6 +2890,141 @@
           "rating"
         ]
       },
+      "CurrentPlaybackDeviceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "volumePercent": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "isActive",
+          "name",
+          "type",
+          "volumePercent"
+        ]
+      },
+      "CurrentPlaybackTrackAlbumDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "images"
+        ]
+      },
+      "CurrentPlaybackTrackArtistDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "CurrentPlaybackTrackDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "number"
+          },
+          "album": {
+            "$ref": "#/components/schemas/CurrentPlaybackTrackAlbumDto"
+          },
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrentPlaybackTrackArtistDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "durationMs",
+          "album",
+          "artists"
+        ]
+      },
+      "CurrentPlaybackStateDto": {
+        "type": "object",
+        "properties": {
+          "isPlaying": {
+            "type": "boolean"
+          },
+          "progressMs": {
+            "type": "number"
+          },
+          "device": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CurrentPlaybackDeviceDto"
+              }
+            ]
+          },
+          "track": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CurrentPlaybackTrackDto"
+              }
+            ]
+          },
+          "shuffleState": {
+            "type": "boolean"
+          },
+          "repeatState": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "isPlaying",
+          "progressMs",
+          "device",
+          "track",
+          "shuffleState",
+          "repeatState"
+        ]
+      },
       "PlaybackControlResponseDto": {
         "type": "object",
         "properties": {
@@ -2953,6 +3168,18 @@
           "queueLength",
           "timings",
           "trackUris"
+        ]
+      },
+      "TransferPlaybackDto": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Device ID to transfer playback to"
+          }
+        },
+        "required": [
+          "deviceId"
         ]
       },
       "PlaylistRuleDto": {

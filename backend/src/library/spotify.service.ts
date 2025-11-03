@@ -577,6 +577,68 @@ export class SpotifyService {
     this.logger.log(`Streamed ${totalFetched} albums from Spotify library`);
   }
 
+  async getCurrentPlaybackState(accessToken: string): Promise<null | {
+    device: {
+      id: string;
+      is_active: boolean;
+      name: string;
+      type: string;
+      volume_percent: number;
+    };
+    is_playing: boolean;
+    item: {
+      album: { id: string; images: Array<{ url: string }>; name: string };
+      artists: Array<{ id: string; name: string }>;
+      duration_ms: number;
+      id: string;
+      name: string;
+    };
+    progress_ms: number;
+    repeat_state: string;
+    shuffle_state: boolean;
+  }> {
+    try {
+      const response = await this.spotifyApi.get("/me/player", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      // Return null if no active playback (204 status)
+      if (response.status === 204 || !response.data) {
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      // If axios error with 204, return null
+      if (axios.isAxiosError(error) && error.response?.status === 204) {
+        return null;
+      }
+      this.logger.error("Failed to get current playback state", error);
+      throw error;
+    }
+  }
+
+  async transferPlayback(
+    accessToken: string,
+    deviceId: string,
+    play = true,
+  ): Promise<void> {
+    try {
+      await this.spotifyApi.put(
+        "/me/player",
+        { device_ids: [deviceId], play },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      this.logger.log(
+        `Transferred playback to device ${deviceId} (play: ${play})`,
+      );
+    } catch (error) {
+      this.logger.error("Failed to transfer playback", error);
+      throw error;
+    }
+  }
+
   /**
    * Resolves the target device ID for playback.
    * If deviceId is provided, returns it. Otherwise, fetches available devices

@@ -78,7 +78,7 @@ export class AuthController {
 
     res.cookie("jwt", loginResult.access_token, {
       ...this.cookieOptions,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     // Redirect to frontend
