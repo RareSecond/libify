@@ -9,24 +9,13 @@ export interface SpotifyAlbumData {
     uri: string;
   }>;
   available_markets: string[];
-  copyrights?: Array<{
-    text: string;
-    type: string;
-  }>;
-  external_ids?: {
-    ean?: string;
-    isrc?: string;
-    upc?: string;
-  };
+  copyrights?: Array<{ text: string; type: string }>;
+  external_ids?: { ean?: string; isrc?: string; upc?: string };
   external_urls: { spotify: string };
   genres?: string[];
   href: string;
   id: string;
-  images: Array<{
-    height: number;
-    url: string;
-    width: number;
-  }>;
+  images: Array<{ height: number; url: string; width: number }>;
   label?: string;
   name: string;
   popularity?: number;
@@ -73,10 +62,7 @@ export interface SpotifyAlbumTrack {
   href: string;
   id: string;
   is_local: boolean;
-  linked_from?: {
-    id: string;
-    uri: string;
-  };
+  linked_from?: { id: string; uri: string };
   name: string;
   preview_url: null | string;
   track_number: number;

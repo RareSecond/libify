@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SourceType } from '@prisma/client';
-import { Expose, Transform, Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { SourceType } from "@prisma/client";
+import { Expose, Transform, Type } from "class-transformer";
 import {
   IsArray,
   IsEnum,
@@ -10,14 +10,14 @@ import {
   IsUUID,
   Max,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
-import { TagDto } from './tag.dto';
-import { TrackSourceDto } from './track-source.dto';
+import { TagDto } from "./tag.dto";
+import { TrackSourceDto } from "./track-source.dto";
 
 export class GetTracksQueryDto {
   @ApiPropertyOptional({
-    description: 'Filter by artist genres (tracks matching any of the genres)',
+    description: "Filter by artist genres (tracks matching any of the genres)",
     type: [String],
   })
   @IsArray()
@@ -25,16 +25,16 @@ export class GetTracksQueryDto {
   @IsString({ each: true })
   @Transform(({ obj, value }) => {
     // Handle genres[] format from frontend
-    if (obj['genres[]']) {
-      const genresArray = obj['genres[]'];
-      if (typeof genresArray === 'string') {
+    if (obj["genres[]"]) {
+      const genresArray = obj["genres[]"];
+      if (typeof genresArray === "string") {
         return [genresArray];
       }
       return genresArray;
     }
     // Handle normal genres format
     if (!value) return [];
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return [value];
     }
     return value;
@@ -42,7 +42,7 @@ export class GetTracksQueryDto {
   genres?: string[];
 
   @ApiPropertyOptional({
-    description: 'Filter by minimum rating',
+    description: "Filter by minimum rating",
     maximum: 5,
     minimum: 1,
   })
@@ -53,7 +53,7 @@ export class GetTracksQueryDto {
   @Type(() => Number)
   minRating?: number;
 
-  @ApiPropertyOptional({ default: 1, description: 'Page number', minimum: 1 })
+  @ApiPropertyOptional({ default: 1, description: "Page number", minimum: 1 })
   @IsInt()
   @IsOptional()
   @Min(1)
@@ -62,7 +62,7 @@ export class GetTracksQueryDto {
 
   @ApiPropertyOptional({
     default: 20,
-    description: 'Page size',
+    description: "Page size",
     maximum: 1000,
     minimum: 1,
   })
@@ -74,48 +74,48 @@ export class GetTracksQueryDto {
   pageSize?: number = 20;
 
   @ApiPropertyOptional({
-    description: 'Search query for title, artist or album',
+    description: "Search query for title, artist or album",
   })
   @IsOptional()
   @IsString()
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Sort field',
+    description: "Sort field",
     enum: [
-      'title',
-      'artist',
-      'album',
-      'addedAt',
-      'lastPlayedAt',
-      'totalPlayCount',
-      'rating',
-      'duration',
+      "title",
+      "artist",
+      "album",
+      "addedAt",
+      "lastPlayedAt",
+      "totalPlayCount",
+      "rating",
+      "duration",
     ],
   })
   @IsOptional()
   @IsString()
   sortBy?:
-    | 'addedAt'
-    | 'album'
-    | 'artist'
-    | 'duration'
-    | 'lastPlayedAt'
-    | 'rating'
-    | 'title'
-    | 'totalPlayCount';
+    | "addedAt"
+    | "album"
+    | "artist"
+    | "duration"
+    | "lastPlayedAt"
+    | "rating"
+    | "title"
+    | "totalPlayCount";
 
   @ApiPropertyOptional({
-    default: 'desc',
-    description: 'Sort order',
-    enum: ['asc', 'desc'],
+    default: "desc",
+    description: "Sort order",
+    enum: ["asc", "desc"],
   })
   @IsOptional()
   @IsString()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: "asc" | "desc" = "desc";
 
   @ApiPropertyOptional({
-    description: 'Filter by source types',
+    description: "Filter by source types",
     enum: SourceType,
     isArray: true,
   })
@@ -124,38 +124,38 @@ export class GetTracksQueryDto {
   @IsOptional()
   @Transform(({ obj, value }) => {
     // Handle sourceTypes[] format from frontend
-    if (obj['sourceTypes[]']) {
-      const sourceTypesArray = obj['sourceTypes[]'];
-      if (typeof sourceTypesArray === 'string') {
+    if (obj["sourceTypes[]"]) {
+      const sourceTypesArray = obj["sourceTypes[]"];
+      if (typeof sourceTypesArray === "string") {
         return [sourceTypesArray];
       }
       return sourceTypesArray;
     }
     // Handle normal sourceTypes format
     if (!value) return [];
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return [value];
     }
     return value;
   })
   sourceTypes?: SourceType[];
 
-  @ApiPropertyOptional({ description: 'Filter by tag IDs', type: [String] })
+  @ApiPropertyOptional({ description: "Filter by tag IDs", type: [String] })
   @IsArray()
   @IsOptional()
-  @IsUUID('4', { each: true })
+  @IsUUID("4", { each: true })
   @Transform(({ obj, value }) => {
     // Handle tagIds[] format from frontend
-    if (obj['tagIds[]']) {
-      const tagIdsArray = obj['tagIds[]'];
-      if (typeof tagIdsArray === 'string') {
+    if (obj["tagIds[]"]) {
+      const tagIdsArray = obj["tagIds[]"];
+      if (typeof tagIdsArray === "string") {
         return [tagIdsArray];
       }
       return tagIdsArray;
     }
     // Handle normal tagIds format
     if (!value) return [];
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return [value];
     }
     return value;
@@ -204,14 +204,14 @@ export class TrackDto {
   artist: string;
 
   @ApiProperty({
-    description: 'Array of genre names from the track artist',
+    description: "Array of genre names from the track artist",
     nullable: true,
     type: [String],
   })
   @Expose()
   artistGenres: string[];
 
-  @ApiProperty({ description: 'Duration in milliseconds' })
+  @ApiProperty({ description: "Duration in milliseconds" })
   @Expose()
   duration: number;
 

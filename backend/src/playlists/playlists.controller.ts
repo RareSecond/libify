@@ -13,40 +13,40 @@ import {
   Query,
   Req,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
   ApiResponse,
   ApiTags,
-} from '@nestjs/swagger';
-import { User } from '@prisma/client';
-import { Request } from 'express';
+} from "@nestjs/swagger";
+import { User } from "@prisma/client";
+import { Request } from "express";
 
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PaginatedTracksDto } from '../library/dto/track.dto';
-import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { PaginatedTracksDto } from "../library/dto/track.dto";
+import { PlaylistCriteriaDto } from "./dto/playlist-criteria.dto";
 import {
   CreateSmartPlaylistDto,
   SmartPlaylistDto,
   SmartPlaylistWithTracksDto,
   UpdateSmartPlaylistDto,
-} from './dto/smart-playlist.dto';
-import { PlaylistsService } from './playlists.service';
+} from "./dto/smart-playlist.dto";
+import { PlaylistsService } from "./playlists.service";
 
 interface AuthenticatedRequest extends Request {
   user: User;
 }
 
 @ApiBearerAuth()
-@ApiTags('playlists')
-@Controller('playlists')
+@ApiTags("playlists")
+@Controller("playlists")
 @UseGuards(JwtAuthGuard)
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
-  @ApiOperation({ summary: 'Create a new smart playlist' })
+  @ApiOperation({ summary: "Create a new smart playlist" })
   @ApiResponse({ status: 201, type: SmartPlaylistDto })
   @Post()
   async create(
@@ -60,7 +60,7 @@ export class PlaylistsController {
     };
   }
 
-  @ApiOperation({ summary: 'Get all smart playlists' })
+  @ApiOperation({ summary: "Get all smart playlists" })
   @ApiResponse({ status: 200, type: [SmartPlaylistWithTracksDto] })
   @Get()
   async findAll(
@@ -69,78 +69,78 @@ export class PlaylistsController {
     return this.playlistsService.findAll(req.user.id);
   }
 
-  @ApiOperation({ summary: 'Get a smart playlist by ID' })
+  @ApiOperation({ summary: "Get a smart playlist by ID" })
   @ApiResponse({ status: 200, type: SmartPlaylistWithTracksDto })
-  @Get(':id')
+  @Get(":id")
   async findOne(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param("id") id: string,
   ): Promise<SmartPlaylistWithTracksDto> {
     return this.playlistsService.findOne(req.user.id, id);
   }
 
-  @ApiOperation({ summary: 'Get tracks for a smart playlist' })
+  @ApiOperation({ summary: "Get tracks for a smart playlist" })
   @ApiQuery({
-    description: 'Page number for pagination (minimum: 1)',
-    name: 'page',
+    description: "Page number for pagination (minimum: 1)",
+    name: "page",
     required: false,
     type: Number,
   })
   @ApiQuery({
-    description: 'Number of items per page (minimum: 1, maximum: 100)',
-    name: 'pageSize',
+    description: "Number of items per page (minimum: 1, maximum: 100)",
+    name: "pageSize",
     required: false,
     type: Number,
   })
   @ApiQuery({
     description:
-      'Field to sort tracks by. If not provided, uses the playlist default order.',
+      "Field to sort tracks by. If not provided, uses the playlist default order.",
     enum: [
-      'title',
-      'artist',
-      'album',
-      'duration',
-      'totalPlayCount',
-      'lastPlayedAt',
-      'rating',
-      'addedAt',
+      "title",
+      "artist",
+      "album",
+      "duration",
+      "totalPlayCount",
+      "lastPlayedAt",
+      "rating",
+      "addedAt",
     ],
-    name: 'sortBy',
+    name: "sortBy",
     required: false,
     type: String,
   })
   @ApiQuery({
-    description: 'Sort direction (ascending or descending)',
-    enum: ['asc', 'desc'],
-    name: 'sortOrder',
+    description: "Sort direction (ascending or descending)",
+    enum: ["asc", "desc"],
+    name: "sortOrder",
     required: false,
     type: String,
   })
   @ApiResponse({ status: 200, type: PaginatedTracksDto })
-  @Get(':id/tracks')
+  @Get(":id/tracks")
   async getTracks(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe)
+    @Param("id") id: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("pageSize", new DefaultValuePipe(20), ParseIntPipe)
     pageSize: number,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: string,
   ): Promise<PaginatedTracksDto> {
     // Validate pagination parameters
     if (page < 1) {
-      throw new BadRequestException('Page must be at least 1');
+      throw new BadRequestException("Page must be at least 1");
     }
     if (pageSize < 1 || pageSize > 100) {
-      throw new BadRequestException('Page size must be between 1 and 100');
+      throw new BadRequestException("Page size must be between 1 and 100");
     }
 
     // Validate sortOrder to prevent invalid values from being passed
-    let normalizedSortOrder: 'asc' | 'desc' | undefined;
-    if (sortOrder === 'asc') {
-      normalizedSortOrder = 'asc';
-    } else if (sortOrder === 'desc') {
-      normalizedSortOrder = 'desc';
+    let normalizedSortOrder: "asc" | "desc" | undefined;
+    if (sortOrder === "asc") {
+      normalizedSortOrder = "asc";
+    } else if (sortOrder === "desc") {
+      normalizedSortOrder = "desc";
     } else {
       normalizedSortOrder = undefined;
     }
@@ -155,40 +155,40 @@ export class PlaylistsController {
     );
   }
 
-  @ApiOperation({ summary: 'Get all track URIs for playing a playlist' })
+  @ApiOperation({ summary: "Get all track URIs for playing a playlist" })
   @ApiQuery({
-    description: 'Shuffle the tracks',
-    name: 'shuffle',
+    description: "Shuffle the tracks",
+    name: "shuffle",
     required: false,
     type: Boolean,
   })
   @ApiResponse({ status: 200, type: [String] })
-  @Get(':id/tracks/play')
+  @Get(":id/tracks/play")
   async getTracksForPlay(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
-    @Query('shuffle', new DefaultValuePipe(false), ParseBoolPipe)
+    @Param("id") id: string,
+    @Query("shuffle", new DefaultValuePipe(false), ParseBoolPipe)
     shuffle: boolean,
   ): Promise<string[]> {
     return this.playlistsService.getTracksForPlay(req.user.id, id, shuffle);
   }
 
-  @ApiOperation({ summary: 'Delete a smart playlist' })
+  @ApiOperation({ summary: "Delete a smart playlist" })
   @ApiResponse({ status: 204 })
-  @Delete(':id')
+  @Delete(":id")
   async remove(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param("id") id: string,
   ): Promise<void> {
     await this.playlistsService.remove(req.user.id, id);
   }
 
-  @ApiOperation({ summary: 'Update a smart playlist' })
+  @ApiOperation({ summary: "Update a smart playlist" })
   @ApiResponse({ status: 200, type: SmartPlaylistDto })
-  @Put(':id')
+  @Put(":id")
   async update(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() updateDto: UpdateSmartPlaylistDto,
   ): Promise<SmartPlaylistDto> {
     const playlist = await this.playlistsService.update(

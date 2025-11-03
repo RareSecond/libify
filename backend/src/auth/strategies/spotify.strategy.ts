@@ -1,25 +1,25 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-spotify';
+import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { Strategy } from "passport-spotify";
 
-import { AuthService } from '../auth.service';
+import { AuthService } from "../auth.service";
 
 @Injectable()
-export class SpotifyStrategy extends PassportStrategy(Strategy, 'spotify') {
+export class SpotifyStrategy extends PassportStrategy(Strategy, "spotify") {
   constructor(private authService: AuthService) {
     super({
       callbackURL: `${process.env.APP_URL}/auth/spotify/callback`,
       clientID: process.env.SPOTIFY_CLIENT_ID,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
       scope: [
-        'user-read-email',
-        'user-read-private',
-        'user-library-read',
-        'user-read-recently-played',
-        'user-read-currently-playing',
-        'user-read-playback-state',
-        'user-modify-playback-state',
-        'streaming',
+        "user-read-email",
+        "user-read-private",
+        "user-library-read",
+        "user-read-recently-played",
+        "user-read-currently-playing",
+        "user-read-playback-state",
+        "user-modify-playback-state",
+        "streaming",
       ],
     });
   }
@@ -37,7 +37,7 @@ export class SpotifyStrategy extends PassportStrategy(Strategy, 'spotify') {
     },
   ) {
     // Check if arguments are shifted (common passport issue)
-    if (typeof params === 'object' && 'provider' in params) {
+    if (typeof params === "object" && "provider" in params) {
       // Profile is in params position
       profile = params as typeof profile;
       params = {};
@@ -52,16 +52,16 @@ export class SpotifyStrategy extends PassportStrategy(Strategy, 'spotify') {
       profile._json?.email ||
       `${spotifyId}@spotify.local`;
     const name =
-      profile.displayName || profile._json?.display_name || 'Spotify User';
+      profile.displayName || profile._json?.display_name || "Spotify User";
 
     if (!spotifyId) {
-      throw new Error('Unable to extract Spotify ID from profile');
+      throw new Error("Unable to extract Spotify ID from profile");
     }
 
     const user = await this.authService.validateUser(
       email,
       name,
-      'spotify',
+      "spotify",
       spotifyId,
       accessToken,
       refreshToken,

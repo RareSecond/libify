@@ -1,26 +1,26 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import { IsHexColor, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Expose } from "class-transformer";
+import { IsHexColor, IsOptional, IsString, IsUUID } from "class-validator";
 
 export class AddTagToTrackDto {
-  @ApiProperty({ description: 'Tag ID to add to the track' })
+  @ApiProperty({ description: "Tag ID to add to the track" })
   @IsUUID()
   tagId: string;
 }
 
 export class CreateTagDto {
-  @ApiPropertyOptional({ description: 'Tag color in hex format' })
+  @ApiPropertyOptional({ description: "Tag color in hex format" })
   @IsHexColor()
   @IsOptional()
   color?: string;
 
-  @ApiProperty({ description: 'Tag name' })
+  @ApiProperty({ description: "Tag name" })
   @IsString()
   name: string;
 }
 
 export class RemoveTagFromTrackDto {
-  @ApiProperty({ description: 'Tag ID to remove from the track' })
+  @ApiProperty({ description: "Tag ID to remove from the track" })
   @IsUUID()
   tagId: string;
 }
@@ -58,12 +58,12 @@ export class TagResponseDto {
 }
 
 export class UpdateTagDto {
-  @ApiPropertyOptional({ description: 'Tag color in hex format' })
+  @ApiPropertyOptional({ description: "Tag color in hex format" })
   @IsHexColor()
   @IsOptional()
   color?: string;
 
-  @ApiPropertyOptional({ description: 'Tag name' })
+  @ApiPropertyOptional({ description: "Tag name" })
   @IsOptional()
   @IsString()
   name?: string;

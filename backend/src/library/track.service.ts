@@ -1,24 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Prisma, SourceType } from '@prisma/client';
-import { plainToInstance } from 'class-transformer';
-import { sql } from 'kysely';
+import { Injectable, Logger } from "@nestjs/common";
+import { Prisma, SourceType } from "@prisma/client";
+import { plainToInstance } from "class-transformer";
+import { sql } from "kysely";
 
-import { DatabaseService } from '../database/database.service';
-import { KyselyService } from '../database/kysely/kysely.service';
-import { AggregationService } from './aggregation.service';
-import { AlbumDto, PaginatedAlbumsDto } from './dto/album.dto';
-import { ArtistDto, PaginatedArtistsDto } from './dto/artist.dto';
+import { DatabaseService } from "../database/database.service";
+import { KyselyService } from "../database/kysely/kysely.service";
+import { AggregationService } from "./aggregation.service";
+import { AlbumDto, PaginatedAlbumsDto } from "./dto/album.dto";
+import { ArtistDto, PaginatedArtistsDto } from "./dto/artist.dto";
 import {
   GetPlayHistoryQueryDto,
   PaginatedPlayHistoryDto,
   PlayHistoryItemDto,
-} from './dto/play-history.dto';
+} from "./dto/play-history.dto";
 import {
   GetTracksQueryDto,
   PaginatedTracksDto,
   TrackDto,
-} from './dto/track.dto';
-import { SpotifyService } from './spotify.service';
+} from "./dto/track.dto";
+import { SpotifyService } from "./spotify.service";
 
 // Interfaces removed - using direct database queries with UserAlbum and UserArtist models
 
@@ -47,11 +47,7 @@ export class TrackService {
     skip = 0,
   ): Promise<string[]> {
     const tracks = await this.databaseService.userTrack.findMany({
-      include: {
-        spotifyTrack: {
-          select: { spotifyId: true },
-        },
-      },
+      include: { spotifyTrack: { select: { spotifyId: true } } },
       orderBy,
       skip: shuffle ? 0 : skip,
       take: maxTracks,
@@ -80,8 +76,8 @@ export class TrackService {
   async fetchTracksForPlayWithKysely(
     userId: string,
     where: Prisma.UserTrackWhereInput,
-    sortBy: 'lastPlayedAt' | 'rating',
-    sortOrder: 'asc' | 'desc',
+    sortBy: "lastPlayedAt" | "rating",
+    sortOrder: "asc" | "desc",
     maxTracks: number,
     shuffle: boolean,
     skip = 0,
@@ -90,10 +86,10 @@ export class TrackService {
 
     // Build base query
     let query = db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .select('st.spotifyId')
-      .where('ut.userId', '=', userId);
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .select("st.spotifyId")
+      .where("ut.userId", "=", userId);
 
     // Apply search filter from where clause
     if (where.OR && Array.isArray(where.OR)) {
@@ -112,14 +108,14 @@ export class TrackService {
         const searchTerm = trackCond.spotifyTrack.title.contains;
         query = query.where((eb) =>
           eb.or([
-            eb('st.title', 'ilike', `%${searchTerm}%`),
+            eb("st.title", "ilike", `%${searchTerm}%`),
             eb(
               sql`EXISTS (
                 SELECT 1 FROM "SpotifyArtist" sar
                 WHERE sar.id = st."artistId"
                 AND sar.name ILIKE ${`%${searchTerm}%`}
               )`,
-              '=',
+              "=",
               sql`true`,
             ),
             eb(
@@ -128,7 +124,7 @@ export class TrackService {
                 WHERE sa.id = st."albumId"
                 AND sa.name ILIKE ${`%${searchTerm}%`}
               )`,
-              '=',
+              "=",
               sql`true`,
             ),
           ]),
@@ -141,19 +137,19 @@ export class TrackService {
       const tagCondition = where.tags.some as { tagId?: { in?: string[] } };
       if (tagCondition.tagId?.in) {
         query = query
-          .innerJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
-          .where('tt.tagId', 'in', tagCondition.tagId.in);
+          .innerJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+          .where("tt.tagId", "in", tagCondition.tagId.in);
       }
     }
 
     // Apply rating filter
     if (
       where.rating &&
-      typeof where.rating === 'object' &&
-      'gte' in where.rating
+      typeof where.rating === "object" &&
+      "gte" in where.rating
     ) {
       const minRating = where.rating.gte as number;
-      query = query.where('ut.rating', '>=', minRating);
+      query = query.where("ut.rating", ">=", minRating);
     }
 
     // Apply source type filter
@@ -167,8 +163,8 @@ export class TrackService {
       ) {
         const sourceTypes = sourceCondition.sourceType.in as SourceType[];
         query = query
-          .innerJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
-          .where('ts.sourceType', 'in', sourceTypes);
+          .innerJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
+          .where("ts.sourceType", "in", sourceTypes);
       }
     }
 
@@ -182,26 +178,26 @@ export class TrackService {
             WHERE sar.id = st."artistId"
             AND sar.genres && ARRAY[${sql.join(genres.map((g) => sql.lit(g)))}]::text[]
           )`,
-          '=',
+          "=",
           sql`true`,
         ),
       );
     }
 
     // Apply ordering with NULLS LAST
-    if (sortBy === 'rating') {
+    if (sortBy === "rating") {
       query = query
         .orderBy(
-          sql`ut.rating ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+          sql`ut.rating ${sql.raw(sortOrder === "asc" ? "ASC" : "DESC")} NULLS LAST`,
         )
-        .orderBy('ut.addedAt', 'desc')
-        .orderBy('ut.id', 'asc');
-    } else if (sortBy === 'lastPlayedAt') {
+        .orderBy("ut.addedAt", "desc")
+        .orderBy("ut.id", "asc");
+    } else if (sortBy === "lastPlayedAt") {
       query = query
         .orderBy(
-          sql`ut."lastPlayedAt" ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+          sql`ut."lastPlayedAt" ${sql.raw(sortOrder === "asc" ? "ASC" : "DESC")} NULLS LAST`,
         )
-        .orderBy('ut.id', 'asc');
+        .orderBy("ut.id", "asc");
     }
 
     // Apply pagination
@@ -225,7 +221,7 @@ export class TrackService {
     }
 
     this.logger.log(
-      `First 5 track URIs after skip=${skip} (Kysely, sortBy=${sortBy}): ${spotifyUris.slice(0, 5).join(', ')}`,
+      `First 5 track URIs after skip=${skip} (Kysely, sortBy=${sortBy}): ${spotifyUris.slice(0, 5).join(", ")}`,
     );
 
     return spotifyUris;
@@ -240,27 +236,27 @@ export class TrackService {
 
     // Single optimized query with all joins
     const tracks = await db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
-      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
-      .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
-      .leftJoin('Tag as t', 'tt.tagId', 't.id')
-      .leftJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .leftJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+      .leftJoin("Tag as t", "tt.tagId", "t.id")
+      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .select([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name as albumName',
-        'sa.imageUrl as albumImageUrl',
-        'sar.name as artistName',
-        'sar.genres as artistGenres',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name as albumName",
+        "sa.imageUrl as albumImageUrl",
+        "sar.name as artistName",
+        "sar.genres as artistGenres",
         // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
@@ -272,7 +268,7 @@ export class TrackService {
               )
             ) FILTER (WHERE t.id IS NOT NULL),
             '[]'::json
-          )`.as('tags'),
+          )`.as("tags"),
         // Aggregate sources into array
         sql<
           Array<{
@@ -294,27 +290,27 @@ export class TrackService {
               )
             ) FILTER (WHERE ts.id IS NOT NULL),
             '[]'::json
-          )`.as('sources'),
+          )`.as("sources"),
       ])
-      .where('ut.userId', '=', userId)
-      .where('sar.name', '=', artist)
-      .where('sa.name', '=', album)
+      .where("ut.userId", "=", userId)
+      .where("sar.name", "=", artist)
+      .where("sa.name", "=", album)
       .groupBy([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name',
-        'sa.imageUrl',
-        'sar.name',
-        'sar.genres',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name",
+        "sa.imageUrl",
+        "sar.name",
+        "sar.genres",
       ])
-      .orderBy('st.title', 'asc')
+      .orderBy("st.title", "asc")
       .execute();
 
     // Transform to DTOs
@@ -349,27 +345,27 @@ export class TrackService {
     const db = this.kyselyService.database;
 
     const tracks = await db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
-      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
-      .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
-      .leftJoin('Tag as t', 'tt.tagId', 't.id')
-      .leftJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .leftJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+      .leftJoin("Tag as t", "tt.tagId", "t.id")
+      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .select([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name as albumName',
-        'sa.imageUrl as albumImageUrl',
-        'sar.name as artistName',
-        'sar.genres as artistGenres',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name as albumName",
+        "sa.imageUrl as albumImageUrl",
+        "sar.name as artistName",
+        "sar.genres as artistGenres",
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -380,7 +376,7 @@ export class TrackService {
               )
             ) FILTER (WHERE t.id IS NOT NULL),
             '[]'::json
-          )`.as('tags'),
+          )`.as("tags"),
         sql<
           Array<{
             createdAt: Date;
@@ -401,27 +397,27 @@ export class TrackService {
               )
             ) FILTER (WHERE ts.id IS NOT NULL),
             '[]'::json
-          )`.as('sources'),
+          )`.as("sources"),
       ])
-      .where('ut.userId', '=', userId)
-      .where('sar.name', '=', artist)
+      .where("ut.userId", "=", userId)
+      .where("sar.name", "=", artist)
       .groupBy([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name',
-        'sa.imageUrl',
-        'sar.name',
-        'sar.genres',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name",
+        "sa.imageUrl",
+        "sar.name",
+        "sar.genres",
       ])
-      .orderBy('sa.name', 'asc')
-      .orderBy('st.title', 'asc')
+      .orderBy("sa.name", "asc")
+      .orderBy("st.title", "asc")
       .execute();
 
     const trackDtos = tracks.map((track) => {
@@ -458,32 +454,32 @@ export class TrackService {
 
     // Build the base query
     let baseQuery = db
-      .selectFrom('PlayHistory as ph')
-      .innerJoin('UserTrack as ut', 'ph.userTrackId', 'ut.id')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
-      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
-      .where('ut.userId', '=', userId);
+      .selectFrom("PlayHistory as ph")
+      .innerJoin("UserTrack as ut", "ph.userTrackId", "ut.id")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .where("ut.userId", "=", userId);
 
     // Add search filter
     if (search) {
       baseQuery = baseQuery.where((eb) =>
         eb.or([
-          eb('st.title', 'ilike', `%${search}%`),
-          eb('sar.name', 'ilike', `%${search}%`),
-          eb('sa.name', 'ilike', `%${search}%`),
+          eb("st.title", "ilike", `%${search}%`),
+          eb("sar.name", "ilike", `%${search}%`),
+          eb("sa.name", "ilike", `%${search}%`),
         ]),
       );
     }
 
     // Add track filter
     if (trackId) {
-      baseQuery = baseQuery.where('ut.id', '=', trackId);
+      baseQuery = baseQuery.where("ut.id", "=", trackId);
     }
 
     // Get total count
     const countResult = await baseQuery
-      .select((eb) => eb.fn.countAll<number>().as('count'))
+      .select((eb) => eb.fn.countAll<number>().as("count"))
       .executeTakeFirst();
 
     const total = Number(countResult?.count || 0);
@@ -492,18 +488,18 @@ export class TrackService {
     const skip = (page - 1) * pageSize;
     const plays = await baseQuery
       .select([
-        'ph.id',
-        'ph.playedAt',
-        'ph.duration',
-        'ut.id as trackId',
-        'st.title as trackTitle',
-        'st.duration as trackDuration',
-        'st.spotifyId as trackSpotifyId',
-        'sar.name as trackArtist',
-        'sa.name as trackAlbum',
-        'sa.imageUrl as trackAlbumArt',
+        "ph.id",
+        "ph.playedAt",
+        "ph.duration",
+        "ut.id as trackId",
+        "st.title as trackTitle",
+        "st.duration as trackDuration",
+        "st.spotifyId as trackSpotifyId",
+        "sar.name as trackArtist",
+        "sa.name as trackAlbum",
+        "sa.imageUrl as trackAlbumArt",
       ])
-      .orderBy('ph.playedAt', 'desc')
+      .orderBy("ph.playedAt", "desc")
       .limit(pageSize)
       .offset(skip)
       .execute();
@@ -531,13 +527,7 @@ export class TrackService {
 
     return plainToInstance(
       PaginatedPlayHistoryDto,
-      {
-        items,
-        page,
-        pageSize,
-        total,
-        totalPages,
-      },
+      { items, page, pageSize, total, totalPages },
       { excludeExtraneousValues: true },
     );
   }
@@ -550,25 +540,11 @@ export class TrackService {
       include: {
         sources: true,
         spotifyTrack: {
-          include: {
-            album: {
-              include: {
-                artist: true,
-              },
-            },
-            artist: true,
-          },
+          include: { album: { include: { artist: true } }, artist: true },
         },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
+        tags: { include: { tag: true } },
       },
-      where: {
-        id: trackId,
-        userId,
-      },
+      where: { id: trackId, userId },
     });
 
     if (!track) {
@@ -614,27 +590,11 @@ export class TrackService {
       include: {
         sources: true,
         spotifyTrack: {
-          include: {
-            album: {
-              include: {
-                artist: true,
-              },
-            },
-            artist: true,
-          },
+          include: { album: { include: { artist: true } }, artist: true },
         },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
+        tags: { include: { tag: true } },
       },
-      where: {
-        spotifyTrack: {
-          spotifyId,
-        },
-        userId,
-      },
+      where: { spotifyTrack: { spotifyId }, userId },
     });
 
     if (!track) {
@@ -685,20 +645,20 @@ export class TrackService {
       where.OR = [
         {
           spotifyTrack: {
-            title: { contains: trackQuery.search, mode: 'insensitive' },
+            title: { contains: trackQuery.search, mode: "insensitive" },
           },
         },
         {
           spotifyTrack: {
             artist: {
-              name: { contains: trackQuery.search, mode: 'insensitive' },
+              name: { contains: trackQuery.search, mode: "insensitive" },
             },
           },
         },
         {
           spotifyTrack: {
             album: {
-              name: { contains: trackQuery.search, mode: 'insensitive' },
+              name: { contains: trackQuery.search, mode: "insensitive" },
             },
           },
         },
@@ -719,9 +679,7 @@ export class TrackService {
 
     if (trackQuery.genres && trackQuery.genres.length > 0) {
       const genreFilter: Prisma.UserTrackWhereInput = {
-        spotifyTrack: {
-          artist: { genres: { hasSome: trackQuery.genres } },
-        },
+        spotifyTrack: { artist: { genres: { hasSome: trackQuery.genres } } },
       };
 
       if (where.OR) {
@@ -734,54 +692,54 @@ export class TrackService {
 
     // Build orderBy clause with secondary sort for deterministic ordering
     let orderBy: Prisma.UserTrackOrderByWithRelationInput[] = [];
-    const sortOrder = trackQuery.sortOrder || 'desc';
-    const sortBy = trackQuery.sortBy || 'addedAt';
+    const sortOrder = trackQuery.sortOrder || "desc";
+    const sortBy = trackQuery.sortBy || "addedAt";
 
     this.logger.log(
       `Building orderBy for sortBy="${sortBy}", sortOrder="${sortOrder}", skip=${skip}`,
     );
 
     switch (sortBy) {
-      case 'addedAt':
+      case "addedAt":
         orderBy = [
           { addedAt: sortOrder },
-          { spotifyTrack: { album: { name: 'asc' } } },
-          { spotifyTrack: { trackNumber: 'asc' } },
-          { id: 'asc' },
+          { spotifyTrack: { album: { name: "asc" } } },
+          { spotifyTrack: { trackNumber: "asc" } },
+          { id: "asc" },
         ];
         break;
-      case 'album':
+      case "album":
         orderBy = [
           { spotifyTrack: { album: { name: sortOrder } } },
-          { spotifyTrack: { trackNumber: 'asc' } },
-          { id: 'asc' },
+          { spotifyTrack: { trackNumber: "asc" } },
+          { id: "asc" },
         ];
         break;
-      case 'artist':
+      case "artist":
         orderBy = [
           { spotifyTrack: { artist: { name: sortOrder } } },
-          { spotifyTrack: { album: { name: 'asc' } } },
-          { spotifyTrack: { trackNumber: 'asc' } },
-          { id: 'asc' },
+          { spotifyTrack: { album: { name: "asc" } } },
+          { spotifyTrack: { trackNumber: "asc" } },
+          { id: "asc" },
         ];
         break;
-      case 'duration':
-        orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: 'asc' }];
+      case "duration":
+        orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: "asc" }];
         break;
-      case 'lastPlayedAt':
-        orderBy = [{ lastPlayedAt: sortOrder }, { id: 'asc' }];
+      case "lastPlayedAt":
+        orderBy = [{ lastPlayedAt: sortOrder }, { id: "asc" }];
         break;
-      case 'rating':
-        orderBy = [{ rating: sortOrder }, { addedAt: 'desc' }, { id: 'asc' }];
+      case "rating":
+        orderBy = [{ rating: sortOrder }, { addedAt: "desc" }, { id: "asc" }];
         break;
-      case 'title':
-        orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: 'asc' }];
+      case "title":
+        orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: "asc" }];
         break;
-      case 'totalPlayCount':
+      case "totalPlayCount":
         orderBy = [
           { totalPlayCount: sortOrder },
-          { lastPlayedAt: 'desc' },
-          { id: 'asc' },
+          { lastPlayedAt: "desc" },
+          { id: "asc" },
         ];
         break;
     }
@@ -790,7 +748,7 @@ export class TrackService {
 
     // For rating and lastPlayedAt, use Kysely to ensure NULLS LAST behavior
     // matches getUserTracksWithKysely (Prisma doesn't support NULLS LAST)
-    if (sortBy === 'rating' || sortBy === 'lastPlayedAt') {
+    if (sortBy === "rating" || sortBy === "lastPlayedAt") {
       return this.fetchTracksForPlayWithKysely(
         userId,
         where,
@@ -814,7 +772,7 @@ export class TrackService {
 
     // Log first few tracks for debugging
     this.logger.log(
-      `First 5 track URIs after skip=${skip}: ${trackUris.slice(0, 5).join(', ')}`,
+      `First 5 track URIs after skip=${skip}: ${trackUris.slice(0, 5).join(", ")}`,
     );
 
     return trackUris;
@@ -832,37 +790,37 @@ export class TrackService {
     const db = this.kyselyService.database;
 
     let query = db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
-      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
       .select([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name as albumName',
-        'sa.imageUrl as albumImageUrl',
-        'sar.name as artistName',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name as albumName",
+        "sa.imageUrl as albumImageUrl",
+        "sar.name as artistName",
       ])
-      .where('ut.userId', '=', userId)
-      .orderBy('ut.addedAt', 'desc')
-      .orderBy('ut.id', 'asc') // Stable sort tiebreaker
+      .where("ut.userId", "=", userId)
+      .orderBy("ut.addedAt", "desc")
+      .orderBy("ut.id", "asc") // Stable sort tiebreaker
       .limit(limit + 1); // Fetch one extra to check if more exist
 
     // Apply cursor if provided
     if (cursor) {
       query = query.where((eb) =>
         eb.or([
-          eb('ut.addedAt', '<', cursor.addedAt),
+          eb("ut.addedAt", "<", cursor.addedAt),
           eb.and([
-            eb('ut.addedAt', '=', cursor.addedAt),
-            eb('ut.id', '>', cursor.id),
+            eb("ut.addedAt", "=", cursor.addedAt),
+            eb("ut.id", ">", cursor.id),
           ]),
         ]),
       );
@@ -914,33 +872,25 @@ export class TrackService {
       pageSize: number;
       search?: string;
       sortBy:
-        | 'artist'
-        | 'avgRating'
-        | 'lastPlayed'
-        | 'name'
-        | 'totalPlayCount'
-        | 'trackCount';
-      sortOrder: 'asc' | 'desc';
+        | "artist"
+        | "avgRating"
+        | "lastPlayed"
+        | "name"
+        | "totalPlayCount"
+        | "trackCount";
+      sortOrder: "asc" | "desc";
     },
   ): Promise<PaginatedAlbumsDto> {
     // Build where clause
-    const where: Prisma.UserAlbumWhereInput = {
-      userId,
-    };
+    const where: Prisma.UserAlbumWhereInput = { userId };
 
     // Add search filter
     if (options.search) {
       where.OR = [
+        { album: { name: { contains: options.search, mode: "insensitive" } } },
         {
           album: {
-            name: { contains: options.search, mode: 'insensitive' },
-          },
-        },
-        {
-          album: {
-            artist: {
-              name: { contains: options.search, mode: 'insensitive' },
-            },
+            artist: { name: { contains: options.search, mode: "insensitive" } },
           },
         },
       ];
@@ -949,13 +899,7 @@ export class TrackService {
     // Add genre filter
     if (options.genres && options.genres.length > 0) {
       const genreFilter: Prisma.UserAlbumWhereInput = {
-        album: {
-          artist: {
-            genres: {
-              hasSome: options.genres,
-            },
-          },
-        },
+        album: { artist: { genres: { hasSome: options.genres } } },
       };
 
       if (where.OR) {
@@ -971,22 +915,22 @@ export class TrackService {
     // Build orderBy clause
     let orderBy: Prisma.UserAlbumOrderByWithRelationInput = {};
     switch (options.sortBy) {
-      case 'artist':
+      case "artist":
         orderBy = { album: { artist: { name: options.sortOrder } } };
         break;
-      case 'avgRating':
+      case "avgRating":
         orderBy = { avgRating: options.sortOrder };
         break;
-      case 'lastPlayed':
+      case "lastPlayed":
         orderBy = { lastPlayedAt: options.sortOrder };
         break;
-      case 'name':
+      case "name":
         orderBy = { album: { name: options.sortOrder } };
         break;
-      case 'totalPlayCount':
+      case "totalPlayCount":
         orderBy = { totalPlayCount: options.sortOrder };
         break;
-      case 'trackCount':
+      case "trackCount":
         orderBy = { trackCount: options.sortOrder };
         break;
     }
@@ -997,13 +941,7 @@ export class TrackService {
     // Execute queries
     const [userAlbums, total] = await Promise.all([
       this.databaseService.userAlbum.findMany({
-        include: {
-          album: {
-            include: {
-              artist: true,
-            },
-          },
-        },
+        include: { album: { include: { artist: true } } },
         orderBy,
         skip,
         take: options.pageSize,
@@ -1055,24 +993,22 @@ export class TrackService {
       pageSize: number;
       search?: string;
       sortBy:
-        | 'albumCount'
-        | 'avgRating'
-        | 'lastPlayed'
-        | 'name'
-        | 'totalPlayCount'
-        | 'trackCount';
-      sortOrder: 'asc' | 'desc';
+        | "albumCount"
+        | "avgRating"
+        | "lastPlayed"
+        | "name"
+        | "totalPlayCount"
+        | "trackCount";
+      sortOrder: "asc" | "desc";
     },
   ): Promise<PaginatedArtistsDto> {
     // Build where clause
-    const where: Prisma.UserArtistWhereInput = {
-      userId,
-    };
+    const where: Prisma.UserArtistWhereInput = { userId };
 
     // Add search filter
     if (options.search) {
       where.artist = {
-        name: { contains: options.search, mode: 'insensitive' },
+        name: { contains: options.search, mode: "insensitive" },
       };
     }
 
@@ -1082,37 +1018,35 @@ export class TrackService {
         // If we have both search and genre filter, we need to combine them
         where.artist = {
           AND: [
-            { name: { contains: options.search, mode: 'insensitive' } },
+            { name: { contains: options.search, mode: "insensitive" } },
             { genres: { hasSome: options.genres } },
           ],
         };
       } else {
         // Just genre filter
-        where.artist = {
-          genres: { hasSome: options.genres },
-        };
+        where.artist = { genres: { hasSome: options.genres } };
       }
     }
 
     // Build orderBy clause
     let orderBy: Prisma.UserArtistOrderByWithRelationInput = {};
     switch (options.sortBy) {
-      case 'albumCount':
+      case "albumCount":
         orderBy = { albumCount: options.sortOrder };
         break;
-      case 'avgRating':
+      case "avgRating":
         orderBy = { avgRating: options.sortOrder };
         break;
-      case 'lastPlayed':
+      case "lastPlayed":
         orderBy = { lastPlayedAt: options.sortOrder };
         break;
-      case 'name':
+      case "name":
         orderBy = { artist: { name: options.sortOrder } };
         break;
-      case 'totalPlayCount':
+      case "totalPlayCount":
         orderBy = { totalPlayCount: options.sortOrder };
         break;
-      case 'trackCount':
+      case "trackCount":
         orderBy = { trackCount: options.sortOrder };
         break;
     }
@@ -1123,9 +1057,7 @@ export class TrackService {
     // Execute queries
     const [userArtists, total] = await Promise.all([
       this.databaseService.userArtist.findMany({
-        include: {
-          artist: true,
-        },
+        include: { artist: true },
         orderBy,
         skip,
         take: options.pageSize,
@@ -1172,16 +1104,8 @@ export class TrackService {
   async getUserGenres(userId: string): Promise<string[]> {
     // Get all unique genres from artists in user's library
     const userArtists = await this.databaseService.userArtist.findMany({
-      include: {
-        artist: {
-          select: {
-            genres: true,
-          },
-        },
-      },
-      where: {
-        userId,
-      },
+      include: { artist: { select: { genres: true } } },
+      where: { userId },
     });
 
     // Extract and flatten all genres
@@ -1204,29 +1128,27 @@ export class TrackService {
       page = 1,
       pageSize = 20,
       search,
-      sortBy = 'addedAt',
-      sortOrder = 'desc',
+      sortBy = "addedAt",
+      sortOrder = "desc",
       sourceTypes,
       tagIds,
     } = query;
 
     // Build where clause
-    const where: Prisma.UserTrackWhereInput = {
-      userId,
-    };
+    const where: Prisma.UserTrackWhereInput = { userId };
 
     // Add search filter
     if (search) {
       where.OR = [
-        { spotifyTrack: { title: { contains: search, mode: 'insensitive' } } },
+        { spotifyTrack: { title: { contains: search, mode: "insensitive" } } },
         {
           spotifyTrack: {
-            artist: { name: { contains: search, mode: 'insensitive' } },
+            artist: { name: { contains: search, mode: "insensitive" } },
           },
         },
         {
           spotifyTrack: {
-            album: { name: { contains: search, mode: 'insensitive' } },
+            album: { name: { contains: search, mode: "insensitive" } },
           },
         },
       ];
@@ -1234,39 +1156,23 @@ export class TrackService {
 
     // Add tag filter
     if (tagIds && tagIds.length > 0) {
-      where.tags = {
-        some: {
-          tagId: { in: tagIds },
-        },
-      };
+      where.tags = { some: { tagId: { in: tagIds } } };
     }
 
     // Add rating filter
     if (minRating) {
-      where.rating = {
-        gte: minRating,
-      };
+      where.rating = { gte: minRating };
     }
 
     // Add source type filter
     if (sourceTypes && sourceTypes.length > 0) {
-      where.sources = {
-        some: {
-          sourceType: { in: sourceTypes },
-        },
-      };
+      where.sources = { some: { sourceType: { in: sourceTypes } } };
     }
 
     // Add genre filter
     if (genres && genres.length > 0) {
       const genreFilter: Prisma.UserTrackWhereInput = {
-        spotifyTrack: {
-          artist: {
-            genres: {
-              hasSome: genres,
-            },
-          },
-        },
+        spotifyTrack: { artist: { genres: { hasSome: genres } } },
       };
 
       if (where.OR) {
@@ -1283,47 +1189,47 @@ export class TrackService {
     // MUST match the orderBy in getTracksForPlay() to ensure consistency
     let orderBy: Prisma.UserTrackOrderByWithRelationInput[] = [];
     switch (sortBy) {
-      case 'addedAt':
+      case "addedAt":
         orderBy = [
           { addedAt: sortOrder },
-          { spotifyTrack: { album: { name: 'asc' } } },
-          { spotifyTrack: { trackNumber: 'asc' } },
-          { id: 'asc' },
+          { spotifyTrack: { album: { name: "asc" } } },
+          { spotifyTrack: { trackNumber: "asc" } },
+          { id: "asc" },
         ];
         break;
-      case 'album':
+      case "album":
         orderBy = [
           { spotifyTrack: { album: { name: sortOrder } } },
-          { spotifyTrack: { trackNumber: 'asc' } },
-          { id: 'asc' },
+          { spotifyTrack: { trackNumber: "asc" } },
+          { id: "asc" },
         ];
         break;
-      case 'artist':
+      case "artist":
         orderBy = [
           { spotifyTrack: { artist: { name: sortOrder } } },
-          { spotifyTrack: { album: { name: 'asc' } } },
-          { spotifyTrack: { trackNumber: 'asc' } },
-          { id: 'asc' },
+          { spotifyTrack: { album: { name: "asc" } } },
+          { spotifyTrack: { trackNumber: "asc" } },
+          { id: "asc" },
         ];
         break;
-      case 'duration':
-        orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: 'asc' }];
+      case "duration":
+        orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: "asc" }];
         break;
-      case 'lastPlayedAt':
-        orderBy = [{ lastPlayedAt: sortOrder }, { id: 'asc' }];
+      case "lastPlayedAt":
+        orderBy = [{ lastPlayedAt: sortOrder }, { id: "asc" }];
         break;
-      case 'rating':
+      case "rating":
         // NULLS LAST behavior will be applied below
-        orderBy = [{ rating: sortOrder }, { addedAt: 'desc' }, { id: 'asc' }];
+        orderBy = [{ rating: sortOrder }, { addedAt: "desc" }, { id: "asc" }];
         break;
-      case 'title':
-        orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: 'asc' }];
+      case "title":
+        orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: "asc" }];
         break;
-      case 'totalPlayCount':
+      case "totalPlayCount":
         orderBy = [
           { totalPlayCount: sortOrder },
-          { lastPlayedAt: 'desc' },
-          { id: 'asc' },
+          { lastPlayedAt: "desc" },
+          { id: "asc" },
         ];
         break;
     }
@@ -1333,7 +1239,7 @@ export class TrackService {
 
     // For rating and lastPlayedAt, we need NULLS LAST behavior
     // Prisma doesn't support this, so use Kysely for these sorts
-    if (sortBy === 'rating' || sortBy === 'lastPlayedAt') {
+    if (sortBy === "rating" || sortBy === "lastPlayedAt") {
       return this.getUserTracksWithKysely(
         userId,
         {
@@ -1358,20 +1264,9 @@ export class TrackService {
         include: {
           sources: true,
           spotifyTrack: {
-            include: {
-              album: {
-                include: {
-                  artist: true,
-                },
-              },
-              artist: true,
-            },
+            include: { album: { include: { artist: true } }, artist: true },
           },
-          tags: {
-            include: {
-              tag: true,
-            },
-          },
+          tags: { include: { tag: true } },
         },
         orderBy,
         skip,
@@ -1417,13 +1312,7 @@ export class TrackService {
 
     return plainToInstance(
       PaginatedTracksDto,
-      {
-        page,
-        pageSize,
-        total,
-        totalPages,
-        tracks: trackDtos,
-      },
+      { page, pageSize, total, totalPages, tracks: trackDtos },
       { excludeExtraneousValues: true },
     );
   }
@@ -1438,14 +1327,11 @@ export class TrackService {
     });
 
     if (!track) {
-      throw new Error('Track not found');
+      throw new Error("Track not found");
     }
 
     const updated = await this.databaseService.userTrack.update({
-      data: {
-        ratedAt: new Date(),
-        rating,
-      },
+      data: { ratedAt: new Date(), rating },
       where: { id: trackId },
     });
 
@@ -1464,28 +1350,28 @@ export class TrackService {
     where: Prisma.UserTrackWhereInput,
     skip: number,
   ): Promise<PaginatedTracksDto> {
-    const { page = 1, pageSize = 20, sortBy, sortOrder = 'desc' } = query;
+    const { page = 1, pageSize = 20, sortBy, sortOrder = "desc" } = query;
 
     const db = this.kyselyService.database;
 
     // Build base query with all joins
     let baseQuery = db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .innerJoin('SpotifyAlbum as sa', 'st.albumId', 'sa.id')
-      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
-      .leftJoin('TrackTag as tt', 'ut.id', 'tt.userTrackId')
-      .leftJoin('Tag as t', 'tt.tagId', 't.id')
-      .leftJoin('TrackSource as ts', 'ut.id', 'ts.userTrackId')
-      .where('ut.userId', '=', userId);
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .leftJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+      .leftJoin("Tag as t", "tt.tagId", "t.id")
+      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
+      .where("ut.userId", "=", userId);
 
     // Apply search filter
     if (query.search) {
       baseQuery = baseQuery.where((eb) =>
         eb.or([
-          eb('st.title', 'ilike', `%${query.search}%`),
-          eb('sar.name', 'ilike', `%${query.search}%`),
-          eb('sa.name', 'ilike', `%${query.search}%`),
+          eb("st.title", "ilike", `%${query.search}%`),
+          eb("sar.name", "ilike", `%${query.search}%`),
+          eb("sa.name", "ilike", `%${query.search}%`),
         ]),
       );
     }
@@ -1495,7 +1381,7 @@ export class TrackService {
       baseQuery = baseQuery.where(({ eb }) =>
         eb(
           sql`sar.genres && ARRAY[${sql.join(query.genres.map((g) => sql.lit(g)))}]::text[]`,
-          '=',
+          "=",
           sql`true`,
         ),
       );
@@ -1503,22 +1389,22 @@ export class TrackService {
 
     // Apply rating filter
     if (query.minRating) {
-      baseQuery = baseQuery.where('ut.rating', '>=', query.minRating);
+      baseQuery = baseQuery.where("ut.rating", ">=", query.minRating);
     }
 
     // Apply tag filter (if any tags, track must have at least one)
     if (query.tagIds && query.tagIds.length > 0) {
-      baseQuery = baseQuery.where('tt.tagId', 'in', query.tagIds);
+      baseQuery = baseQuery.where("tt.tagId", "in", query.tagIds);
     }
 
     // Apply source type filter
     if (query.sourceTypes && query.sourceTypes.length > 0) {
-      baseQuery = baseQuery.where('ts.sourceType', 'in', query.sourceTypes);
+      baseQuery = baseQuery.where("ts.sourceType", "in", query.sourceTypes);
     }
 
     // Get total count (use DISTINCT to handle joins that create duplicates)
     const countResult = await baseQuery
-      .select((eb) => eb.fn.count<number>('ut.id').distinct().as('count'))
+      .select((eb) => eb.fn.count<number>("ut.id").distinct().as("count"))
       .executeTakeFirst();
 
     const total = Number(countResult?.count || 0);
@@ -1526,19 +1412,19 @@ export class TrackService {
     // Build query with aggregations
     let tracksQuery = baseQuery
       .select([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name as albumName',
-        'sa.imageUrl as albumImageUrl',
-        'sar.name as artistName',
-        'sar.genres as artistGenres',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name as albumName",
+        "sa.imageUrl as albumImageUrl",
+        "sar.name as artistName",
+        "sar.genres as artistGenres",
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -1549,7 +1435,7 @@ export class TrackService {
               )
             ) FILTER (WHERE t.id IS NOT NULL),
             '[]'::json
-          )`.as('tags'),
+          )`.as("tags"),
         sql<
           Array<{
             createdAt: Date;
@@ -1570,39 +1456,39 @@ export class TrackService {
               )
             ) FILTER (WHERE ts.id IS NOT NULL),
             '[]'::json
-          )`.as('sources'),
+          )`.as("sources"),
       ])
       .groupBy([
-        'ut.id',
-        'ut.addedAt',
-        'ut.lastPlayedAt',
-        'ut.totalPlayCount',
-        'ut.rating',
-        'ut.ratedAt',
-        'st.spotifyId',
-        'st.title',
-        'st.duration',
-        'sa.name',
-        'sa.imageUrl',
-        'sar.name',
-        'sar.genres',
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "sa.name",
+        "sa.imageUrl",
+        "sar.name",
+        "sar.genres",
       ]);
 
     // Apply ordering with NULLS LAST for nullable fields
     // MUST match the orderBy in getTracksForPlay() to ensure consistency
-    if (sortBy === 'rating') {
+    if (sortBy === "rating") {
       tracksQuery = tracksQuery
         .orderBy(
-          sql`ut.rating ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+          sql`ut.rating ${sql.raw(sortOrder === "asc" ? "ASC" : "DESC")} NULLS LAST`,
         )
-        .orderBy('ut.addedAt', 'desc')
-        .orderBy('ut.id', 'asc');
-    } else if (sortBy === 'lastPlayedAt') {
+        .orderBy("ut.addedAt", "desc")
+        .orderBy("ut.id", "asc");
+    } else if (sortBy === "lastPlayedAt") {
       tracksQuery = tracksQuery
         .orderBy(
-          sql`ut."lastPlayedAt" ${sql.raw(sortOrder === 'asc' ? 'ASC' : 'DESC')} NULLS LAST`,
+          sql`ut."lastPlayedAt" ${sql.raw(sortOrder === "asc" ? "ASC" : "DESC")} NULLS LAST`,
         )
-        .orderBy('ut.id', 'asc');
+        .orderBy("ut.id", "asc");
     }
 
     // Apply pagination
@@ -1634,13 +1520,7 @@ export class TrackService {
 
     return plainToInstance(
       PaginatedTracksDto,
-      {
-        page,
-        pageSize,
-        total,
-        totalPages,
-        tracks: trackDtos,
-      },
+      { page, pageSize, total, totalPages, tracks: trackDtos },
       { excludeExtraneousValues: true },
     );
   }

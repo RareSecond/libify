@@ -1,10 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as crypto from "crypto";
 
 @Injectable()
 export class EncryptionService implements OnModuleInit {
-  private readonly algorithm = 'aes-256-gcm';
+  private readonly algorithm = "aes-256-gcm";
   private encryptionKey: Buffer;
   private readonly ivLength = 16;
   private readonly logger = new Logger(EncryptionService.name);
@@ -19,7 +19,7 @@ export class EncryptionService implements OnModuleInit {
     if (!encryptedText) return encryptedText;
 
     try {
-      const combined = Buffer.from(encryptedText, 'base64');
+      const combined = Buffer.from(encryptedText, "base64");
 
       const salt = combined.subarray(0, this.saltLength);
       const iv = combined.subarray(
@@ -39,7 +39,7 @@ export class EncryptionService implements OnModuleInit {
         salt,
         this.pbkdf2Iterations,
         this.pbkdf2KeyLength,
-        'sha256',
+        "sha256",
       );
 
       const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
@@ -50,10 +50,10 @@ export class EncryptionService implements OnModuleInit {
         decipher.final(),
       ]);
 
-      return decrypted.toString('utf8');
+      return decrypted.toString("utf8");
     } catch (error) {
-      this.logger.error('Decryption failed', error);
-      throw new Error('Failed to decrypt data');
+      this.logger.error("Decryption failed", error);
+      throw new Error("Failed to decrypt data");
     }
   }
 
@@ -71,14 +71,14 @@ export class EncryptionService implements OnModuleInit {
         salt,
         this.pbkdf2Iterations,
         this.pbkdf2KeyLength,
-        'sha256',
+        "sha256",
       );
 
       const iv = crypto.randomBytes(this.ivLength);
       const cipher = crypto.createCipheriv(this.algorithm, key, iv);
 
       const encrypted = Buffer.concat([
-        cipher.update(text, 'utf8'),
+        cipher.update(text, "utf8"),
         cipher.final(),
       ]);
 
@@ -86,10 +86,10 @@ export class EncryptionService implements OnModuleInit {
 
       const combined = Buffer.concat([salt, iv, tag, encrypted]);
 
-      return combined.toString('base64');
+      return combined.toString("base64");
     } catch (error) {
-      this.logger.error('Encryption failed', error);
-      throw new Error('Failed to encrypt data');
+      this.logger.error("Encryption failed", error);
+      throw new Error("Failed to encrypt data");
     }
   }
 
@@ -98,8 +98,8 @@ export class EncryptionService implements OnModuleInit {
   }
 
   onModuleInit() {
-    const key = this.configService.get<string>('ENCRYPTION_KEY');
-    this.encryptionKey = Buffer.from(key, 'hex');
-    this.logger.log('Encryption service initialized');
+    const key = this.configService.get<string>("ENCRYPTION_KEY");
+    this.encryptionKey = Buffer.from(key, "hex");
+    this.logger.log("Encryption service initialized");
   }
 }

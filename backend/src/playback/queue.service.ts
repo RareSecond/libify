@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from "@nestjs/common";
 
-import { DatabaseService } from '../database/database.service';
-import { TrackService } from '../library/track.service';
-import { PlaylistsService } from '../playlists/playlists.service';
-import { ContextType } from './types/context-type.enum';
+import { DatabaseService } from "../database/database.service";
+import { TrackService } from "../library/track.service";
+import { PlaylistsService } from "../playlists/playlists.service";
+import { ContextType } from "./types/context-type.enum";
 
 export interface PlayContext {
   clickedIndex?: number;
@@ -37,8 +37,8 @@ export class QueueService {
     const startTime = Date.now();
     this.logger.log(`Building queue for user ${userId} with limit ${limit}`, {
       ...context,
-      sortBy: context.sortBy || '(undefined)',
-      sortOrder: context.sortOrder || '(undefined)',
+      sortBy: context.sortBy || "(undefined)",
+      sortOrder: context.sortOrder || "(undefined)",
     });
 
     // Calculate skip amount based on pagination
@@ -92,16 +92,16 @@ export class QueueService {
           shouldShuffle: context.shuffle,
           skip,
           sortBy: context.sortBy as
-            | 'addedAt'
-            | 'album'
-            | 'artist'
-            | 'duration'
-            | 'lastPlayedAt'
-            | 'rating'
-            | 'title'
-            | 'totalPlayCount'
+            | "addedAt"
+            | "album"
+            | "artist"
+            | "duration"
+            | "lastPlayedAt"
+            | "rating"
+            | "title"
+            | "totalPlayCount"
             | undefined,
-          sortOrder: context.sortOrder as 'asc' | 'desc' | undefined,
+          sortOrder: context.sortOrder as "asc" | "desc" | undefined,
         });
         // Enforce the requested limit (getTracksForPlay may return up to 500 items)
         if (trackUris.length > limit) {
@@ -158,17 +158,10 @@ export class QueueService {
     limit = 200,
   ): Promise<string[]> {
     const tracks = await this.database.spotifyTrack.findMany({
-      orderBy: shuffle ? undefined : { trackNumber: 'asc' },
+      orderBy: shuffle ? undefined : { trackNumber: "asc" },
       skip: shuffle ? 0 : skip,
       take: limit,
-      where: {
-        albumId,
-        userTracks: {
-          some: {
-            userId,
-          },
-        },
-      },
+      where: { albumId, userTracks: { some: { userId } } },
     });
 
     let trackUris = tracks.map((t) => `spotify:track:${t.spotifyId}`);
@@ -188,17 +181,10 @@ export class QueueService {
     limit = 200,
   ): Promise<string[]> {
     const tracks = await this.database.spotifyTrack.findMany({
-      orderBy: shuffle ? undefined : { popularity: 'desc' },
+      orderBy: shuffle ? undefined : { popularity: "desc" },
       skip: shuffle ? 0 : skip,
       take: limit,
-      where: {
-        artistId,
-        userTracks: {
-          some: {
-            userId,
-          },
-        },
-      },
+      where: { artistId, userTracks: { some: { userId } } },
     });
 
     let trackUris = tracks.map((t) => `spotify:track:${t.spotifyId}`);

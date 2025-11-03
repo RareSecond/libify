@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { plainToInstance } from "class-transformer";
 
-import { DatabaseService } from '../database/database.service';
-import { CreateTagDto, TagResponseDto, UpdateTagDto } from './dto/tag.dto';
+import { DatabaseService } from "../database/database.service";
+import { CreateTagDto, TagResponseDto, UpdateTagDto } from "./dto/tag.dto";
 
 @Injectable()
 export class TagService {
@@ -19,7 +19,7 @@ export class TagService {
     });
 
     if (!track) {
-      throw new NotFoundException('Track not found');
+      throw new NotFoundException("Track not found");
     }
 
     // Verify the tag belongs to the user
@@ -28,25 +28,17 @@ export class TagService {
     });
 
     if (!tag) {
-      throw new NotFoundException('Tag not found');
+      throw new NotFoundException("Tag not found");
     }
 
     // Check if the association already exists
     const existing = await this.databaseService.trackTag.findUnique({
-      where: {
-        userTrackId_tagId: {
-          tagId,
-          userTrackId: trackId,
-        },
-      },
+      where: { userTrackId_tagId: { tagId, userTrackId: trackId } },
     });
 
     if (!existing) {
       await this.databaseService.trackTag.create({
-        data: {
-          tagId,
-          userTrackId: trackId,
-        },
+        data: { tagId, userTrackId: trackId },
       });
     }
   }
@@ -56,10 +48,7 @@ export class TagService {
     createTagDto: CreateTagDto,
   ): Promise<TagResponseDto> {
     const tag = await this.databaseService.tag.create({
-      data: {
-        ...createTagDto,
-        userId,
-      },
+      data: { ...createTagDto, userId },
     });
 
     return plainToInstance(TagResponseDto, tag, {
@@ -73,23 +62,19 @@ export class TagService {
     });
 
     if (!tag) {
-      throw new NotFoundException('Tag not found');
+      throw new NotFoundException("Tag not found");
     }
 
     // Delete all track associations first
-    await this.databaseService.trackTag.deleteMany({
-      where: { tagId },
-    });
+    await this.databaseService.trackTag.deleteMany({ where: { tagId } });
 
     // Then delete the tag
-    await this.databaseService.tag.delete({
-      where: { id: tagId },
-    });
+    await this.databaseService.tag.delete({ where: { id: tagId } });
   }
 
   async getUserTags(userId: string): Promise<TagResponseDto[]> {
     const tags = await this.databaseService.tag.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
       where: { userId },
     });
 
@@ -109,14 +94,11 @@ export class TagService {
     });
 
     if (!track) {
-      throw new NotFoundException('Track not found');
+      throw new NotFoundException("Track not found");
     }
 
     await this.databaseService.trackTag.deleteMany({
-      where: {
-        tagId,
-        userTrackId: trackId,
-      },
+      where: { tagId, userTrackId: trackId },
     });
   }
 
@@ -130,7 +112,7 @@ export class TagService {
     });
 
     if (!tag) {
-      throw new NotFoundException('Tag not found');
+      throw new NotFoundException("Tag not found");
     }
 
     const updatedTag = await this.databaseService.tag.update({

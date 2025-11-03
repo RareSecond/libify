@@ -1,13 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsBoolean,
   IsOptional,
   IsString,
   ValidateNested,
-} from 'class-validator';
+} from "class-validator";
 
-import { PlaylistCriteriaDto } from './playlist-criteria.dto';
+import { PlaylistCriteriaDto } from "./playlist-criteria.dto";
 
 export class CreateSmartPlaylistDto {
   @ApiProperty({ type: PlaylistCriteriaDto })

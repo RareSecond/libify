@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
+import { Injectable, Logger } from "@nestjs/common";
+import axios, { AxiosInstance } from "axios";
 
 import {
   SpotifyAlbumsPaginatedResponse,
   SpotifySavedAlbum,
-} from './dto/spotify-album.dto';
+} from "./dto/spotify-album.dto";
 
 export interface SpotifyPaginatedResponse<T> {
   items: T[];
@@ -18,15 +18,9 @@ export interface SpotifyPlaylist {
   description: string;
   id: string;
   name: string;
-  owner: {
-    display_name?: string;
-    id: string;
-  };
+  owner: { display_name?: string; id: string };
   snapshot_id: string;
-  tracks: {
-    href: string;
-    total: number;
-  };
+  tracks: { href: string; total: number };
 }
 
 export interface SpotifyPlaylistTrack {
@@ -36,18 +30,11 @@ export interface SpotifyPlaylistTrack {
 
 export interface SpotifyTrackData {
   added_at?: string;
-  album: {
-    id: string;
-    images: Array<{ url: string }>;
-    name: string;
-  };
+  album: { id: string; images: Array<{ url: string }>; name: string };
   artists: Array<{ id: string; name: string }>;
   duration_ms: number;
   id: string;
-  linked_from?: {
-    id: string;
-    uri: string;
-  };
+  linked_from?: { id: string; uri: string };
   name: string;
 }
 
@@ -58,7 +45,7 @@ export class SpotifyService {
 
   constructor() {
     this.spotifyApi = axios.create({
-      baseURL: 'https://api.spotify.com/v1',
+      baseURL: "https://api.spotify.com/v1",
       timeout: 10000, // 10 seconds
     });
   }
@@ -118,7 +105,9 @@ export class SpotifyService {
     }
   }
 
-  async getAvailableDevices(accessToken: string): Promise<
+  async getAvailableDevices(
+    accessToken: string,
+  ): Promise<
     Array<{
       id: string;
       is_active: boolean;
@@ -130,12 +119,12 @@ export class SpotifyService {
     }>
   > {
     try {
-      const response = await this.spotifyApi.get('/me/player/devices', {
+      const response = await this.spotifyApi.get("/me/player/devices", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       return response.data.devices || [];
     } catch (error) {
-      this.logger.error('Failed to fetch available devices', error);
+      this.logger.error("Failed to fetch available devices", error);
       return [];
     }
   }
@@ -145,10 +134,8 @@ export class SpotifyService {
   ): Promise<null | { progress_ms: number; track: SpotifyTrackData }> {
     try {
       const response = await this.spotifyApi.get(
-        '/me/player/currently-playing',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
+        "/me/player/currently-playing",
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
 
       if (response.data && response.data.item && response.data.is_playing) {
@@ -160,7 +147,7 @@ export class SpotifyService {
 
       return null;
     } catch (error) {
-      this.logger.error('Failed to fetch currently playing track', error);
+      this.logger.error("Failed to fetch currently playing track", error);
       return null;
     }
   }
@@ -186,9 +173,9 @@ export class SpotifyService {
 
       const allArtists = await Promise.all(
         chunks.map(async (chunk) => {
-          const response = await this.spotifyApi.get('/artists', {
+          const response = await this.spotifyApi.get("/artists", {
             headers: { Authorization: `Bearer ${accessToken}` },
-            params: { ids: chunk.join(',') },
+            params: { ids: chunk.join(",") },
           });
           return response.data.artists || [];
         }),
@@ -196,7 +183,7 @@ export class SpotifyService {
 
       return allArtists.flat();
     } catch (error) {
-      this.logger.error('Failed to get multiple artists', error);
+      this.logger.error("Failed to get multiple artists", error);
       return [];
     }
   }
@@ -261,13 +248,13 @@ export class SpotifyService {
         params.after = after;
       }
 
-      const response = await this.spotifyApi.get('/me/player/recently-played', {
+      const response = await this.spotifyApi.get("/me/player/recently-played", {
         headers: { Authorization: `Bearer ${accessToken}` },
         params,
       });
       return response.data.items;
     } catch (error) {
-      this.logger.error('Failed to fetch recently played tracks', error);
+      this.logger.error("Failed to fetch recently played tracks", error);
       throw error;
     }
   }
@@ -288,14 +275,14 @@ export class SpotifyService {
 
     for (const chunk of chunks) {
       try {
-        const response = await this.spotifyApi.get('/tracks', {
+        const response = await this.spotifyApi.get("/tracks", {
           headers: { Authorization: `Bearer ${accessToken}` },
-          params: { ids: chunk.join(',') },
+          params: { ids: chunk.join(",") },
         });
         allTracks.push(...response.data.tracks);
       } catch (error) {
         this.logger.error(
-          `Failed to fetch tracks for IDs: ${chunk.join(',')}`,
+          `Failed to fetch tracks for IDs: ${chunk.join(",")}`,
           error,
         );
       }
@@ -312,13 +299,13 @@ export class SpotifyService {
     SpotifyPaginatedResponse<{ added_at: string; track: SpotifyTrackData }>
   > {
     try {
-      const response = await this.spotifyApi.get('/me/tracks', {
+      const response = await this.spotifyApi.get("/me/tracks", {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { limit, offset },
       });
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to fetch user library tracks', error);
+      this.logger.error("Failed to fetch user library tracks", error);
       throw error;
     }
   }
@@ -329,13 +316,13 @@ export class SpotifyService {
     offset = 0,
   ): Promise<SpotifyPaginatedResponse<SpotifyPlaylist>> {
     try {
-      const response = await this.spotifyApi.get('/me/playlists', {
+      const response = await this.spotifyApi.get("/me/playlists", {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { limit, offset },
       });
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to fetch user playlists', error);
+      this.logger.error("Failed to fetch user playlists", error);
       throw error;
     }
   }
@@ -346,13 +333,13 @@ export class SpotifyService {
     offset = 0,
   ): Promise<SpotifyAlbumsPaginatedResponse> {
     try {
-      const response = await this.spotifyApi.get('/me/albums', {
+      const response = await this.spotifyApi.get("/me/albums", {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { limit, offset },
       });
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to fetch user saved albums', error);
+      this.logger.error("Failed to fetch user saved albums", error);
       throw error;
     }
   }
@@ -360,14 +347,12 @@ export class SpotifyService {
   async nextTrack(accessToken: string): Promise<void> {
     try {
       await this.spotifyApi.post(
-        '/me/player/next',
+        "/me/player/next",
         {},
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
 
-      this.logger.log('Skipped to next track');
+      this.logger.log("Skipped to next track");
     } catch (error) {
       const axiosError = error as {
         message: string;
@@ -381,7 +366,7 @@ export class SpotifyService {
         status: axiosError.response?.status,
       };
       this.logger.error(
-        'Failed to skip to next track',
+        "Failed to skip to next track",
         JSON.stringify(errorDetails, null, 2),
       );
       throw error;
@@ -391,16 +376,14 @@ export class SpotifyService {
   async pausePlayback(accessToken: string): Promise<void> {
     try {
       await this.spotifyApi.put(
-        '/me/player/pause',
+        "/me/player/pause",
         {},
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
 
-      this.logger.log('Paused playback');
+      this.logger.log("Paused playback");
     } catch (error) {
-      this.logger.error('Failed to pause playback', error);
+      this.logger.error("Failed to pause playback", error);
       throw error;
     }
   }
@@ -417,10 +400,8 @@ export class SpotifyService {
       );
 
       await this.spotifyApi.put(
-        '/me/player/play',
-        {
-          uris: [trackUri],
-        },
+        "/me/player/play",
+        { uris: [trackUri] },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
           params: { device_id: targetDeviceId },
@@ -431,7 +412,7 @@ export class SpotifyService {
         `Started playing track ${trackUri} on device ${targetDeviceId}`,
       );
     } catch (error) {
-      this.logger.error('Failed to play track', error);
+      this.logger.error("Failed to play track", error);
       throw error;
     }
   }
@@ -445,7 +426,7 @@ export class SpotifyService {
 
     // Validate input: early return if trackUris is empty
     if (!trackUris || trackUris.length === 0) {
-      throw new Error('Cannot play tracks: trackUris array is empty');
+      throw new Error("Cannot play tracks: trackUris array is empty");
     }
 
     try {
@@ -455,10 +436,8 @@ export class SpotifyService {
       );
 
       await this.spotifyApi.put(
-        '/me/player/play',
-        {
-          uris: trackUris,
-        },
+        "/me/player/play",
+        { uris: trackUris },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
           params: { device_id: targetDeviceId },
@@ -482,7 +461,7 @@ export class SpotifyService {
         status: axiosError.response?.status,
       };
       this.logger.error(
-        'Failed to play tracks',
+        "Failed to play tracks",
         JSON.stringify(errorDetails, null, 2),
       );
       throw error;
@@ -492,16 +471,14 @@ export class SpotifyService {
   async resumePlayback(accessToken: string): Promise<void> {
     try {
       await this.spotifyApi.put(
-        '/me/player/play',
+        "/me/player/play",
         {},
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
       );
 
-      this.logger.log('Resumed playback');
+      this.logger.log("Resumed playback");
     } catch (error) {
-      this.logger.error('Failed to resume playback', error);
+      this.logger.error("Failed to resume playback", error);
       throw error;
     }
   }
@@ -515,13 +492,9 @@ export class SpotifyService {
     name: string;
   }> {
     try {
-      const response = await this.spotifyApi.get('/search', {
+      const response = await this.spotifyApi.get("/search", {
         headers: { Authorization: `Bearer ${accessToken}` },
-        params: {
-          limit: 1,
-          q: artistName,
-          type: 'artist',
-        },
+        params: { limit: 1, q: artistName, type: "artist" },
       });
 
       const artists = response.data.artists?.items;
@@ -620,7 +593,7 @@ export class SpotifyService {
     const devices = await this.getAvailableDevices(accessToken);
     if (devices.length === 0) {
       throw new Error(
-        'No Spotify devices available. Please open Spotify on one of your devices.',
+        "No Spotify devices available. Please open Spotify on one of your devices.",
       );
     }
 

@@ -1,26 +1,26 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
-import { User } from '@prisma/client';
-import { plainToInstance } from 'class-transformer';
-import { Request, Response } from 'express';
+import { Controller, Get, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { ApiResponse, ApiTags } from "@nestjs/swagger";
+import { User } from "@prisma/client";
+import { plainToInstance } from "class-transformer";
+import { Request, Response } from "express";
 
-import { AuthService } from './auth.service';
-import { TokenDto } from './dto/token.dto';
-import { UserDto } from './dto/user.dto';
+import { AuthService } from "./auth.service";
+import { TokenDto } from "./dto/token.dto";
+import { UserDto } from "./dto/user.dto";
 
 interface AuthenticatedRequest extends Request {
   user: User;
 }
 
-@ApiTags('Auth')
-@Controller('auth')
+@ApiTags("Auth")
+@Controller("auth")
 export class AuthController {
-  private readonly isProduction = process.env.NODE_ENV === 'production';
+  private readonly isProduction = process.env.NODE_ENV === "production";
   private readonly cookieOptions = {
     httpOnly: true,
-    path: '/',
-    sameSite: 'lax' as const,
+    path: "/",
+    sameSite: "lax" as const,
     secure: this.isProduction,
     ...(this.isProduction &&
       process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
@@ -29,12 +29,12 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiResponse({
-    description: 'Spotify access token',
+    description: "Spotify access token",
     status: 200,
     type: TokenDto,
   })
-  @Get('token')
-  @UseGuards(AuthGuard('jwt'))
+  @Get("token")
+  @UseGuards(AuthGuard("jwt"))
   async getAccessToken(@Req() req: AuthenticatedRequest): Promise<TokenDto> {
     const accessToken = await this.authService.getSpotifyAccessToken(
       req.user.id,
@@ -42,35 +42,33 @@ export class AuthController {
     return plainToInstance(
       TokenDto,
       { accessToken },
-      {
-        excludeExtraneousValues: true,
-      },
+      { excludeExtraneousValues: true },
     );
   }
 
-  @ApiResponse({ description: 'User profile', status: 200, type: UserDto })
-  @Get('profile')
-  @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ description: "User profile", status: 200, type: UserDto })
+  @Get("profile")
+  @UseGuards(AuthGuard("jwt"))
   getProfile(@Req() req: AuthenticatedRequest): UserDto {
     return plainToInstance(UserDto, req.user, {
       excludeExtraneousValues: true,
     });
   }
 
-  @Post('logout')
+  @Post("logout")
   async logout(@Res() res: Response) {
-    res.clearCookie('jwt', this.cookieOptions);
-    res.json({ message: 'Logged out successfully' });
+    res.clearCookie("jwt", this.cookieOptions);
+    res.json({ message: "Logged out successfully" });
   }
 
-  @Get('spotify')
-  @UseGuards(AuthGuard('spotify'))
+  @Get("spotify")
+  @UseGuards(AuthGuard("spotify"))
   async spotifyAuth(@Req() _req: Request) {
     // This will redirect to Spotify OAuth
   }
 
-  @Get('spotify/callback')
-  @UseGuards(AuthGuard('spotify'))
+  @Get("spotify/callback")
+  @UseGuards(AuthGuard("spotify"))
   async spotifyCallback(
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
@@ -78,7 +76,7 @@ export class AuthController {
     const user = req.user;
     const loginResult = await this.authService.login(user);
 
-    res.cookie('jwt', loginResult.access_token, {
+    res.cookie("jwt", loginResult.access_token, {
       ...this.cookieOptions,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });

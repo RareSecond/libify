@@ -1,18 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
-import { DatabaseService } from '../database/database.service';
-import { TrackService } from '../library/track.service';
-import { PlaylistCriteriaDto } from './dto/playlist-criteria.dto';
+import { DatabaseService } from "../database/database.service";
+import { TrackService } from "../library/track.service";
+import { PlaylistCriteriaDto } from "./dto/playlist-criteria.dto";
 import {
   PlaylistRuleDto,
   PlaylistRuleField,
   PlaylistRuleOperator,
-} from './dto/playlist-rule.dto';
+} from "./dto/playlist-rule.dto";
 import {
   CreateSmartPlaylistDto,
   UpdateSmartPlaylistDto,
-} from './dto/smart-playlist.dto';
+} from "./dto/smart-playlist.dto";
 
 @Injectable()
 export class PlaylistsService {
@@ -35,7 +35,7 @@ export class PlaylistsService {
 
   async findAll(userId: string) {
     const playlists = await this.prisma.smartPlaylist.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       where: { userId },
     });
 
@@ -63,7 +63,7 @@ export class PlaylistsService {
     });
 
     if (!playlist) {
-      throw new NotFoundException('Playlist not found');
+      throw new NotFoundException("Playlist not found");
     }
 
     const trackCount = await this.getTrackCount(
@@ -84,14 +84,14 @@ export class PlaylistsService {
     page = 1,
     pageSize = 20,
     sortBy?: string,
-    sortOrder?: 'asc' | 'desc',
+    sortOrder?: "asc" | "desc",
   ) {
     const playlist = await this.findOne(userId, playlistId);
     const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
 
     const where = this.buildWhereClause(userId, criteria);
     const orderBy = sortBy
-      ? this.buildOrderByClause(sortBy, sortOrder || 'desc')
+      ? this.buildOrderByClause(sortBy, sortOrder || "desc")
       : this.buildOrderBy(criteria);
 
     const skip = (page - 1) * pageSize;
@@ -104,20 +104,9 @@ export class PlaylistsService {
         include: {
           sources: true,
           spotifyTrack: {
-            include: {
-              album: {
-                include: {
-                  artist: true,
-                },
-              },
-              artist: true,
-            },
+            include: { album: { include: { artist: true } }, artist: true },
           },
-          tags: {
-            include: {
-              tag: true,
-            },
-          },
+          tags: { include: { tag: true } },
         },
         orderBy,
         skip,
@@ -194,9 +183,7 @@ export class PlaylistsService {
 
   async remove(userId: string, playlistId: string) {
     await this.findOne(userId, playlistId); // Check ownership
-    await this.prisma.smartPlaylist.delete({
-      where: { id: playlistId },
-    });
+    await this.prisma.smartPlaylist.delete({ where: { id: playlistId } });
   }
 
   async update(
@@ -267,10 +254,10 @@ export class PlaylistsService {
     criteria: PlaylistCriteriaDto,
   ): Prisma.UserTrackOrderByWithRelationInput {
     if (!criteria.orderBy) {
-      return { addedAt: 'desc' };
+      return { addedAt: "desc" };
     }
 
-    const direction = criteria.orderDirection || 'desc';
+    const direction = criteria.orderDirection || "desc";
     return this.buildOrderByClause(criteria.orderBy, direction);
   }
 
@@ -280,30 +267,30 @@ export class PlaylistsService {
    */
   private buildOrderByClause(
     field: string,
-    direction: 'asc' | 'desc',
+    direction: "asc" | "desc",
   ): Prisma.UserTrackOrderByWithRelationInput {
     // Normalize field names from criteria format to database field format
     const normalizedField = this.normalizeFieldName(field);
 
     switch (normalizedField) {
-      case 'addedAt':
+      case "addedAt":
         return { addedAt: direction };
-      case 'album':
+      case "album":
         return { spotifyTrack: { album: { name: direction } } };
-      case 'artist':
+      case "artist":
         return { spotifyTrack: { artist: { name: direction } } };
-      case 'duration':
+      case "duration":
         return { spotifyTrack: { duration: direction } };
-      case 'lastPlayedAt':
+      case "lastPlayedAt":
         return { lastPlayedAt: direction };
-      case 'rating':
+      case "rating":
         return { rating: direction };
-      case 'title':
+      case "title":
         return { spotifyTrack: { title: direction } };
-      case 'totalPlayCount':
+      case "totalPlayCount":
         return { totalPlayCount: direction };
       default:
-        return { addedAt: 'desc' };
+        return { addedAt: "desc" };
     }
   }
 
@@ -313,36 +300,34 @@ export class PlaylistsService {
     switch (rule.field) {
       case PlaylistRuleField.ALBUM:
         return this.buildStringCondition(
-          'spotifyTrack.album',
+          "spotifyTrack.album",
           rule,
         ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.ARTIST:
         return this.buildStringCondition(
-          'spotifyTrack.artist',
+          "spotifyTrack.artist",
           rule,
         ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.DATE_ADDED:
-        return this.buildDateCondition('addedAt', rule);
+        return this.buildDateCondition("addedAt", rule);
 
       case PlaylistRuleField.DURATION:
-        return {
-          spotifyTrack: this.buildNumberCondition('duration', rule),
-        };
+        return { spotifyTrack: this.buildNumberCondition("duration", rule) };
 
       case PlaylistRuleField.LAST_PLAYED:
-        return this.buildDateCondition('lastPlayedAt', rule);
+        return this.buildDateCondition("lastPlayedAt", rule);
 
       case PlaylistRuleField.PLAY_COUNT:
         return this.buildNumberCondition(
-          'totalPlayCount',
+          "totalPlayCount",
           rule,
         ) as Prisma.UserTrackWhereInput;
 
       case PlaylistRuleField.RATING:
         return this.buildNumberCondition(
-          'rating',
+          "rating",
           rule,
         ) as Prisma.UserTrackWhereInput;
 
@@ -351,7 +336,7 @@ export class PlaylistsService {
 
       case PlaylistRuleField.TITLE:
         return this.buildStringCondition(
-          'spotifyTrack.title',
+          "spotifyTrack.title",
           rule,
         ) as Prisma.UserTrackWhereInput;
 
@@ -364,20 +349,20 @@ export class PlaylistsService {
     field: string,
     rule: PlaylistRuleDto,
   ): Prisma.SpotifyTrackWhereInput | Prisma.UserTrackWhereInput {
-    const [parent, child] = field.split('.');
+    const [parent, child] = field.split(".");
     const condition: Record<string, unknown> = {};
 
     switch (rule.operator) {
       case PlaylistRuleOperator.CONTAINS:
         condition[child || parent] = {
           contains: rule.value,
-          mode: 'insensitive',
+          mode: "insensitive",
         };
         break;
       case PlaylistRuleOperator.ENDS_WITH:
         condition[child || parent] = {
           endsWith: rule.value,
-          mode: 'insensitive',
+          mode: "insensitive",
         };
         break;
       case PlaylistRuleOperator.EQUALS:
@@ -385,7 +370,7 @@ export class PlaylistsService {
         break;
       case PlaylistRuleOperator.NOT_CONTAINS:
         condition[child || parent] = {
-          NOT: { contains: rule.value, mode: 'insensitive' },
+          NOT: { contains: rule.value, mode: "insensitive" },
         };
         break;
       case PlaylistRuleOperator.NOT_EQUALS:
@@ -393,7 +378,7 @@ export class PlaylistsService {
         break;
       case PlaylistRuleOperator.STARTS_WITH:
         condition[child || parent] = {
-          mode: 'insensitive',
+          mode: "insensitive",
           startsWith: rule.value,
         };
         break;
@@ -405,40 +390,16 @@ export class PlaylistsService {
   private buildTagCondition(rule: PlaylistRuleDto): Prisma.UserTrackWhereInput {
     switch (rule.operator) {
       case PlaylistRuleOperator.HAS_ANY_TAG:
-        return {
-          tags: {
-            some: {},
-          },
-        };
+        return { tags: { some: {} } };
 
       case PlaylistRuleOperator.HAS_NO_TAGS:
-        return {
-          tags: {
-            none: {},
-          },
-        };
+        return { tags: { none: {} } };
 
       case PlaylistRuleOperator.HAS_TAG:
-        return {
-          tags: {
-            some: {
-              tag: {
-                name: rule.value,
-              },
-            },
-          },
-        };
+        return { tags: { some: { tag: { name: rule.value } } } };
 
       case PlaylistRuleOperator.NOT_HAS_TAG:
-        return {
-          tags: {
-            none: {
-              tag: {
-                name: rule.value,
-              },
-            },
-          },
-        };
+        return { tags: { none: { tag: { name: rule.value } } } };
 
       default:
         return {};
@@ -459,16 +420,10 @@ export class PlaylistsService {
       this.buildRuleCondition(rule),
     );
 
-    if (criteria.logic === 'or') {
-      return {
-        ...baseWhere,
-        OR: ruleConditions,
-      };
+    if (criteria.logic === "or") {
+      return { ...baseWhere, OR: ruleConditions };
     } else {
-      return {
-        ...baseWhere,
-        AND: ruleConditions,
-      };
+      return { ...baseWhere, AND: ruleConditions };
     }
   }
 
@@ -487,9 +442,9 @@ export class PlaylistsService {
    */
   private normalizeFieldName(field: string): string {
     const fieldMap: Record<string, string> = {
-      dateAdded: 'addedAt',
-      lastPlayed: 'lastPlayedAt',
-      playCount: 'totalPlayCount',
+      dateAdded: "addedAt",
+      lastPlayed: "lastPlayedAt",
+      playCount: "totalPlayCount",
     };
 
     return fieldMap[field] || field;

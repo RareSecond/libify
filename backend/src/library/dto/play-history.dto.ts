@@ -1,9 +1,9 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Expose, Type } from "class-transformer";
+import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 
 export class GetPlayHistoryQueryDto {
-  @ApiPropertyOptional({ default: 1, description: 'Page number', minimum: 1 })
+  @ApiPropertyOptional({ default: 1, description: "Page number", minimum: 1 })
   @IsInt()
   @IsOptional()
   @Min(1)
@@ -12,7 +12,7 @@ export class GetPlayHistoryQueryDto {
 
   @ApiPropertyOptional({
     default: 50,
-    description: 'Page size',
+    description: "Page size",
     maximum: 1000,
     minimum: 1,
   })
@@ -24,15 +24,13 @@ export class GetPlayHistoryQueryDto {
   pageSize?: number = 50;
 
   @ApiPropertyOptional({
-    description: 'Search query for title, artist or album',
+    description: "Search query for title, artist or album",
   })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({
-    description: 'Filter by track ID',
-  })
+  @ApiPropertyOptional({ description: "Filter by track ID" })
   @IsOptional()
   @IsString()
   trackId?: string;
@@ -63,7 +61,7 @@ export class PaginatedPlayHistoryDto {
 
 export class PlayHistoryItemDto {
   @ApiPropertyOptional({
-    description: 'Duration listened in milliseconds',
+    description: "Duration listened in milliseconds",
     nullable: true,
   })
   @Expose()
@@ -89,7 +87,7 @@ export class PlayHistoryItemDto {
   @Expose()
   trackArtist: string;
 
-  @ApiProperty({ description: 'Track duration in milliseconds' })
+  @ApiProperty({ description: "Track duration in milliseconds" })
   @Expose()
   trackDuration: number;
 

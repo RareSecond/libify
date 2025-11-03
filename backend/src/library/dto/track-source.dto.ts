@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SourceType } from '@prisma/client';
-import { Expose } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { SourceType } from "@prisma/client";
+import { Expose } from "class-transformer";
 
 export class TrackSourceDto {
   @ApiProperty()
@@ -11,20 +11,17 @@ export class TrackSourceDto {
   @Expose()
   id: string;
 
-  @ApiPropertyOptional({ description: 'Spotify ID of the source' })
+  @ApiPropertyOptional({ description: "Spotify ID of the source" })
   @Expose()
   sourceId?: string;
 
   @ApiPropertyOptional({
-    description: 'Name of the source (e.g., playlist name)',
+    description: "Name of the source (e.g., playlist name)",
   })
   @Expose()
   sourceName?: string;
 
-  @ApiProperty({
-    description: 'Type of source',
-    enum: SourceType,
-  })
+  @ApiProperty({ description: "Type of source", enum: SourceType })
   @Expose()
   sourceType: SourceType;
 }

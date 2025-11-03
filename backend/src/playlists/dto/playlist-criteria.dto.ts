@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsArray,
   IsEnum,
@@ -7,17 +7,17 @@ import {
   IsOptional,
   IsString,
   ValidateNested,
-} from 'class-validator';
+} from "class-validator";
 
-import { PlaylistRuleDto } from './playlist-rule.dto';
+import { PlaylistRuleDto } from "./playlist-rule.dto";
 
 export enum PlaylistRuleLogic {
-  AND = 'and',
-  OR = 'or',
+  AND = "and",
+  OR = "or",
 }
 
 export class PlaylistCriteriaDto {
-  @ApiProperty({ description: 'Limit number of tracks', required: false })
+  @ApiProperty({ description: "Limit number of tracks", required: false })
   @IsNumber()
   @IsOptional()
   limit?: number;
@@ -26,15 +26,15 @@ export class PlaylistCriteriaDto {
   @IsEnum(PlaylistRuleLogic)
   logic: PlaylistRuleLogic;
 
-  @ApiProperty({ description: 'Order by field', required: false })
+  @ApiProperty({ description: "Order by field", required: false })
   @IsOptional()
   @IsString()
   orderBy?: string;
 
-  @ApiProperty({ description: 'Order direction', required: false })
+  @ApiProperty({ description: "Order direction", required: false })
   @IsOptional()
   @IsString()
-  orderDirection?: 'asc' | 'desc';
+  orderDirection?: "asc" | "desc";
 
   @ApiProperty({ type: [PlaylistRuleDto] })
   @IsArray()

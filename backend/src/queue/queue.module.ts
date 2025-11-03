@@ -1,12 +1,12 @@
-import { BullModule } from '@nestjs/bullmq';
-import { forwardRef, Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from "@nestjs/bullmq";
+import { forwardRef, Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
-import { AuthModule } from '../auth/auth.module';
-import { DatabaseModule } from '../database/database.module';
-import { LibraryModule } from '../library/library.module';
-import { PlaySyncProcessor } from './processors/play-sync.processor';
-import { SyncProcessor } from './processors/sync.processor';
+import { AuthModule } from "../auth/auth.module";
+import { DatabaseModule } from "../database/database.module";
+import { LibraryModule } from "../library/library.module";
+import { PlaySyncProcessor } from "./processors/play-sync.processor";
+import { SyncProcessor } from "./processors/sync.processor";
 
 @Module({
   exports: [BullModule],
@@ -15,13 +15,13 @@ import { SyncProcessor } from './processors/sync.processor';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL');
+        const redisUrl = configService.get<string>("REDIS_URL");
 
         if (redisUrl) {
           // Parse Redis URL for external managed Redis services
           try {
             const url = new URL(redisUrl);
-            const useTls = url.protocol === 'rediss:';
+            const useTls = url.protocol === "rediss:";
 
             return {
               connection: {
@@ -33,8 +33,8 @@ import { SyncProcessor } from './processors/sync.processor';
                 tls: useTls
                   ? {
                       rejectUnauthorized:
-                        configService.get('REDIS_TLS_REJECT_UNAUTHORIZED') !==
-                        'false',
+                        configService.get("REDIS_TLS_REJECT_UNAUTHORIZED") !==
+                        "false",
                       servername: url.hostname, // Required for SNI (Server Name Indication)
                     }
                   : undefined,
@@ -42,10 +42,7 @@ import { SyncProcessor } from './processors/sync.processor';
               },
               defaultJobOptions: {
                 attempts: 3,
-                backoff: {
-                  delay: 5000,
-                  type: 'exponential',
-                },
+                backoff: { delay: 5000, type: "exponential" },
                 removeOnComplete: {
                   age: 3600, // Keep completed jobs for 1 hour
                   count: 100, // Keep last 100 completed jobs
@@ -57,7 +54,7 @@ import { SyncProcessor } from './processors/sync.processor';
             };
           } catch (error) {
             throw new Error(
-              `Invalid REDIS_URL format: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              `Invalid REDIS_URL format: ${error instanceof Error ? error.message : "Unknown error"}`,
             );
           }
         }
@@ -65,20 +62,17 @@ import { SyncProcessor } from './processors/sync.processor';
         // Fallback to individual config values for local development
         return {
           connection: {
-            db: configService.get('redis.db'),
+            db: configService.get("redis.db"),
             enableReadyCheck: false,
-            host: configService.get('redis.host'),
+            host: configService.get("redis.host"),
             maxRetriesPerRequest: null,
-            password: configService.get('redis.password'),
-            port: configService.get('redis.port'),
-            tls: configService.get('redis.tls') ? {} : undefined,
+            password: configService.get("redis.password"),
+            port: configService.get("redis.port"),
+            tls: configService.get("redis.tls") ? {} : undefined,
           },
           defaultJobOptions: {
             attempts: 3,
-            backoff: {
-              delay: 5000,
-              type: 'exponential',
-            },
+            backoff: { delay: 5000, type: "exponential" },
             removeOnComplete: {
               age: 3600, // Keep completed jobs for 1 hour
               count: 100, // Keep last 100 completed jobs
@@ -102,14 +96,14 @@ import { SyncProcessor } from './processors/sync.processor';
           count: 50, // Keep last 50 failed jobs
         },
       },
-      name: 'sync',
+      name: "sync",
     }),
     BullModule.registerQueue({
       defaultJobOptions: {
         attempts: 3, // Retry up to 3 times
         backoff: {
           delay: 60000, // 1 minute
-          type: 'exponential',
+          type: "exponential",
         },
         removeOnComplete: {
           age: 3600, // Keep completed jobs for 1 hour
@@ -120,7 +114,7 @@ import { SyncProcessor } from './processors/sync.processor';
           count: 100,
         },
       },
-      name: 'play-sync',
+      name: "play-sync",
     }),
     DatabaseModule,
     forwardRef(() => AuthModule),
