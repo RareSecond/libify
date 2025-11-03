@@ -98,7 +98,8 @@ export class PlaySyncProcessor extends WorkerHost {
 
       for (const item of recentlyPlayed) {
         try {
-          const spotifyTrackId = item.track.id;
+          // Handle track relinking: use original track ID if available
+          const spotifyTrackId = SpotifyService.getOriginalTrackId(item.track);
           const playedAt = new Date(item.played_at);
 
           // Track the most recent play timestamp

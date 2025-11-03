@@ -3,7 +3,8 @@ import { sql } from 'kysely';
 
 import { DatabaseService } from '../database/database.service';
 import { KyselyService } from '../database/kysely/kysely.service';
-import { SpotifySavedAlbum } from './dto/spotify-album.dto';
+import { SpotifyAlbumTrack, SpotifySavedAlbum } from './dto/spotify-album.dto';
+import { SpotifyService } from './spotify.service';
 
 @Injectable()
 export class AggregationService {
@@ -226,6 +227,9 @@ export class AggregationService {
     const trackIds: string[] = [];
     if (albumData.tracks && albumData.tracks.items.length > 0) {
       for (const trackData of albumData.tracks.items) {
+        // Handle track relinking: use original track ID if available
+        const spotifyTrackId = this.getOriginalAlbumTrackId(trackData);
+
         const track = await this.databaseService.spotifyTrack.upsert({
           create: {
             albumId: album.id,
@@ -234,7 +238,7 @@ export class AggregationService {
             duration: trackData.duration_ms,
             explicit: trackData.explicit,
             previewUrl: trackData.preview_url,
-            spotifyId: trackData.id,
+            spotifyId: spotifyTrackId,
             title: trackData.name,
             trackNumber: trackData.track_number,
           },
@@ -249,7 +253,7 @@ export class AggregationService {
             trackNumber: trackData.track_number,
           },
           where: {
-            spotifyId: trackData.id,
+            spotifyId: spotifyTrackId,
           },
         });
         trackIds.push(track.id);
@@ -269,6 +273,7 @@ export class AggregationService {
       artists: Array<{ id: string; name: string }>;
       duration_ms: number;
       id: string;
+      linked_from?: { id: string; uri: string };
       name: string;
     },
     artistMap: Map<
@@ -348,9 +353,12 @@ export class AggregationService {
       });
     }
 
+    // Handle track relinking: use original track ID if available
+    const spotifyTrackId = SpotifyService.getOriginalTrackId(spotifyTrackData);
+
     // Since we assume Spotify metadata never changes, only create track if it doesn't exist
     let track = await this.databaseService.spotifyTrack.findUnique({
-      where: { spotifyId: spotifyTrackData.id },
+      where: { spotifyId: spotifyTrackId },
     });
 
     if (!track) {
@@ -359,7 +367,7 @@ export class AggregationService {
           albumId: album.id,
           artistId: artist.id,
           duration: spotifyTrackData.duration_ms,
-          spotifyId: spotifyTrackData.id,
+          spotifyId: spotifyTrackId,
           title: spotifyTrackData.name,
         },
       });
@@ -572,5 +580,12 @@ export class AggregationService {
     this.logger.debug(
       `Updated UserArtist stats for user ${userId}, artist ${artistId}`,
     );
+  }
+
+  /**
+   * Helper to extract original track ID from album track data (handles relinking)
+   */
+  private getOriginalAlbumTrackId(track: SpotifyAlbumTrack): string {
+    return track.linked_from?.id || track.id;
   }
 }

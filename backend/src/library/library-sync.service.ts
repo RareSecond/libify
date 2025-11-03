@@ -356,11 +356,14 @@ export class LibrarySyncService {
         await this.spotifyService.getRecentlyPlayed(accessToken);
 
       for (const { played_at, track } of recentTracks) {
+        // Handle track relinking: use original track ID if available
+        const spotifyTrackId = SpotifyService.getOriginalTrackId(track);
+
         // Find the user track
         const userTrack = await this.databaseService.userTrack.findFirst({
           where: {
             spotifyTrack: {
-              spotifyId: track.id,
+              spotifyId: spotifyTrackId,
             },
             userId,
           },
@@ -1393,11 +1396,13 @@ export class LibrarySyncService {
   ): Promise<void> {
     const db = this.kyselyService.database;
 
-    // Extract unique IDs for batch processing
+    // Extract unique IDs for batch processing (handle track relinking)
     const uniqueArtistIds = [
       ...new Set(tracks.map((t) => t.track.artists[0]?.id).filter(Boolean)),
     ];
-    const uniqueTrackIds = [...new Set(tracks.map((t) => t.track.id))];
+    const uniqueTrackIds = [
+      ...new Set(tracks.map((t) => SpotifyService.getOriginalTrackId(t.track))),
+    ];
 
     // 1. Check what UserTracks already exist to avoid duplicate processing
     const [existingUserTracks, existingSpotifyTracks] = await Promise.all([
@@ -1445,10 +1450,12 @@ export class LibrarySyncService {
     // 3. Process each track with minimal memory usage
     for (const { added_at, track } of tracks) {
       try {
+        // Handle track relinking: use original track ID if available
+        const originalSpotifyId = SpotifyService.getOriginalTrackId(track);
         let spotifyTrackId: string;
 
         // Only create Spotify metadata entities if track doesn't exist in database
-        if (!existingSpotifyTrackIds.has(track.id)) {
+        if (!existingSpotifyTrackIds.has(originalSpotifyId)) {
           const { trackId } =
             await this.aggregationService.createOrUpdateSpotifyEntities(
               track,
@@ -1457,11 +1464,11 @@ export class LibrarySyncService {
           spotifyTrackId = trackId;
         } else {
           // Track metadata already exists, use cached ID
-          spotifyTrackId = spotifyTrackIdMap.get(track.id)!;
+          spotifyTrackId = spotifyTrackIdMap.get(originalSpotifyId)!;
         }
 
         // Create UserTrack only if it doesn't exist
-        if (!existingUserTrackIds.has(track.id)) {
+        if (!existingUserTrackIds.has(originalSpotifyId)) {
           const userTrack = await this.databaseService.userTrack.create({
             data: {
               addedAt: new Date(added_at),

@@ -44,6 +44,10 @@ export interface SpotifyTrackData {
   artists: Array<{ id: string; name: string }>;
   duration_ms: number;
   id: string;
+  linked_from?: {
+    id: string;
+    uri: string;
+  };
   name: string;
 }
 
@@ -57,6 +61,16 @@ export class SpotifyService {
       baseURL: 'https://api.spotify.com/v1',
       timeout: 10000, // 10 seconds
     });
+  }
+
+  /**
+   * Extracts the original Spotify track ID, handling track relinking.
+   * When Spotify relinks a track (due to licensing/re-releases), the API returns
+   * a new ID with linked_from pointing to the original. We always use the original
+   * ID to maintain consistency with tracks already in the user's library.
+   */
+  static getOriginalTrackId(track: SpotifyTrackData): string {
+    return track.linked_from?.id || track.id;
   }
 
   async getAllUserPlaylists(accessToken: string): Promise<SpotifyPlaylist[]> {
