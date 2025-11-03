@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Box,
+  Button,
   Card,
   Divider,
   Group,
@@ -10,6 +11,7 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Monitor,
@@ -24,7 +26,10 @@ import {
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
-import { getLibraryControllerGetTracksQueryKey } from "../data/api";
+import {
+  getLibraryControllerGetTracksQueryKey,
+  usePlaybackControllerTransferPlayback,
+} from "../data/api";
 import { useCurrentPlayback } from "../hooks/useCurrentPlayback";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
 import { formatTime } from "../utils/format";
@@ -34,10 +39,33 @@ import { TrackSources } from "./TrackSources";
 
 export function MediaPlayer() {
   const queryClient = useQueryClient();
-  const { currentPlayback } = useCurrentPlayback();
+  const { currentPlayback, refetch: refetchPlayback } = useCurrentPlayback();
+
+  // Mutation for transferring playback
+  const transferPlaybackMutation = usePlaybackControllerTransferPlayback({
+    mutation: {
+      onError: (error) => {
+        notifications.show({
+          color: "red",
+          message: error.message || "Failed to transfer playback",
+          title: "Transfer Failed",
+        });
+      },
+      onSuccess: () => {
+        notifications.show({
+          color: "green",
+          message: "Playback transferred successfully",
+          title: "Success",
+        });
+        // Refetch playback state to update UI
+        setTimeout(() => refetchPlayback(), 1000);
+      },
+    },
+  });
 
   const {
     currentTrack,
+    deviceId,
     duration,
     isPlaying,
     isReady,
@@ -128,6 +156,21 @@ export function MediaPlayer() {
     name: currentPlayback?.track?.name ?? "Unknown Track",
   };
 
+  const handleTransferPlayback = () => {
+    if (!deviceId) {
+      notifications.show({
+        color: "red",
+        message: "Web player not ready. Please wait a moment and try again.",
+        title: "Not Ready",
+      });
+      return;
+    }
+
+    transferPlaybackMutation.mutate({
+      data: { deviceId },
+    });
+  };
+
   return (
     <Card
       className="fixed bottom-0 left-0 right-0 rounded-none border-t border-gray-200 p-4 z-[250]"
@@ -155,44 +198,56 @@ export function MediaPlayer() {
 
           {/* Playback Controls */}
           <Stack align="center" className="flex-1 max-w-[500px]" gap="sm">
-            <Group gap="xs">
-              <ActionIcon
-                color={isShuffled ? "blue" : undefined}
-                disabled={!hasWebPlayerTrack}
-                onClick={toggleShuffle}
-                size="lg"
-                variant={isShuffled ? "filled" : "subtle"}
+            {!hasWebPlayerTrack && hasCrossDevicePlayback && deviceId ? (
+              <Button
+                disabled={!deviceId || transferPlaybackMutation.isPending}
+                loading={transferPlaybackMutation.isPending}
+                onClick={handleTransferPlayback}
+                size="md"
+                variant="light"
               >
-                <Shuffle size={20} />
-              </ActionIcon>
+                Transfer Playback Here
+              </Button>
+            ) : (
+              <Group gap="xs">
+                <ActionIcon
+                  color={isShuffled ? "blue" : undefined}
+                  disabled={!hasWebPlayerTrack}
+                  onClick={toggleShuffle}
+                  size="lg"
+                  variant={isShuffled ? "filled" : "subtle"}
+                >
+                  <Shuffle size={20} />
+                </ActionIcon>
 
-              <ActionIcon
-                disabled={!hasWebPlayerTrack}
-                onClick={previousTrack}
-                size="lg"
-                variant="subtle"
-              >
-                <SkipBack size={20} />
-              </ActionIcon>
+                <ActionIcon
+                  disabled={!hasWebPlayerTrack}
+                  onClick={previousTrack}
+                  size="lg"
+                  variant="subtle"
+                >
+                  <SkipBack size={20} />
+                </ActionIcon>
 
-              <ActionIcon
-                disabled={!hasWebPlayerTrack}
-                onClick={handlePlayPause}
-                size="xl"
-                variant="filled"
-              >
-                {displayIsPlaying ? <Pause size={24} /> : <Play size={24} />}
-              </ActionIcon>
+                <ActionIcon
+                  disabled={!hasWebPlayerTrack}
+                  onClick={handlePlayPause}
+                  size="xl"
+                  variant="filled"
+                >
+                  {displayIsPlaying ? <Pause size={24} /> : <Play size={24} />}
+                </ActionIcon>
 
-              <ActionIcon
-                disabled={!hasWebPlayerTrack}
-                onClick={nextTrack}
-                size="lg"
-                variant="subtle"
-              >
-                <SkipForward size={20} />
-              </ActionIcon>
-            </Group>
+                <ActionIcon
+                  disabled={!hasWebPlayerTrack}
+                  onClick={nextTrack}
+                  size="lg"
+                  variant="subtle"
+                >
+                  <SkipForward size={20} />
+                </ActionIcon>
+              </Group>
+            )}
 
             {/* Progress Bar */}
             <Group className="w-full" gap="sm">

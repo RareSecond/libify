@@ -26,6 +26,7 @@ import {
   PlaybackControlResponseDto,
   PlaybackResponseDto,
 } from "./dto/playback-response.dto";
+import { TransferPlaybackDto } from "./dto/transfer-playback.dto";
 import { PlaybackService } from "./playback.service";
 
 interface AuthenticatedRequest extends Request {
@@ -165,6 +166,36 @@ export class PlaybackController {
       this.logger.error("Failed to resume playback", error);
       throw new HttpException(
         error.message || "Failed to resume playback",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @ApiOperation({ summary: "Transfer playback to a device" })
+  @ApiResponse({
+    description: "Playback transferred",
+    status: 200,
+    type: PlaybackControlResponseDto,
+  })
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @Post("transfer")
+  async transferPlayback(
+    @Req() req: AuthenticatedRequest,
+    @Body() transferDto: TransferPlaybackDto,
+  ): Promise<PlaybackControlResponseDto> {
+    try {
+      const result = await this.playbackService.transferPlayback(
+        req.user.id,
+        transferDto.deviceId,
+      );
+
+      return plainToInstance(PlaybackControlResponseDto, result, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      this.logger.error("Failed to transfer playback", error);
+      throw new HttpException(
+        error.message || "Failed to transfer playback",
         HttpStatus.BAD_REQUEST,
       );
     }

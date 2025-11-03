@@ -1631,6 +1631,56 @@
         ]
       }
     },
+    "/playback/transfer": {
+      "post": {
+        "operationId": "PlaybackController_transferPlayback",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferPlaybackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Playback transferred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transfer playback to a device",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
     "/playlists": {
       "post": {
         "operationId": "PlaylistsController_create",
@@ -3118,6 +3168,18 @@
           "queueLength",
           "timings",
           "trackUris"
+        ]
+      },
+      "TransferPlaybackDto": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "Device ID to transfer playback to"
+          }
+        },
+        "required": [
+          "deviceId"
         ]
       },
       "PlaylistRuleDto": {

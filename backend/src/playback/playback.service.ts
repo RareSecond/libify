@@ -196,4 +196,26 @@ export class PlaybackService {
       throw error;
     }
   }
+
+  async transferPlayback(
+    userId: string,
+    deviceId: string,
+  ): Promise<PlaybackControlResponseDto> {
+    try {
+      const accessToken = await this.authService.getSpotifyAccessToken(userId);
+      if (!accessToken) {
+        throw new Error("Spotify access token not found");
+      }
+
+      await this.spotifyService.transferPlayback(accessToken, deviceId, true);
+      return plainToInstance(
+        PlaybackControlResponseDto,
+        { message: "Playback transferred successfully" },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      this.logger.error("Failed to transfer playback", error);
+      throw error;
+    }
+  }
 }

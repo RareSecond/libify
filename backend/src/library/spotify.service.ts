@@ -618,6 +618,27 @@ export class SpotifyService {
     }
   }
 
+  async transferPlayback(
+    accessToken: string,
+    deviceId: string,
+    play = true,
+  ): Promise<void> {
+    try {
+      await this.spotifyApi.put(
+        "/me/player",
+        { device_ids: [deviceId], play },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      this.logger.log(
+        `Transferred playback to device ${deviceId} (play: ${play})`,
+      );
+    } catch (error) {
+      this.logger.error("Failed to transfer playback", error);
+      throw error;
+    }
+  }
+
   /**
    * Resolves the target device ID for playback.
    * If deviceId is provided, returns it. Otherwise, fetches available devices
