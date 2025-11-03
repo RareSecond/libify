@@ -7,46 +7,46 @@ import {
   Post,
   Req,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
-} from '@nestjs/swagger';
-import { User } from '@prisma/client';
-import { plainToInstance } from 'class-transformer';
-import { Request } from 'express';
+} from "@nestjs/swagger";
+import { User } from "@prisma/client";
+import { plainToInstance } from "class-transformer";
+import { Request } from "express";
 
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PlayContextDto } from './dto/play-context.dto';
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { PlayContextDto } from "./dto/play-context.dto";
 import {
   PlaybackControlResponseDto,
   PlaybackResponseDto,
-} from './dto/playback-response.dto';
-import { PlaybackService } from './playback.service';
+} from "./dto/playback-response.dto";
+import { PlaybackService } from "./playback.service";
 
 interface AuthenticatedRequest extends Request {
   user: User;
 }
 
 @ApiBearerAuth()
-@ApiTags('playback')
-@Controller('playback')
+@ApiTags("playback")
+@Controller("playback")
 @UseGuards(JwtAuthGuard)
 export class PlaybackController {
   private readonly logger = new Logger(PlaybackController.name);
 
   constructor(private readonly playbackService: PlaybackService) {}
 
-  @ApiOperation({ summary: 'Skip to next track' })
+  @ApiOperation({ summary: "Skip to next track" })
   @ApiResponse({
-    description: 'Skipped to next track',
+    description: "Skipped to next track",
     status: 200,
     type: PlaybackControlResponseDto,
   })
-  @ApiResponse({ description: 'Bad request', status: 400 })
-  @Post('next')
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @Post("next")
   async next(
     @Req() req: AuthenticatedRequest,
   ): Promise<PlaybackControlResponseDto> {
@@ -57,22 +57,22 @@ export class PlaybackController {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      this.logger.error('Failed to skip to next track', error);
+      this.logger.error("Failed to skip to next track", error);
       throw new HttpException(
-        error.message || 'Failed to skip to next track',
+        error.message || "Failed to skip to next track",
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  @ApiOperation({ summary: 'Pause playback' })
+  @ApiOperation({ summary: "Pause playback" })
   @ApiResponse({
-    description: 'Playback paused',
+    description: "Playback paused",
     status: 200,
     type: PlaybackControlResponseDto,
   })
-  @ApiResponse({ description: 'Bad request', status: 400 })
-  @Post('pause')
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @Post("pause")
   async pause(
     @Req() req: AuthenticatedRequest,
   ): Promise<PlaybackControlResponseDto> {
@@ -83,23 +83,23 @@ export class PlaybackController {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      this.logger.error('Failed to pause playback', error);
+      this.logger.error("Failed to pause playback", error);
       throw new HttpException(
-        error.message || 'Failed to pause playback',
+        error.message || "Failed to pause playback",
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  @ApiOperation({ summary: 'Start playback with queue generation' })
+  @ApiOperation({ summary: "Start playback with queue generation" })
   @ApiResponse({
-    description: 'Playback started successfully',
+    description: "Playback started successfully",
     status: 200,
     type: PlaybackResponseDto,
   })
-  @ApiResponse({ description: 'Bad request', status: 400 })
-  @ApiResponse({ description: 'Unauthorized', status: 401 })
-  @Post('play')
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @ApiResponse({ description: "Unauthorized", status: 401 })
+  @Post("play")
   async play(
     @Req() req: AuthenticatedRequest,
     @Body() playContext: PlayContextDto,
@@ -111,22 +111,22 @@ export class PlaybackController {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      this.logger.error('Failed to start playback', error);
+      this.logger.error("Failed to start playback", error);
       throw new HttpException(
-        error.message || 'Failed to start playback',
+        error.message || "Failed to start playback",
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  @ApiOperation({ summary: 'Resume playback' })
+  @ApiOperation({ summary: "Resume playback" })
   @ApiResponse({
-    description: 'Playback resumed',
+    description: "Playback resumed",
     status: 200,
     type: PlaybackControlResponseDto,
   })
-  @ApiResponse({ description: 'Bad request', status: 400 })
-  @Post('resume')
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @Post("resume")
   async resume(
     @Req() req: AuthenticatedRequest,
   ): Promise<PlaybackControlResponseDto> {
@@ -137,9 +137,9 @@ export class PlaybackController {
         excludeExtraneousValues: true,
       });
     } catch (error) {
-      this.logger.error('Failed to resume playback', error);
+      this.logger.error("Failed to resume playback", error);
       throw new HttpException(
-        error.message || 'Failed to resume playback',
+        error.message || "Failed to resume playback",
         HttpStatus.BAD_REQUEST,
       );
     }

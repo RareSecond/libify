@@ -1,4 +1,4 @@
-import { Job } from 'bullmq';
+import { Job } from "bullmq";
 
 interface ThrottledProgressOptions {
   minInterval?: number; // Minimum time between updates in ms

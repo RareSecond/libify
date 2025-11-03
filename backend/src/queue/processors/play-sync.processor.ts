@@ -1,18 +1,18 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Logger } from "@nestjs/common";
+import { Job } from "bullmq";
 
-import { AuthService } from '../../auth/auth.service';
-import { DatabaseService } from '../../database/database.service';
-import { AggregationService } from '../../library/aggregation.service';
-import { PlaySyncService } from '../../library/play-sync.service';
-import { SpotifyService } from '../../library/spotify.service';
+import { AuthService } from "../../auth/auth.service";
+import { DatabaseService } from "../../database/database.service";
+import { AggregationService } from "../../library/aggregation.service";
+import { PlaySyncService } from "../../library/play-sync.service";
+import { SpotifyService } from "../../library/spotify.service";
 
 export interface PlaySyncJobData {
   userId?: string;
 }
 
-@Processor('play-sync')
+@Processor("play-sync")
 export class PlaySyncProcessor extends WorkerHost {
   private readonly logger = new Logger(PlaySyncProcessor.name);
 
@@ -30,7 +30,7 @@ export class PlaySyncProcessor extends WorkerHost {
     job: Job<PlaySyncJobData>,
   ): Promise<{ enqueuedCount?: number; newPlaysCount?: number }> {
     // Handle scheduler job that enqueues all user syncs
-    if (job.name === 'sync-all-users') {
+    if (job.name === "sync-all-users") {
       this.logger.log(`Starting scheduler job to enqueue all user syncs`);
       try {
         const enqueuedCount = await this.playSyncService.enqueueAllUserSyncs();
@@ -50,7 +50,7 @@ export class PlaySyncProcessor extends WorkerHost {
     // Handle individual user sync job
     const { userId } = job.data;
     if (!userId) {
-      throw new Error('userId is required for sync-user-plays job');
+      throw new Error("userId is required for sync-user-plays job");
     }
 
     this.logger.log(`Starting play sync for user ${userId} (Job: ${job.id})`);
@@ -59,7 +59,7 @@ export class PlaySyncProcessor extends WorkerHost {
       // Get valid access token (auto-refreshes if expired)
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
-        throw new Error('Failed to get Spotify access token');
+        throw new Error("Failed to get Spotify access token");
       }
 
       // Get user's last sync timestamp
@@ -109,16 +109,8 @@ export class PlaySyncProcessor extends WorkerHost {
 
           // Find the UserTrack for this Spotify track
           const userTrack = await this.databaseService.userTrack.findFirst({
-            select: {
-              id: true,
-              spotifyTrackId: true,
-            },
-            where: {
-              spotifyTrack: {
-                spotifyId: spotifyTrackId,
-              },
-              userId,
-            },
+            select: { id: true, spotifyTrackId: true },
+            where: { spotifyTrack: { spotifyId: spotifyTrackId }, userId },
           });
 
           // Skip if track is not in user's library
@@ -157,10 +149,10 @@ export class PlaySyncProcessor extends WorkerHost {
             // P2002: Unique constraint violation (duplicate play)
             // Silently skip - this is expected for idempotency
             if (
-              typeof error === 'object' &&
+              typeof error === "object" &&
               error !== null &&
-              'code' in error &&
-              error.code === 'P2002'
+              "code" in error &&
+              error.code === "P2002"
             ) {
               this.logger.debug(
                 `Duplicate play detected for track ${item.track.id} at ${playedAt.toISOString()}, skipping`,

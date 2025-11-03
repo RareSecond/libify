@@ -1,4 +1,4 @@
-import type { ColumnType } from 'kysely';
+import type { ColumnType } from "kysely";
 export type DB = {
   PlayHistory: PlayHistory;
   SmartPlaylist: SmartPlaylist;
@@ -19,7 +19,7 @@ export type Generated<T> =
     ? ColumnType<S, I | undefined, U>
     : ColumnType<T, T | undefined, T>;
 
-import type { SourceType } from './enums';
+import type { SourceType } from "./enums";
 
 export type PlayHistory = {
   duration: null | number;

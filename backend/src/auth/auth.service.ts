@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
-import axios from 'axios';
+import { Injectable, Logger } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { User } from "@prisma/client";
+import axios from "axios";
 
-import { EncryptionService } from '../common/encryption/encryption.service';
-import { DatabaseService } from '../database/database.service';
+import { EncryptionService } from "../common/encryption/encryption.service";
+import { DatabaseService } from "../database/database.service";
 
 @Injectable()
 export class AuthService {
@@ -37,7 +37,7 @@ export class AuthService {
         user.spotifyAccessToken,
       );
     } catch (error) {
-      this.logger.error('Failed to decrypt access token', error);
+      this.logger.error("Failed to decrypt access token", error);
       return null;
     }
 
@@ -64,7 +64,7 @@ export class AuthService {
             return newAccessToken;
           }
         } catch (error) {
-          this.logger.error('Failed to refresh Spotify token', error);
+          this.logger.error("Failed to refresh Spotify token", error);
         }
       }
       // If refresh fails, return null to force re-authentication
@@ -76,10 +76,7 @@ export class AuthService {
 
   async login(user: User) {
     const payload = { email: user.email, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user,
-    };
+    return { access_token: this.jwtService.sign(payload), user };
   }
 
   async validateUser(
@@ -91,12 +88,10 @@ export class AuthService {
     refreshToken?: string,
     expiresIn?: number,
   ): Promise<User> {
-    let user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    let user = await this.prisma.user.findUnique({ where: { email } });
 
     const tokenExpiresAt =
-      expiresIn && typeof expiresIn === 'number' && expiresIn > 0
+      expiresIn && typeof expiresIn === "number" && expiresIn > 0
         ? new Date(Date.now() + expiresIn * 1000)
         : undefined;
 
@@ -107,7 +102,7 @@ export class AuthService {
           name,
           provider,
           providerId,
-          ...(provider === 'spotify' && {
+          ...(provider === "spotify" && {
             spotifyAccessToken: accessToken
               ? this.encryptionService.encrypt(accessToken)
               : undefined,
@@ -119,7 +114,7 @@ export class AuthService {
           }),
         },
       });
-    } else if (provider === 'spotify' && accessToken && refreshToken) {
+    } else if (provider === "spotify" && accessToken && refreshToken) {
       // Update tokens for existing user
       user = await this.prisma.user.update({
         data: {
@@ -143,26 +138,26 @@ export class AuthService {
       const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
       if (!clientId || !clientSecret) {
-        this.logger.error('Spotify client credentials not configured');
+        this.logger.error("Spotify client credentials not configured");
         return null;
       }
 
       // Create base64 encoded credentials
       const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
-        'base64',
+        "base64",
       );
 
       // Make request to Spotify token endpoint
       const response = await axios.post(
-        'https://accounts.spotify.com/api/token',
+        "https://accounts.spotify.com/api/token",
         new URLSearchParams({
-          grant_type: 'refresh_token',
+          grant_type: "refresh_token",
           refresh_token: refreshToken,
         }),
         {
           headers: {
-            Authorization: `Basic ${credentials}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
+            "Authorization": `Basic ${credentials}`,
+            "Content-Type": "application/x-www-form-urlencoded",
           },
         },
       );
@@ -190,9 +185,9 @@ export class AuthService {
       );
       return access_token;
     } catch (error) {
-      this.logger.error('Failed to refresh Spotify token:', error);
+      this.logger.error("Failed to refresh Spotify token:", error);
       if (axios.isAxiosError(error) && error.response) {
-        this.logger.error('Spotify API error:', error.response.data);
+        this.logger.error("Spotify API error:", error.response.data);
       }
       return null;
     }

@@ -1,5 +1,5 @@
-import { Expose } from 'class-transformer';
-import { IsDateString, IsEmail, IsOptional, IsString } from 'class-validator';
+import { Expose } from "class-transformer";
+import { IsDateString, IsEmail, IsOptional, IsString } from "class-validator";
 
 export class UserDto {
   @Expose()

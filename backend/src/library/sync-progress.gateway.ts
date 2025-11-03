@@ -1,6 +1,6 @@
-import { InjectQueue } from '@nestjs/bullmq';
-import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { InjectQueue } from "@nestjs/bullmq";
+import { Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,10 +9,10 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-} from '@nestjs/websockets';
-import { Queue, QueueEvents } from 'bullmq';
-import { parse as parseCookie } from 'cookie';
-import { Server, Socket } from 'socket.io';
+} from "@nestjs/websockets";
+import { Queue, QueueEvents } from "bullmq";
+import { parse as parseCookie } from "cookie";
+import { Server, Socket } from "socket.io";
 
 interface JobProgressData {
   current?: number;
@@ -29,12 +29,12 @@ interface JobProgressData {
   cors: {
     credentials: true,
     origin: [
-      'http://127.0.0.1:6543',
-      'http://localhost:6543',
-      process.env.APP_URL || 'http://127.0.0.1:6543',
+      "http://127.0.0.1:6543",
+      "http://localhost:6543",
+      process.env.APP_URL || "http://127.0.0.1:6543",
     ],
   },
-  namespace: '/sync',
+  namespace: "/sync",
 })
 export class SyncProgressGateway
   implements
@@ -51,7 +51,7 @@ export class SyncProgressGateway
   private queueEvents: QueueEvents;
 
   constructor(
-    @InjectQueue('sync') private syncQueue: Queue,
+    @InjectQueue("sync") private syncQueue: Queue,
     private jwtService: JwtService,
   ) {}
 
@@ -105,7 +105,7 @@ export class SyncProgressGateway
     }
   }
 
-  @SubscribeMessage('subscribe')
+  @SubscribeMessage("subscribe")
   async handleSubscribe(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
@@ -118,7 +118,7 @@ export class SyncProgressGateway
     );
 
     if (!jobId) {
-      client.emit('error', { message: 'jobId is required' });
+      client.emit("error", { message: "jobId is required" });
       return;
     }
 
@@ -126,7 +126,7 @@ export class SyncProgressGateway
       this.logger.warn(
         `Subscribe rejected: Client ${client.id} not authenticated`,
       );
-      client.emit('error', { message: 'Authentication required' });
+      client.emit("error", { message: "Authentication required" });
       return;
     }
 
@@ -136,7 +136,7 @@ export class SyncProgressGateway
 
       if (!job) {
         this.logger.warn(`Subscribe rejected: Job ${jobId} not found`);
-        client.emit('error', { message: 'Job not found' });
+        client.emit("error", { message: "Job not found" });
         return;
       }
 
@@ -145,8 +145,8 @@ export class SyncProgressGateway
         this.logger.warn(
           `Subscribe rejected: User ${userId} does not own job ${jobId} (owned by ${job.data.userId})`,
         );
-        client.emit('error', {
-          message: 'Unauthorized: You do not own this job',
+        client.emit("error", {
+          message: "Unauthorized: You do not own this job",
         });
         return;
       }
@@ -167,7 +167,7 @@ export class SyncProgressGateway
       this.logger.error(
         `Error during subscribe for job ${jobId}: ${error.message}`,
       );
-      client.emit('error', { message: 'Failed to subscribe to job' });
+      client.emit("error", { message: "Failed to subscribe to job" });
       return;
     }
 
@@ -176,23 +176,23 @@ export class SyncProgressGateway
       const job = await this.syncQueue.getJob(jobId);
 
       if (!job) {
-        client.emit('error', { message: 'Job not found' });
+        client.emit("error", { message: "Job not found" });
         return;
       }
 
       const state = await job.getState();
       const progress = job.progress as JobProgressData;
 
-      client.emit('status', {
-        error: state === 'failed' ? job.failedReason : undefined,
+      client.emit("status", {
+        error: state === "failed" ? job.failedReason : undefined,
         jobId: job.id,
         progress,
-        result: state === 'completed' ? job.returnvalue : undefined,
+        result: state === "completed" ? job.returnvalue : undefined,
         state,
       });
 
       // If job is already in terminal state, unsubscribe
-      if (state === 'completed' || state === 'failed') {
+      if (state === "completed" || state === "failed") {
         this.logger.log(
           `Job ${jobId} already in terminal state: ${state}, unsubscribing client`,
         );
@@ -201,11 +201,11 @@ export class SyncProgressGateway
       }
     } catch (error) {
       this.logger.error(`Error fetching job ${jobId}`, error);
-      client.emit('error', { message: 'Failed to fetch job status' });
+      client.emit("error", { message: "Failed to fetch job status" });
     }
   }
 
-  @SubscribeMessage('unsubscribe')
+  @SubscribeMessage("unsubscribe")
   handleUnsubscribe(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
@@ -229,21 +229,21 @@ export class SyncProgressGateway
   async onModuleDestroy() {
     // Clean up QueueEvents connection
     await this.queueEvents.close();
-    this.logger.log('QueueEvents closed');
+    this.logger.log("QueueEvents closed");
   }
 
   async onModuleInit() {
     // Initialize QueueEvents to listen for job events
-    this.queueEvents = new QueueEvents('sync', {
+    this.queueEvents = new QueueEvents("sync", {
       connection: this.syncQueue.opts.connection,
     });
 
     // Listen to BullMQ events (no polling!)
-    this.queueEvents.on('progress', this.handleProgress.bind(this));
-    this.queueEvents.on('completed', this.handleCompleted.bind(this));
-    this.queueEvents.on('failed', this.handleFailed.bind(this));
+    this.queueEvents.on("progress", this.handleProgress.bind(this));
+    this.queueEvents.on("completed", this.handleCompleted.bind(this));
+    this.queueEvents.on("failed", this.handleFailed.bind(this));
 
-    this.logger.log('QueueEvents initialized for sync progress');
+    this.logger.log("QueueEvents initialized for sync progress");
   }
 
   private async handleCompleted({
@@ -261,11 +261,9 @@ export class SyncProgressGateway
     }
 
     // Push completion to all clients
-    this.server.to(`sync-${jobId}`).emit('completed', {
-      jobId,
-      result: returnvalue,
-      state: 'completed',
-    });
+    this.server
+      .to(`sync-${jobId}`)
+      .emit("completed", { jobId, result: returnvalue, state: "completed" });
 
     // Clean up connections for this job
     this.activeConnections.delete(jobId);
@@ -286,11 +284,9 @@ export class SyncProgressGateway
     }
 
     // Push failure to all clients
-    this.server.to(`sync-${jobId}`).emit('failed', {
-      error: failedReason,
-      jobId,
-      state: 'failed',
-    });
+    this.server
+      .to(`sync-${jobId}`)
+      .emit("failed", { error: failedReason, jobId, state: "failed" });
 
     // Clean up connections for this job
     this.activeConnections.delete(jobId);
@@ -307,15 +303,11 @@ export class SyncProgressGateway
 
     // Only emit if server is available (not in worker process)
     if (!this.server) {
-      this.logger.warn('Server not available (worker process)');
+      this.logger.warn("Server not available (worker process)");
       return;
     }
 
-    const payload = {
-      jobId,
-      progress: data,
-      state: 'active',
-    };
+    const payload = { jobId, progress: data, state: "active" };
 
     this.logger.log(
       `Emitting progress to room sync-${jobId}:`,
@@ -323,6 +315,6 @@ export class SyncProgressGateway
     );
 
     // Push to all clients subscribed to this job
-    this.server.to(`sync-${jobId}`).emit('progress', payload);
+    this.server.to(`sync-${jobId}`).emit("progress", payload);
   }
 }

@@ -1,39 +1,39 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
 
 export enum PlaylistRuleField {
-  ALBUM = 'album',
-  ARTIST = 'artist',
-  DATE_ADDED = 'dateAdded',
-  DURATION = 'duration',
-  LAST_PLAYED = 'lastPlayed',
-  PLAY_COUNT = 'playCount',
-  RATING = 'rating',
-  TAG = 'tag',
-  TITLE = 'title',
+  ALBUM = "album",
+  ARTIST = "artist",
+  DATE_ADDED = "dateAdded",
+  DURATION = "duration",
+  LAST_PLAYED = "lastPlayed",
+  PLAY_COUNT = "playCount",
+  RATING = "rating",
+  TAG = "tag",
+  TITLE = "title",
 }
 
 export enum PlaylistRuleOperator {
-  CONTAINS = 'contains',
-  ENDS_WITH = 'endsWith',
-  EQUALS = 'equals',
-  GREATER_THAN = 'greaterThan',
-  HAS_ANY_TAG = 'hasAnyTag',
-  HAS_NO_TAGS = 'hasNoTags',
-  HAS_TAG = 'hasTag',
-  IN_LAST = 'inLast', // For date fields
-  IS_NOT_NULL = 'isNotNull',
-  IS_NULL = 'isNull',
-  LESS_THAN = 'lessThan',
-  NOT_CONTAINS = 'notContains',
-  NOT_EQUALS = 'notEquals',
-  NOT_HAS_TAG = 'notHasTag',
-  NOT_IN_LAST = 'notInLast',
-  STARTS_WITH = 'startsWith',
+  CONTAINS = "contains",
+  ENDS_WITH = "endsWith",
+  EQUALS = "equals",
+  GREATER_THAN = "greaterThan",
+  HAS_ANY_TAG = "hasAnyTag",
+  HAS_NO_TAGS = "hasNoTags",
+  HAS_TAG = "hasTag",
+  IN_LAST = "inLast", // For date fields
+  IS_NOT_NULL = "isNotNull",
+  IS_NULL = "isNull",
+  LESS_THAN = "lessThan",
+  NOT_CONTAINS = "notContains",
+  NOT_EQUALS = "notEquals",
+  NOT_HAS_TAG = "notHasTag",
+  NOT_IN_LAST = "notInLast",
+  STARTS_WITH = "startsWith",
 }
 
 export class PlaylistRuleDto {
-  @ApiProperty({ description: 'For date rules - number of days' })
+  @ApiProperty({ description: "For date rules - number of days" })
   @IsNumber()
   @IsOptional()
   daysValue?: number;

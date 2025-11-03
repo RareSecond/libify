@@ -1,15 +1,15 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Logger } from "@nestjs/common";
+import { Job } from "bullmq";
 
-import { AuthService } from '../../auth/auth.service';
-import { SyncOptionsDto } from '../../library/dto/sync-options.dto';
-import { SyncProgressDto } from '../../library/dto/sync-progress-base.dto';
-import { LibrarySyncService } from '../../library/library-sync.service';
+import { AuthService } from "../../auth/auth.service";
+import { SyncOptionsDto } from "../../library/dto/sync-options.dto";
+import { SyncProgressDto } from "../../library/dto/sync-progress-base.dto";
+import { LibrarySyncService } from "../../library/library-sync.service";
 
 export interface SyncJobData {
   options?: SyncOptionsDto;
-  syncType: 'full' | 'quick';
+  syncType: "full" | "quick";
   userId: string;
 }
 
@@ -94,7 +94,7 @@ class ThrottledProgressUpdater {
   }
 }
 
-@Processor('sync')
+@Processor("sync")
 export class SyncProcessor extends WorkerHost {
   private readonly logger = new Logger(SyncProcessor.name);
 
@@ -122,7 +122,7 @@ export class SyncProcessor extends WorkerHost {
       // Get fresh access token
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
-        throw new Error('Failed to get Spotify access token');
+        throw new Error("Failed to get Spotify access token");
       }
 
       const updateProgress = async (progress: SyncProgressDto) => {
@@ -131,7 +131,7 @@ export class SyncProcessor extends WorkerHost {
 
       // Execute sync based on type
       let result;
-      if (syncType === 'quick') {
+      if (syncType === "quick") {
         // Quick sync: sync first 50 liked tracks and 10 albums
         result = await this.librarySyncService.syncRecentTracksQuick(
           userId,

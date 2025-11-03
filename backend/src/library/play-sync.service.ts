@@ -1,8 +1,8 @@
-import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Queue } from 'bullmq';
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Queue } from "bullmq";
 
-import { DatabaseService } from '../database/database.service';
+import { DatabaseService } from "../database/database.service";
 
 @Injectable()
 export class PlaySyncService implements OnModuleInit {
@@ -10,7 +10,7 @@ export class PlaySyncService implements OnModuleInit {
 
   constructor(
     private databaseService: DatabaseService,
-    @InjectQueue('play-sync') private playSyncQueue: Queue,
+    @InjectQueue("play-sync") private playSyncQueue: Queue,
   ) {}
 
   /**
@@ -19,17 +19,13 @@ export class PlaySyncService implements OnModuleInit {
    */
   async enqueueAllUserSyncs(): Promise<number> {
     const startTime = Date.now();
-    this.logger.log('Enqueueing play sync jobs for all users');
+    this.logger.log("Enqueueing play sync jobs for all users");
 
     try {
       // Get all users with refresh tokens
       const users = await this.databaseService.user.findMany({
-        select: {
-          id: true,
-        },
-        where: {
-          spotifyRefreshToken: { not: null },
-        },
+        select: { id: true },
+        where: { spotifyRefreshToken: { not: null } },
       });
 
       this.logger.log(`Found ${users.length} users to sync`);
@@ -40,13 +36,13 @@ export class PlaySyncService implements OnModuleInit {
       for (const user of users) {
         try {
           await this.playSyncQueue.add(
-            'sync-user-plays',
+            "sync-user-plays",
             { userId: user.id },
             {
               attempts: 3,
               backoff: {
                 delay: 60000, // 1 minute
-                type: 'exponential',
+                type: "exponential",
               },
               // Deterministic jobId ensures only one job per user exists in queue
               // This prevents race conditions and duplicate play entries
@@ -76,7 +72,7 @@ export class PlaySyncService implements OnModuleInit {
 
       return enqueuedCount;
     } catch (error) {
-      this.logger.error('Fatal error during play sync job enqueueing', error);
+      this.logger.error("Fatal error during play sync job enqueueing", error);
       throw error;
     }
   }
@@ -86,24 +82,19 @@ export class PlaySyncService implements OnModuleInit {
    */
   async enqueueSyncForUser(userId: string): Promise<void> {
     await this.playSyncQueue.add(
-      'sync-user-plays',
+      "sync-user-plays",
       { userId },
       {
         attempts: 3,
         backoff: {
           delay: 60000, // 1 minute
-          type: 'exponential',
+          type: "exponential",
         },
         // Deterministic jobId ensures only one job per user exists in queue
         // This prevents race conditions and duplicate play entries
         jobId: `play-sync-user-${userId}`,
-        removeOnComplete: {
-          age: 3600,
-          count: 50,
-        },
-        removeOnFail: {
-          age: 86400,
-        },
+        removeOnComplete: { age: 3600, count: 50 },
+        removeOnFail: { age: 86400 },
       },
     );
 
@@ -117,18 +108,18 @@ export class PlaySyncService implements OnModuleInit {
     // Create a repeatable job that runs every 100 minutes
     // This job will enqueue individual sync jobs for each user
     await this.playSyncQueue.add(
-      'sync-all-users',
+      "sync-all-users",
       {},
       {
         // Single instance - only one scheduler runs across all app instances
-        jobId: 'play-sync-scheduler',
+        jobId: "play-sync-scheduler",
         repeat: {
           every: 100 * 60 * 1000, // 100 minutes in milliseconds
         },
       },
     );
 
-    this.logger.log('Play sync scheduler initialized (runs every 100 minutes)');
+    this.logger.log("Play sync scheduler initialized (runs every 100 minutes)");
   }
 
   /**
@@ -139,7 +130,7 @@ export class PlaySyncService implements OnModuleInit {
       this.logger.log(`Manual sync triggered for user ${userId}`);
       await this.enqueueSyncForUser(userId);
     } else {
-      this.logger.log('Manual sync triggered for all users');
+      this.logger.log("Manual sync triggered for all users");
       await this.enqueueAllUserSyncs();
     }
   }

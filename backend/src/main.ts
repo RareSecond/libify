@@ -1,29 +1,29 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as cookieParser from 'cookie-parser';
-import * as fs from 'fs';
+import { Logger, ValidationPipe } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import * as cookieParser from "cookie-parser";
+import * as fs from "fs";
 
-import { ApiModule } from './api.module';
+import { ApiModule } from "./api.module";
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+  const logger = new Logger("Bootstrap");
   const app = await NestFactory.create(ApiModule);
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     const config = new DocumentBuilder()
-      .setTitle('Libify API')
-      .setDescription('Spotify library management API')
-      .setVersion('0.0.1')
-      .addTag('libify')
+      .setTitle("Libify API")
+      .setDescription("Spotify library management API")
+      .setVersion("0.0.1")
+      .addTag("libify")
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
 
     const jsonString = JSON.stringify(document, null, 2);
-    fs.writeFileSync('./swagger.json', jsonString);
+    fs.writeFileSync("./swagger.json", jsonString);
 
-    SwaggerModule.setup('api', app, document);
+    SwaggerModule.setup("api", app, document);
   }
 
   const corsOrigins: (RegExp | string)[] = [
@@ -39,22 +39,15 @@ async function bootstrap() {
 
   // Support multiple frontend URLs if needed (comma-separated)
   if (process.env.ADDITIONAL_FRONTEND_URLS) {
-    const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(',').map(
+    const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(",").map(
       (url) => url.trim(),
     );
     corsOrigins.push(...additionalUrls);
   }
 
-  app.enableCors({
-    credentials: true,
-    origin: corsOrigins,
-  });
+  app.enableCors({ credentials: true, origin: corsOrigins });
   app.use(cookieParser());
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-    }),
-  );
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

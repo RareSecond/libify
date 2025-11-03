@@ -1,20 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { SourceType } from '@prisma/client';
+import { Injectable, Logger } from "@nestjs/common";
+import { SourceType } from "@prisma/client";
 
-import { DatabaseService } from '../database/database.service';
-import { KyselyService } from '../database/kysely/kysely.service';
-import { AggregationService } from './aggregation.service';
-import { SpotifySavedAlbum } from './dto/spotify-album.dto';
-import { SyncOptionsDto } from './dto/sync-options.dto';
+import { DatabaseService } from "../database/database.service";
+import { KyselyService } from "../database/kysely/kysely.service";
+import { AggregationService } from "./aggregation.service";
+import { SpotifySavedAlbum } from "./dto/spotify-album.dto";
+import { SyncOptionsDto } from "./dto/sync-options.dto";
 import {
   SyncItemCountsDto,
   SyncProgressCallback,
-} from './dto/sync-progress-base.dto';
+} from "./dto/sync-progress-base.dto";
 import {
   SpotifyPlaylist,
   SpotifyService,
   SpotifyTrackData,
-} from './spotify.service';
+} from "./spotify.service";
 
 export interface SyncResult {
   errors: string[];
@@ -120,7 +120,9 @@ export class LibrarySyncService {
     }
   }
 
-  async getSyncStatus(userId: string): Promise<{
+  async getSyncStatus(
+    userId: string,
+  ): Promise<{
     lastSync: Date | null;
     totalAlbums: number;
     totalTracks: number;
@@ -136,7 +138,7 @@ export class LibrarySyncService {
     // Find the most recently updated track to determine last sync
     const lastUpdatedTrack = await this.databaseService.userTrack.findFirst({
       include: { spotifyTrack: true },
-      orderBy: { addedAt: 'desc' },
+      orderBy: { addedAt: "desc" },
       where: { userId },
     });
 
@@ -233,7 +235,7 @@ export class LibrarySyncService {
             errorCount: result.errors.length,
             message,
             percentage,
-            phase: 'playlists',
+            phase: "playlists",
             total: playlists.length,
           });
           lastProgressUpdate = now;
@@ -361,12 +363,7 @@ export class LibrarySyncService {
 
         // Find the user track
         const userTrack = await this.databaseService.userTrack.findFirst({
-          where: {
-            spotifyTrack: {
-              spotifyId: spotifyTrackId,
-            },
-            userId,
-          },
+          where: { spotifyTrack: { spotifyId: spotifyTrackId }, userId },
         });
 
         if (userTrack) {
@@ -395,10 +392,10 @@ export class LibrarySyncService {
             // P2002: Unique constraint violation (duplicate play)
             // Silently skip - this is expected for idempotency
             if (
-              typeof error === 'object' &&
+              typeof error === "object" &&
               error !== null &&
-              'code' in error &&
-              error.code === 'P2002'
+              "code" in error &&
+              error.code === "P2002"
             ) {
               continue; // Already recorded, skip to next track
             }
@@ -443,9 +440,9 @@ export class LibrarySyncService {
         await onProgress({
           current: 0,
           errorCount: 0,
-          message: 'Fetching liked tracks...',
+          message: "Fetching liked tracks...",
           percentage: 0,
-          phase: 'tracks',
+          phase: "tracks",
           total: 100,
         });
       }
@@ -462,7 +459,7 @@ export class LibrarySyncService {
           errorCount: 0,
           message: `Processing ${likedTracksPage.items.length} liked tracks...`,
           percentage: 10,
-          phase: 'tracks',
+          phase: "tracks",
           total: 100,
         });
       }
@@ -484,7 +481,7 @@ export class LibrarySyncService {
           errorCount: result.errors.length,
           message: `Synced ${result.totalTracks} liked tracks`,
           percentage: 40,
-          phase: 'tracks',
+          phase: "tracks",
           total: result.totalTracks,
         });
       }
@@ -494,9 +491,9 @@ export class LibrarySyncService {
         await onProgress({
           current: 0,
           errorCount: result.errors.length,
-          message: 'Fetching saved albums...',
+          message: "Fetching saved albums...",
           percentage: 40,
-          phase: 'albums',
+          phase: "albums",
           total: 100,
         });
       }
@@ -513,7 +510,7 @@ export class LibrarySyncService {
           errorCount: result.errors.length,
           message: `Processing ${albumsPage.items.length} albums...`,
           percentage: 50,
-          phase: 'albums',
+          phase: "albums",
           total: 100,
         });
       }
@@ -534,7 +531,7 @@ export class LibrarySyncService {
           errorCount: result.errors.length,
           message: `Synced ${result.newAlbums} albums`,
           percentage: 70,
-          phase: 'albums',
+          phase: "albums",
           total: result.totalAlbums,
         });
       }
@@ -544,9 +541,9 @@ export class LibrarySyncService {
         await onProgress({
           current: 0,
           errorCount: result.errors.length,
-          message: 'Fetching playlists...',
+          message: "Fetching playlists...",
           percentage: 70,
-          phase: 'playlists',
+          phase: "playlists",
           total: 100,
         });
       }
@@ -581,7 +578,7 @@ export class LibrarySyncService {
               percentage:
                 70 +
                 Math.round((processedPlaylists / playlistsToSync.length) * 30),
-              phase: 'playlists',
+              phase: "playlists",
               total: playlistsToSync.length,
             });
           }
@@ -645,7 +642,7 @@ export class LibrarySyncService {
           errors: result.errors, // Include full errors array in final status
           message: `Quick sync complete! ${result.newTracks} new tracks, ${result.newAlbums} new albums, ${result.totalPlaylists} playlists`,
           percentage: 100,
-          phase: 'playlists',
+          phase: "playlists",
           total: result.totalPlaylists,
         });
       }
@@ -732,9 +729,9 @@ export class LibrarySyncService {
         await onProgress({
           current: 0,
           errorCount: 0,
-          message: 'Counting items to sync...',
+          message: "Counting items to sync...",
           percentage: 0,
-          phase: 'tracks',
+          phase: "tracks",
           total: 0,
         });
       }
@@ -799,7 +796,7 @@ export class LibrarySyncService {
           errorCount: 0,
           message: `Starting sync: ${adjustedCounts.tracks} tracks, ${adjustedCounts.albums} albums, ${adjustedCounts.playlists} playlists`,
           percentage: 0,
-          phase: 'tracks',
+          phase: "tracks",
           total: weightedCounts.tracks,
         });
       }
@@ -832,7 +829,7 @@ export class LibrarySyncService {
                     },
                   },
                   percentage,
-                  phase: 'tracks',
+                  phase: "tracks",
                 });
               }
             : undefined,
@@ -861,9 +858,9 @@ export class LibrarySyncService {
           },
           current: 0,
           errorCount: result.errors.length,
-          message: 'Syncing saved albums...',
+          message: "Syncing saved albums...",
           percentage: calculateWeightedPercentage(),
-          phase: 'albums',
+          phase: "albums",
           total: weightedCounts.albums,
         });
       }
@@ -895,7 +892,7 @@ export class LibrarySyncService {
                     },
                   },
                   percentage,
-                  phase: 'albums',
+                  phase: "albums",
                 });
               }
             : undefined,
@@ -930,9 +927,9 @@ export class LibrarySyncService {
           },
           current: 0,
           errorCount: result.errors.length,
-          message: 'Syncing playlist tracks...',
+          message: "Syncing playlist tracks...",
           percentage: calculateWeightedPercentage(),
-          phase: 'playlists',
+          phase: "playlists",
           total: weightedCounts.playlists,
         });
       }
@@ -964,7 +961,7 @@ export class LibrarySyncService {
                     },
                   },
                   percentage,
-                  phase: 'playlists',
+                  phase: "playlists",
                 });
               }
             : undefined,
@@ -1003,9 +1000,9 @@ export class LibrarySyncService {
           },
           current: result.totalTracks,
           errorCount: result.errors.length,
-          message: 'Updating statistics...',
+          message: "Updating statistics...",
           percentage: 95,
-          phase: 'playlists',
+          phase: "playlists",
           total: result.totalTracks,
         });
       }
@@ -1034,9 +1031,9 @@ export class LibrarySyncService {
           current: result.totalTracks,
           errorCount: result.errors.length,
           errors: result.errors, // Include full errors array in final status
-          message: 'Sync completed successfully!',
+          message: "Sync completed successfully!",
           percentage: 100,
-          phase: 'playlists',
+          phase: "playlists",
           total: result.totalTracks,
         });
       }
@@ -1076,12 +1073,7 @@ export class LibrarySyncService {
         snapshotId: playlist.snapshot_id,
         totalTracks: playlist.tracks.total,
       },
-      where: {
-        userId_spotifyId: {
-          spotifyId: playlist.id,
-          userId,
-        },
-      },
+      where: { userId_spotifyId: { spotifyId: playlist.id, userId } },
     });
   }
 
@@ -1130,9 +1122,9 @@ export class LibrarySyncService {
 
     // Step 2: Check database for remaining artists
     const existingArtists = await db
-      .selectFrom('SpotifyArtist')
-      .select(['spotifyId', 'name', 'genres', 'popularity', 'imageUrl'])
-      .where('spotifyId', 'in', uncachedArtistIds)
+      .selectFrom("SpotifyArtist")
+      .select(["spotifyId", "name", "genres", "popularity", "imageUrl"])
+      .where("spotifyId", "in", uncachedArtistIds)
       .execute();
 
     const foundInDb = new Set<string>();
@@ -1217,12 +1209,7 @@ export class LibrarySyncService {
         // Check if UserAlbum already exists
         const existingUserAlbum =
           await this.databaseService.userAlbum.findUnique({
-            where: {
-              userId_albumId: {
-                albumId,
-                userId,
-              },
-            },
+            where: { userId_albumId: { albumId, userId } },
           });
 
         if (!existingUserAlbum) {
@@ -1243,12 +1230,7 @@ export class LibrarySyncService {
         for (const spotifyTrackId of trackIds) {
           const existingUserTrack =
             await this.databaseService.userTrack.findUnique({
-              where: {
-                userId_spotifyTrackId: {
-                  spotifyTrackId,
-                  userId,
-                },
-              },
+              where: { userId_spotifyTrackId: { spotifyTrackId, userId } },
             });
 
           if (!existingUserTrack) {
@@ -1328,21 +1310,12 @@ export class LibrarySyncService {
         // Then, create or update the UserTrack
         const existingUserTrack =
           await this.databaseService.userTrack.findUnique({
-            where: {
-              userId_spotifyTrackId: {
-                spotifyTrackId,
-                userId,
-              },
-            },
+            where: { userId_spotifyTrackId: { spotifyTrackId, userId } },
           });
 
         if (!existingUserTrack) {
           const userTrack = await this.databaseService.userTrack.create({
-            data: {
-              addedAt: new Date(added_at),
-              spotifyTrackId,
-              userId,
-            },
+            data: { addedAt: new Date(added_at), spotifyTrackId, userId },
           });
           result.newTracks++;
 
@@ -1407,16 +1380,16 @@ export class LibrarySyncService {
     // 1. Check what UserTracks already exist to avoid duplicate processing
     const [existingUserTracks, existingSpotifyTracks] = await Promise.all([
       db
-        .selectFrom('UserTrack as ut')
-        .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-        .select(['st.spotifyId'])
-        .where('ut.userId', '=', userId)
-        .where('st.spotifyId', 'in', uniqueTrackIds)
+        .selectFrom("UserTrack as ut")
+        .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+        .select(["st.spotifyId"])
+        .where("ut.userId", "=", userId)
+        .where("st.spotifyId", "in", uniqueTrackIds)
         .execute(),
       db
-        .selectFrom('SpotifyTrack')
-        .select(['spotifyId'])
-        .where('spotifyId', 'in', uniqueTrackIds)
+        .selectFrom("SpotifyTrack")
+        .select(["spotifyId"])
+        .where("spotifyId", "in", uniqueTrackIds)
         .execute(),
     ]);
 
@@ -1431,9 +1404,9 @@ export class LibrarySyncService {
     const spotifyTrackIdMap = new Map<string, string>();
     if (existingSpotifyTracks.length > 0) {
       const fullTrackData = await db
-        .selectFrom('SpotifyTrack')
-        .select(['id', 'spotifyId'])
-        .where('spotifyId', 'in', Array.from(existingSpotifyTrackIds))
+        .selectFrom("SpotifyTrack")
+        .select(["id", "spotifyId"])
+        .where("spotifyId", "in", Array.from(existingSpotifyTrackIds))
         .execute();
 
       for (const track of fullTrackData) {
@@ -1470,11 +1443,7 @@ export class LibrarySyncService {
         // Create UserTrack only if it doesn't exist
         if (!existingUserTrackIds.has(originalSpotifyId)) {
           const userTrack = await this.databaseService.userTrack.create({
-            data: {
-              addedAt: new Date(added_at),
-              spotifyTrackId,
-              userId,
-            },
+            data: { addedAt: new Date(added_at), spotifyTrackId, userId },
           });
           result.newTracks++;
 
@@ -1500,12 +1469,7 @@ export class LibrarySyncService {
           if (sourceType) {
             const existingUserTrack =
               await this.databaseService.userTrack.findUnique({
-                where: {
-                  userId_spotifyTrackId: {
-                    spotifyTrackId,
-                    userId,
-                  },
-                },
+                where: { userId_spotifyTrackId: { spotifyTrackId, userId } },
               });
 
             if (existingUserTrack) {
@@ -1592,7 +1556,7 @@ export class LibrarySyncService {
           : 0,
         message: `Processing albums: ${totalProcessed}/${estimatedTotal}`,
         percentage,
-        phase: 'albums',
+        phase: "albums",
         total: estimatedTotal,
       });
       lastProgressUpdate = Date.now();
@@ -1608,7 +1572,7 @@ export class LibrarySyncService {
       estimatedTotal = firstPage.total;
     } catch {
       this.logger.warn(
-        'Could not get total album count for progress estimation',
+        "Could not get total album count for progress estimation",
       );
     }
 
@@ -1631,11 +1595,11 @@ export class LibrarySyncService {
         }
 
         // Force garbage collection if available (for development)
-        if (typeof global.gc === 'function') {
+        if (typeof global.gc === "function") {
           try {
             global.gc();
           } catch (error) {
-            this.logger.debug('Manual garbage collection failed:', error);
+            this.logger.debug("Manual garbage collection failed:", error);
           }
         }
       }
@@ -1713,7 +1677,7 @@ export class LibrarySyncService {
           : 0,
         message: `Processing tracks: ${totalProcessed}/${estimatedTotal}`,
         percentage,
-        phase: 'tracks',
+        phase: "tracks",
         total: estimatedTotal,
       });
       lastProgressUpdate = Date.now();
@@ -1729,7 +1693,7 @@ export class LibrarySyncService {
       estimatedTotal = firstPage.total;
     } catch {
       this.logger.warn(
-        'Could not get total track count for progress estimation',
+        "Could not get total track count for progress estimation",
       );
     }
 
@@ -1758,11 +1722,11 @@ export class LibrarySyncService {
         }
 
         // Force garbage collection if available (for development)
-        if (typeof global.gc === 'function') {
+        if (typeof global.gc === "function") {
           try {
             global.gc();
           } catch (error) {
-            this.logger.debug('Manual garbage collection failed:', error);
+            this.logger.debug("Manual garbage collection failed:", error);
           }
         }
       }
@@ -1805,21 +1769,13 @@ export class LibrarySyncService {
         // Prisma doesn't allow null in unique constraint where clauses
         // Use findFirst + create/update instead
         const existing = await this.databaseService.trackSource.findFirst({
-          where: {
-            sourceId: null,
-            sourceType,
-            userTrackId,
-          },
+          where: { sourceId: null, sourceType, userTrackId },
         });
 
         if (existing) {
           await this.databaseService.trackSource.update({
-            data: {
-              sourceName: sourceNameValue,
-            },
-            where: {
-              id: existing.id,
-            },
+            data: { sourceName: sourceNameValue },
+            where: { id: existing.id },
           });
         } else {
           await this.databaseService.trackSource.create({
@@ -1840,9 +1796,7 @@ export class LibrarySyncService {
             sourceType,
             userTrackId,
           },
-          update: {
-            sourceName: sourceNameValue,
-          },
+          update: { sourceName: sourceNameValue },
           where: {
             userTrackId_sourceType_sourceId: {
               sourceId: sourceIdValue,

@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
+import { Injectable, Logger } from "@nestjs/common";
+import { plainToInstance } from "class-transformer";
 
-import { AuthService } from '../auth/auth.service';
-import { SpotifyService } from '../library/spotify.service';
+import { AuthService } from "../auth/auth.service";
+import { SpotifyService } from "../library/spotify.service";
 import {
   PlaybackControlResponseDto,
   PlaybackResponseDto,
-} from './dto/playback-response.dto';
-import { PlayContext, QueueService } from './queue.service';
+} from "./dto/playback-response.dto";
+import { PlayContext, QueueService } from "./queue.service";
 
 @Injectable()
 export class PlaybackService {
@@ -23,19 +23,17 @@ export class PlaybackService {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
-        throw new Error('Spotify access token not found');
+        throw new Error("Spotify access token not found");
       }
 
       await this.spotifyService.nextTrack(accessToken);
       return plainToInstance(
         PlaybackControlResponseDto,
-        {
-          message: 'Skipped to next track',
-        },
+        { message: "Skipped to next track" },
         { excludeExtraneousValues: true },
       );
     } catch (error) {
-      this.logger.error('Failed to skip to next track', error);
+      this.logger.error("Failed to skip to next track", error);
       throw error;
     }
   }
@@ -44,19 +42,17 @@ export class PlaybackService {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
-        throw new Error('Spotify access token not found');
+        throw new Error("Spotify access token not found");
       }
 
       await this.spotifyService.pausePlayback(accessToken);
       return plainToInstance(
         PlaybackControlResponseDto,
-        {
-          message: 'Playback paused',
-        },
+        { message: "Playback paused" },
         { excludeExtraneousValues: true },
       );
     } catch (error) {
-      this.logger.error('Failed to pause playback', error);
+      this.logger.error("Failed to pause playback", error);
       throw error;
     }
   }
@@ -72,7 +68,7 @@ export class PlaybackService {
       // Get Spotify access token
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
-        throw new Error('Spotify access token not found');
+        throw new Error("Spotify access token not found");
       }
 
       // Build queue (200 tracks max)
@@ -85,7 +81,7 @@ export class PlaybackService {
       const queueDuration = Date.now() - queueStart;
 
       if (trackUris.length === 0) {
-        throw new Error('No tracks found for the given context');
+        throw new Error("No tracks found for the given context");
       }
 
       // Send all tracks to Spotify in one call
@@ -106,7 +102,7 @@ export class PlaybackService {
       return plainToInstance(
         PlaybackResponseDto,
         {
-          message: 'Playback started',
+          message: "Playback started",
           queueLength: trackUris.length,
           timings: {
             queueGeneration: queueDuration,
@@ -118,7 +114,7 @@ export class PlaybackService {
         { excludeExtraneousValues: true },
       );
     } catch (error) {
-      this.logger.error('Failed to start playback', error);
+      this.logger.error("Failed to start playback", error);
       throw error;
     }
   }
@@ -127,19 +123,17 @@ export class PlaybackService {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);
       if (!accessToken) {
-        throw new Error('Spotify access token not found');
+        throw new Error("Spotify access token not found");
       }
 
       await this.spotifyService.resumePlayback(accessToken);
       return plainToInstance(
         PlaybackControlResponseDto,
-        {
-          message: 'Playback resumed',
-        },
+        { message: "Playback resumed" },
         { excludeExtraneousValues: true },
       );
     } catch (error) {
-      this.logger.error('Failed to resume playback', error);
+      this.logger.error("Failed to resume playback", error);
       throw error;
     }
   }

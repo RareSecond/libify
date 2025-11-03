@@ -1,6 +1,6 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Transform } from "class-transformer";
 
-import { UserDto } from './user.dto';
+import { UserDto } from "./user.dto";
 
 export class AuthResponseDto {
   @Expose()

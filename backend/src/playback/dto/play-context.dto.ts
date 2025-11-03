@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Expose } from "class-transformer";
 import {
   IsBoolean,
   IsEnum,
@@ -7,13 +7,13 @@ import {
   IsOptional,
   IsString,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
-import { ContextType } from '../types/context-type.enum';
+import { ContextType } from "../types/context-type.enum";
 
 export class PlayContextDto {
   @ApiPropertyOptional({
-    description: 'Index of clicked track in current page (0-based)',
+    description: "Index of clicked track in current page (0-based)",
     example: 10,
   })
   @Expose()
@@ -23,8 +23,8 @@ export class PlayContextDto {
   clickedIndex?: number;
 
   @ApiPropertyOptional({
-    description: 'ID of the context (playlist, album, artist, etc.)',
-    example: 'abc123',
+    description: "ID of the context (playlist, album, artist, etc.)",
+    example: "abc123",
   })
   @Expose()
   @IsOptional()
@@ -32,7 +32,7 @@ export class PlayContextDto {
   contextId?: string;
 
   @ApiProperty({
-    description: 'Type of context to play',
+    description: "Type of context to play",
     enum: ContextType,
     example: ContextType.LIBRARY,
   })
@@ -41,8 +41,8 @@ export class PlayContextDto {
   contextType: ContextType;
 
   @ApiPropertyOptional({
-    description: 'Spotify device ID to play on',
-    example: 'b980b2daec2c8e1df7fe2677c0fd4421ae0ae013',
+    description: "Spotify device ID to play on",
+    example: "b980b2daec2c8e1df7fe2677c0fd4421ae0ae013",
   })
   @Expose()
   @IsOptional()
@@ -50,7 +50,7 @@ export class PlayContextDto {
   deviceId?: string;
 
   @ApiPropertyOptional({
-    description: 'Current page number (1-based)',
+    description: "Current page number (1-based)",
     example: 4,
   })
   @Expose()
@@ -59,10 +59,7 @@ export class PlayContextDto {
   @Min(1)
   pageNumber?: number;
 
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 20,
-  })
+  @ApiPropertyOptional({ description: "Number of items per page", example: 20 })
   @Expose()
   @IsInt()
   @IsOptional()
@@ -70,8 +67,8 @@ export class PlayContextDto {
   pageSize?: number;
 
   @ApiPropertyOptional({
-    description: 'Search query string to filter tracks',
-    example: 'Beatles',
+    description: "Search query string to filter tracks",
+    example: "Beatles",
   })
   @Expose()
   @IsOptional()
@@ -79,7 +76,7 @@ export class PlayContextDto {
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Whether to shuffle the queue',
+    description: "Whether to shuffle the queue",
     example: true,
   })
   @Expose()
@@ -87,19 +84,16 @@ export class PlayContextDto {
   @IsOptional()
   shuffle?: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Field to sort by',
-    example: 'addedAt',
-  })
+  @ApiPropertyOptional({ description: "Field to sort by", example: "addedAt" })
   @Expose()
   @IsOptional()
   @IsString()
   sortBy?: string;
 
   @ApiPropertyOptional({
-    description: 'Sort order',
-    enum: ['asc', 'desc'],
-    example: 'desc',
+    description: "Sort order",
+    enum: ["asc", "desc"],
+    example: "desc",
   })
   @Expose()
   @IsOptional()
@@ -108,7 +102,7 @@ export class PlayContextDto {
 
   @ApiPropertyOptional({
     description:
-      'Position to start playing from (deprecated - use pagination fields)',
+      "Position to start playing from (deprecated - use pagination fields)",
     example: 0,
   })
   @Expose()

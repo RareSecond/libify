@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { sql } from 'kysely';
+import { Injectable, Logger } from "@nestjs/common";
+import { sql } from "kysely";
 
-import { DatabaseService } from '../database/database.service';
-import { KyselyService } from '../database/kysely/kysely.service';
-import { SpotifyAlbumTrack, SpotifySavedAlbum } from './dto/spotify-album.dto';
-import { SpotifyService } from './spotify.service';
+import { DatabaseService } from "../database/database.service";
+import { KyselyService } from "../database/kysely/kysely.service";
+import { SpotifyAlbumTrack, SpotifySavedAlbum } from "./dto/spotify-album.dto";
+import { SpotifyService } from "./spotify.service";
 
 @Injectable()
 export class AggregationService {
@@ -145,17 +145,13 @@ export class AggregationService {
         popularity: number;
       }
     >,
-  ): Promise<{
-    albumId: string;
-    artistId: string;
-    trackIds: string[];
-  }> {
+  ): Promise<{ albumId: string; artistId: string; trackIds: string[] }> {
     const albumData = savedAlbum.album;
 
     // For now, we'll use the first artist (primary artist)
     const primaryArtist = albumData.artists[0];
     if (!primaryArtist) {
-      throw new Error('Album has no artists');
+      throw new Error("Album has no artists");
     }
 
     // Get artist data from the pre-fetched map
@@ -218,9 +214,7 @@ export class AggregationService {
         releaseDate,
         totalTracks: albumData.total_tracks,
       },
-      where: {
-        spotifyId: albumData.id,
-      },
+      where: { spotifyId: albumData.id },
     });
 
     // Process album tracks if they're included
@@ -252,19 +246,13 @@ export class AggregationService {
             title: trackData.name,
             trackNumber: trackData.track_number,
           },
-          where: {
-            spotifyId: spotifyTrackId,
-          },
+          where: { spotifyId: spotifyTrackId },
         });
         trackIds.push(track.id);
       }
     }
 
-    return {
-      albumId: album.id,
-      artistId: artist.id,
-      trackIds,
-    };
+    return { albumId: album.id, artistId: artist.id, trackIds };
   }
 
   async createOrUpdateSpotifyEntities(
@@ -286,15 +274,11 @@ export class AggregationService {
         popularity: number;
       }
     >,
-  ): Promise<{
-    albumId: null | string;
-    artistId: string;
-    trackId: string;
-  }> {
+  ): Promise<{ albumId: null | string; artistId: string; trackId: string }> {
     // For now, we'll use the first artist (primary artist)
     const primaryArtist = spotifyTrackData.artists[0];
     if (!primaryArtist) {
-      throw new Error('Track has no artists');
+      throw new Error("Track has no artists");
     }
 
     // Get artist data from the pre-fetched map
@@ -309,7 +293,7 @@ export class AggregationService {
       genres = artistData.genres || [];
       popularity = artistData.popularity;
       this.logger.debug(
-        `Artist ${primaryArtist.name} has ${genres.length} genres: ${genres.join(', ')}`,
+        `Artist ${primaryArtist.name} has ${genres.length} genres: ${genres.join(", ")}`,
       );
     } else {
       this.logger.warn(
@@ -373,11 +357,7 @@ export class AggregationService {
       });
     }
 
-    return {
-      albumId: album.id,
-      artistId: artist.id,
-      trackId: track.id,
-    };
+    return { albumId: album.id, artistId: artist.id, trackId: track.id };
   }
 
   /**
@@ -388,23 +368,23 @@ export class AggregationService {
     const db = this.kyselyService.database;
 
     return db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .innerJoin('SpotifyArtist as sar', 'st.artistId', 'sar.id')
-      .where('ut.userId', '=', userId)
-      .groupBy(['sar.id', 'sar.name', 'sar.imageUrl'])
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .where("ut.userId", "=", userId)
+      .groupBy(["sar.id", "sar.name", "sar.imageUrl"])
       .select([
-        'sar.id',
-        'sar.name',
-        'sar.imageUrl',
-        sql<number>`COUNT(DISTINCT ut.id)::int`.as('trackCount'),
-        sql<number>`SUM(ut."totalPlayCount")::int`.as('totalPlays'),
-        sql<Date>`MAX(ut."lastPlayedAt")`.as('lastPlayed'),
+        "sar.id",
+        "sar.name",
+        "sar.imageUrl",
+        sql<number>`COUNT(DISTINCT ut.id)::int`.as("trackCount"),
+        sql<number>`SUM(ut."totalPlayCount")::int`.as("totalPlays"),
+        sql<Date>`MAX(ut."lastPlayedAt")`.as("lastPlayed"),
         sql<number>`ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1)`.as(
-          'avgRating',
+          "avgRating",
         ),
       ])
-      .orderBy('totalPlays', 'desc')
+      .orderBy("totalPlays", "desc")
       .limit(limit)
       .execute();
   }
@@ -448,38 +428,38 @@ export class AggregationService {
 
     // Calculate all stats in a single query
     const stats = await db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .where('ut.userId', '=', userId)
-      .where('st.albumId', '=', albumId)
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .where("ut.userId", "=", userId)
+      .where("st.albumId", "=", albumId)
       .select([
-        sql<number>`COUNT(*)::int`.as('trackCount'),
-        sql<number>`SUM(st.duration)::int`.as('totalDuration'),
-        sql<number>`SUM(ut."totalPlayCount")::int`.as('totalPlayCount'),
+        sql<number>`COUNT(*)::int`.as("trackCount"),
+        sql<number>`SUM(st.duration)::int`.as("totalDuration"),
+        sql<number>`SUM(ut."totalPlayCount")::int`.as("totalPlayCount"),
         sql<number>`COUNT(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::int`.as(
-          'ratedTrackCount',
+          "ratedTrackCount",
         ),
         sql<number>`ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1)`.as(
-          'avgRating',
+          "avgRating",
         ),
-        sql<Date>`MIN(ut."addedAt")`.as('firstAddedAt'),
-        sql<Date>`MAX(ut."lastPlayedAt")`.as('lastPlayedAt'),
+        sql<Date>`MIN(ut."addedAt")`.as("firstAddedAt"),
+        sql<Date>`MAX(ut."lastPlayedAt")`.as("lastPlayedAt"),
       ])
       .executeTakeFirst();
 
     if (!stats || stats.trackCount === 0) {
       // No tracks for this album, remove the UserAlbum record if it exists
       await db
-        .deleteFrom('UserAlbum')
-        .where('userId', '=', userId)
-        .where('albumId', '=', albumId)
+        .deleteFrom("UserAlbum")
+        .where("userId", "=", userId)
+        .where("albumId", "=", albumId)
         .execute();
       return;
     }
 
     // Upsert the aggregated stats
     await db
-      .insertInto('UserAlbum')
+      .insertInto("UserAlbum")
       .values({
         albumId,
         avgRating: stats.avgRating,
@@ -494,15 +474,17 @@ export class AggregationService {
         userId,
       })
       .onConflict((oc) =>
-        oc.columns(['userId', 'albumId']).doUpdateSet({
-          avgRating: stats.avgRating,
-          lastPlayedAt: stats.lastPlayedAt,
-          ratedTrackCount: stats.ratedTrackCount,
-          totalDuration: stats.totalDuration ?? 0,
-          totalPlayCount: stats.totalPlayCount ?? 0,
-          trackCount: stats.trackCount,
-          updatedAt: sql`now()`,
-        }),
+        oc
+          .columns(["userId", "albumId"])
+          .doUpdateSet({
+            avgRating: stats.avgRating,
+            lastPlayedAt: stats.lastPlayedAt,
+            ratedTrackCount: stats.ratedTrackCount,
+            totalDuration: stats.totalDuration ?? 0,
+            totalPlayCount: stats.totalPlayCount ?? 0,
+            trackCount: stats.trackCount,
+            updatedAt: sql`now()`,
+          }),
       )
       .execute();
 
@@ -516,39 +498,39 @@ export class AggregationService {
 
     // Calculate all stats in a single query
     const stats = await db
-      .selectFrom('UserTrack as ut')
-      .innerJoin('SpotifyTrack as st', 'ut.spotifyTrackId', 'st.id')
-      .where('ut.userId', '=', userId)
-      .where('st.artistId', '=', artistId)
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .where("ut.userId", "=", userId)
+      .where("st.artistId", "=", artistId)
       .select([
-        sql<number>`COUNT(*)::int`.as('trackCount'),
-        sql<number>`COUNT(DISTINCT st."albumId")::int`.as('albumCount'),
-        sql<number>`SUM(st.duration)::int`.as('totalDuration'),
-        sql<number>`SUM(ut."totalPlayCount")::int`.as('totalPlayCount'),
+        sql<number>`COUNT(*)::int`.as("trackCount"),
+        sql<number>`COUNT(DISTINCT st."albumId")::int`.as("albumCount"),
+        sql<number>`SUM(st.duration)::int`.as("totalDuration"),
+        sql<number>`SUM(ut."totalPlayCount")::int`.as("totalPlayCount"),
         sql<number>`COUNT(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::int`.as(
-          'ratedTrackCount',
+          "ratedTrackCount",
         ),
         sql<number>`ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1)`.as(
-          'avgRating',
+          "avgRating",
         ),
-        sql<Date>`MIN(ut."addedAt")`.as('firstAddedAt'),
-        sql<Date>`MAX(ut."lastPlayedAt")`.as('lastPlayedAt'),
+        sql<Date>`MIN(ut."addedAt")`.as("firstAddedAt"),
+        sql<Date>`MAX(ut."lastPlayedAt")`.as("lastPlayedAt"),
       ])
       .executeTakeFirst();
 
     if (!stats || stats.trackCount === 0) {
       // No tracks for this artist, remove the UserArtist record if it exists
       await db
-        .deleteFrom('UserArtist')
-        .where('userId', '=', userId)
-        .where('artistId', '=', artistId)
+        .deleteFrom("UserArtist")
+        .where("userId", "=", userId)
+        .where("artistId", "=", artistId)
         .execute();
       return;
     }
 
     // Upsert the aggregated stats
     await db
-      .insertInto('UserArtist')
+      .insertInto("UserArtist")
       .values({
         albumCount: stats.albumCount,
         artistId,
@@ -564,16 +546,18 @@ export class AggregationService {
         userId,
       })
       .onConflict((oc) =>
-        oc.columns(['userId', 'artistId']).doUpdateSet({
-          albumCount: stats.albumCount,
-          avgRating: stats.avgRating,
-          lastPlayedAt: stats.lastPlayedAt,
-          ratedTrackCount: stats.ratedTrackCount,
-          totalDuration: stats.totalDuration ?? 0,
-          totalPlayCount: stats.totalPlayCount ?? 0,
-          trackCount: stats.trackCount,
-          updatedAt: sql`now()`,
-        }),
+        oc
+          .columns(["userId", "artistId"])
+          .doUpdateSet({
+            albumCount: stats.albumCount,
+            avgRating: stats.avgRating,
+            lastPlayedAt: stats.lastPlayedAt,
+            ratedTrackCount: stats.ratedTrackCount,
+            totalDuration: stats.totalDuration ?? 0,
+            totalPlayCount: stats.totalPlayCount ?? 0,
+            trackCount: stats.trackCount,
+            updatedAt: sql`now()`,
+          }),
       )
       .execute();
 

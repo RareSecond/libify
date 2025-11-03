@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
-import { DatabaseService } from './database.service';
-import { KyselyModule } from './kysely/kysely.module';
+import { DatabaseService } from "./database.service";
+import { KyselyModule } from "./kysely/kysely.module";
 
 @Module({
   exports: [DatabaseService, KyselyModule],
