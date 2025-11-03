@@ -73,6 +73,10 @@ export interface SpotifyAlbumTrack {
   href: string;
   id: string;
   is_local: boolean;
+  linked_from?: {
+    id: string;
+    uri: string;
+  };
   name: string;
   preview_url: null | string;
   track_number: number;
