@@ -55,7 +55,14 @@ export class PlaybackController {
   ): Promise<CurrentPlaybackStateDto | null> {
     try {
       const result = await this.playbackService.getCurrentPlayback(req.user.id);
-      return result;
+
+      if (!result) {
+        return null;
+      }
+
+      return plainToInstance(CurrentPlaybackStateDto, result, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       this.logger.error("Failed to get current playback", error);
       throw new HttpException(
