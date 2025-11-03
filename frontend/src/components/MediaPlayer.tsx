@@ -104,9 +104,14 @@ export function MediaPlayer() {
   };
 
   // Determine what to display:
-  // 1. If web player is active and has a track, use that
-  // 2. Otherwise, if there's cross-device playback, show that
-  const hasWebPlayerTrack = isReady && currentTrack;
+  // Check if the web player's device is actually the active one
+  const isWebPlayerActive =
+    deviceId &&
+    currentPlayback?.device?.id === deviceId &&
+    currentPlayback?.device?.isActive;
+
+  // Use web player data only if this device is active, otherwise use cross-device data
+  const hasWebPlayerTrack = isReady && currentTrack && isWebPlayerActive;
   const hasCrossDevicePlayback = currentPlayback?.track && currentPlayback?.device;
 
   // If neither web player nor cross-device playback, don't show anything
@@ -114,7 +119,7 @@ export function MediaPlayer() {
     return null;
   }
 
-  // Use web player data if available, otherwise use cross-device data
+  // Use web player data if this device is active, otherwise use cross-device data
   const displayTrack = hasWebPlayerTrack ? currentTrack : null;
   const displayIsPlaying = hasWebPlayerTrack ? isPlaying : (currentPlayback?.isPlaying ?? false);
   const displayPosition = hasWebPlayerTrack ? position : (currentPlayback?.progressMs ?? 0);
