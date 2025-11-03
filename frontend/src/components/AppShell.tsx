@@ -50,7 +50,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
         ))}
       </AppShell.Navbar>
 
-      <AppShell.Main className="pb-[120px]">{children}</AppShell.Main>
+      <AppShell.Main className="pb-[200px]">{children}</AppShell.Main>
     </AppShell>
   );
 }

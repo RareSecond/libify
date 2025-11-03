@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   HttpStatus,
   Logger,
@@ -19,6 +20,7 @@ import { plainToInstance } from "class-transformer";
 import { Request } from "express";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { CurrentPlaybackStateDto } from "./dto/current-playback.dto";
 import { PlayContextDto } from "./dto/play-context.dto";
 import {
   PlaybackControlResponseDto,
@@ -38,6 +40,29 @@ export class PlaybackController {
   private readonly logger = new Logger(PlaybackController.name);
 
   constructor(private readonly playbackService: PlaybackService) {}
+
+  @ApiOperation({ summary: "Get current playback state" })
+  @ApiResponse({
+    description: "Current playback state",
+    status: 200,
+    type: CurrentPlaybackStateDto,
+  })
+  @ApiResponse({ description: "No active playback", status: 204 })
+  @Get("current")
+  async getCurrentPlayback(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<CurrentPlaybackStateDto | null> {
+    try {
+      const result = await this.playbackService.getCurrentPlayback(req.user.id);
+      return result;
+    } catch (error) {
+      this.logger.error("Failed to get current playback", error);
+      throw new HttpException(
+        error.message || "Failed to get current playback",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
 
   @ApiOperation({ summary: "Skip to next track" })
   @ApiResponse({

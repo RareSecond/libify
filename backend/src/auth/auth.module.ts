@@ -15,7 +15,7 @@ import { SpotifyStrategy } from "./strategies/spotify.strategy";
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || "24h" },
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || "30d" },
     }),
     DatabaseModule,
   ],

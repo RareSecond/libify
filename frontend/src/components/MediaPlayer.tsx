@@ -8,9 +8,11 @@ import {
   Slider,
   Stack,
   Text,
+  Tooltip,
 } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Monitor,
   Pause,
   Play,
   Shuffle,
@@ -23,6 +25,7 @@ import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { getLibraryControllerGetTracksQueryKey } from "../data/api";
+import { useCurrentPlayback } from "../hooks/useCurrentPlayback";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
 import { formatTime } from "../utils/format";
 import { InlineTagEditor } from "./InlineTagEditor";
@@ -31,6 +34,7 @@ import { TrackSources } from "./TrackSources";
 
 export function MediaPlayer() {
   const queryClient = useQueryClient();
+  const { currentPlayback } = useCurrentPlayback();
 
   const {
     currentTrack,
@@ -71,9 +75,25 @@ export function MediaPlayer() {
     });
   };
 
-  if (!isReady || !currentTrack) {
+  // Determine what to display:
+  // 1. If web player is active and has a track, use that
+  // 2. Otherwise, if there's cross-device playback, show that
+  const hasWebPlayerTrack = isReady && currentTrack;
+  const hasCrossDevicePlayback = currentPlayback?.track && currentPlayback?.device;
+
+  // If neither web player nor cross-device playback, don't show anything
+  if (!hasWebPlayerTrack && !hasCrossDevicePlayback) {
     return null;
   }
+
+  // Use web player data if available, otherwise use cross-device data
+  const displayTrack = hasWebPlayerTrack ? currentTrack : null;
+  const displayIsPlaying = hasWebPlayerTrack ? isPlaying : (currentPlayback?.isPlaying ?? false);
+  const displayPosition = hasWebPlayerTrack ? position : (currentPlayback?.progressMs ?? 0);
+  const displayDuration = hasWebPlayerTrack ? duration : (currentPlayback?.track?.durationMs ?? 0);
+  const displayDeviceName = hasWebPlayerTrack
+    ? (import.meta.env.DEV ? "Spotlib Web Player (Dev)" : "Spotlib Web Player")
+    : (currentPlayback?.device?.name ?? "Unknown Device");
 
   const handlePlayPause = async () => {
     if (isPlaying) {
@@ -95,8 +115,18 @@ export function MediaPlayer() {
     setIsDragging(false);
   };
 
-  const currentPosition = isDragging ? dragPosition : position;
-  const progressPercent = duration > 0 ? (currentPosition / duration) * 100 : 0;
+  const currentPosition = isDragging ? dragPosition : displayPosition;
+  const progressPercent = displayDuration > 0 ? (currentPosition / displayDuration) * 100 : 0;
+
+  // Track data to display (either from web player or cross-device)
+  const trackToDisplay = displayTrack || {
+    album: {
+      images: currentPlayback?.track?.album.images.map(url => ({ url })) ?? [],
+      name: currentPlayback?.track?.album.name ?? "Unknown Album",
+    },
+    artists: currentPlayback?.track?.artists.map(a => ({ name: a.name })) ?? [],
+    name: currentPlayback?.track?.name ?? "Unknown Track",
+  };
 
   return (
     <Card
@@ -108,17 +138,17 @@ export function MediaPlayer() {
           {/* Track Info */}
           <Group className="flex-1 min-w-0" gap="md">
             <Image
-              alt={currentTrack.album.name}
+              alt={trackToDisplay.album.name}
               className="h-[60px] w-[60px]"
               radius="sm"
-              src={currentTrack.album.images[0]?.url}
+              src={trackToDisplay.album.images[0]?.url}
             />
             <Box className="flex-1 min-w-0">
               <Text className="font-semibold" lineClamp={1}>
-                {currentTrack.name}
+                {trackToDisplay.name}
               </Text>
               <Text className="text-gray-600" lineClamp={1} size="sm">
-                {currentTrack.artists.map((artist) => artist.name).join(", ")}
+                {trackToDisplay.artists.map((artist) => artist.name).join(", ")}
               </Text>
             </Box>
           </Group>
@@ -128,7 +158,7 @@ export function MediaPlayer() {
             <Group gap="xs">
               <ActionIcon
                 color={isShuffled ? "blue" : undefined}
-                disabled={!isReady}
+                disabled={!hasWebPlayerTrack}
                 onClick={toggleShuffle}
                 size="lg"
                 variant={isShuffled ? "filled" : "subtle"}
@@ -137,7 +167,7 @@ export function MediaPlayer() {
               </ActionIcon>
 
               <ActionIcon
-                disabled={!isReady}
+                disabled={!hasWebPlayerTrack}
                 onClick={previousTrack}
                 size="lg"
                 variant="subtle"
@@ -146,16 +176,16 @@ export function MediaPlayer() {
               </ActionIcon>
 
               <ActionIcon
-                disabled={!isReady}
+                disabled={!hasWebPlayerTrack}
                 onClick={handlePlayPause}
                 size="xl"
                 variant="filled"
               >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                {displayIsPlaying ? <Pause size={24} /> : <Play size={24} />}
               </ActionIcon>
 
               <ActionIcon
-                disabled={!isReady}
+                disabled={!hasWebPlayerTrack}
                 onClick={nextTrack}
                 size="lg"
                 variant="subtle"
@@ -171,6 +201,7 @@ export function MediaPlayer() {
               </Text>
               <Slider
                 className="flex-1"
+                disabled={!hasWebPlayerTrack}
                 label={null}
                 max={100}
                 min={0}
@@ -182,42 +213,56 @@ export function MediaPlayer() {
                 value={progressPercent}
               />
               <Text className="min-w-10 text-gray-600" size="xs">
-                {formatTime(duration)}
+                {formatTime(displayDuration)}
               </Text>
             </Group>
           </Stack>
 
-          {/* Volume Control */}
+          {/* Volume Control & Device Info */}
           <Group className="flex-1" justify="flex-end">
             <Group align="center" gap="xs">
-              <ActionIcon
-                onClick={() => setIsVolumeSliderVisible(!isVolumeSliderVisible)}
-                size="md"
-                variant="subtle"
-              >
-                {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              </ActionIcon>
+              {/* Device indicator */}
+              <Tooltip label={displayDeviceName}>
+                <Group align="center" gap={4}>
+                  <Monitor className="text-gray-500" size={16} />
+                  <Text className="text-gray-600" size="xs">
+                    {displayDeviceName}
+                  </Text>
+                </Group>
+              </Tooltip>
 
-              {isVolumeSliderVisible && (
-                <Box className="w-[100px]">
-                  <Slider
-                    label={null}
-                    max={100}
-                    min={0}
-                    onChange={(value) => setVolume(value / 100)}
-                    size="sm"
-                    step={1}
-                    thumbSize={10}
-                    value={volume * 100}
-                  />
-                </Box>
+              {hasWebPlayerTrack && (
+                <>
+                  <ActionIcon
+                    onClick={() => setIsVolumeSliderVisible(!isVolumeSliderVisible)}
+                    size="md"
+                    variant="subtle"
+                  >
+                    {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </ActionIcon>
+
+                  {isVolumeSliderVisible && (
+                    <Box className="w-[100px]">
+                      <Slider
+                        label={null}
+                        max={100}
+                        min={0}
+                        onChange={(value) => setVolume(value / 100)}
+                        size="sm"
+                        step={1}
+                        thumbSize={10}
+                        value={volume * 100}
+                      />
+                    </Box>
+                  )}
+                </>
               )}
             </Group>
           </Group>
         </Group>
 
-        {/* Track Metadata Section (Sources, Rating, Tags) */}
-        {libraryTrack && (
+        {/* Track Metadata Section (Sources, Rating, Tags) - Only show for web player */}
+        {hasWebPlayerTrack && libraryTrack && (
           <>
             <Divider />
             <Group align="center" gap="xl" justify="space-between">

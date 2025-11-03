@@ -3,6 +3,7 @@ import { plainToInstance } from "class-transformer";
 
 import { AuthService } from "../auth/auth.service";
 import { SpotifyService } from "../library/spotify.service";
+import { CurrentPlaybackStateDto } from "./dto/current-playback.dto";
 import {
   PlaybackControlResponseDto,
   PlaybackResponseDto,
@@ -134,6 +135,64 @@ export class PlaybackService {
       );
     } catch (error) {
       this.logger.error("Failed to resume playback", error);
+      throw error;
+    }
+  }
+
+  async getCurrentPlayback(
+    userId: string,
+  ): Promise<CurrentPlaybackStateDto | null> {
+    try {
+      const accessToken = await this.authService.getSpotifyAccessToken(userId);
+      if (!accessToken) {
+        throw new Error("Spotify access token not found");
+      }
+
+      const playbackState =
+        await this.spotifyService.getCurrentPlaybackState(accessToken);
+
+      if (!playbackState) {
+        return null;
+      }
+
+      // Transform Spotify API response to our DTO format
+      const transformed = {
+        device: playbackState.device
+          ? {
+              id: playbackState.device.id,
+              isActive: playbackState.device.is_active,
+              name: playbackState.device.name,
+              type: playbackState.device.type,
+              volumePercent: playbackState.device.volume_percent,
+            }
+          : null,
+        isPlaying: playbackState.is_playing,
+        progressMs: playbackState.progress_ms,
+        repeatState: playbackState.repeat_state,
+        shuffleState: playbackState.shuffle_state,
+        track: playbackState.item
+          ? {
+              album: {
+                id: playbackState.item.album.id,
+                images: playbackState.item.album.images.map((img) => img.url),
+                name: playbackState.item.album.name,
+              },
+              artists: playbackState.item.artists.map((artist) => ({
+                id: artist.id,
+                name: artist.name,
+              })),
+              durationMs: playbackState.item.duration_ms,
+              id: playbackState.item.id,
+              name: playbackState.item.name,
+            }
+          : null,
+      };
+
+      return plainToInstance(CurrentPlaybackStateDto, transformed, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      this.logger.error("Failed to get current playback", error);
       throw error;
     }
   }
