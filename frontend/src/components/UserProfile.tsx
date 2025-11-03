@@ -46,7 +46,7 @@ export function UserProfile() {
         shadow="md"
         withBorder
       >
-        <Text c="dimmed">Loading profile...</Text>
+        <Text className="text-dark-1">Loading profile...</Text>
       </Card>
     );
   }
@@ -60,7 +60,7 @@ export function UserProfile() {
         shadow="md"
         withBorder
       >
-        <Text c="red">Error loading profile</Text>
+        <Text className="text-red-500">Error loading profile</Text>
       </Card>
     );
   }
@@ -93,7 +93,7 @@ export function UserProfile() {
             <Text className="font-medium text-dark-0" size="lg">
               {user.name || "Anonymous User"}
             </Text>
-            <Text c="dimmed" size="sm">
+            <Text className="text-dark-1" size="sm">
               {user.email}
             </Text>
           </div>
@@ -107,7 +107,7 @@ export function UserProfile() {
           >
             {user.provider.toUpperCase()}
           </Badge>
-          <Text c="dimmed" size="xs">
+          <Text className="text-dark-1" size="xs">
             Joined {new Date(user.createdAt).toLocaleDateString()}
           </Text>
         </Group>

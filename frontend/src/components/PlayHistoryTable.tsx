@@ -121,7 +121,7 @@ export function PlayHistoryTable() {
             {items.length === 0 ? (
               <Table.Tr>
                 <Table.Td className="text-center" colSpan={5}>
-                  <Text c="dimmed">No play history found</Text>
+                  <Text className="text-dark-1">No play history found</Text>
                 </Table.Td>
               </Table.Tr>
             ) : (
@@ -155,15 +155,18 @@ export function PlayHistoryTable() {
                           <Music size={20} />
                         </Avatar>
                       )}
-                      <Text className="font-medium text-dark-0" lineClamp={1} size="sm">
+                      <Text
+                        className="font-medium text-dark-0"
+                        lineClamp={1}
+                        size="sm"
+                      >
                         {item.trackTitle}
                       </Text>
                     </Group>
                   </Table.Td>
                   <Table.Td>
                     <Text
-                      c="dimmed"
-                      className="cursor-pointer hover:underline hover:text-orange-5"
+                      className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
                       lineClamp={1}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -179,8 +182,7 @@ export function PlayHistoryTable() {
                   </Table.Td>
                   <Table.Td>
                     <Text
-                      c="dimmed"
-                      className="cursor-pointer hover:underline hover:text-orange-5"
+                      className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
                       lineClamp={1}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -205,7 +207,7 @@ export function PlayHistoryTable() {
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Text c="dimmed" size="sm">
+                    <Text className="text-dark-1" size="sm">
                       {formatDuration(item.trackDuration)}
                     </Text>
                   </Table.Td>
@@ -228,7 +230,7 @@ export function PlayHistoryTable() {
         </Center>
       )}
 
-      <Text c="dimmed" className="text-center" size="sm">
+      <Text className="text-dark-1 text-center" size="sm">
         Showing {items.length} of {data?.total || 0} plays
       </Text>
     </Stack>

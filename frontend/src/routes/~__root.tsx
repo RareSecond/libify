@@ -18,22 +18,7 @@ const queryClient = new QueryClient();
 
 // Custom dark theme with orange as primary color
 const theme = createTheme({
-  primaryColor: "orange",
-  primaryShade: 6,
-  defaultRadius: "md",
   colors: {
-    orange: [
-      "#fff4e6", // 0 - lightest
-      "#ffe8cc", // 1
-      "#ffd8a8", // 2
-      "#ffc078", // 3
-      "#ffa94d", // 4
-      "#ff922b", // 5
-      "#fd7e14", // 6 - primary shade
-      "#f76707", // 7
-      "#e8590c", // 8
-      "#d9480f", // 9 - darkest
-    ],
     dark: [
       "#C1C2C5", // 0 - lightest text
       "#A6A7AB", // 1 - light text
@@ -46,16 +31,25 @@ const theme = createTheme({
       "#141517", // 8 - darker bg
       "#101113", // 9 - darkest bg
     ],
+    orange: [
+      "#fff4e6", // 0 - lightest
+      "#ffe8cc", // 1
+      "#ffd8a8", // 2
+      "#ffc078", // 3
+      "#ffa94d", // 4
+      "#ff922b", // 5
+      "#fd7e14", // 6 - primary shade
+      "#f76707", // 7
+      "#e8590c", // 8
+      "#d9480f", // 9 - darkest
+    ],
   },
+  defaultGradient: { deg: 135, from: "orange.6", to: "orange.8" },
+  defaultRadius: "md",
   fontFamily: "system-ui, -apple-system, sans-serif",
-  headings: {
-    fontWeight: "700",
-  },
-  defaultGradient: {
-    from: "orange.6",
-    to: "orange.8",
-    deg: 135,
-  },
+  headings: { fontWeight: "700" },
+  primaryColor: "orange",
+  primaryShade: 6,
 });
 
 export const Route = createRootRoute({ component: RootComponent });
@@ -92,12 +86,12 @@ function AuthWrapper() {
             Login with Spotify to access your music library
           </p>
           <Button
-            variant="gradient"
-            gradient={{ from: "orange.6", to: "orange.8", deg: 135 }}
+            gradient={{ deg: 135, from: "orange.6", to: "orange.8" }}
             onClick={() => {
               window.location.href = `${import.meta.env.VITE_API_URL}/auth/spotify`;
             }}
             size="lg"
+            variant="gradient"
           >
             Login with Spotify
           </Button>
@@ -119,7 +113,7 @@ function AuthWrapper() {
 
 function RootComponent() {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="dark">
+    <MantineProvider defaultColorScheme="dark" theme={theme}>
       <Notifications position="top-right" />
       <QueryClientProvider client={queryClient}>
         <AuthWrapper />

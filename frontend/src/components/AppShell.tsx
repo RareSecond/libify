@@ -36,7 +36,10 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
             opened={opened}
             size="sm"
           />
-          <Text className="font-bold bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent" size="xl">
+          <Text
+            className="font-bold bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent"
+            size="xl"
+          >
             Spotlib
           </Text>
         </Group>

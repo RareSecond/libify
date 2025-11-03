@@ -65,7 +65,9 @@ export function TracksTableWithControls({
   if (error) {
     return (
       <Center className="h-[400px]">
-        <Text c="red">Error loading tracks: {error.message}</Text>
+        <Text className="text-red-500">
+          Error loading tracks: {error.message}
+        </Text>
       </Center>
     );
   }

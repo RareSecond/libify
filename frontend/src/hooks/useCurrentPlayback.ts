@@ -5,7 +5,7 @@ import { usePlaybackControllerGetCurrentPlayback } from "@/data/api";
  * This shows what's playing across all devices (phone, desktop, web player, etc.)
  */
 export function useCurrentPlayback() {
-  const { data, isLoading, error, refetch } =
+  const { data, error, isLoading, refetch } =
     usePlaybackControllerGetCurrentPlayback({
       query: {
         refetchInterval: 5000, // Poll every 5 seconds
@@ -14,10 +14,5 @@ export function useCurrentPlayback() {
       },
     });
 
-  return {
-    currentPlayback: data,
-    error,
-    isLoading,
-    refetch,
-  };
+  return { currentPlayback: data, error, isLoading, refetch };
 }

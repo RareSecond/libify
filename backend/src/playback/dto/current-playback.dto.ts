@@ -23,6 +23,48 @@ export class CurrentPlaybackDeviceDto {
   volumePercent: number;
 }
 
+export class CurrentPlaybackStateDto {
+  @ApiProperty({ nullable: true, type: CurrentPlaybackDeviceDto })
+  @Expose()
+  @Type(() => CurrentPlaybackDeviceDto)
+  device: CurrentPlaybackDeviceDto | null;
+
+  @ApiProperty()
+  @Expose()
+  isPlaying: boolean;
+
+  @ApiProperty()
+  @Expose()
+  progressMs: number;
+
+  @ApiProperty()
+  @Expose()
+  repeatState: string;
+
+  @ApiProperty()
+  @Expose()
+  shuffleState: boolean;
+
+  @ApiProperty({ nullable: true, type: CurrentPlaybackTrackDto })
+  @Expose()
+  @Type(() => CurrentPlaybackTrackDto)
+  track: CurrentPlaybackTrackDto | null;
+}
+
+export class CurrentPlaybackTrackAlbumDto {
+  @ApiProperty()
+  @Expose()
+  id: string;
+
+  @ApiProperty({ type: [String] })
+  @Expose()
+  images: string[];
+
+  @ApiProperty()
+  @Expose()
+  name: string;
+}
+
 export class CurrentPlaybackTrackArtistDto {
   @ApiProperty()
   @Expose()
@@ -33,33 +75,7 @@ export class CurrentPlaybackTrackArtistDto {
   name: string;
 }
 
-export class CurrentPlaybackTrackAlbumDto {
-  @ApiProperty()
-  @Expose()
-  id: string;
-
-  @ApiProperty()
-  @Expose()
-  name: string;
-
-  @ApiProperty({ type: [String] })
-  @Expose()
-  images: string[];
-}
-
 export class CurrentPlaybackTrackDto {
-  @ApiProperty()
-  @Expose()
-  id: string;
-
-  @ApiProperty()
-  @Expose()
-  name: string;
-
-  @ApiProperty()
-  @Expose()
-  durationMs: number;
-
   @ApiProperty({ type: CurrentPlaybackTrackAlbumDto })
   @Expose()
   @Type(() => CurrentPlaybackTrackAlbumDto)
@@ -69,32 +85,16 @@ export class CurrentPlaybackTrackDto {
   @Expose()
   @Type(() => CurrentPlaybackTrackArtistDto)
   artists: CurrentPlaybackTrackArtistDto[];
-}
-
-export class CurrentPlaybackStateDto {
-  @ApiProperty()
-  @Expose()
-  isPlaying: boolean;
 
   @ApiProperty()
   @Expose()
-  progressMs: number;
-
-  @ApiProperty({ type: CurrentPlaybackDeviceDto, nullable: true })
-  @Expose()
-  @Type(() => CurrentPlaybackDeviceDto)
-  device: CurrentPlaybackDeviceDto | null;
-
-  @ApiProperty({ type: CurrentPlaybackTrackDto, nullable: true })
-  @Expose()
-  @Type(() => CurrentPlaybackTrackDto)
-  track: CurrentPlaybackTrackDto | null;
+  durationMs: number;
 
   @ApiProperty()
   @Expose()
-  shuffleState: boolean;
+  id: string;
 
   @ApiProperty()
   @Expose()
-  repeatState: string;
+  name: string;
 }

@@ -96,7 +96,7 @@ export function LibrarySync() {
             <Text className="font-medium text-dark-0" size="lg">
               Library Sync
             </Text>
-            <Text c="dimmed" size="sm">
+            <Text className="text-dark-1" size="sm">
               Keep your Spotify library in sync
             </Text>
           </div>
@@ -227,11 +227,11 @@ export function LibrarySync() {
               syncLibraryMutation.isPending ||
               syncRecentMutation.isPending
             }
+            gradient={{ deg: 135, from: "orange.6", to: "orange.8" }}
             leftSection={<RefreshCw size={16} />}
             loading={syncLibraryMutation.isPending}
             onClick={() => syncLibraryMutation.mutate({ data: syncOptions })}
             variant="gradient"
-            gradient={{ from: "orange.6", to: "orange.8", deg: 135 }}
           >
             {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
           </Button>
