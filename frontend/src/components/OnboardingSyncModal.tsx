@@ -36,7 +36,9 @@ export function OnboardingSyncModal({
     percentage: 0,
   });
   const [jobId, setJobId] = useState<null | string>(null);
-  const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const completionTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(
+    null,
+  );
 
   const quickSyncMutation = useLibraryControllerSyncRecentlyPlayed();
   const fullSyncMutation = useLibraryControllerSyncLibrary();
@@ -88,6 +90,8 @@ export function OnboardingSyncModal({
     newSocket.on("failed", (data: { error: string }) => {
       setProgress({ message: `Sync failed: ${data.error}`, percentage: 0 });
       setIsSyncing(false);
+      setSelectedOption(null);
+      setJobId(null);
     });
 
     newSocket.on("error", () => {
