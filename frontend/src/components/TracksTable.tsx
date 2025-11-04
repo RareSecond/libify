@@ -17,6 +17,7 @@ interface TracksTableProps {
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   isLoading?: boolean;
+  onRatingChange?: () => void;
   onRefetch?: () => void;
   onSortChange?: (columnId: string) => void;
   page?: number;
@@ -31,6 +32,7 @@ export function TracksTable({
   contextId,
   contextType,
   isLoading,
+  onRatingChange,
   onRefetch,
   onSortChange,
   page = 1,
@@ -115,6 +117,7 @@ export function TracksTable({
   const columns = useTracksTableColumns({
     currentTrack: currentTrack ? { id: originalSpotifyId } : undefined,
     isPlaying,
+    onRatingChange,
     onRefetch,
   });
 

@@ -106,6 +106,37 @@
         ]
       }
     },
+    "/auth/profile/onboarding": {
+      "put": {
+        "operationId": "AuthController_updateOnboarding",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOnboardingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController_check",
@@ -2030,6 +2061,9 @@
             "type": "string",
             "format": "email"
           },
+          "hasCompletedOnboarding": {
+            "type": "boolean"
+          },
           "id": {
             "type": "number"
           },
@@ -2047,9 +2081,21 @@
         "required": [
           "createdAt",
           "email",
+          "hasCompletedOnboarding",
           "id",
           "provider",
           "updatedAt"
+        ]
+      },
+      "UpdateOnboardingDto": {
+        "type": "object",
+        "properties": {
+          "hasCompletedOnboarding": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hasCompletedOnboarding"
         ]
       },
       "AddTagToTrackDto": {

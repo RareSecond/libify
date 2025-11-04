@@ -4,6 +4,7 @@ import { Play, Shuffle, Tag } from "lucide-react";
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 import {
   useLibraryControllerGetGenres,
@@ -12,6 +13,7 @@ import {
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~tracks";
 import { GenreFilter } from "./filters/GenreFilter";
+import { OnboardingTooltips } from "./OnboardingTooltips";
 import { TagManager } from "./TagManager";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
@@ -27,6 +29,7 @@ export function TrackList() {
     sortOrder = "desc",
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
+  const { advanceTooltip, currentTooltip, skipOnboarding } = useOnboarding();
 
   const { debouncedSearch, localSearch, setLocalSearch } = useDebouncedSearch(
     search,
@@ -77,6 +80,11 @@ export function TrackList() {
       sortOrder?: "asc" | "desc";
     }>,
   ) => {
+    // Check if this is a sort action for onboarding
+    if (newSearch.sortBy && currentTooltip === "sort") {
+      advanceTooltip();
+    }
+
     navigate({
       search: (prev) => ({
         ...prev,
@@ -138,53 +146,72 @@ export function TrackList() {
         </Group>
       </Group>
 
-      <TracksTableWithControls
-        contextType="library"
-        data={data}
-        error={error}
-        extraControls={
-          <Group>
-            <ActionIcon
-              onClick={() => setShowTagManager(true)}
-              size="lg"
-              variant="light"
-            >
-              <Tag size={20} />
-            </ActionIcon>
-            {genresData && genresData.length > 0 && (
-              <GenreFilter
-                genres={genresData}
-                onChange={(value) => updateSearch({ genres: value, page: 1 })}
-                value={genres}
-              />
-            )}
-          </Group>
-        }
-        isLoading={isLoading}
-        onPageChange={(newPage) => updateSearch({ page: newPage })}
-        onPageSizeChange={(newPageSize) =>
-          updateSearch({ page: 1, pageSize: newPageSize })
-        }
-        onRefetch={refetch}
-        onSearchChange={setLocalSearch}
-        onSortChange={(columnId) => {
-          // If clicking the same column, toggle sort order
-          if (columnId === sortBy) {
-            updateSearch({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
-          } else {
-            // If clicking a new column, set to desc by default
-            updateSearch({
-              sortBy: columnId as typeof sortBy,
-              sortOrder: "desc",
-            });
+      <div className="relative">
+        <TracksTableWithControls
+          contextType="library"
+          data={data}
+          error={error}
+          extraControls={
+            <Group>
+              <ActionIcon
+                onClick={() => setShowTagManager(true)}
+                size="lg"
+                variant="light"
+              >
+                <Tag size={20} />
+              </ActionIcon>
+              {genresData && genresData.length > 0 && (
+                <GenreFilter
+                  genres={genresData}
+                  onChange={(value) => {
+                    if (currentTooltip === "filter") {
+                      advanceTooltip();
+                    }
+                    updateSearch({ genres: value, page: 1 });
+                  }}
+                  value={genres}
+                />
+              )}
+            </Group>
           }
-        }}
-        page={page}
-        pageSize={pageSize}
-        search={localSearch}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-      />
+          isLoading={isLoading}
+          onPageChange={(newPage) => updateSearch({ page: newPage })}
+          onPageSizeChange={(newPageSize) =>
+            updateSearch({ page: 1, pageSize: newPageSize })
+          }
+          onRatingChange={() => {
+            if (currentTooltip === "rate") {
+              advanceTooltip();
+            }
+          }}
+          onRefetch={refetch}
+          onSearchChange={setLocalSearch}
+          onSortChange={(columnId) => {
+            // If clicking the same column, toggle sort order
+            if (columnId === sortBy) {
+              updateSearch({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
+            } else {
+              // If clicking a new column, set to desc by default
+              updateSearch({
+                sortBy: columnId as typeof sortBy,
+                sortOrder: "desc",
+              });
+            }
+          }}
+          page={page}
+          pageSize={pageSize}
+          search={localSearch}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+        />
+
+        <OnboardingTooltips
+          advanceTooltip={advanceTooltip}
+          currentTooltip={currentTooltip}
+          hasTracks={Boolean(data?.tracks && data.tracks.length > 0)}
+          skipOnboarding={skipOnboarding}
+        />
+      </div>
 
       <Modal
         onClose={() => setShowTagManager(false)}

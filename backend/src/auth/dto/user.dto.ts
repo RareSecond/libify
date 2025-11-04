@@ -1,5 +1,11 @@
 import { Expose } from "class-transformer";
-import { IsDateString, IsEmail, IsOptional, IsString } from "class-validator";
+import {
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
 export class UserDto {
   @Expose()
@@ -10,6 +16,10 @@ export class UserDto {
   @Expose()
   @IsEmail()
   email: string;
+
+  @Expose()
+  @IsBoolean()
+  hasCompletedOnboarding: boolean;
 
   @Expose()
   id: number;

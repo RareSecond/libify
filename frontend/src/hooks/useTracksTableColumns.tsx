@@ -17,12 +17,14 @@ const formatDate = (date: null | string | undefined) => {
 interface UseTracksTableColumnsOptions {
   currentTrack?: { id?: string };
   isPlaying: boolean;
+  onRatingChange?: () => void;
   onRefetch?: () => void;
 }
 
 export function useTracksTableColumns({
   currentTrack,
   isPlaying,
+  onRatingChange,
   onRefetch,
 }: UseTracksTableColumnsOptions) {
   return useMemo<ColumnDef<TrackDto>[]>(
@@ -141,6 +143,7 @@ export function useTracksTableColumns({
         accessorKey: "rating",
         cell: ({ row }) => (
           <RatingSelector
+            onRatingChange={onRatingChange}
             rating={row.original.rating ?? null}
             trackId={row.original.id}
           />
@@ -172,6 +175,6 @@ export function useTracksTableColumns({
         size: 200,
       },
     ],
-    [currentTrack?.id, isPlaying, onRefetch],
+    [currentTrack?.id, isPlaying, onRatingChange, onRefetch],
   );
 }

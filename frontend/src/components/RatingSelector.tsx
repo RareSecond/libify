@@ -16,11 +16,16 @@ interface MutationContext {
 }
 
 interface RatingSelectorProps {
+  onRatingChange?: () => void;
   rating: null | number;
   trackId: string;
 }
 
-export function RatingSelector({ rating, trackId }: RatingSelectorProps) {
+export function RatingSelector({
+  onRatingChange,
+  rating,
+  trackId,
+}: RatingSelectorProps) {
   const [hoveredRating, setHoveredRating] = useState<null | number>(null);
   const queryClient = useQueryClient();
 
@@ -111,6 +116,7 @@ export function RatingSelector({ rating, trackId }: RatingSelectorProps) {
     if (updateRatingMutation.isPending) return;
 
     updateRatingMutation.mutate({ data: { rating: newRating }, trackId });
+    onRatingChange?.();
   };
 
   const displayRating = hoveredRating ?? rating ?? 0;
