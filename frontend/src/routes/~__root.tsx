@@ -1,13 +1,13 @@
-import {
-  Button,
-  Center,
-  createTheme,
-  Loader,
-  MantineProvider,
-} from "@mantine/core";
+import { Center, createTheme, Loader, MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { AppShellLayout } from "../components/AppShell";
 import { MediaPlayer } from "../components/MediaPlayer";
@@ -55,6 +55,10 @@ const theme = createTheme({
 export const Route = createRootRoute({ component: RootComponent });
 
 function AuthWrapper() {
+  const navigate = useNavigate();
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
+
   const {
     data: profile,
     error,
@@ -66,6 +70,24 @@ function AuthWrapper() {
     },
   });
 
+  // Handle authentication-based redirects
+  useEffect(() => {
+    if (isLoading) return;
+
+    const isAuthenticated = !error && !!profile;
+    const isWelcomePage = currentPath === "/welcome";
+
+    // Redirect unauthenticated users to welcome page
+    if (!isAuthenticated && !isWelcomePage) {
+      navigate({ to: "/welcome" });
+    }
+
+    // Redirect authenticated users away from welcome page to dashboard
+    if (isAuthenticated && isWelcomePage) {
+      navigate({ to: "/" });
+    }
+  }, [isLoading, error, profile, currentPath, navigate]);
+
   if (isLoading) {
     return (
       <Center className="h-screen">
@@ -74,30 +96,9 @@ function AuthWrapper() {
     );
   }
 
-  // Not authenticated - show login page
+  // Not authenticated - show welcome page
   if (error || !profile) {
-    return (
-      <Center className="h-screen bg-gradient-to-br from-dark-8 via-dark-7 to-dark-9">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent">
-            Welcome to Spotlib
-          </h1>
-          <p className="text-dark-1 mb-8 text-lg">
-            Login with Spotify to access your music library
-          </p>
-          <Button
-            gradient={{ deg: 135, from: "orange.6", to: "orange.8" }}
-            onClick={() => {
-              window.location.href = `${import.meta.env.VITE_API_URL}/auth/spotify`;
-            }}
-            size="lg"
-            variant="gradient"
-          >
-            Login with Spotify
-          </Button>
-        </div>
-      </Center>
-    );
+    return <Outlet />;
   }
 
   // Authenticated - show app with navigation
