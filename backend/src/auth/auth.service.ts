@@ -79,6 +79,22 @@ export class AuthService {
     return { access_token: this.jwtService.sign(payload), user };
   }
 
+  async updateOnboardingStatus(
+    userId: string,
+    hasCompletedOnboarding: boolean,
+  ): Promise<User> {
+    this.logger.log(
+      `Updating onboarding status for user ${userId}: ${hasCompletedOnboarding}`,
+    );
+
+    const user = await this.prisma.user.update({
+      data: { hasCompletedOnboarding },
+      where: { id: userId },
+    });
+
+    return user;
+  }
+
   async validateUser(
     email: string,
     name: string,

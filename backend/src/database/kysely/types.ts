@@ -96,6 +96,7 @@ export type TrackTag = {
 export type User = {
   createdAt: Generated<Timestamp>;
   email: string;
+  hasCompletedOnboarding: Generated<boolean>;
   id: string;
   lastPlaySyncedAt: null | Timestamp;
   name: null | string;

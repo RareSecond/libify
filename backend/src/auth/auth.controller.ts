@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Req,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import { User } from "@prisma/client";
@@ -7,6 +16,7 @@ import { Request, Response } from "express";
 
 import { AuthService } from "./auth.service";
 import { TokenDto } from "./dto/token.dto";
+import { UpdateOnboardingDto } from "./dto/update-onboarding.dto";
 import { UserDto } from "./dto/user.dto";
 
 interface AuthenticatedRequest extends Request {
@@ -83,5 +93,23 @@ export class AuthController {
 
     // Redirect to frontend
     res.redirect(`${process.env.FRONTEND_URL}/auth/success`);
+  }
+
+  @ApiResponse({
+    description: "Updated user profile",
+    status: 200,
+    type: UserDto,
+  })
+  @Put("profile/onboarding")
+  @UseGuards(AuthGuard("jwt"))
+  async updateOnboarding(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: UpdateOnboardingDto,
+  ): Promise<UserDto> {
+    const user = await this.authService.updateOnboardingStatus(
+      req.user.id,
+      body.hasCompletedOnboarding,
+    );
+    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
   }
 }

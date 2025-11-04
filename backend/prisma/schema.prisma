@@ -15,18 +15,19 @@ datasource db {
 }
 
 model User {
-  id                  String    @id @default(uuid())
-  email               String    @unique
-  name                String?
-  provider            String // 'spotify'
-  providerId          String // ID from OAuth provider
-  spotifyId           String? // Spotify-specific ID
-  spotifyAccessToken  String? // Spotify access token
-  spotifyRefreshToken String? // Spotify refresh token
-  tokenExpiresAt      DateTime? // Token expiration time
-  lastPlaySyncedAt    DateTime? // Timestamp of the most recent play synced from Spotify
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  name                   String?
+  provider               String // 'spotify'
+  providerId             String // ID from OAuth provider
+  spotifyId              String? // Spotify-specific ID
+  spotifyAccessToken     String? // Spotify access token
+  spotifyRefreshToken    String? // Spotify refresh token
+  tokenExpiresAt         DateTime? // Token expiration time
+  lastPlaySyncedAt       DateTime? // Timestamp of the most recent play synced from Spotify
+  hasCompletedOnboarding Boolean   @default(false) // First-time user onboarding completion
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   // Relations
   userTracks    UserTrack[]

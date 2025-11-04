@@ -32,6 +32,7 @@ interface TracksTableWithControlsProps {
   isLoading?: boolean;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  onRatingChange?: () => void;
   onRefetch?: () => void;
   onSearchChange?: (search: string) => void;
   onSortChange?: (columnId: string) => void;
@@ -53,6 +54,7 @@ export function TracksTableWithControls({
   isLoading,
   onPageChange,
   onPageSizeChange,
+  onRatingChange,
   onRefetch,
   onSearchChange,
   onSortChange,
@@ -114,6 +116,7 @@ export function TracksTableWithControls({
         contextId={contextId}
         contextType={contextType}
         isLoading={isLoading}
+        onRatingChange={onRatingChange}
         onRefetch={onRefetch}
         onSortChange={onSortChange}
         page={page}
