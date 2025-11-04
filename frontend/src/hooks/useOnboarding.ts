@@ -9,7 +9,7 @@ import {
 const ONBOARDING_STORAGE_KEY = "spotlib-onboarding-completed";
 const CURRENT_TOOLTIP_KEY = "spotlib-current-tooltip";
 
-export type OnboardingStep = "filter" | "playlist" | "rate" | "sort";
+export type OnboardingStep = "playlist" | "rate" | "sort";
 
 interface OnboardingState {
   currentTooltip: null | OnboardingStep;
@@ -80,7 +80,7 @@ export function useOnboarding() {
   const advanceTooltip = useCallback(() => {
     if (localState.hasCompletedOnboarding) return;
 
-    const steps: OnboardingStep[] = ["sort", "rate", "filter", "playlist"];
+    const steps: OnboardingStep[] = ["sort", "rate", "playlist"];
     const currentIndex = localState.currentTooltip
       ? steps.indexOf(localState.currentTooltip)
       : -1;
@@ -126,9 +126,7 @@ export function useOnboarding() {
             completed: localStorage.getItem(ONBOARDING_STORAGE_KEY),
             currentTooltip: localStorage.getItem(CURRENT_TOOLTIP_KEY),
           },
-          profile: {
-            hasCompletedOnboarding: profile?.hasCompletedOnboarding,
-          },
+          profile: { hasCompletedOnboarding: profile?.hasCompletedOnboarding },
         };
       };
     }

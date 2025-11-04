@@ -160,18 +160,18 @@ export function TrackList() {
               >
                 <Tag size={20} />
               </ActionIcon>
-              {genresData && genresData.length > 0 && (
-                <GenreFilter
-                  genres={genresData}
-                  onChange={(value) => {
-                    if (currentTooltip === "filter") {
-                      advanceTooltip();
-                    }
-                    updateSearch({ genres: value, page: 1 });
-                  }}
-                  value={genres}
-                />
-              )}
+              <GenreFilter
+                genres={genresData || []}
+                onChange={(value) => {
+                  updateSearch({ genres: value, page: 1 });
+                }}
+                placeholder={
+                  !genresData || genresData.length === 0
+                    ? "No genres available"
+                    : "Filter by genres"
+                }
+                value={genres}
+              />
             </Group>
           }
           isLoading={isLoading}
@@ -206,7 +206,6 @@ export function TrackList() {
         />
 
         <OnboardingTooltips
-          advanceTooltip={advanceTooltip}
           currentTooltip={currentTooltip}
           hasTracks={Boolean(data?.tracks && data.tracks.length > 0)}
           skipOnboarding={skipOnboarding}

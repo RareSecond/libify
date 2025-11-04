@@ -4,14 +4,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { OnboardingStep } from "@/hooks/useOnboarding";
 
 interface OnboardingTooltipsProps {
-  advanceTooltip: () => void;
   currentTooltip: null | OnboardingStep;
   hasTracks: boolean;
   skipOnboarding: () => void;
 }
 
 export function OnboardingTooltips({
-  advanceTooltip,
   currentTooltip,
   hasTracks,
   skipOnboarding,
@@ -22,7 +20,9 @@ export function OnboardingTooltips({
     return (
       <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm text-gray-100">Sort your tracks</h3>
+          <h3 className="font-semibold text-sm text-gray-100">
+            Sort your tracks
+          </h3>
           <button
             aria-label="Close tooltip"
             className="text-gray-400 hover:text-gray-300 transition-colors"
@@ -48,7 +48,9 @@ export function OnboardingTooltips({
     return (
       <div className="absolute top-32 left-4 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm text-gray-100">Rate your tracks</h3>
+          <h3 className="font-semibold text-sm text-gray-100">
+            Rate your tracks
+          </h3>
           <button
             aria-label="Close tooltip"
             className="text-gray-400 hover:text-gray-300 transition-colors"
@@ -70,11 +72,13 @@ export function OnboardingTooltips({
     );
   }
 
-  if (currentTooltip === "filter") {
+  if (currentTooltip === "playlist") {
     return (
-      <div className="absolute top-20 right-4 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
+      <div className="absolute top-4 right-4 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm text-gray-100">Filter by genre</h3>
+          <h3 className="font-semibold text-sm text-gray-100">
+            Great! One more thing...
+          </h3>
           <button
             aria-label="Close tooltip"
             className="text-gray-400 hover:text-gray-300 transition-colors"
@@ -84,8 +88,8 @@ export function OnboardingTooltips({
           </button>
         </div>
         <p className="text-xs text-gray-400 mb-3">
-          Use the genre filter to narrow down your music selection. Try
-          selecting a genre to see filtered results!
+          Now let&apos;s check out Smart Playlists where you can create
+          playlists based on your ratings and preferences!
         </p>
         <div className="flex gap-2 justify-end">
           <Button onClick={skipOnboarding} size="xs" variant="subtle">
@@ -94,12 +98,11 @@ export function OnboardingTooltips({
           <Button
             className="bg-orange-500 hover:bg-orange-600"
             onClick={() => {
-              advanceTooltip();
               navigate({ to: "/playlists" });
             }}
             size="xs"
           >
-            Next: Playlists
+            Go to Playlists
           </Button>
         </div>
       </div>
