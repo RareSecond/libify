@@ -39,16 +39,28 @@ export function UserProfile() {
 
   if (isLoading) {
     return (
-      <Card padding="lg" radius="md" shadow="sm" withBorder>
-        <Text>Loading profile...</Text>
+      <Card
+        className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+        padding="lg"
+        radius="md"
+        shadow="md"
+        withBorder
+      >
+        <Text className="text-dark-1">Loading profile...</Text>
       </Card>
     );
   }
 
   if (error) {
     return (
-      <Card padding="lg" radius="md" shadow="sm" withBorder>
-        <Text color="red">Error loading profile</Text>
+      <Card
+        className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+        padding="lg"
+        radius="md"
+        shadow="md"
+        withBorder
+      >
+        <Text className="text-red-500">Error loading profile</Text>
       </Card>
     );
   }
@@ -60,17 +72,28 @@ export function UserProfile() {
   const user = data as UserData;
 
   return (
-    <Card className="max-w-md" padding="lg" radius="md" shadow="sm" withBorder>
+    <Card
+      className="max-w-md bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      padding="lg"
+      radius="md"
+      shadow="md"
+      withBorder
+    >
       <Stack gap="md">
         <Group>
-          <Avatar color="blue" radius="xl" size="lg">
+          <Avatar
+            className="bg-gradient-to-br from-orange-6 to-orange-8"
+            radius="xl"
+            size="lg"
+            variant="filled"
+          >
             <User size={24} />
           </Avatar>
           <div>
-            <Text className="font-medium" size="lg">
+            <Text className="font-medium text-dark-0" size="lg">
               {user.name || "Anonymous User"}
             </Text>
-            <Text color="dimmed" size="sm">
+            <Text className="text-dark-1" size="sm">
               {user.email}
             </Text>
           </div>
@@ -78,13 +101,13 @@ export function UserProfile() {
 
         <Group>
           <Badge
-            color={user.provider === "spotify" ? "green" : "blue"}
+            color="orange"
             leftSection={<Calendar size={12} />}
             variant="light"
           >
             {user.provider.toUpperCase()}
           </Badge>
-          <Text color="dimmed" size="xs">
+          <Text className="text-dark-1" size="xs">
             Joined {new Date(user.createdAt).toLocaleDateString()}
           </Text>
         </Group>
@@ -96,7 +119,7 @@ export function UserProfile() {
           leftSection={<LogOut size={16} />}
           loading={logoutMutation.isPending}
           onClick={handleLogout}
-          variant="outline"
+          variant="light"
         >
           {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </Button>

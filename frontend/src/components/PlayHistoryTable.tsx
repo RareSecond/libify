@@ -48,7 +48,7 @@ export function PlayHistoryTable() {
       ]);
 
       notifications.show({
-        color: "green",
+        color: "orange",
         message: trackTitle,
         title: "Now playing",
       });
@@ -83,7 +83,7 @@ export function PlayHistoryTable() {
   if (isLoading) {
     return (
       <Center className="h-[400px]">
-        <Loader size="lg" />
+        <Loader color="orange" size="lg" />
       </Center>
     );
   }
@@ -120,14 +120,14 @@ export function PlayHistoryTable() {
           <Table.Tbody>
             {items.length === 0 ? (
               <Table.Tr>
-                <Table.Td className="text-center text-gray-500" colSpan={5}>
-                  No play history found
+                <Table.Td className="text-center" colSpan={5}>
+                  <Text className="text-dark-1">No play history found</Text>
                 </Table.Td>
               </Table.Tr>
             ) : (
               items.map((item) => (
                 <Table.Tr
-                  className="cursor-pointer hover:bg-gray-50"
+                  className="cursor-pointer hover:bg-dark-6 transition-colors"
                   key={item.id}
                   onClick={() =>
                     handlePlayTrack(
@@ -146,18 +146,27 @@ export function PlayHistoryTable() {
                           src={item.trackAlbumArt}
                         />
                       ) : (
-                        <Avatar color="blue" radius="sm" size="md">
+                        <Avatar
+                          className="bg-gradient-to-br from-orange-6 to-orange-8"
+                          radius="sm"
+                          size="md"
+                          variant="filled"
+                        >
                           <Music size={20} />
                         </Avatar>
                       )}
-                      <Text className="font-medium" lineClamp={1} size="sm">
+                      <Text
+                        className="font-medium text-dark-0"
+                        lineClamp={1}
+                        size="sm"
+                      >
                         {item.trackTitle}
                       </Text>
                     </Group>
                   </Table.Td>
                   <Table.Td>
                     <Text
-                      className="cursor-pointer hover:underline"
+                      className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
                       lineClamp={1}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -173,7 +182,7 @@ export function PlayHistoryTable() {
                   </Table.Td>
                   <Table.Td>
                     <Text
-                      className="cursor-pointer hover:underline"
+                      className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
                       lineClamp={1}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -193,12 +202,12 @@ export function PlayHistoryTable() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Badge color="gray" size="sm" variant="light">
+                    <Badge color="orange" size="sm" variant="dot">
                       {formatDate(item.playedAt)}
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Text className="text-gray-500" size="sm">
+                    <Text className="text-dark-1" size="sm">
                       {formatDuration(item.trackDuration)}
                     </Text>
                   </Table.Td>
@@ -212,6 +221,7 @@ export function PlayHistoryTable() {
       {totalPages > 1 && (
         <Center>
           <Pagination
+            color="orange"
             onChange={setPage}
             total={totalPages}
             value={page}
@@ -220,7 +230,7 @@ export function PlayHistoryTable() {
         </Center>
       )}
 
-      <Text className="text-center text-gray-500" size="sm">
+      <Text className="text-dark-1 text-center" size="sm">
         Showing {items.length} of {data?.total || 0} plays
       </Text>
     </Stack>

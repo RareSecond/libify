@@ -1,8 +1,10 @@
+/* eslint-disable max-lines */
 import {
   ActionIcon,
   Box,
   Button,
   Card,
+  Collapse,
   Divider,
   Group,
   Image,
@@ -11,9 +13,12 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ChevronDown,
+  ChevronUp,
   Monitor,
   Pause,
   Play,
@@ -84,6 +89,7 @@ export function MediaPlayer() {
   const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
+  const [metadataExpanded, { toggle: toggleMetadata }] = useDisclosure(true);
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
@@ -112,7 +118,8 @@ export function MediaPlayer() {
 
   // Use web player data only if this device is active, otherwise use cross-device data
   const hasWebPlayerTrack = isReady && currentTrack && isWebPlayerActive;
-  const hasCrossDevicePlayback = currentPlayback?.track && currentPlayback?.device;
+  const hasCrossDevicePlayback =
+    currentPlayback?.track && currentPlayback?.device;
 
   // If neither web player nor cross-device playback, don't show anything
   if (!hasWebPlayerTrack && !hasCrossDevicePlayback) {
@@ -121,11 +128,19 @@ export function MediaPlayer() {
 
   // Use web player data if this device is active, otherwise use cross-device data
   const displayTrack = hasWebPlayerTrack ? currentTrack : null;
-  const displayIsPlaying = hasWebPlayerTrack ? isPlaying : (currentPlayback?.isPlaying ?? false);
-  const displayPosition = hasWebPlayerTrack ? position : (currentPlayback?.progressMs ?? 0);
-  const displayDuration = hasWebPlayerTrack ? duration : (currentPlayback?.track?.durationMs ?? 0);
+  const displayIsPlaying = hasWebPlayerTrack
+    ? isPlaying
+    : (currentPlayback?.isPlaying ?? false);
+  const displayPosition = hasWebPlayerTrack
+    ? position
+    : (currentPlayback?.progressMs ?? 0);
+  const displayDuration = hasWebPlayerTrack
+    ? duration
+    : (currentPlayback?.track?.durationMs ?? 0);
   const displayDeviceName = hasWebPlayerTrack
-    ? (import.meta.env.DEV ? "Spotlib Web Player (Dev)" : "Spotlib Web Player")
+    ? import.meta.env.DEV
+      ? "Spotlib Web Player (Dev)"
+      : "Spotlib Web Player"
     : (currentPlayback?.device?.name ?? "Unknown Device");
 
   const handlePlayPause = async () => {
@@ -149,15 +164,18 @@ export function MediaPlayer() {
   };
 
   const currentPosition = isDragging ? dragPosition : displayPosition;
-  const progressPercent = displayDuration > 0 ? (currentPosition / displayDuration) * 100 : 0;
+  const progressPercent =
+    displayDuration > 0 ? (currentPosition / displayDuration) * 100 : 0;
 
   // Track data to display (either from web player or cross-device)
   const trackToDisplay = displayTrack || {
     album: {
-      images: currentPlayback?.track?.album.images.map(url => ({ url })) ?? [],
+      images:
+        currentPlayback?.track?.album.images.map((url) => ({ url })) ?? [],
       name: currentPlayback?.track?.album.name ?? "Unknown Album",
     },
-    artists: currentPlayback?.track?.artists.map(a => ({ name: a.name })) ?? [],
+    artists:
+      currentPlayback?.track?.artists.map((a) => ({ name: a.name })) ?? [],
     name: currentPlayback?.track?.name ?? "Unknown Track",
   };
 
@@ -171,31 +189,47 @@ export function MediaPlayer() {
       return;
     }
 
-    transferPlaybackMutation.mutate({
-      data: { deviceId },
-    });
+    transferPlaybackMutation.mutate({ data: { deviceId } });
   };
 
   return (
     <Card
-      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-gray-200 p-4 z-[250]"
-      shadow="lg"
+      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-dark-5 p-4 z-[250] bg-gradient-to-t from-dark-8 via-dark-7 to-dark-8 shadow-2xl"
+      shadow="xl"
     >
       <Stack gap="sm">
+        {/* Compact Mode Toggle */}
+        {hasWebPlayerTrack && libraryTrack && (
+          <Group justify="center">
+            <ActionIcon
+              color="orange"
+              onClick={toggleMetadata}
+              size="xs"
+              variant="subtle"
+            >
+              {metadataExpanded ? (
+                <ChevronDown size={14} />
+              ) : (
+                <ChevronUp size={14} />
+              )}
+            </ActionIcon>
+          </Group>
+        )}
+
         <Group align="center" justify="space-between">
           {/* Track Info */}
           <Group className="flex-1 min-w-0" gap="md">
             <Image
               alt={trackToDisplay.album.name}
-              className="h-[60px] w-[60px]"
+              className="h-[60px] w-[60px] border border-dark-5"
               radius="sm"
               src={trackToDisplay.album.images[0]?.url}
             />
             <Box className="flex-1 min-w-0">
-              <Text className="font-semibold" lineClamp={1}>
+              <Text className="font-semibold text-dark-0" lineClamp={1}>
                 {trackToDisplay.name}
               </Text>
-              <Text className="text-gray-600" lineClamp={1} size="sm">
+              <Text className="text-dark-1" lineClamp={1} size="sm">
                 {trackToDisplay.artists.map((artist) => artist.name).join(", ")}
               </Text>
             </Box>
@@ -205,7 +239,9 @@ export function MediaPlayer() {
           <Stack align="center" className="flex-1 max-w-[500px]" gap="sm">
             {!hasWebPlayerTrack && hasCrossDevicePlayback && deviceId ? (
               <Button
+                color="orange"
                 disabled={!deviceId || transferPlaybackMutation.isPending}
+                leftSection={<Monitor size={16} />}
                 loading={transferPlaybackMutation.isPending}
                 onClick={handleTransferPlayback}
                 size="md"
@@ -216,7 +252,7 @@ export function MediaPlayer() {
             ) : (
               <Group gap="xs">
                 <ActionIcon
-                  color={isShuffled ? "blue" : undefined}
+                  color={isShuffled ? "orange" : undefined}
                   disabled={!hasWebPlayerTrack}
                   onClick={toggleShuffle}
                   size="lg"
@@ -226,6 +262,7 @@ export function MediaPlayer() {
                 </ActionIcon>
 
                 <ActionIcon
+                  color="orange"
                   disabled={!hasWebPlayerTrack}
                   onClick={previousTrack}
                   size="lg"
@@ -235,6 +272,7 @@ export function MediaPlayer() {
                 </ActionIcon>
 
                 <ActionIcon
+                  className="bg-gradient-to-br from-orange-6 to-orange-8"
                   disabled={!hasWebPlayerTrack}
                   onClick={handlePlayPause}
                   size="xl"
@@ -244,6 +282,7 @@ export function MediaPlayer() {
                 </ActionIcon>
 
                 <ActionIcon
+                  color="orange"
                   disabled={!hasWebPlayerTrack}
                   onClick={nextTrack}
                   size="lg"
@@ -256,11 +295,12 @@ export function MediaPlayer() {
 
             {/* Progress Bar */}
             <Group className="w-full" gap="sm">
-              <Text className="min-w-10 text-right text-gray-600" size="xs">
+              <Text className="text-dark-1 min-w-10 text-right" size="xs">
                 {formatTime(currentPosition)}
               </Text>
               <Slider
                 className="flex-1"
+                color="orange"
                 disabled={!hasWebPlayerTrack}
                 label={null}
                 max={100}
@@ -272,7 +312,7 @@ export function MediaPlayer() {
                 thumbSize={12}
                 value={progressPercent}
               />
-              <Text className="min-w-10 text-gray-600" size="xs">
+              <Text className="text-dark-1 min-w-10" size="xs">
                 {formatTime(displayDuration)}
               </Text>
             </Group>
@@ -284,8 +324,8 @@ export function MediaPlayer() {
               {/* Device indicator */}
               <Tooltip label={displayDeviceName}>
                 <Group align="center" gap={4}>
-                  <Monitor className="text-gray-500" size={16} />
-                  <Text className="text-gray-600" size="xs">
+                  <Monitor color="var(--color-orange-5)" size={16} />
+                  <Text className="text-dark-1" size="xs">
                     {displayDeviceName}
                   </Text>
                 </Group>
@@ -294,16 +334,24 @@ export function MediaPlayer() {
               {hasWebPlayerTrack && (
                 <>
                   <ActionIcon
-                    onClick={() => setIsVolumeSliderVisible(!isVolumeSliderVisible)}
+                    color="orange"
+                    onClick={() =>
+                      setIsVolumeSliderVisible(!isVolumeSliderVisible)
+                    }
                     size="md"
                     variant="subtle"
                   >
-                    {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                    {volume === 0 ? (
+                      <VolumeX size={18} />
+                    ) : (
+                      <Volume2 size={18} />
+                    )}
                   </ActionIcon>
 
                   {isVolumeSliderVisible && (
                     <Box className="w-[100px]">
                       <Slider
+                        color="orange"
                         label={null}
                         max={100}
                         min={0}
@@ -323,12 +371,12 @@ export function MediaPlayer() {
 
         {/* Track Metadata Section (Sources, Rating, Tags) - Only show for web player */}
         {hasWebPlayerTrack && libraryTrack && (
-          <>
-            <Divider />
+          <Collapse in={metadataExpanded}>
+            <Divider className="mb-2" color="var(--color-dark-5)" />
             <Group align="center" gap="xl" justify="space-between">
               {/* Sources */}
               <Group gap="xs">
-                <Text className="text-gray-600 font-medium" size="xs">
+                <Text className="text-dark-1 font-medium" size="xs">
                   From:
                 </Text>
                 <TrackSources sources={libraryTrack.sources} />
@@ -336,7 +384,7 @@ export function MediaPlayer() {
 
               {/* Rating */}
               <Group gap="xs">
-                <Text className="text-gray-600 font-medium" size="xs">
+                <Text className="text-dark-1 font-medium" size="xs">
                   Rating:
                 </Text>
                 <RatingSelector
@@ -347,7 +395,7 @@ export function MediaPlayer() {
 
               {/* Tags */}
               <Group className="flex-1" gap="xs">
-                <Text className="text-gray-600 font-medium" size="xs">
+                <Text className="text-dark-1 font-medium" size="xs">
                   Tags:
                 </Text>
                 <InlineTagEditor
@@ -357,7 +405,7 @@ export function MediaPlayer() {
                 />
               </Group>
             </Group>
-          </>
+          </Collapse>
         )}
       </Stack>
     </Card>

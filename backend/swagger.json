@@ -2923,20 +2923,20 @@
           "id": {
             "type": "string"
           },
-          "name": {
-            "type": "string"
-          },
           "images": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "name": {
+            "type": "string"
           }
         },
         "required": [
           "id",
-          "name",
-          "images"
+          "images",
+          "name"
         ]
       },
       "CurrentPlaybackTrackArtistDto": {
@@ -2957,15 +2957,6 @@
       "CurrentPlaybackTrackDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "durationMs": {
-            "type": "number"
-          },
           "album": {
             "$ref": "#/components/schemas/CurrentPlaybackTrackAlbumDto"
           },
@@ -2974,25 +2965,28 @@
             "items": {
               "$ref": "#/components/schemas/CurrentPlaybackTrackArtistDto"
             }
+          },
+          "durationMs": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
           }
         },
         "required": [
-          "id",
-          "name",
-          "durationMs",
           "album",
-          "artists"
+          "artists",
+          "durationMs",
+          "id",
+          "name"
         ]
       },
       "CurrentPlaybackStateDto": {
         "type": "object",
         "properties": {
-          "isPlaying": {
-            "type": "boolean"
-          },
-          "progressMs": {
-            "type": "number"
-          },
           "device": {
             "nullable": true,
             "allOf": [
@@ -3001,6 +2995,18 @@
               }
             ]
           },
+          "isPlaying": {
+            "type": "boolean"
+          },
+          "progressMs": {
+            "type": "number"
+          },
+          "repeatState": {
+            "type": "string"
+          },
+          "shuffleState": {
+            "type": "boolean"
+          },
           "track": {
             "nullable": true,
             "allOf": [
@@ -3008,21 +3014,15 @@
                 "$ref": "#/components/schemas/CurrentPlaybackTrackDto"
               }
             ]
-          },
-          "shuffleState": {
-            "type": "boolean"
-          },
-          "repeatState": {
-            "type": "string"
           }
         },
         "required": [
+          "device",
           "isPlaying",
           "progressMs",
-          "device",
-          "track",
+          "repeatState",
           "shuffleState",
-          "repeatState"
+          "track"
         ]
       },
       "PlaybackControlResponseDto": {

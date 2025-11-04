@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from "class-validator";
 
 export class TransferPlaybackDto {
   @ApiProperty({ description: "Device ID to transfer playback to" })
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   deviceId: string;
 }
