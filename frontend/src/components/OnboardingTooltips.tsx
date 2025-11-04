@@ -93,46 +93,13 @@ export function OnboardingTooltips({
           </Button>
           <Button
             className="bg-orange-500 hover:bg-orange-600"
-            onClick={advanceTooltip}
-            size="xs"
-          >
-            Got it!
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentTooltip === "playlist") {
-    return (
-      <div className="absolute top-4 right-4 z-50 bg-white p-4 rounded-lg shadow-xl border border-gray-200 max-w-sm">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm">Create smart playlists</h3>
-          <button
-            aria-label="Close tooltip"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            onClick={skipOnboarding}
-          >
-            ✕
-          </button>
-        </div>
-        <p className="text-xs text-gray-600 mb-3">
-          Head to the Playlists section to create smart playlists based on
-          ratings, genres, and play counts!
-        </p>
-        <div className="flex gap-2 justify-end">
-          <Button onClick={skipOnboarding} size="xs" variant="subtle">
-            Skip tutorial
-          </Button>
-          <Button
-            className="bg-orange-500 hover:bg-orange-600"
             onClick={() => {
               advanceTooltip();
               navigate({ to: "/playlists" });
             }}
             size="xs"
           >
-            Go to Playlists
+            Next: Playlists
           </Button>
         </div>
       </div>

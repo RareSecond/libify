@@ -46,19 +46,37 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
       </AppShell.Header>
 
       <AppShell.Navbar className="p-4 border-r border-dark-5 bg-dark-8">
-        {navItems.map((item) => (
-          <NavLink
-            active={location.pathname === item.to}
-            className="mb-2 rounded-md hover:bg-dark-6 transition-colors"
-            color="orange"
-            component={Link}
-            key={item.to}
-            label={item.label}
-            leftSection={<item.icon size={20} />}
-            to={item.to}
-            variant="subtle"
-          />
-        ))}
+        {navItems.map((item) => {
+          // Check both with and without trailing slash
+          const isActive =
+            location.pathname === item.to ||
+            location.pathname === `${item.to}/` ||
+            (item.to !== "/" && location.pathname.startsWith(`${item.to}/`));
+
+          // Temporary debug for playlists
+          if (item.to === "/playlists") {
+            // eslint-disable-next-line no-console
+            console.log("Playlists nav check:", {
+              isActive,
+              locationPath: location.pathname,
+              targetPath: item.to,
+            });
+          }
+
+          return (
+            <NavLink
+              active={isActive}
+              className="mb-2 rounded-md hover:bg-dark-6 transition-colors"
+              color="orange"
+              component={Link}
+              key={item.to}
+              label={item.label}
+              leftSection={<item.icon size={20} />}
+              to={item.to}
+              variant="subtle"
+            />
+          );
+        })}
       </AppShell.Navbar>
 
       <AppShell.Main className="pb-[200px] bg-gradient-to-br from-dark-9 via-dark-8 to-dark-9">
