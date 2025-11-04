@@ -20,18 +20,18 @@ export function OnboardingTooltips({
 
   if (currentTooltip === "sort") {
     return (
-      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-white p-4 rounded-lg shadow-xl border border-gray-200 max-w-sm">
+      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm">Sort your tracks</h3>
+          <h3 className="font-semibold text-sm text-gray-100">Sort your tracks</h3>
           <button
             aria-label="Close tooltip"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-300 transition-colors"
             onClick={skipOnboarding}
           >
             ✕
           </button>
         </div>
-        <p className="text-xs text-gray-600 mb-3">
+        <p className="text-xs text-gray-400 mb-3">
           Click any column header to sort your tracks by that field. Try
           clicking &quot;Artist&quot; or &quot;Title&quot;!
         </p>
@@ -46,18 +46,18 @@ export function OnboardingTooltips({
 
   if (currentTooltip === "rate" && hasTracks) {
     return (
-      <div className="absolute top-32 left-4 z-50 bg-white p-4 rounded-lg shadow-xl border border-gray-200 max-w-sm">
+      <div className="absolute top-32 left-4 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm">Rate your tracks</h3>
+          <h3 className="font-semibold text-sm text-gray-100">Rate your tracks</h3>
           <button
             aria-label="Close tooltip"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-300 transition-colors"
             onClick={skipOnboarding}
           >
             ✕
           </button>
         </div>
-        <p className="text-xs text-gray-600 mb-3">
+        <p className="text-xs text-gray-400 mb-3">
           Click on the stars in any track row to rate it. Your ratings help
           create better playlists!
         </p>
@@ -72,18 +72,18 @@ export function OnboardingTooltips({
 
   if (currentTooltip === "filter") {
     return (
-      <div className="absolute top-20 right-4 z-50 bg-white p-4 rounded-lg shadow-xl border border-gray-200 max-w-sm">
+      <div className="absolute top-20 right-4 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-sm">Filter by genre</h3>
+          <h3 className="font-semibold text-sm text-gray-100">Filter by genre</h3>
           <button
             aria-label="Close tooltip"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-300 transition-colors"
             onClick={skipOnboarding}
           >
             ✕
           </button>
         </div>
-        <p className="text-xs text-gray-600 mb-3">
+        <p className="text-xs text-gray-400 mb-3">
           Use the genre filter to narrow down your music selection. Try
           selecting a genre to see filtered results!
         </p>

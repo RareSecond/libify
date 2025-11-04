@@ -19,18 +19,18 @@ function PlaylistsIndexPage() {
       <SmartPlaylists />
 
       {currentTooltip === "playlist" && (
-        <div className="absolute top-4 right-4 z-50 bg-white p-4 rounded-lg shadow-xl border border-gray-200 max-w-sm">
+        <div className="absolute top-4 right-4 z-50 bg-dark-7 p-4 rounded-lg shadow-xl border border-dark-5 max-w-sm">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-semibold text-sm">Create smart playlists</h3>
+            <h3 className="font-semibold text-sm text-gray-100">Create smart playlists</h3>
             <button
               aria-label="Close tooltip"
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-300 transition-colors"
               onClick={skipOnboarding}
             >
               ✕
             </button>
           </div>
-          <p className="text-xs text-gray-600 mb-3">
+          <p className="text-xs text-gray-400 mb-3">
             This is where you can create smart playlists based on ratings,
             genres, and play counts! Click the button below to get started.
           </p>

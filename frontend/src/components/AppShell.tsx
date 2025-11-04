@@ -53,16 +53,6 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
             location.pathname === `${item.to}/` ||
             (item.to !== "/" && location.pathname.startsWith(`${item.to}/`));
 
-          // Temporary debug for playlists
-          if (item.to === "/playlists") {
-            // eslint-disable-next-line no-console
-            console.log("Playlists nav check:", {
-              isActive,
-              locationPath: location.pathname,
-              targetPath: item.to,
-            });
-          }
-
           return (
             <NavLink
               active={isActive}
