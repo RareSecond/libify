@@ -193,7 +193,7 @@ export function AlbumsOverview() {
             ))}
       </Grid>
 
-      {!isLoading && (!data?.albums || data.albums.length === 0) && (
+      {!isLoading && (!data?.albums || data.albums?.length === 0) && (
         <Center className="h-[400px]">
           <Stack align="center" gap="lg">
             <div className="p-6 rounded-full bg-dark-6">
