@@ -32,6 +32,8 @@ function RouteComponent() {
 
   const handleCloseOnboarding = () => {
     setShowOnboardingModal(false);
+    // Navigate to tracks page when modal is closed
+    navigate({ search: { genres: [] }, to: "/tracks" });
   };
 
   if (isLoading) {

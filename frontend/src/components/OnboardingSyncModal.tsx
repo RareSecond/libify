@@ -1,7 +1,7 @@
 import { Button, Card, Modal, Progress, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { Clock, Library, Music, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 import {
@@ -36,6 +36,7 @@ export function OnboardingSyncModal({
     percentage: 0,
   });
   const [jobId, setJobId] = useState<null | string>(null);
+  const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const quickSyncMutation = useLibraryControllerSyncRecentlyPlayed();
   const fullSyncMutation = useLibraryControllerSyncLibrary();
@@ -72,7 +73,12 @@ export function OnboardingSyncModal({
         percentage: 100,
       });
 
-      setTimeout(() => {
+      // Clear any existing timeout before creating a new one
+      if (completionTimeoutRef.current) {
+        clearTimeout(completionTimeoutRef.current);
+      }
+
+      completionTimeoutRef.current = setTimeout(() => {
         setIsSyncing(false);
         onClose();
         navigate({ search: { genres: [] }, to: "/tracks" });
@@ -89,6 +95,10 @@ export function OnboardingSyncModal({
     });
 
     return () => {
+      // Clean up timeout if component unmounts or jobId changes
+      if (completionTimeoutRef.current) {
+        clearTimeout(completionTimeoutRef.current);
+      }
       newSocket.emit("unsubscribe", { jobId });
       newSocket.disconnect();
     };
@@ -107,6 +117,7 @@ export function OnboardingSyncModal({
         percentage: 0,
       });
       setIsSyncing(false);
+      setSelectedOption(null);
     }
   };
 
@@ -123,6 +134,7 @@ export function OnboardingSyncModal({
         percentage: 0,
       });
       setIsSyncing(false);
+      setSelectedOption(null);
     }
   };
 
