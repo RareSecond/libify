@@ -94,8 +94,14 @@ export function OnboardingSyncModal({
       setJobId(null);
     });
 
-    newSocket.on("error", () => {
-      // Error handled by failed event
+    newSocket.on("error", (error: Error) => {
+      // Handle socket-level errors (connection failures, timeouts, etc.)
+      const errorMessage =
+        error?.message || "Connection error. Please try again.";
+      setProgress({ message: `Sync error: ${errorMessage}`, percentage: 0 });
+      setIsSyncing(false);
+      setSelectedOption(null);
+      setJobId(null);
     });
 
     return () => {
