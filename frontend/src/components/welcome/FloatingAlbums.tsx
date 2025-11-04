@@ -1,14 +1,26 @@
 import { Star } from "lucide-react";
 
+// Deterministic positions based on index to avoid hydration issues
+const albumPositions = [
+  { duration: 10, left: 10, size: 80, top: 20 },
+  { duration: 12, left: 85, size: 120, top: 15 },
+  { duration: 9, left: 20, size: 90, top: 70 },
+  { duration: 11, left: 75, size: 100, top: 60 },
+  { duration: 10, left: 50, size: 70, top: 10 },
+  { duration: 12, left: 30, size: 110, top: 45 },
+  { duration: 9, left: 90, size: 85, top: 80 },
+  { duration: 11, left: 15, size: 95, top: 50 },
+  { duration: 10, left: 60, size: 75, top: 85 },
+  { duration: 12, left: 40, size: 105, top: 25 },
+  { duration: 9, left: 70, size: 80, top: 40 },
+  { duration: 11, left: 25, size: 90, top: 90 },
+];
+
 export function FloatingAlbums() {
   return (
     <div className="absolute inset-0 pointer-events-none z-0">
-      {[...Array(12)].map((_, i) => {
-        const size = 60 + Math.random() * 80;
-        const left = Math.random() * 100;
-        const top = Math.random() * 100;
+      {albumPositions.map((position, i) => {
         const delay = i * 0.5;
-        const duration = 8 + Math.random() * 4;
 
         return (
           <div
@@ -17,14 +29,14 @@ export function FloatingAlbums() {
             /* eslint-disable-next-line react/forbid-dom-props */
             style={{
               animationDelay: `${delay}s`,
-              animationDuration: `${duration}s`,
+              animationDuration: `${position.duration}s`,
               animationIterationCount: "infinite",
               animationName: "float",
               animationTimingFunction: "ease-in-out",
-              height: `${size}px`,
-              left: `${left}%`,
-              top: `${top}%`,
-              width: `${size}px`,
+              height: `${position.size}px`,
+              left: `${position.left}%`,
+              top: `${position.top}%`,
+              width: `${position.size}px`,
               zIndex: 0,
             }}
           >
