@@ -82,6 +82,8 @@ export function OnboardingSyncModal({
 
       completionTimeoutRef.current = setTimeout(() => {
         setIsSyncing(false);
+        setSelectedOption(null);
+        setJobId(null);
         onClose();
         navigate({ search: { genres: [] }, to: "/tracks" });
       }, 1500);
