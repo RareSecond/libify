@@ -14,6 +14,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ListMusic,
   Monitor,
   Pause,
   Play,
@@ -34,6 +35,7 @@ import { useCurrentPlayback } from "../hooks/useCurrentPlayback";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
 import { formatTime } from "../utils/format";
 import { InlineTagEditor } from "./InlineTagEditor";
+import { RatingMode } from "./RatingMode";
 import { RatingSelector } from "./RatingSelector";
 import { TrackSources } from "./TrackSources";
 
@@ -84,6 +86,7 @@ export function MediaPlayer() {
   const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
+  const [isRatingModeOpen, setIsRatingModeOpen] = useState(false);
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
@@ -339,6 +342,18 @@ export function MediaPlayer() {
           {/* Volume Control & Device Info */}
           <Group className="flex-1" justify="flex-end">
             <Group align="center" gap="xs">
+              {/* Rating Mode Button */}
+              <Tooltip label="Enter Rating Mode">
+                <ActionIcon
+                  color="orange"
+                  onClick={() => setIsRatingModeOpen(true)}
+                  size="md"
+                  variant="light"
+                >
+                  <ListMusic size={18} />
+                </ActionIcon>
+              </Tooltip>
+
               {/* Device indicator */}
               <Tooltip label={displayDeviceName}>
                 <Group align="center" gap={4}>
@@ -387,6 +402,12 @@ export function MediaPlayer() {
           </Group>
         </Group>
       </Stack>
+
+      {/* Rating Mode Modal */}
+      <RatingMode
+        onClose={() => setIsRatingModeOpen(false)}
+        opened={isRatingModeOpen}
+      />
     </Card>
   );
 }

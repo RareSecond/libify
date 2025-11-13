@@ -16,12 +16,14 @@ interface MutationContext {
 }
 
 interface RatingSelectorProps {
-  onRatingChange?: () => void;
+  externalMutation?: ReturnType<typeof useLibraryControllerUpdateTrackRating>;
+  onRatingChange?: (rating: number) => void;
   rating: null | number;
   trackId: string;
 }
 
 export function RatingSelector({
+  externalMutation,
   onRatingChange,
   rating,
   trackId,
@@ -29,7 +31,7 @@ export function RatingSelector({
   const [hoveredRating, setHoveredRating] = useState<null | number>(null);
   const queryClient = useQueryClient();
 
-  const updateRatingMutation = useLibraryControllerUpdateTrackRating({
+  const internalMutation = useLibraryControllerUpdateTrackRating({
     mutation: {
       onError: (_err, _variables, context: MutationContext | undefined) => {
         // Rollback to previous values on error
@@ -111,12 +113,15 @@ export function RatingSelector({
     },
   });
 
+  // Use external mutation if provided, otherwise use internal
+  const updateRatingMutation = externalMutation || internalMutation;
+
   const handleRatingClick = async (e: React.MouseEvent, newRating: number) => {
     e.stopPropagation();
     if (updateRatingMutation.isPending) return;
 
     updateRatingMutation.mutate({ data: { rating: newRating }, trackId });
-    onRatingChange?.();
+    onRatingChange?.(newRating);
   };
 
   const displayRating = hoveredRating ?? rating ?? 0;

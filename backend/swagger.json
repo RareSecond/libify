@@ -1041,6 +1041,16 @@
                 "format": "uuid"
               }
             }
+          },
+          {
+            "name": "unratedOnly",
+            "required": false,
+            "in": "query",
+            "description": "Filter for unrated tracks only",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -1187,6 +1197,16 @@
                 "type": "string",
                 "format": "uuid"
               }
+            }
+          },
+          {
+            "name": "unratedOnly",
+            "required": false,
+            "in": "query",
+            "description": "Filter for unrated tracks only",
+            "schema": {
+              "default": false,
+              "type": "boolean"
             }
           },
           {

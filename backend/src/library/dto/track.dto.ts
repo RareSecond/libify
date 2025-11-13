@@ -161,6 +161,14 @@ export class GetTracksQueryDto {
     return value;
   })
   tagIds?: string[];
+
+  @ApiPropertyOptional({
+    default: false,
+    description: "Filter for unrated tracks only",
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  unratedOnly?: boolean;
 }
 
 export class PaginatedTracksDto {
