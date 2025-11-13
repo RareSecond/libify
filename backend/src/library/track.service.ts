@@ -46,10 +46,16 @@ export class TrackService {
     shuffle: boolean,
     skip = 0,
   ): Promise<string[]> {
+    // If shuffling, use random order regardless of provided orderBy
+    if (shuffle) {
+      return this.fetchTracksForPlayWithRandomOrder(userId, where, maxTracks);
+    }
+
+    // Non-shuffle: use provided orderBy
     const tracks = await this.databaseService.userTrack.findMany({
       include: { spotifyTrack: { select: { spotifyId: true } } },
       orderBy,
-      skip: shuffle ? 0 : skip,
+      skip,
       take: maxTracks,
       where: { ...where, userId },
     });
@@ -57,14 +63,6 @@ export class TrackService {
     const spotifyUris = tracks
       .filter((track) => track.spotifyTrack.spotifyId)
       .map((track) => `spotify:track:${track.spotifyTrack.spotifyId}`);
-
-    // Shuffle if requested using Fisher-Yates algorithm
-    if (shuffle) {
-      for (let i = spotifyUris.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
-      }
-    }
 
     return spotifyUris;
   }
@@ -82,6 +80,11 @@ export class TrackService {
     shuffle: boolean,
     skip = 0,
   ): Promise<string[]> {
+    // If shuffling, use random order regardless of sortBy
+    if (shuffle) {
+      return this.fetchTracksForPlayWithRandomOrder(userId, where, maxTracks);
+    }
+
     const db = this.kyselyService.database;
 
     // Build base query
@@ -200,11 +203,8 @@ export class TrackService {
         .orderBy("ut.id", "asc");
     }
 
-    // Apply pagination
-    if (!shuffle) {
-      query = query.offset(skip);
-    }
-    query = query.limit(maxTracks);
+    // Apply pagination (skip only applies to non-shuffle)
+    query = query.offset(skip).limit(maxTracks);
 
     const tracks = await query.execute();
 
@@ -212,16 +212,135 @@ export class TrackService {
       .filter((track) => track.spotifyId)
       .map((track) => `spotify:track:${track.spotifyId}`);
 
-    // Shuffle if requested using Fisher-Yates algorithm
-    if (shuffle) {
-      for (let i = spotifyUris.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [spotifyUris[i], spotifyUris[j]] = [spotifyUris[j], spotifyUris[i]];
+    this.logger.log(
+      `First 5 track URIs after skip=${skip} (Kysely, sortBy=${sortBy}): ${spotifyUris.slice(0, 5).join(", ")}`,
+    );
+
+    return spotifyUris;
+  }
+
+  /**
+   * Helper method to fetch tracks for playback with random order
+   * Used when shuffle is true to get truly random tracks from entire library
+   */
+  async fetchTracksForPlayWithRandomOrder(
+    userId: string,
+    where: Prisma.UserTrackWhereInput,
+    maxTracks: number,
+  ): Promise<string[]> {
+    const db = this.kyselyService.database;
+
+    // Build base query
+    let query = db
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .select("st.spotifyId")
+      .where("ut.userId", "=", userId);
+
+    // Apply search filter from where clause
+    if (where.OR && Array.isArray(where.OR)) {
+      const searchConditions = where.OR as Array<Record<string, unknown>>;
+      // Extract search term from title condition
+      const titleCondition = searchConditions.find((cond) => {
+        const trackCond = cond as {
+          spotifyTrack?: { title?: { contains?: string } };
+        };
+        return trackCond.spotifyTrack?.title?.contains;
+      });
+      if (titleCondition) {
+        const trackCond = titleCondition as {
+          spotifyTrack: { title: { contains: string } };
+        };
+        const searchTerm = trackCond.spotifyTrack.title.contains;
+        query = query.where((eb) =>
+          eb.or([
+            eb("st.title", "ilike", `%${searchTerm}%`),
+            eb(
+              sql`EXISTS (
+                SELECT 1 FROM "SpotifyArtist" sar
+                WHERE sar.id = st."artistId"
+                AND sar.name ILIKE ${`%${searchTerm}%`}
+              )`,
+              "=",
+              sql`true`,
+            ),
+            eb(
+              sql`EXISTS (
+                SELECT 1 FROM "SpotifyAlbum" sa
+                WHERE sa.id = st."albumId"
+                AND sa.name ILIKE ${`%${searchTerm}%`}
+              )`,
+              "=",
+              sql`true`,
+            ),
+          ]),
+        );
       }
     }
 
+    // Apply tag filter
+    if (where.tags?.some) {
+      const tagCondition = where.tags.some as { tagId?: { in?: string[] } };
+      if (tagCondition.tagId?.in) {
+        query = query
+          .innerJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+          .where("tt.tagId", "in", tagCondition.tagId.in);
+      }
+    }
+
+    // Apply rating filter
+    if (
+      where.rating &&
+      typeof where.rating === "object" &&
+      "gte" in where.rating
+    ) {
+      const minRating = where.rating.gte as number;
+      query = query.where("ut.rating", ">=", minRating);
+    }
+
+    // Apply source type filter
+    if (where.sources?.some) {
+      const sourceCondition = where.sources.some as {
+        sourceType?: { in?: string[] };
+      };
+      if (
+        sourceCondition.sourceType?.in &&
+        sourceCondition.sourceType.in.length > 0
+      ) {
+        const sourceTypes = sourceCondition.sourceType.in as SourceType[];
+        query = query
+          .innerJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
+          .where("ts.sourceType", "in", sourceTypes);
+      }
+    }
+
+    // Apply genre filter
+    if (where.spotifyTrack?.artist?.genres?.hasSome) {
+      const genres = where.spotifyTrack.artist.genres.hasSome as string[];
+      query = query.where(({ eb }) =>
+        eb(
+          sql`EXISTS (
+            SELECT 1 FROM "SpotifyArtist" sar
+            WHERE sar.id = st."artistId"
+            AND sar.genres && ARRAY[${sql.join(genres.map((g) => sql.lit(g)))}]::text[]
+          )`,
+          "=",
+          sql`true`,
+        ),
+      );
+    }
+
+    // Use PostgreSQL's RANDOM() for true random sampling
+    query = query.orderBy(sql`RANDOM()`).limit(maxTracks);
+
+    const tracks = await query.execute();
+
+    const spotifyUris = tracks
+      .filter((track) => track.spotifyId)
+      .map((track) => `spotify:track:${track.spotifyId}`);
+
     this.logger.log(
-      `First 5 track URIs after skip=${skip} (Kysely, sortBy=${sortBy}): ${spotifyUris.slice(0, 5).join(", ")}`,
+      `Fetched ${spotifyUris.length} randomly ordered tracks for shuffle`,
     );
 
     return spotifyUris;
@@ -688,6 +807,12 @@ export class TrackService {
       } else {
         Object.assign(where, genreFilter);
       }
+    }
+
+    // If shuffling, use random order to get truly random tracks from entire library
+    if (shouldShuffle) {
+      this.logger.log("Using random order for shuffle");
+      return this.fetchTracksForPlayWithRandomOrder(userId, where, 500);
     }
 
     // Build orderBy clause with secondary sort for deterministic ordering
