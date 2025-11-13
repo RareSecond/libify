@@ -4,8 +4,6 @@ import {
   Box,
   Button,
   Card,
-  Collapse,
-  Divider,
   Group,
   Image,
   Slider,
@@ -13,12 +11,9 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronDown,
-  ChevronUp,
   Monitor,
   Pause,
   Play,
@@ -89,7 +84,6 @@ export function MediaPlayer() {
   const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
-  const [metadataExpanded, { toggle: toggleMetadata }] = useDisclosure(true);
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
@@ -198,24 +192,6 @@ export function MediaPlayer() {
       shadow="xl"
     >
       <Stack gap="sm">
-        {/* Compact Mode Toggle */}
-        {hasWebPlayerTrack && libraryTrack && (
-          <Group justify="center">
-            <ActionIcon
-              color="orange"
-              onClick={toggleMetadata}
-              size="xs"
-              variant="subtle"
-            >
-              {metadataExpanded ? (
-                <ChevronDown size={14} />
-              ) : (
-                <ChevronUp size={14} />
-              )}
-            </ActionIcon>
-          </Group>
-        )}
-
         <Group align="center" justify="space-between">
           {/* Track Info */}
           <Group className="flex-1 min-w-0" gap="md">
@@ -225,14 +201,56 @@ export function MediaPlayer() {
               radius="sm"
               src={trackToDisplay.album.images[0]?.url}
             />
-            <Box className="flex-1 min-w-0">
-              <Text className="font-semibold text-dark-0" lineClamp={1}>
-                {trackToDisplay.name}
-              </Text>
-              <Text className="text-dark-1" lineClamp={1} size="sm">
-                {trackToDisplay.artists.map((artist) => artist.name).join(", ")}
-              </Text>
-            </Box>
+            <Stack className="flex-1 min-w-0" gap={4}>
+              {/* Track name and sources */}
+              <Group gap="xs" wrap="nowrap">
+                <Text className="font-semibold text-dark-0" lineClamp={1}>
+                  {trackToDisplay.name}
+                </Text>
+                {hasWebPlayerTrack && libraryTrack && (
+                  <>
+                    <Text className="text-dark-2" size="sm">
+                      ·
+                    </Text>
+                    <Text
+                      className="text-dark-1 font-medium shrink-0"
+                      size="xs"
+                    >
+                      From:
+                    </Text>
+                    <TrackSources sources={libraryTrack.sources} />
+                  </>
+                )}
+              </Group>
+
+              {/* Artist name, rating, and tags */}
+              <Group gap="xs" wrap="nowrap">
+                <Text className="text-dark-1" lineClamp={1} size="sm">
+                  {trackToDisplay.artists
+                    .map((artist) => artist.name)
+                    .join(", ")}
+                </Text>
+                {hasWebPlayerTrack && libraryTrack && (
+                  <>
+                    <Text className="text-dark-2" size="sm">
+                      ·
+                    </Text>
+                    <RatingSelector
+                      rating={libraryTrack.rating ?? null}
+                      trackId={libraryTrack.id}
+                    />
+                    <Text className="text-dark-2" size="sm">
+                      ·
+                    </Text>
+                    <InlineTagEditor
+                      onTagsChange={handleLibraryTrackUpdate}
+                      trackId={libraryTrack.id}
+                      trackTags={libraryTrack.tags}
+                    />
+                  </>
+                )}
+              </Group>
+            </Stack>
           </Group>
 
           {/* Playback Controls */}
@@ -368,45 +386,6 @@ export function MediaPlayer() {
             </Group>
           </Group>
         </Group>
-
-        {/* Track Metadata Section (Sources, Rating, Tags) - Only show for web player */}
-        {hasWebPlayerTrack && libraryTrack && (
-          <Collapse in={metadataExpanded}>
-            <Divider className="mb-2" color="var(--color-dark-5)" />
-            <Group align="center" gap="xl" justify="space-between">
-              {/* Sources */}
-              <Group gap="xs">
-                <Text className="text-dark-1 font-medium" size="xs">
-                  From:
-                </Text>
-                <TrackSources sources={libraryTrack.sources} />
-              </Group>
-
-              {/* Rating */}
-              <Group gap="xs">
-                <Text className="text-dark-1 font-medium" size="xs">
-                  Rating:
-                </Text>
-                <RatingSelector
-                  rating={libraryTrack.rating ?? null}
-                  trackId={libraryTrack.id}
-                />
-              </Group>
-
-              {/* Tags */}
-              <Group className="flex-1" gap="xs">
-                <Text className="text-dark-1 font-medium" size="xs">
-                  Tags:
-                </Text>
-                <InlineTagEditor
-                  onTagsChange={handleLibraryTrackUpdate}
-                  trackId={libraryTrack.id}
-                  trackTags={libraryTrack.tags}
-                />
-              </Group>
-            </Group>
-          </Collapse>
-        )}
       </Stack>
     </Card>
   );
