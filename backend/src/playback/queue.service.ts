@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { sql } from "kysely";
 
 import { DatabaseService } from "../database/database.service";
+import { KyselyService } from "../database/kysely/kysely.service";
 import { TrackService } from "../library/track.service";
 import { PlaylistsService } from "../playlists/playlists.service";
 import { ContextType } from "./types/context-type.enum";
@@ -25,6 +27,7 @@ export class QueueService {
 
   constructor(
     private readonly database: DatabaseService,
+    private readonly kysely: KyselyService,
     private readonly trackService: TrackService,
     private readonly playlistsService: PlaylistsService,
   ) {}
@@ -157,20 +160,33 @@ export class QueueService {
     skip = 0,
     limit = 200,
   ): Promise<string[]> {
+    // If shuffling, use RANDOM() to get truly random tracks from album
+    if (shuffle) {
+      const db = this.kysely.database;
+      const tracks = await db
+        .selectFrom("SpotifyTrack as st")
+        .innerJoin("UserTrack as ut", "st.id", "ut.spotifyTrackId")
+        .select("st.spotifyId")
+        .where("st.albumId", "=", albumId)
+        .where("ut.userId", "=", userId)
+        .orderBy(sql`RANDOM()`)
+        .limit(limit)
+        .execute();
+
+      return tracks
+        .filter((t) => t.spotifyId)
+        .map((t) => `spotify:track:${t.spotifyId}`);
+    }
+
+    // Non-shuffle: use track number ordering
     const tracks = await this.database.spotifyTrack.findMany({
-      orderBy: shuffle ? undefined : { trackNumber: "asc" },
-      skip: shuffle ? 0 : skip,
+      orderBy: { trackNumber: "asc" },
+      skip,
       take: limit,
       where: { albumId, userTracks: { some: { userId } } },
     });
 
-    let trackUris = tracks.map((t) => `spotify:track:${t.spotifyId}`);
-
-    if (shuffle) {
-      trackUris = this.shuffleArray(trackUris);
-    }
-
-    return trackUris;
+    return tracks.map((t) => `spotify:track:${t.spotifyId}`);
   }
 
   private async getArtistTracks(
@@ -180,20 +196,33 @@ export class QueueService {
     skip = 0,
     limit = 200,
   ): Promise<string[]> {
+    // If shuffling, use RANDOM() to get truly random tracks from entire artist catalog
+    if (shuffle) {
+      const db = this.kysely.database;
+      const tracks = await db
+        .selectFrom("SpotifyTrack as st")
+        .innerJoin("UserTrack as ut", "st.id", "ut.spotifyTrackId")
+        .select("st.spotifyId")
+        .where("st.artistId", "=", artistId)
+        .where("ut.userId", "=", userId)
+        .orderBy(sql`RANDOM()`)
+        .limit(limit)
+        .execute();
+
+      return tracks
+        .filter((t) => t.spotifyId)
+        .map((t) => `spotify:track:${t.spotifyId}`);
+    }
+
+    // Non-shuffle: use popularity ordering
     const tracks = await this.database.spotifyTrack.findMany({
-      orderBy: shuffle ? undefined : { popularity: "desc" },
-      skip: shuffle ? 0 : skip,
+      orderBy: { popularity: "desc" },
+      skip,
       take: limit,
       where: { artistId, userTracks: { some: { userId } } },
     });
 
-    let trackUris = tracks.map((t) => `spotify:track:${t.spotifyId}`);
-
-    if (shuffle) {
-      trackUris = this.shuffleArray(trackUris);
-    }
-
-    return trackUris;
+    return tracks.map((t) => `spotify:track:${t.spotifyId}`);
   }
 
   private async getPlaylistTracks(
@@ -234,14 +263,5 @@ export class QueueService {
       );
       return [];
     }
-  }
-
-  private shuffleArray<T>(array: T[]): T[] {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
   }
 }
