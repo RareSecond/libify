@@ -38,15 +38,24 @@ interface RatingModeProps {
 }
 
 export function RatingMode({ onClose, opened }: RatingModeProps) {
-  const { currentTrack, isPlaying, isReady, pause, play, resume } =
-    useSpotifyPlayer();
+  const {
+    currentTrack,
+    currentTrackIndex,
+    isPlaying,
+    isReady,
+    nextTrack,
+    pause,
+    playTrackList,
+    previousTrack,
+    resume,
+  } = useSpotifyPlayer();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ratedCount, setRatedCount] = useState(0);
   const [shuffledTracks, setShuffledTracks] = useState<
     TrackDto[] | undefined
   >();
-  const lastPlayedSpotifyIdRef = useRef<null | string>(null);
   const hasShuffledRef = useRef(false);
+  const hasStartedPlaybackRef = useRef(false);
   const queryClient = useQueryClient();
 
   // Mutation for rating tracks with optimistic updates
@@ -157,12 +166,9 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
       hasShuffledRef.current = true;
     }
 
-    // Reset when modal closes
+    // Reset shuffle flag when modal closes
     if (!opened) {
       hasShuffledRef.current = false;
-      setCurrentIndex(0);
-      setRatedCount(0);
-      lastPlayedSpotifyIdRef.current = null;
     }
   }, [opened, tracksData?.tracks]);
 
@@ -179,20 +185,20 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
   });
 
   // Handler functions
-  const handleSkip = useCallback(() => {
+  const handleSkip = useCallback(async () => {
     if (!unratedTracks || currentIndex >= unratedTracks.length - 1) {
       // Reached the end
       onClose();
       return;
     }
-    setCurrentIndex((prev) => prev + 1);
-  }, [unratedTracks, currentIndex, onClose]);
+    await nextTrack();
+  }, [unratedTracks, currentIndex, onClose, nextTrack]);
 
-  const handlePrevious = useCallback(() => {
+  const handlePrevious = useCallback(async () => {
     if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
+      await previousTrack();
     }
-  }, [currentIndex]);
+  }, [currentIndex, previousTrack]);
 
   const handleKeyboardRating = useCallback(() => {
     setRatedCount((prev) => prev + 1);
@@ -282,36 +288,39 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     handleSkip,
   ]);
 
-  // Auto-play the current track in queue when index changes
+  // Start playing the shuffled track list once when modal opens
   useEffect(() => {
     if (
       !opened ||
       !isReady ||
-      !currentTrackInQueue ||
       !unratedTracks ||
-      unratedTracks.length === 0
+      unratedTracks.length === 0 ||
+      hasStartedPlaybackRef.current
     )
       return;
 
-    const spotifyIdToPlay = currentTrackInQueue.spotifyId;
+    // Play all shuffled tracks as a queue - Spotify will auto-advance
+    const trackUris = unratedTracks.map(
+      (track) => `spotify:track:${track.spotifyId}`,
+    );
+    playTrackList(trackUris);
+    hasStartedPlaybackRef.current = true;
+  }, [opened, isReady, unratedTracks, playTrackList]);
 
-    // Only play if we haven't already started playing this specific track
-    if (
-      currentTrack?.id !== spotifyIdToPlay &&
-      lastPlayedSpotifyIdRef.current !== spotifyIdToPlay
-    ) {
-      lastPlayedSpotifyIdRef.current = spotifyIdToPlay;
-      play(`spotify:track:${spotifyIdToPlay}`);
+  // Sync our currentIndex with Spotify's track index
+  useEffect(() => {
+    if (!opened || !unratedTracks) return;
+    setCurrentIndex(currentTrackIndex);
+  }, [opened, currentTrackIndex, unratedTracks]);
+
+  // Reset when modal closes
+  useEffect(() => {
+    if (!opened) {
+      hasStartedPlaybackRef.current = false;
+      setCurrentIndex(0);
+      setRatedCount(0);
     }
-  }, [
-    currentIndex,
-    currentTrackInQueue,
-    opened,
-    isReady,
-    play,
-    currentTrack,
-    unratedTracks,
-  ]);
+  }, [opened]);
 
   if (!unratedTracks || unratedTracks.length === 0) {
     return (
