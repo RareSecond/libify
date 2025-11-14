@@ -120,17 +120,18 @@ export function TrackList() {
 
   return (
     <Stack gap="sm">
-      <Group justify="space-between">
+      <Group className="flex-wrap md:flex-nowrap" justify="space-between">
         <div>
           <Text className="mb-2 font-bold" size="lg">
             My Library
           </Text>
         </div>
-        <Group gap="sm">
+        <Group gap="xs">
           <Button
             disabled={!data?.tracks || data.tracks.length === 0}
             leftSection={<Play size={16} />}
             onClick={handlePlayFromBeginning}
+            size="sm"
             variant="filled"
           >
             Play
@@ -139,6 +140,7 @@ export function TrackList() {
             disabled={!data?.tracks || data.tracks.length === 0}
             leftSection={<Shuffle size={16} />}
             onClick={handlePlayShuffled}
+            size="sm"
             variant="outline"
           >
             Shuffle

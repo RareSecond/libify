@@ -11,6 +11,7 @@ import { Search } from "lucide-react";
 import { ReactNode } from "react";
 
 import { TrackDto } from "../data/api";
+import { FiltersDrawer } from "./FiltersDrawer";
 import { TracksTable } from "./TracksTable";
 
 export interface PaginatedTracksResponse {
@@ -76,13 +77,14 @@ export function TracksTableWithControls({
 
   return (
     <Paper
-      className="p-4 bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      className="p-2 md:p-4 bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
       radius="md"
       shadow="md"
       withBorder
     >
+      {/* Desktop Controls */}
       {(!hideSearch || !hidePageSize || extraControls) && (
-        <Group className="mb-2" justify="space-between">
+        <Group className="mb-3 md:mb-4 hidden md:flex" justify="space-between">
           <Group>
             {!hideSearch && (
               <TextInput
@@ -108,7 +110,29 @@ export function TracksTableWithControls({
         </Group>
       )}
 
-      <Text className="mb-2 text-gray-600" size="sm">
+      {/* Mobile Controls */}
+      <Group className="mb-2 md:hidden" justify="space-between" wrap="nowrap">
+        {!hideSearch && (
+          <TextInput
+            className="flex-1"
+            leftSection={<Search size={16} />}
+            onChange={(e) => onSearchChange?.(e.currentTarget.value)}
+            placeholder="Search..."
+            size="sm"
+            value={search}
+          />
+        )}
+        {!hidePageSize && (
+          <FiltersDrawer
+            onPageSizeChange={onPageSizeChange}
+            pageSize={pageSize}
+          >
+            {extraControls}
+          </FiltersDrawer>
+        )}
+      </Group>
+
+      <Text className="mb-2 text-gray-600" size="xs md:sm">
         {data?.total || 0} tracks
       </Text>
 
@@ -128,11 +152,12 @@ export function TracksTableWithControls({
       />
 
       {data && data.totalPages > 1 && (
-        <Center className="mt-6">
+        <Center className="mt-3 md:mt-6">
           <Pagination
-            boundaries={1}
+            boundaries={0}
             onChange={(newPage) => onPageChange?.(newPage)}
-            siblings={1}
+            siblings={0}
+            size="sm"
             total={data.totalPages}
             value={page}
           />

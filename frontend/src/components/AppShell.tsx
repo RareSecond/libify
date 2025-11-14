@@ -2,14 +2,14 @@ import { AppShell, Burger, Group, NavLink, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Disc, History, Home, Library, ListMusic, User } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 
 interface AppShellLayoutProps {
   children: ReactNode;
 }
 
 export function AppShellLayout({ children }: AppShellLayoutProps) {
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { close, toggle }] = useDisclosure();
   const location = useLocation();
 
   const navItems = [
@@ -20,6 +20,11 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
     { icon: ListMusic, label: "Smart Playlists", to: "/playlists" },
     { icon: History, label: "Play History", to: "/play-history" },
   ];
+
+  // Close drawer on navigation
+  useEffect(() => {
+    close();
+  }, [location.pathname, close]);
 
   return (
     <AppShell
@@ -69,7 +74,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
         })}
       </AppShell.Navbar>
 
-      <AppShell.Main className="pb-[200px] bg-gradient-to-br from-dark-9 via-dark-8 to-dark-9">
+      <AppShell.Main className="pb-[140px] md:pb-[180px] bg-gradient-to-br from-dark-9 via-dark-8 to-dark-9">
         {children}
       </AppShell.Main>
     </AppShell>
