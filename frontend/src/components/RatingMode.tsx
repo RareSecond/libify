@@ -295,11 +295,10 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     );
   }
 
-  const remainingCount = Math.max(0, totalUnratedCount - ratedCount);
-  const progress =
-    totalUnratedCount > 0
-      ? ((ratedCount / totalUnratedCount) * 100).toFixed(0)
-      : "0";
+  const remainingCount = totalUnratedCount;
+  const sessionTotal = ratedCount + totalUnratedCount;
+  const progressNum = sessionTotal > 0 ? (ratedCount / sessionTotal) * 100 : 0;
+  const progress = progressNum.toFixed(0);
 
   return (
     <Modal.Root
