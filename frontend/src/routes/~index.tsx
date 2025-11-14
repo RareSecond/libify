@@ -2,6 +2,7 @@ import { Container, Grid, Group, Stack, Text } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 import { Disc, Library, Music, TrendingUp } from "lucide-react";
 
+import { RatingModeCard } from "@/components/dashboard/RatingModeCard";
 import { RecentlyPlayed } from "@/components/dashboard/RecentlyPlayed";
 import { LibrarySync } from "@/components/LibrarySync";
 import { PageTitle } from "@/components/PageTitle";
@@ -74,6 +75,7 @@ function HomePage() {
           <Grid.Col span={{ base: 12, lg: 4 }}>
             <Stack gap="lg">
               <UserProfile />
+              <RatingModeCard />
               <LibrarySync />
             </Stack>
           </Grid.Col>

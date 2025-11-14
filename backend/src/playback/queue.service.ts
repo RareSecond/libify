@@ -19,6 +19,7 @@ export interface PlayContext {
   sortBy?: string;
   sortOrder?: string;
   startPosition?: number;
+  unratedOnly?: boolean;
 }
 
 @Injectable()
@@ -105,6 +106,7 @@ export class QueueService {
             | "totalPlayCount"
             | undefined,
           sortOrder: context.sortOrder as "asc" | "desc" | undefined,
+          unratedOnly: context.unratedOnly,
         });
         // Enforce the requested limit (getTracksForPlay may return up to 500 items)
         if (trackUris.length > limit) {

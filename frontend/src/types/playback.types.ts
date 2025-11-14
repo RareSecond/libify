@@ -8,4 +8,5 @@ export interface PlayContext {
   shuffle?: boolean;
   sortBy?: string;
   sortOrder?: string;
+  unratedOnly?: boolean;
 }

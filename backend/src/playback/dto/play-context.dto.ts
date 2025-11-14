@@ -110,4 +110,13 @@ export class PlayContextDto {
   @IsOptional()
   @Min(0)
   startPosition?: number;
+
+  @ApiPropertyOptional({
+    description: "Filter for unrated tracks only",
+    example: true,
+  })
+  @Expose()
+  @IsBoolean()
+  @IsOptional()
+  unratedOnly?: boolean;
 }

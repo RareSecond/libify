@@ -1041,6 +1041,16 @@
                 "format": "uuid"
               }
             }
+          },
+          {
+            "name": "unratedOnly",
+            "required": false,
+            "in": "query",
+            "description": "Filter for unrated tracks only",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -1187,6 +1197,16 @@
                 "type": "string",
                 "format": "uuid"
               }
+            }
+          },
+          {
+            "name": "unratedOnly",
+            "required": false,
+            "in": "query",
+            "description": "Filter for unrated tracks only",
+            "schema": {
+              "default": false,
+              "type": "boolean"
             }
           },
           {
@@ -3156,6 +3176,11 @@
             "minimum": 0,
             "description": "Position to start playing from (deprecated - use pagination fields)",
             "example": 0
+          },
+          "unratedOnly": {
+            "type": "boolean",
+            "description": "Filter for unrated tracks only",
+            "example": true
           }
         },
         "required": [

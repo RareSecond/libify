@@ -1257,6 +1257,7 @@ export class TrackService {
       sortOrder = "desc",
       sourceTypes,
       tagIds,
+      unratedOnly,
     } = query;
 
     // Build where clause
@@ -1287,6 +1288,11 @@ export class TrackService {
     // Add rating filter
     if (minRating) {
       where.rating = { gte: minRating };
+    }
+
+    // Add unrated filter
+    if (unratedOnly) {
+      where.rating = null;
     }
 
     // Add source type filter
@@ -1377,6 +1383,7 @@ export class TrackService {
           sortOrder,
           sourceTypes,
           tagIds,
+          unratedOnly,
         },
         where,
         skip,
@@ -1515,6 +1522,11 @@ export class TrackService {
     // Apply rating filter
     if (query.minRating) {
       baseQuery = baseQuery.where("ut.rating", ">=", query.minRating);
+    }
+
+    // Apply unrated filter
+    if (query.unratedOnly) {
+      baseQuery = baseQuery.where("ut.rating", "is", null);
     }
 
     // Apply tag filter (if any tags, track must have at least one)
