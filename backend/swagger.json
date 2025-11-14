@@ -3176,6 +3176,11 @@
             "minimum": 0,
             "description": "Position to start playing from (deprecated - use pagination fields)",
             "example": 0
+          },
+          "unratedOnly": {
+            "type": "boolean",
+            "description": "Filter for unrated tracks only",
+            "example": true
           }
         },
         "required": [

@@ -49,12 +49,7 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     previousTrack,
     resume,
   } = useSpotifyPlayer();
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [ratedCount, setRatedCount] = useState(0);
-  const [shuffledTracks, setShuffledTracks] = useState<
-    TrackDto[] | undefined
-  >();
-  const hasShuffledRef = useRef(false);
   const hasStartedPlaybackRef = useRef(false);
   const queryClient = useQueryClient();
 
@@ -141,39 +136,13 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     },
   });
 
-  // Fetch unrated tracks using the backend filter
-  const { data: tracksData } = useLibraryControllerGetTracks(
-    {
-      page: 1,
-      pageSize: 1000,
-      sortBy: "addedAt",
-      sortOrder: "desc",
-      unratedOnly: true,
-    },
+  // Fetch unrated track count for display only
+  const { data: unratedData } = useLibraryControllerGetTracks(
+    { page: 1, pageSize: 1, unratedOnly: true },
     { query: { enabled: opened } },
   );
 
-  // Shuffle the tracks ONCE when modal opens and data loads
-  useEffect(() => {
-    if (opened && tracksData?.tracks && !hasShuffledRef.current) {
-      const shuffled = [...tracksData.tracks];
-      // Fisher-Yates shuffle
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      setShuffledTracks(shuffled);
-      hasShuffledRef.current = true;
-    }
-
-    // Reset shuffle flag when modal closes
-    if (!opened) {
-      hasShuffledRef.current = false;
-    }
-  }, [opened, tracksData?.tracks]);
-
-  const unratedTracks = shuffledTracks;
-  const currentTrackInQueue = unratedTracks?.[currentIndex];
+  const totalUnratedCount = unratedData?.total || 0;
 
   // Handle Spotify track relinking
   const originalSpotifyId =
@@ -186,19 +155,12 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
 
   // Handler functions
   const handleSkip = useCallback(async () => {
-    if (!unratedTracks || currentIndex >= unratedTracks.length - 1) {
-      // Reached the end
-      onClose();
-      return;
-    }
     await nextTrack();
-  }, [unratedTracks, currentIndex, onClose, nextTrack]);
+  }, [nextTrack]);
 
   const handlePrevious = useCallback(async () => {
-    if (currentIndex > 0) {
-      await previousTrack();
-    }
-  }, [currentIndex, previousTrack]);
+    await previousTrack();
+  }, [previousTrack]);
 
   const handleKeyboardRating = useCallback(() => {
     setRatedCount((prev) => prev + 1);
@@ -280,49 +242,34 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     pause,
     resume,
     onClose,
-    currentIndex,
-    unratedTracks,
     updateRatingMutation,
     handleKeyboardRating,
     handlePrevious,
     handleSkip,
   ]);
 
-  // Start playing the shuffled track list once when modal opens
+  // Start playing shuffled unrated tracks via backend
   useEffect(() => {
-    if (
-      !opened ||
-      !isReady ||
-      !unratedTracks ||
-      unratedTracks.length === 0 ||
-      hasStartedPlaybackRef.current
-    )
-      return;
+    if (!opened || !isReady || hasStartedPlaybackRef.current) return;
 
-    // Play all shuffled tracks as a queue - Spotify will auto-advance
-    const trackUris = unratedTracks.map(
-      (track) => `spotify:track:${track.spotifyId}`,
-    );
-    playTrackList(trackUris);
+    // Backend will build shuffled queue of unrated tracks
+    playTrackList(["placeholder"], {
+      contextType: "library",
+      shuffle: true,
+      unratedOnly: true,
+    });
     hasStartedPlaybackRef.current = true;
-  }, [opened, isReady, unratedTracks, playTrackList]);
-
-  // Sync our currentIndex with Spotify's track index
-  useEffect(() => {
-    if (!opened || !unratedTracks) return;
-    setCurrentIndex(currentTrackIndex);
-  }, [opened, currentTrackIndex, unratedTracks]);
+  }, [opened, isReady, playTrackList]);
 
   // Reset when modal closes
   useEffect(() => {
     if (!opened) {
       hasStartedPlaybackRef.current = false;
-      setCurrentIndex(0);
       setRatedCount(0);
     }
   }, [opened]);
 
-  if (!unratedTracks || unratedTracks.length === 0) {
+  if (totalUnratedCount === 0) {
     return (
       <Modal.Root fullScreen onClose={onClose} opened={opened} zIndex={200}>
         <Modal.Overlay backgroundOpacity={0.95} blur={12} />
@@ -348,7 +295,11 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     );
   }
 
-  const progress = ((currentIndex / unratedTracks.length) * 100).toFixed(0);
+  const remainingCount = Math.max(0, totalUnratedCount - ratedCount);
+  const progress =
+    totalUnratedCount > 0
+      ? ((ratedCount / totalUnratedCount) * 100).toFixed(0)
+      : "0";
 
   return (
     <Modal.Root
@@ -377,7 +328,7 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
                 {ratedCount} Rated
               </Badge>
               <Badge color="orange" radius="md" size="xl" variant="light">
-                {unratedTracks.length - currentIndex} Remaining
+                {remainingCount} Remaining
               </Badge>
               <Badge color="blue" radius="md" size="xl" variant="light">
                 {progress}% Complete
@@ -470,7 +421,7 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
                 <Group className="mt-[2vh]" gap="xl" justify="center">
                   <Button
                     color="gray"
-                    disabled={currentIndex === 0}
+                    disabled={currentTrackIndex === 0}
                     onClick={handlePrevious}
                     size="xl"
                     variant="light"

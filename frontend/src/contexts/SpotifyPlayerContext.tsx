@@ -384,6 +384,7 @@ export function SpotifyPlayerProvider({
         shuffle: context?.shuffle || false,
         sortBy: context?.sortBy,
         sortOrder: context?.sortOrder as "asc" | "desc" | undefined,
+        unratedOnly: context?.unratedOnly,
       },
     });
 
