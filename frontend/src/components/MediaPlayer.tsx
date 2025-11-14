@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Card,
+  Collapse,
   Group,
   Image,
   Slider,
@@ -11,9 +12,12 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ChevronDown,
+  ChevronUp,
   ListMusic,
   Monitor,
   Pause,
@@ -87,6 +91,8 @@ export function MediaPlayer() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const [isRatingModeOpen, setIsRatingModeOpen] = useState(false);
+  const [mobileExpanded, { toggle: toggleMobileExpanded }] =
+    useDisclosure(false);
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
@@ -191,10 +197,11 @@ export function MediaPlayer() {
 
   return (
     <Card
-      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-dark-5 p-4 z-[250] bg-gradient-to-t from-dark-8 via-dark-7 to-dark-8 shadow-2xl"
+      className="fixed bottom-0 left-0 right-0 rounded-none border-t border-dark-5 p-3 md:p-4 z-[250] bg-gradient-to-t from-dark-8 via-dark-7 to-dark-8 shadow-2xl"
       shadow="xl"
     >
-      <Stack gap="sm">
+      {/* Desktop Layout */}
+      <Stack className="hidden md:flex" gap="sm">
         <Group align="center" justify="space-between">
           {/* Track Info */}
           <Group className="flex-1 min-w-0" gap="md">
@@ -401,6 +408,190 @@ export function MediaPlayer() {
             </Group>
           </Group>
         </Group>
+      </Stack>
+
+      {/* Mobile Layout */}
+      <Stack className="flex md:hidden" gap="xs">
+        {/* Collapsed Mini Player */}
+        <Group
+          align="center"
+          gap="sm"
+          justify="space-between"
+          onClick={toggleMobileExpanded}
+          wrap="nowrap"
+        >
+          <Group className="flex-1 min-w-0" gap="sm" wrap="nowrap">
+            <Image
+              alt={trackToDisplay.album.name}
+              className="h-[48px] w-[48px] border border-dark-5"
+              radius="sm"
+              src={trackToDisplay.album.images[0]?.url}
+            />
+            <Stack className="flex-1 min-w-0" gap={2}>
+              <Text
+                className="font-semibold text-dark-0"
+                lineClamp={1}
+                size="sm"
+              >
+                {trackToDisplay.name}
+              </Text>
+              <Text className="text-dark-1" lineClamp={1} size="xs">
+                {trackToDisplay.artists.map((artist) => artist.name).join(", ")}
+              </Text>
+            </Stack>
+          </Group>
+
+          <Group gap={4}>
+            <ActionIcon
+              className="bg-gradient-to-br from-orange-6 to-orange-8"
+              disabled={!hasWebPlayerTrack}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePlayPause();
+              }}
+              size="lg"
+              variant="filled"
+            >
+              {displayIsPlaying ? <Pause size={20} /> : <Play size={20} />}
+            </ActionIcon>
+
+            <ActionIcon
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMobileExpanded();
+              }}
+              size="sm"
+              variant="subtle"
+            >
+              {mobileExpanded ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronUp size={16} />
+              )}
+            </ActionIcon>
+          </Group>
+        </Group>
+
+        {/* Progress bar (always visible on mobile) */}
+        <Slider
+          className="w-full"
+          color="orange"
+          disabled={!hasWebPlayerTrack}
+          label={null}
+          max={100}
+          min={0}
+          onChange={(value) => handleSeek(value)}
+          onChangeEnd={handleSeekEnd}
+          size="xs"
+          step={0.1}
+          thumbSize={8}
+          value={progressPercent}
+        />
+
+        {/* Expanded Controls */}
+        <Collapse in={mobileExpanded}>
+          <Stack className="pt-2" gap="md">
+            {/* Time display */}
+            <Group justify="space-between">
+              <Text className="text-dark-1" size="xs">
+                {formatTime(currentPosition)}
+              </Text>
+              <Text className="text-dark-1" size="xs">
+                {formatTime(displayDuration)}
+              </Text>
+            </Group>
+
+            {/* Playback controls */}
+            {!hasWebPlayerTrack && hasCrossDevicePlayback && deviceId ? (
+              <Button
+                color="orange"
+                disabled={!deviceId || transferPlaybackMutation.isPending}
+                fullWidth
+                leftSection={<Monitor size={16} />}
+                loading={transferPlaybackMutation.isPending}
+                onClick={handleTransferPlayback}
+                size="md"
+                variant="light"
+              >
+                Transfer Playback Here
+              </Button>
+            ) : (
+              <Group gap="xs" justify="center">
+                <ActionIcon
+                  color={isShuffled ? "orange" : undefined}
+                  disabled={!hasWebPlayerTrack}
+                  onClick={toggleShuffle}
+                  size="xl"
+                  variant={isShuffled ? "filled" : "subtle"}
+                >
+                  <Shuffle size={24} />
+                </ActionIcon>
+
+                <ActionIcon
+                  color="orange"
+                  disabled={!hasWebPlayerTrack}
+                  onClick={previousTrack}
+                  size="xl"
+                  variant="subtle"
+                >
+                  <SkipBack size={24} />
+                </ActionIcon>
+
+                <ActionIcon
+                  className="bg-gradient-to-br from-orange-6 to-orange-8"
+                  disabled={!hasWebPlayerTrack}
+                  onClick={handlePlayPause}
+                  size={56}
+                  variant="filled"
+                >
+                  {displayIsPlaying ? <Pause size={28} /> : <Play size={28} />}
+                </ActionIcon>
+
+                <ActionIcon
+                  color="orange"
+                  disabled={!hasWebPlayerTrack}
+                  onClick={nextTrack}
+                  size="xl"
+                  variant="subtle"
+                >
+                  <SkipForward size={24} />
+                </ActionIcon>
+
+                <ActionIcon
+                  color="orange"
+                  onClick={() => setIsRatingModeOpen(true)}
+                  size="xl"
+                  variant="light"
+                >
+                  <ListMusic size={24} />
+                </ActionIcon>
+              </Group>
+            )}
+
+            {/* Rating and tags (mobile) */}
+            {hasWebPlayerTrack && libraryTrack && (
+              <Stack gap="sm">
+                <Group gap="xs" justify="center">
+                  <Text className="text-dark-2" size="xs">
+                    Rating:
+                  </Text>
+                  <RatingSelector
+                    rating={libraryTrack.rating ?? null}
+                    size="md"
+                    trackId={libraryTrack.id}
+                  />
+                </Group>
+                <Box>
+                  <InlineTagEditor
+                    onTagsChange={handleLibraryTrackUpdate}
+                    trackId={libraryTrack.id}
+                    trackTags={libraryTrack.tags}
+                  />
+                </Box>
+              </Stack>
+            )}
+          </Stack>
+        </Collapse>
       </Stack>
 
       {/* Rating Mode Modal */}

@@ -1,17 +1,14 @@
 import { Center, Loader, Table } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
 import { useTracksTableColumns } from "../hooks/useTracksTableColumns";
+import { TracksTableBody } from "./TracksTableBody";
+import { TracksTableHeader } from "./TracksTableHeader";
 
 interface TracksTableProps {
   contextId?: string;
@@ -178,87 +175,30 @@ export function TracksTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto -mx-2 md:mx-0">
       <Table
         highlightOnHover
         horizontalSpacing="xs"
         striped
-        verticalSpacing={6}
+        verticalSpacing="xs"
         withTableBorder
       >
-        <Table.Thead>
-          <Table.Tr>
-            {table.getFlatHeaders().map((header) => {
-              const canSort = header.column.getCanSort();
-              const isSorted = header.column.getIsSorted();
-
-              return (
-                <Table.Th
-                  className={`relative select-none transition-opacity duration-200 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"}`}
-                  draggable
-                  key={header.id}
-                  onDragEnd={handleDragEnd}
-                  onDragEnter={(e) => handleDragEnter(e, header.column.id)}
-                  onDragOver={handleDragOver}
-                  onDragStart={(e) => handleDragStart(e, header.column.id)}
-                  onDrop={handleDrop}
-                  // eslint-disable-next-line react/forbid-component-props
-                  style={{
-                    opacity: draggedColumn === header.column.id ? 0.5 : 1,
-                    width: header.getSize(),
-                  }}
-                >
-                  <div
-                    className={`flex items-center gap-2 ${canSort ? "cursor-pointer" : ""}`}
-                    onClick={(e) => {
-                      if (canSort && onSortChange) {
-                        e.stopPropagation();
-                        onSortChange(header.column.id);
-                      }
-                    }}
-                    onDragStart={(e) => e.stopPropagation()}
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                    {canSort && (
-                      <span className="text-dark-2">
-                        {isSorted === "desc" ? (
-                          <ArrowDown size={14} />
-                        ) : isSorted === "asc" ? (
-                          <ArrowUp size={14} />
-                        ) : (
-                          <ArrowUpDown size={14} />
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </Table.Th>
-              );
-            })}
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {table.getRowModel().rows.map((row) => {
-            const isCurrentTrack = originalSpotifyId === row.original.spotifyId;
-            return (
-              <Table.Tr
-                className={`cursor-pointer hover:bg-dark-6 transition-colors ${isCurrentTrack && isPlaying ? "bg-orange-9/20 border-l-2 border-l-orange-5" : ""}`}
-                key={row.id}
-                onClick={() =>
-                  handlePlayTrack(row.original.title, row.original.spotifyId)
-                }
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <Table.Td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Table.Td>
-                ))}
-              </Table.Tr>
-            );
-          })}
-        </Table.Tbody>
+        <TracksTableHeader
+          draggedColumn={draggedColumn}
+          headers={table.getFlatHeaders()}
+          onDragEnd={handleDragEnd}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragStart={handleDragStart}
+          onDrop={handleDrop}
+          onSortChange={onSortChange}
+        />
+        <TracksTableBody
+          isPlaying={isPlaying}
+          onPlayTrack={handlePlayTrack}
+          originalSpotifyId={originalSpotifyId}
+          rows={table.getRowModel().rows}
+        />
       </Table>
     </div>
   );

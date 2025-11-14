@@ -203,12 +203,14 @@ export function SmartPlaylists() {
       )}
 
       <Modal
+        classNames={{ body: "pb-24 md:pb-32" }}
         onClose={close}
         opened={opened}
         size="lg"
         title={
           editingPlaylist ? "Edit Smart Playlist" : "Create Smart Playlist"
         }
+        zIndex={300}
       >
         <PlaylistEditor
           onCancel={close}

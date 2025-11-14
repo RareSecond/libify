@@ -2,7 +2,6 @@
 import {
   ActionIcon,
   Badge,
-  Box,
   Button,
   Group,
   Image,
@@ -203,17 +202,21 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
         <Modal.Overlay backgroundOpacity={0.95} blur={12} />
         <Modal.Content className="bg-dark-9">
           <Modal.Body className="p-0 h-screen flex items-center justify-center">
-            <Stack align="center" gap="xl">
-              <Title className="text-5xl text-dark-0" order={1}>
+            <Stack align="center" gap="lg md:gap-xl">
+              <Title className="text-4xl md:text-5xl text-dark-0" order={1}>
                 🎉
               </Title>
-              <Title className="text-3xl text-dark-1" order={2}>
+              <Title className="text-2xl md:text-3xl text-dark-1" order={2}>
                 No Unrated Tracks!
               </Title>
-              <Text className="text-dark-2 text-xl" size="lg">
+              <Text className="text-dark-2 text-lg md:text-xl">
                 All your tracks have been rated. Great job!
               </Text>
-              <Button color="orange" onClick={onClose} size="xl">
+              <Button
+                className="text-base md:text-lg px-6 md:px-8 py-3 md:py-4"
+                color="orange"
+                onClick={onClose}
+              >
                 Close
               </Button>
             </Stack>
@@ -238,123 +241,162 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
     >
       <Modal.Overlay backgroundOpacity={0.95} blur={12} />
       <Modal.Content className="bg-dark-9">
-        <Modal.Body className="p-0 h-screen flex flex-col py-[2vh]">
+        <Modal.Body className="p-0 h-screen flex flex-col pt-2 md:py-[2vh]">
           {/* Header with Close and Progress */}
-          <Group className="px-8 mb-[2vh]" justify="space-between">
+          <Group
+            className="px-3 md:px-8 mb-3 md:mb-[2vh]"
+            justify="space-between"
+          >
             <ActionIcon
+              className="w-10 h-10 md:w-12 md:h-12"
               color="gray"
               onClick={onClose}
-              size="xl"
               variant="subtle"
             >
-              <X size={32} />
+              <X className="w-6 h-6 md:w-8 md:h-8" />
             </ActionIcon>
 
-            <Group gap="md">
-              <Badge color="green" radius="md" size="xl" variant="light">
-                {ratedCount} Rated
+            <Group className="gap-1 md:gap-md">
+              <Badge
+                className="text-xs md:text-sm px-2 md:px-3 py-1"
+                color="green"
+                radius="md"
+                variant="light"
+              >
+                <span className="hidden sm:inline">{ratedCount} Rated</span>
+                <span className="sm:hidden">{ratedCount}</span>
               </Badge>
-              <Badge color="orange" radius="md" size="xl" variant="light">
-                {remainingCount} Remaining
+              <Badge
+                className="text-xs md:text-sm px-2 md:px-3 py-1"
+                color="orange"
+                radius="md"
+                variant="light"
+              >
+                <span className="hidden sm:inline">
+                  {remainingCount} Remaining
+                </span>
+                <span className="sm:hidden">{remainingCount}</span>
               </Badge>
-              <Badge color="blue" radius="md" size="xl" variant="light">
-                {progress}% Complete
+              <Badge
+                className="text-xs md:text-sm px-2 md:px-3 py-1 hidden xs:block"
+                color="blue"
+                radius="md"
+                variant="light"
+              >
+                {progress}%
               </Badge>
             </Group>
 
-            {/* Placeholder for symmetry */}
-            <div className="w-[72px]" />
+            {/* Placeholder for symmetry - hidden on mobile */}
+            <div className="w-10 md:w-[72px]" />
           </Group>
 
           {/* Content */}
           <Stack
             align="center"
-            className="flex-1 px-8 pb-[12vh] min-h-0"
-            gap="lg"
+            className="flex-1 px-3 md:px-8 min-h-0"
+            gap="md md:gap-lg"
             justify="center"
           >
-            {/* Keyboard Shortcuts Help */}
-            <Text
-              className="text-dark-3 text-center text-sm mb-[1vh]"
-              size="sm"
-            >
-              <strong>Shortcuts:</strong> 1-5 = Full Stars • Shift+1-5 = Half
-              Stars • Space = Play/Pause • N = Skip • P = Previous • Esc = Close
+            {/* Keyboard Shortcuts Help - Hidden on small mobile */}
+            <Text className="text-dark-3 text-center text-xs md:text-sm mb-1 md:mb-[1vh] hidden sm:block">
+              <strong>Shortcuts:</strong>{" "}
+              <span className="hidden md:inline">
+                1-5 = Full Stars • Shift+1-5 = Half Stars • Space = Play/Pause •
+                N = Skip • P = Previous • Esc = Close
+              </span>
+              <span className="md:hidden">
+                1-5 = Stars • N = Skip • P = Prev
+              </span>
             </Text>
 
             {libraryTrack ? (
               <>
                 {/* Album Art - Takes remaining space */}
-                <div className="flex-1 flex items-center justify-center w-full min-h-0">
+                <div className="flex-1 flex items-center justify-center w-full min-h-0 max-w-[85vw] md:max-w-full">
                   <Image
                     alt={libraryTrack.album || "Album"}
-                    className="max-w-full max-h-full w-auto h-auto border-4 border-dark-5 shadow-2xl rounded-lg object-contain"
+                    className="w-full h-auto max-h-full border-2 md:border-4 border-dark-5 shadow-2xl rounded-md md:rounded-lg object-contain"
                     src={libraryTrack.albumArt}
                   />
                 </div>
 
                 {/* Track Info */}
-                <Stack align="center" className="mt-[2vh]" gap="xs">
-                  <Title className="text-4xl font-bold" order={1}>
+                <Stack
+                  align="center"
+                  className="mt-2 md:mt-[2vh] px-2"
+                  gap="xs"
+                >
+                  <Title
+                    className="text-xl sm:text-2xl md:text-4xl font-bold text-center"
+                    order={1}
+                  >
                     {libraryTrack.title}
                   </Title>
-                  <Text className="text-dark-1 text-2xl" size="xl">
+                  <Text className="text-dark-1 text-base sm:text-lg md:text-2xl text-center">
                     {libraryTrack.artist}
                   </Text>
                   {libraryTrack.album && (
-                    <Text className="text-dark-2 text-lg" size="lg">
+                    <Text className="text-dark-2 text-sm sm:text-base md:text-lg text-center">
                       {libraryTrack.album}
                     </Text>
                   )}
                 </Stack>
 
                 {/* Rating Stars */}
-                <Stack align="center" className="mt-[2vh]" gap="lg">
-                  <Text
-                    className="text-dark-1 font-bold uppercase tracking-wider text-xl"
-                    size="lg"
-                  >
+                <Stack
+                  align="center"
+                  className="mt-3 md:mt-[2vh]"
+                  gap="md md:gap-lg"
+                >
+                  <Text className="text-dark-1 font-bold uppercase tracking-wider text-sm md:text-xl">
                     Rate This Track
                   </Text>
-                  <Box className="transform scale-[3.5]">
-                    <RatingSelector
-                      externalMutation={updateRatingMutation}
-                      onRatingChange={handleMouseRating}
-                      rating={libraryTrack.rating ?? null}
-                      trackId={libraryTrack.id}
-                    />
-                  </Box>
+                  <RatingSelector
+                    externalMutation={updateRatingMutation}
+                    onRatingChange={handleMouseRating}
+                    rating={libraryTrack.rating ?? null}
+                    size="xl"
+                    trackId={libraryTrack.id}
+                  />
                 </Stack>
 
                 {/* Tags */}
-                <Stack align="center" className="mt-[1vh]" gap="md">
-                  <Text
-                    className="text-dark-1 font-semibold uppercase tracking-wide"
-                    size="md"
-                  >
+                <Stack
+                  align="center"
+                  className="mt-2 md:mt-[1vh]"
+                  gap="xs md:gap-md"
+                >
+                  <Text className="text-dark-1 font-semibold uppercase tracking-wide text-xs md:text-base">
                     Tags
                   </Text>
-                  <Box className="scale-125">
-                    <InlineTagEditor
-                      onTagsChange={handleLibraryTrackUpdate}
-                      trackId={libraryTrack.id}
-                      trackTags={libraryTrack.tags}
-                    />
-                  </Box>
+                  <InlineTagEditor
+                    onTagsChange={handleLibraryTrackUpdate}
+                    trackId={libraryTrack.id}
+                    trackTags={libraryTrack.tags}
+                  />
                 </Stack>
 
                 {/* Controls */}
-                <Group className="mt-[2vh]" gap="xl" justify="center">
+                <Group
+                  className="mt-3 md:mt-[2vh] mb-32 md:mb-0 gap-2 md:gap-xl"
+                  justify="center"
+                >
                   <Button
+                    className="text-sm md:text-base px-4 md:px-6"
                     color="gray"
                     disabled={currentTrackIndex === 0}
                     onClick={handlePrevious}
-                    size="xl"
                     variant="light"
                   >
-                    Previous (P)
+                    <span className="hidden sm:inline">Previous (P)</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
-                  <Button color="orange" onClick={handleSkip} size="xl">
+                  <Button
+                    className="text-sm md:text-base px-4 md:px-6"
+                    color="orange"
+                    onClick={handleSkip}
+                  >
                     Skip (N)
                   </Button>
                 </Group>

@@ -1,4 +1,4 @@
-import { Box, Center, Group, Image, Text } from "@mantine/core";
+import { Box, Center, Group, Text } from "@mantine/core";
 import { ColumnDef } from "@tanstack/react-table";
 import { Music, Volume2 } from "lucide-react";
 import { useMemo } from "react";
@@ -36,11 +36,10 @@ export function useTracksTableColumns({
             <Group gap="xs" wrap="nowrap">
               {row.original.albumArt ? (
                 <Box className="h-9 w-9 rounded overflow-hidden relative">
-                  <Image
+                  <img
                     alt={row.original.album || row.original.title}
                     className="h-9 w-9 object-cover"
-                    fallbackSrc="/placeholder-album.svg"
-                    fit="cover"
+                    loading="lazy"
                     src={row.original.albumArt}
                   />
                   {isCurrentTrack && isPlaying && (
