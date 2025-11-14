@@ -315,7 +315,7 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
 
   if (!unratedTracks || unratedTracks.length === 0) {
     return (
-      <Modal.Root fullScreen onClose={onClose} opened={opened}>
+      <Modal.Root fullScreen onClose={onClose} opened={opened} zIndex={200}>
         <Modal.Overlay backgroundOpacity={0.95} blur={12} />
         <Modal.Content className="bg-dark-9">
           <Modal.Body className="p-0 h-screen flex items-center justify-center">
@@ -347,49 +347,68 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
       onClose={onClose}
       opened={opened}
       transitionProps={{ duration: 200 }}
+      zIndex={200}
     >
       <Modal.Overlay backgroundOpacity={0.95} blur={12} />
       <Modal.Content className="bg-dark-9">
-        <Modal.Body className="p-0 relative h-screen flex items-center justify-center">
-          {/* Close Button - Fixed Top Right */}
-          <ActionIcon
-            className="absolute top-8 right-8 z-10"
-            color="gray"
-            onClick={onClose}
-            size="xl"
-            variant="subtle"
-          >
-            <X size={32} />
-          </ActionIcon>
+        <Modal.Body className="p-0 h-screen flex flex-col py-[2vh]">
+          {/* Header with Close and Progress */}
+          <Group className="px-8 mb-[2vh]" justify="space-between">
+            <ActionIcon
+              color="gray"
+              onClick={onClose}
+              size="xl"
+              variant="subtle"
+            >
+              <X size={32} />
+            </ActionIcon>
 
-          {/* Progress - Fixed Top Center */}
-          <Group
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-10"
-            gap="md"
-          >
-            <Badge color="green" radius="md" size="xl" variant="light">
-              {ratedCount} Rated
-            </Badge>
-            <Badge color="orange" radius="md" size="xl" variant="light">
-              {unratedTracks.length - currentIndex} Remaining
-            </Badge>
-            <Badge color="blue" radius="md" size="xl" variant="light">
-              {progress}% Complete
-            </Badge>
+            <Group gap="md">
+              <Badge color="green" radius="md" size="xl" variant="light">
+                {ratedCount} Rated
+              </Badge>
+              <Badge color="orange" radius="md" size="xl" variant="light">
+                {unratedTracks.length - currentIndex} Remaining
+              </Badge>
+              <Badge color="blue" radius="md" size="xl" variant="light">
+                {progress}% Complete
+              </Badge>
+            </Group>
+
+            {/* Placeholder for symmetry */}
+            <div className="w-[72px]" />
           </Group>
 
-          {/* Main Content - Centered */}
-          <Stack align="center" className="max-w-4xl" gap="2xl">
-            {/* Album Art & Track Info */}
+          {/* Content */}
+          <Stack
+            align="center"
+            className="flex-1 px-8 pb-[12vh] min-h-0"
+            gap="lg"
+            justify="center"
+          >
             {libraryTrack && (
-              <Stack align="center" gap="xl">
-                <Image
-                  alt={libraryTrack.album || "Album"}
-                  className="h-[500px] w-[500px] border-4 border-dark-5 shadow-2xl rounded-lg"
-                  src={libraryTrack.albumArt}
-                />
+              <>
+                {/* Keyboard Shortcuts Help */}
+                <Text
+                  className="text-dark-3 text-center text-sm mb-[1vh]"
+                  size="sm"
+                >
+                  <strong>Shortcuts:</strong> 1-5 = Full Stars • Shift+1-5 =
+                  Half Stars • Space = Play/Pause • N = Skip • P = Previous •
+                  Esc = Close
+                </Text>
 
-                <Stack align="center" className="mt-4" gap="xs">
+                {/* Album Art - Takes remaining space */}
+                <div className="flex-1 flex items-center justify-center w-full min-h-0">
+                  <Image
+                    alt={libraryTrack.album || "Album"}
+                    className="max-w-full max-h-full w-auto h-auto border-4 border-dark-5 shadow-2xl rounded-lg object-contain"
+                    src={libraryTrack.albumArt}
+                  />
+                </div>
+
+                {/* Track Info */}
+                <Stack align="center" className="mt-[2vh]" gap="xs">
                   <Title className="text-4xl font-bold" order={1}>
                     {libraryTrack.title}
                   </Title>
@@ -402,72 +421,59 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
                     </Text>
                   )}
                 </Stack>
-              </Stack>
+
+                {/* Rating Stars */}
+                <Stack align="center" className="mt-[2vh]" gap="lg">
+                  <Text
+                    className="text-dark-1 font-bold uppercase tracking-wider text-xl"
+                    size="lg"
+                  >
+                    Rate This Track
+                  </Text>
+                  <Box className="transform scale-[3.5]">
+                    <RatingSelector
+                      externalMutation={updateRatingMutation}
+                      onRatingChange={handleMouseRating}
+                      rating={libraryTrack.rating ?? null}
+                      trackId={libraryTrack.id}
+                    />
+                  </Box>
+                </Stack>
+
+                {/* Tags */}
+                <Stack align="center" className="mt-[1vh]" gap="md">
+                  <Text
+                    className="text-dark-1 font-semibold uppercase tracking-wide"
+                    size="md"
+                  >
+                    Tags
+                  </Text>
+                  <Box className="scale-125">
+                    <InlineTagEditor
+                      onTagsChange={handleLibraryTrackUpdate}
+                      trackId={libraryTrack.id}
+                      trackTags={libraryTrack.tags}
+                    />
+                  </Box>
+                </Stack>
+
+                {/* Controls */}
+                <Group className="mt-[2vh]" gap="xl" justify="center">
+                  <Button
+                    color="gray"
+                    disabled={currentIndex === 0}
+                    onClick={handlePrevious}
+                    size="xl"
+                    variant="light"
+                  >
+                    Previous (P)
+                  </Button>
+                  <Button color="orange" onClick={handleSkip} size="xl">
+                    Skip (N)
+                  </Button>
+                </Group>
+              </>
             )}
-
-            {/* Rating Stars */}
-            {libraryTrack && (
-              <Stack align="center" className="mt-8" gap="lg">
-                <Text
-                  className="text-dark-1 font-bold uppercase tracking-wider text-xl"
-                  size="lg"
-                >
-                  Rate This Track
-                </Text>
-                <Box className="transform scale-[3.5]">
-                  <RatingSelector
-                    externalMutation={updateRatingMutation}
-                    onRatingChange={handleMouseRating}
-                    rating={libraryTrack.rating ?? null}
-                    trackId={libraryTrack.id}
-                  />
-                </Box>
-              </Stack>
-            )}
-
-            {/* Tags */}
-            {libraryTrack && (
-              <Stack align="center" className="mt-6" gap="md">
-                <Text
-                  className="text-dark-1 font-semibold uppercase tracking-wide"
-                  size="md"
-                >
-                  Tags
-                </Text>
-                <Box className="scale-125">
-                  <InlineTagEditor
-                    onTagsChange={handleLibraryTrackUpdate}
-                    trackId={libraryTrack.id}
-                    trackTags={libraryTrack.tags}
-                  />
-                </Box>
-              </Stack>
-            )}
-
-            {/* Controls */}
-            <Group className="mt-8" gap="xl" justify="center">
-              <Button
-                color="gray"
-                disabled={currentIndex === 0}
-                onClick={handlePrevious}
-                size="xl"
-                variant="light"
-              >
-                Previous (P)
-              </Button>
-              <Button color="orange" onClick={handleSkip} size="xl">
-                Skip (N)
-              </Button>
-            </Group>
-
-            {/* Keyboard Shortcuts Help - Fixed Bottom */}
-            <Box className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-dark-7 px-6 py-3 rounded-lg border border-dark-5">
-              <Text className="text-dark-1 text-center text-base" size="sm">
-                <strong>Shortcuts:</strong> 1-5 = Full Stars • Shift+1-5 = Half
-                Stars • Space = Play/Pause • N = Skip • P = Previous • Esc =
-                Close
-              </Text>
-            </Box>
           </Stack>
         </Modal.Body>
       </Modal.Content>
