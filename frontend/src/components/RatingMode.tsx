@@ -6,31 +6,22 @@ import {
   Button,
   Group,
   Image,
+  Loader,
   Modal,
   Stack,
   Text,
   Title,
 } from "@mantine/core";
-import { QueryKey, useQueryClient } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
-import {
-  getLibraryControllerGetTracksQueryKey,
-  PaginatedTracksDto,
-  TrackDto,
-  useLibraryControllerGetTracks,
-  useLibraryControllerUpdateTrackRating,
-} from "../data/api";
+import { useLibraryControllerGetTracks } from "../data/api";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
+import { useTrackRatingMutation } from "../hooks/useTrackRatingMutation";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { RatingSelector } from "./RatingSelector";
-
-interface MutationContext {
-  previousTrackQueries: Array<[QueryKey, unknown]>;
-  previousTracksQueries: Array<[QueryKey, unknown]>;
-}
 
 interface RatingModeProps {
   onClose: () => void;
@@ -51,90 +42,9 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
   } = useSpotifyPlayer();
   const [ratedCount, setRatedCount] = useState(0);
   const hasStartedPlaybackRef = useRef(false);
-  const queryClient = useQueryClient();
 
   // Mutation for rating tracks with optimistic updates
-  const updateRatingMutation = useLibraryControllerUpdateTrackRating({
-    mutation: {
-      onError: (_err, _variables, context: MutationContext | undefined) => {
-        // Rollback to previous values on error
-        if (context?.previousTracksQueries) {
-          context.previousTracksQueries.forEach(
-            ([queryKey, data]: [QueryKey, unknown]) => {
-              queryClient.setQueryData(queryKey, data);
-            },
-          );
-        }
-        if (context?.previousTrackQueries) {
-          context.previousTrackQueries.forEach(
-            ([queryKey, data]: [QueryKey, unknown]) => {
-              queryClient.setQueryData(queryKey, data);
-            },
-          );
-        }
-      },
-      onMutate: async ({
-        data: { rating: newRating },
-        trackId,
-      }): Promise<MutationContext> => {
-        // Cancel any outgoing refetches to prevent race conditions
-        await queryClient.cancelQueries({
-          queryKey: getLibraryControllerGetTracksQueryKey(),
-        });
-        await queryClient.cancelQueries({
-          queryKey: ["/library/tracks/spotify"],
-        });
-
-        // Snapshot the previous values for both query types
-        const previousTracksQueries = queryClient.getQueriesData({
-          queryKey: getLibraryControllerGetTracksQueryKey(),
-        });
-
-        const previousTrackQueries = queryClient.getQueriesData({
-          queryKey: ["/library/tracks/spotify"],
-        });
-
-        // Optimistically update all track list queries
-        queryClient.setQueriesData<PaginatedTracksDto>(
-          { queryKey: getLibraryControllerGetTracksQueryKey() },
-          (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              tracks: old.tracks.map((track) =>
-                track.id === trackId ? { ...track, rating: newRating } : track,
-              ),
-            };
-          },
-        );
-
-        // Optimistically update the single track queries (for now playing bar)
-        queryClient.setQueriesData<TrackDto>(
-          {
-            predicate: (query) =>
-              Array.isArray(query.queryKey) &&
-              typeof query.queryKey[0] === "string" &&
-              query.queryKey[0].startsWith("/library/tracks/spotify/"),
-          },
-          (old) => {
-            if (!old || old.id !== trackId) return old;
-            return { ...old, rating: newRating };
-          },
-        );
-
-        return { previousTrackQueries, previousTracksQueries };
-      },
-      onSettled: () => {
-        // Refetch to ensure we're in sync with server
-        queryClient.invalidateQueries({
-          queryKey: getLibraryControllerGetTracksQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["/library/tracks/spotify"],
-        });
-      },
-    },
-  });
+  const updateRatingMutation = useTrackRatingMutation();
 
   // Fetch unrated track count for display only
   const { data: unratedData } = useLibraryControllerGetTracks(
@@ -200,6 +110,21 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
         updateRatingMutation.mutate(
           { data: { rating }, trackId: libraryTrack.id },
           {
+            onError: (error) => {
+              // Log error for diagnostics
+              // eslint-disable-next-line no-console
+              console.error("Failed to update track rating:", error);
+
+              // Show user-visible error notification
+              notifications.show({
+                color: "red",
+                message:
+                  "Failed to save rating. Please try again or skip to the next track.",
+                title: "Rating Error",
+              });
+
+              // Do NOT advance to next track on error - user can retry or manually skip
+            },
             onSuccess: () => {
               handleKeyboardRating();
             },
@@ -345,18 +270,17 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
             gap="lg"
             justify="center"
           >
-            {libraryTrack && (
-              <>
-                {/* Keyboard Shortcuts Help */}
-                <Text
-                  className="text-dark-3 text-center text-sm mb-[1vh]"
-                  size="sm"
-                >
-                  <strong>Shortcuts:</strong> 1-5 = Full Stars • Shift+1-5 =
-                  Half Stars • Space = Play/Pause • N = Skip • P = Previous •
-                  Esc = Close
-                </Text>
+            {/* Keyboard Shortcuts Help */}
+            <Text
+              className="text-dark-3 text-center text-sm mb-[1vh]"
+              size="sm"
+            >
+              <strong>Shortcuts:</strong> 1-5 = Full Stars • Shift+1-5 = Half
+              Stars • Space = Play/Pause • N = Skip • P = Previous • Esc = Close
+            </Text>
 
+            {libraryTrack ? (
+              <>
                 {/* Album Art - Takes remaining space */}
                 <div className="flex-1 flex items-center justify-center w-full min-h-0">
                   <Image
@@ -432,6 +356,11 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
                   </Button>
                 </Group>
               </>
+            ) : (
+              // Loading state - centered loader with matching layout
+              <div className="flex-1 flex items-center justify-center w-full min-h-0">
+                <Loader color="orange" size="xl" />
+              </div>
             )}
           </Stack>
         </Modal.Body>

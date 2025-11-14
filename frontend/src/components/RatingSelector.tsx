@@ -1,22 +1,11 @@
 import { Group } from "@mantine/core";
-import { QueryKey, useQueryClient } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 import { useState } from "react";
 
-import {
-  getLibraryControllerGetTracksQueryKey,
-  PaginatedTracksDto,
-  TrackDto,
-  useLibraryControllerUpdateTrackRating,
-} from "../data/api";
-
-interface MutationContext {
-  previousTrackQueries: Array<[QueryKey, unknown]>;
-  previousTracksQueries: Array<[QueryKey, unknown]>;
-}
+import { useTrackRatingMutation } from "../hooks/useTrackRatingMutation";
 
 interface RatingSelectorProps {
-  externalMutation?: ReturnType<typeof useLibraryControllerUpdateTrackRating>;
+  externalMutation?: ReturnType<typeof useTrackRatingMutation>;
   onRatingChange?: (rating: number) => void;
   rating: null | number;
   trackId: string;
@@ -29,91 +18,9 @@ export function RatingSelector({
   trackId,
 }: RatingSelectorProps) {
   const [hoveredRating, setHoveredRating] = useState<null | number>(null);
-  const queryClient = useQueryClient();
-
-  const internalMutation = useLibraryControllerUpdateTrackRating({
-    mutation: {
-      onError: (_err, _variables, context: MutationContext | undefined) => {
-        // Rollback to previous values on error
-        if (context?.previousTracksQueries) {
-          context.previousTracksQueries.forEach(
-            ([queryKey, data]: [QueryKey, unknown]) => {
-              queryClient.setQueryData(queryKey, data);
-            },
-          );
-        }
-        if (context?.previousTrackQueries) {
-          context.previousTrackQueries.forEach(
-            ([queryKey, data]: [QueryKey, unknown]) => {
-              queryClient.setQueryData(queryKey, data);
-            },
-          );
-        }
-      },
-      onMutate: async ({
-        data: { rating: newRating },
-      }): Promise<MutationContext> => {
-        // Cancel any outgoing refetches to prevent race conditions
-        await queryClient.cancelQueries({
-          queryKey: getLibraryControllerGetTracksQueryKey(),
-        });
-        await queryClient.cancelQueries({
-          queryKey: ["/library/tracks/spotify"],
-        });
-
-        // Snapshot the previous values for both query types
-        const previousTracksQueries = queryClient.getQueriesData({
-          queryKey: getLibraryControllerGetTracksQueryKey(),
-        });
-
-        const previousTrackQueries = queryClient.getQueriesData({
-          queryKey: ["/library/tracks/spotify"],
-        });
-
-        // Optimistically update all track list queries
-        queryClient.setQueriesData<PaginatedTracksDto>(
-          { queryKey: getLibraryControllerGetTracksQueryKey() },
-          (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              tracks: old.tracks.map((track) =>
-                track.id === trackId ? { ...track, rating: newRating } : track,
-              ),
-            };
-          },
-        );
-
-        // Optimistically update the single track queries (for now playing bar)
-        // We need to update all track-by-spotify-id queries and check the internal ID
-        queryClient.setQueriesData<TrackDto>(
-          {
-            predicate: (query) =>
-              Array.isArray(query.queryKey) &&
-              typeof query.queryKey[0] === "string" &&
-              query.queryKey[0].startsWith("/library/tracks/spotify/"),
-          },
-          (old) => {
-            if (!old || old.id !== trackId) return old;
-            return { ...old, rating: newRating };
-          },
-        );
-
-        return { previousTrackQueries, previousTracksQueries };
-      },
-      onSettled: () => {
-        // Refetch to ensure we're in sync with server
-        queryClient.invalidateQueries({
-          queryKey: getLibraryControllerGetTracksQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["/library/tracks/spotify"],
-        });
-      },
-    },
-  });
 
   // Use external mutation if provided, otherwise use internal
+  const internalMutation = useTrackRatingMutation();
   const updateRatingMutation = externalMutation || internalMutation;
 
   const handleRatingClick = async (e: React.MouseEvent, newRating: number) => {
