@@ -73,13 +73,16 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
   }, [previousTrack]);
 
   const handleKeyboardRating = useCallback(() => {
+    // Guard against concurrent mutations
+    if (updateRatingMutation.isPending) return;
+
     setRatedCount((prev) => prev + 1);
 
     // Wait to show star update feedback before advancing
     setTimeout(() => {
       handleSkip();
     }, 500);
-  }, [handleSkip]);
+  }, [handleSkip, updateRatingMutation.isPending]);
 
   const handleMouseRating = useCallback(() => {
     setRatedCount((prev) => prev + 1);
