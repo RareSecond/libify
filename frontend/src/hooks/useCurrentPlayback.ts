@@ -1,5 +1,5 @@
-import { usePlaybackControllerGetCurrentPlayback } from "@/data/api";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { usePlaybackControllerGetCurrentPlayback } from "@/data/api";
 
 /**
  * Hook to poll current playback state from Spotify API
@@ -10,7 +10,7 @@ import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
  * - Otherwise: Poll every 5 seconds for cross-device playback
  */
 export function useCurrentPlayback() {
-  const { isReady, deviceId, currentTrack } = useSpotifyPlayer();
+  const { currentTrack, deviceId, isReady } = useSpotifyPlayer();
 
   // Only poll when we DON'T have web player data
   // When web player has track data, we get everything from SDK events
