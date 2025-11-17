@@ -146,7 +146,10 @@ export class TrackService {
     }
 
     // Apply rating filter
-    if (
+    if (where.rating === null) {
+      // Filter for unrated tracks only
+      query = query.where("ut.rating", "is", null);
+    } else if (
       where.rating &&
       typeof where.rating === "object" &&
       "gte" in where.rating
@@ -221,7 +224,8 @@ export class TrackService {
 
   /**
    * Helper method to fetch tracks for playback with random order
-   * Used when shuffle is true to get truly random tracks from entire library
+   * Used when shuffle is true to get truly random tracks
+   * Converts Prisma where clause to Kysely for efficient database-level randomization
    */
   async fetchTracksForPlayWithRandomOrder(
     userId: string,
@@ -230,55 +234,53 @@ export class TrackService {
   ): Promise<string[]> {
     const db = this.kyselyService.database;
 
-    // Build base query
+    // Build base query with proper randomization at DB level
     let query = db
       .selectFrom("UserTrack as ut")
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .select("st.spotifyId")
       .where("ut.userId", "=", userId);
 
-    // Apply search filter from where clause
+    // Convert Prisma where clause to Kysely filters
+    query = this.applyWhereClauseToKyselyQuery(query, where);
+
+    // Use PostgreSQL's RANDOM() for true random sampling at DB level
+    query = query.orderBy(sql`RANDOM()`).limit(maxTracks);
+
+    const tracks = await query.execute();
+
+    const spotifyUris = tracks
+      .filter((track) => track.spotifyId)
+      .map((track) => `spotify:track:${track.spotifyId}`);
+
+    this.logger.log(
+      `Fetched ${spotifyUris.length} randomly ordered tracks for shuffle using database randomization`,
+    );
+
+    return spotifyUris;
+  }
+
+  /**
+   * Converts a Prisma UserTrackWhereInput to Kysely query conditions
+   * Handles all filter types including complex Smart Playlist criteria
+   */
+  private applyWhereClauseToKyselyQuery(
+    query: ReturnType<
+      ReturnType<typeof this.kyselyService.database.selectFrom>["innerJoin"]
+    >,
+    where: Prisma.UserTrackWhereInput,
+  ) {
+    // Handle OR conditions (e.g., search across title/artist/album)
     if (where.OR && Array.isArray(where.OR)) {
-      const searchConditions = where.OR as Array<Record<string, unknown>>;
-      // Extract search term from title condition
-      const titleCondition = searchConditions.find((cond) => {
-        const trackCond = cond as {
-          spotifyTrack?: { title?: { contains?: string } };
-        };
-        return trackCond.spotifyTrack?.title?.contains;
-      });
-      if (titleCondition) {
-        const trackCond = titleCondition as {
-          spotifyTrack: { title: { contains: string } };
-        };
-        const searchTerm = trackCond.spotifyTrack.title.contains;
-        query = query.where((eb) =>
-          eb.or([
-            eb("st.title", "ilike", `%${searchTerm}%`),
-            eb(
-              sql`EXISTS (
-                SELECT 1 FROM "SpotifyArtist" sar
-                WHERE sar.id = st."artistId"
-                AND sar.name ILIKE ${`%${searchTerm}%`}
-              )`,
-              "=",
-              sql`true`,
-            ),
-            eb(
-              sql`EXISTS (
-                SELECT 1 FROM "SpotifyAlbum" sa
-                WHERE sa.id = st."albumId"
-                AND sa.name ILIKE ${`%${searchTerm}%`}
-              )`,
-              "=",
-              sql`true`,
-            ),
-          ]),
-        );
-      }
+      query = this.applyOrConditions(query, where.OR);
     }
 
-    // Apply tag filter
+    // Handle AND conditions (e.g., Smart Playlist rules with AND logic)
+    if (where.AND && Array.isArray(where.AND)) {
+      query = this.applyAndConditions(query, where.AND);
+    }
+
+    // Handle tag filter
     if (where.tags?.some) {
       const tagCondition = where.tags.some as { tagId?: { in?: string[] } };
       if (tagCondition.tagId?.in) {
@@ -288,17 +290,33 @@ export class TrackService {
       }
     }
 
-    // Apply rating filter
-    if (
+    // Handle rating filters
+    if (where.rating === null) {
+      query = query.where("ut.rating", "is", null);
+    } else if (
       where.rating &&
       typeof where.rating === "object" &&
       "gte" in where.rating
     ) {
       const minRating = where.rating.gte as number;
       query = query.where("ut.rating", ">=", minRating);
+    } else if (
+      where.rating &&
+      typeof where.rating === "object" &&
+      "lte" in where.rating
+    ) {
+      const maxRating = where.rating.lte as number;
+      query = query.where("ut.rating", "<=", maxRating);
+    } else if (
+      where.rating &&
+      typeof where.rating === "object" &&
+      "equals" in where.rating
+    ) {
+      const exactRating = where.rating.equals as number;
+      query = query.where("ut.rating", "=", exactRating);
     }
 
-    // Apply source type filter
+    // Handle source type filter
     if (where.sources?.some) {
       const sourceCondition = where.sources.some as {
         sourceType?: { in?: string[] };
@@ -314,7 +332,7 @@ export class TrackService {
       }
     }
 
-    // Apply genre filter
+    // Handle genre filter
     if (where.spotifyTrack?.artist?.genres?.hasSome) {
       const genres = where.spotifyTrack.artist.genres.hasSome as string[];
       query = query.where(({ eb }) =>
@@ -330,20 +348,192 @@ export class TrackService {
       );
     }
 
-    // Use PostgreSQL's RANDOM() for true random sampling
-    query = query.orderBy(sql`RANDOM()`).limit(maxTracks);
+    // Handle date filters (addedAt, lastPlayedAt)
+    if (where.addedAt) {
+      query = this.applyDateFilter(query, "ut.addedAt", where.addedAt);
+    }
 
-    const tracks = await query.execute();
+    if (where.lastPlayedAt) {
+      query = this.applyDateFilter(
+        query,
+        "ut.lastPlayedAt",
+        where.lastPlayedAt,
+      );
+    }
 
-    const spotifyUris = tracks
-      .filter((track) => track.spotifyId)
-      .map((track) => `spotify:track:${track.spotifyId}`);
+    // Handle number filters (totalPlayCount, duration, etc.)
+    if (where.totalPlayCount) {
+      query = this.applyNumberFilter(
+        query,
+        "ut.totalPlayCount",
+        where.totalPlayCount,
+      );
+    }
 
-    this.logger.log(
-      `Fetched ${spotifyUris.length} randomly ordered tracks for shuffle`,
-    );
+    if (where.spotifyTrack?.duration) {
+      query = this.applyNumberFilter(
+        query,
+        "st.duration",
+        where.spotifyTrack.duration,
+      );
+    }
 
-    return spotifyUris;
+    return query;
+  }
+
+  private applyOrConditions(
+    query: ReturnType<
+      ReturnType<typeof this.kyselyService.database.selectFrom>["innerJoin"]
+    >,
+    orConditions: Prisma.UserTrackWhereInput[],
+  ) {
+    // Check if this is a search query (title/artist/album)
+    const hasSearchPattern = orConditions.some((cond) => {
+      const trackCond = cond as {
+        spotifyTrack?: {
+          album?: { name?: { contains?: string } };
+          artist?: { name?: { contains?: string } };
+          title?: { contains?: string };
+        };
+      };
+      return (
+        trackCond.spotifyTrack?.title?.contains ||
+        trackCond.spotifyTrack?.artist?.name?.contains ||
+        trackCond.spotifyTrack?.album?.name?.contains
+      );
+    });
+
+    if (hasSearchPattern) {
+      // Extract search term from any of the conditions
+      let searchTerm = "";
+      for (const cond of orConditions) {
+        const trackCond = cond as {
+          spotifyTrack?: {
+            album?: { name?: { contains?: string } };
+            artist?: { name?: { contains?: string } };
+            title?: { contains?: string };
+          };
+        };
+        searchTerm =
+          trackCond.spotifyTrack?.title?.contains ||
+          trackCond.spotifyTrack?.artist?.name?.contains ||
+          trackCond.spotifyTrack?.album?.name?.contains ||
+          "";
+        if (searchTerm) break;
+      }
+
+      query = query.where((eb) =>
+        eb.or([
+          eb("st.title", "ilike", `%${searchTerm}%`),
+          eb(
+            sql`EXISTS (
+              SELECT 1 FROM "SpotifyArtist" sar
+              WHERE sar.id = st."artistId"
+              AND sar.name ILIKE ${`%${searchTerm}%`}
+            )`,
+            "=",
+            sql`true`,
+          ),
+          eb(
+            sql`EXISTS (
+              SELECT 1 FROM "SpotifyAlbum" sa
+              WHERE sa.id = st."albumId"
+              AND sa.name ILIKE ${`%${searchTerm}%`}
+            )`,
+            "=",
+            sql`true`,
+          ),
+        ]),
+      );
+    } else {
+      // Handle other OR conditions recursively
+      for (const condition of orConditions) {
+        query = this.applyWhereClauseToKyselyQuery(query, condition);
+      }
+    }
+
+    return query;
+  }
+
+  private applyAndConditions(
+    query: ReturnType<
+      ReturnType<typeof this.kyselyService.database.selectFrom>["innerJoin"]
+    >,
+    andConditions: Prisma.UserTrackWhereInput[],
+  ) {
+    // Apply each AND condition sequentially
+    for (const condition of andConditions) {
+      query = this.applyWhereClauseToKyselyQuery(query, condition);
+    }
+    return query;
+  }
+
+  private applyDateFilter(
+    query: ReturnType<
+      ReturnType<typeof this.kyselyService.database.selectFrom>["innerJoin"]
+    >,
+    field: string,
+    filter: unknown,
+  ) {
+    const dateFilter = filter as {
+      equals?: Date;
+      gt?: Date;
+      gte?: Date;
+      lt?: Date;
+      lte?: Date;
+    };
+
+    if (dateFilter.gte) {
+      query = query.where(field as never, ">=", dateFilter.gte);
+    }
+    if (dateFilter.lte) {
+      query = query.where(field as never, "<=", dateFilter.lte);
+    }
+    if (dateFilter.gt) {
+      query = query.where(field as never, ">", dateFilter.gt);
+    }
+    if (dateFilter.lt) {
+      query = query.where(field as never, "<", dateFilter.lt);
+    }
+    if (dateFilter.equals) {
+      query = query.where(field as never, "=", dateFilter.equals);
+    }
+
+    return query;
+  }
+
+  private applyNumberFilter(
+    query: ReturnType<
+      ReturnType<typeof this.kyselyService.database.selectFrom>["innerJoin"]
+    >,
+    field: string,
+    filter: unknown,
+  ) {
+    const numberFilter = filter as {
+      equals?: number;
+      gt?: number;
+      gte?: number;
+      lt?: number;
+      lte?: number;
+    };
+
+    if (numberFilter.gte) {
+      query = query.where(field as never, ">=", numberFilter.gte);
+    }
+    if (numberFilter.lte) {
+      query = query.where(field as never, "<=", numberFilter.lte);
+    }
+    if (numberFilter.gt) {
+      query = query.where(field as never, ">", numberFilter.gt);
+    }
+    if (numberFilter.lt) {
+      query = query.where(field as never, "<", numberFilter.lt);
+    }
+    if (numberFilter.equals) {
+      query = query.where(field as never, "=", numberFilter.equals);
+    }
+
+    return query;
   }
 
   async getAlbumTracks(
