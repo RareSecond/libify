@@ -113,38 +113,49 @@ export function MediaPlayer() {
   };
 
   // Determine what to display:
-  // Check if the web player's device is actually the active one
-  const isWebPlayerActive =
-    deviceId &&
-    currentPlayback?.device?.id === deviceId &&
-    currentPlayback?.device?.isActive;
+  // Priority 1: Web player SDK events (instant, always prefer this)
+  const hasWebPlayerTrack = isReady && deviceId && currentTrack;
 
-  // Use web player data only if this device is active, otherwise use cross-device data
-  const hasWebPlayerTrack = isReady && currentTrack && isWebPlayerActive;
+  // Priority 2: Cross-device playback from polling (for phone/desktop)
   const hasCrossDevicePlayback =
     currentPlayback?.track && currentPlayback?.device;
+
+  // Check if the polling data matches our web player device
+  const isPollingOurDevice = currentPlayback?.device?.id === deviceId;
 
   // If neither web player nor cross-device playback, don't show anything
   if (!hasWebPlayerTrack && !hasCrossDevicePlayback) {
     return null;
   }
 
-  // Use web player data if this device is active, otherwise use cross-device data
+  // Use web player SDK data if available (priority), otherwise use cross-device polling data
+  // Don't use cross-device data if it's actually our web player device (avoid conflicts)
+  const shouldUseCrossDeviceData =
+    hasCrossDevicePlayback && !hasWebPlayerTrack && !isPollingOurDevice;
+
   const displayTrack = hasWebPlayerTrack ? currentTrack : null;
   const displayIsPlaying = hasWebPlayerTrack
     ? isPlaying
-    : (currentPlayback?.isPlaying ?? false);
+    : shouldUseCrossDeviceData
+      ? (currentPlayback?.isPlaying ?? false)
+      : false;
   const displayPosition = hasWebPlayerTrack
     ? position
-    : (currentPlayback?.progressMs ?? 0);
+    : shouldUseCrossDeviceData
+      ? (currentPlayback?.progressMs ?? 0)
+      : 0;
   const displayDuration = hasWebPlayerTrack
     ? duration
-    : (currentPlayback?.track?.durationMs ?? 0);
+    : shouldUseCrossDeviceData
+      ? (currentPlayback?.track?.durationMs ?? 0)
+      : 0;
   const displayDeviceName = hasWebPlayerTrack
     ? import.meta.env.DEV
       ? "Spotlib Web Player (Dev)"
       : "Spotlib Web Player"
-    : (currentPlayback?.device?.name ?? "Unknown Device");
+    : shouldUseCrossDeviceData
+      ? (currentPlayback?.device?.name ?? "Unknown Device")
+      : "Unknown Device";
 
   const handlePlayPause = async () => {
     if (isPlaying) {
@@ -171,16 +182,26 @@ export function MediaPlayer() {
     displayDuration > 0 ? (currentPosition / displayDuration) * 100 : 0;
 
   // Track data to display (either from web player or cross-device)
-  const trackToDisplay = displayTrack || {
-    album: {
-      images:
-        currentPlayback?.track?.album.images.map((url) => ({ url })) ?? [],
-      name: currentPlayback?.track?.album.name ?? "Unknown Album",
-    },
-    artists:
-      currentPlayback?.track?.artists.map((a) => ({ name: a.name })) ?? [],
-    name: currentPlayback?.track?.name ?? "Unknown Track",
-  };
+  const trackToDisplay =
+    displayTrack ||
+    (shouldUseCrossDeviceData
+      ? {
+          album: {
+            images:
+              currentPlayback?.track?.album.images.map((url) => ({ url })) ??
+              [],
+            name: currentPlayback?.track?.album.name ?? "Unknown Album",
+          },
+          artists:
+            currentPlayback?.track?.artists.map((a) => ({ name: a.name })) ??
+            [],
+          name: currentPlayback?.track?.name ?? "Unknown Track",
+        }
+      : {
+          album: { images: [], name: "Unknown Album" },
+          artists: [],
+          name: "Unknown Track",
+        });
 
   const handleTransferPlayback = () => {
     if (!deviceId) {

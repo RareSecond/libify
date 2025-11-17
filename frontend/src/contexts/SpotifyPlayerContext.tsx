@@ -128,7 +128,16 @@ export function SpotifyPlayerProvider({
         if (!isMountedRef.current) return; // Guard against unmounted updates
 
         const state = data as null | SpotifyPlayerState;
-        if (!state) return;
+        if (!state) {
+          // Playback stopped or transferred to another device
+          // Clear all playback state so polling can take over for cross-device playback
+          setCurrentTrack(null);
+          setIsPlaying(false);
+          setPosition(0);
+          setDuration(0);
+          previousStateRef.current = null;
+          return;
+        }
 
         const newTrack = state.track_window.current_track;
         const newIsPlaying = !state.paused;
@@ -169,7 +178,14 @@ export function SpotifyPlayerProvider({
 
       const notReadyHandler = () => {
         if (!isMountedRef.current) return;
+
+        // When player becomes not ready (e.g., playback transferred to another device),
+        // clear all playback state so we can fall back to polling for cross-device playback
         setIsReady(false);
+        setCurrentTrack(null);
+        setIsPlaying(false);
+        setPosition(0);
+        setDuration(0);
       };
 
       // Add all listeners using the tracked helper
@@ -400,7 +416,6 @@ export function SpotifyPlayerProvider({
     }));
 
     setCurrentTrackList(data.trackUris);
-    // Use clickedIndex from context for proper next/prev navigation alignment
     setCurrentTrackIndex(context?.clickedIndex ?? 0);
     shuffleManager.setOriginalTrackList(data.trackUris);
     setCurrentTracksWithIds(backendNormalizedTracks);
