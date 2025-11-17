@@ -125,23 +125,23 @@ export function SpotifyPlayerProvider({
       };
 
       const playerStateChangedHandler = async (data: unknown) => {
-        console.log("[PLAYER_STATE_CHANGED] Event fired at:", new Date().toISOString());
         if (!isMountedRef.current) return; // Guard against unmounted updates
 
         const state = data as null | SpotifyPlayerState;
         if (!state) {
-          console.log("[PLAYER_STATE_CHANGED] State is null/undefined");
+          // Playback stopped or transferred to another device
+          // Clear all playback state so polling can take over for cross-device playback
+          setCurrentTrack(null);
+          setIsPlaying(false);
+          setPosition(0);
+          setDuration(0);
+          previousStateRef.current = null;
           return;
         }
 
         const newTrack = state.track_window.current_track;
         const newIsPlaying = !state.paused;
         const previousState = previousStateRef.current;
-
-        console.log("[PLAYER_STATE_CHANGED] Track:", newTrack?.name);
-        console.log("[PLAYER_STATE_CHANGED] Artist:", newTrack?.artists?.[0]?.name);
-        console.log("[PLAYER_STATE_CHANGED] Is Playing:", newIsPlaying);
-        console.log("[PLAYER_STATE_CHANGED] Position:", state.position);
 
         if (
           previousState &&
@@ -156,12 +156,10 @@ export function SpotifyPlayerProvider({
 
         if (!isMountedRef.current) return; // Double-check before state updates
 
-        console.log("[PLAYER_STATE_CHANGED] Setting state - currentTrack, isPlaying, position, duration");
         setCurrentTrack(newTrack);
         setIsPlaying(newIsPlaying);
         setPosition(state.position);
         setDuration(newTrack.duration_ms);
-        console.log("[PLAYER_STATE_CHANGED] State updated successfully");
       };
 
       const readyHandler = (data: unknown) => {
@@ -180,7 +178,14 @@ export function SpotifyPlayerProvider({
 
       const notReadyHandler = () => {
         if (!isMountedRef.current) return;
+
+        // When player becomes not ready (e.g., playback transferred to another device),
+        // clear all playback state so we can fall back to polling for cross-device playback
         setIsReady(false);
+        setCurrentTrack(null);
+        setIsPlaying(false);
+        setPosition(0);
+        setDuration(0);
       };
 
       // Add all listeners using the tracked helper
@@ -367,10 +372,6 @@ export function SpotifyPlayerProvider({
     tracks: string[] | TrackWithId[],
     context?: PlayContext,
   ) => {
-    console.log("[PLAY_TRACK_LIST] Called at:", new Date().toISOString());
-    console.log("[PLAY_TRACK_LIST] Player ready:", !!player);
-    console.log("[PLAY_TRACK_LIST] Device ID:", deviceId);
-
     if (!player || !deviceId) {
       throw new Error(
         "Spotify player not ready. Please make sure Spotify is open on one of your devices.",
@@ -379,9 +380,6 @@ export function SpotifyPlayerProvider({
     if (tracks.length === 0) {
       throw new Error("No tracks to play");
     }
-
-    console.log("[PLAY_TRACK_LIST] Calling backend playback endpoint...");
-    const startTime = Date.now();
 
     // Use backend playback endpoint via generated hook
     const data = await playbackPlay({
@@ -406,10 +404,6 @@ export function SpotifyPlayerProvider({
       },
     });
 
-    const backendDuration = Date.now() - startTime;
-    console.log("[PLAY_TRACK_LIST] Backend responded in:", backendDuration, "ms");
-    console.log("[PLAY_TRACK_LIST] Track URIs received:", data.trackUris?.length);
-
     // Require backend to return track URIs - fail fast if missing
     if (!data.trackUris || data.trackUris.length === 0) {
       throw new Error(
@@ -427,8 +421,6 @@ export function SpotifyPlayerProvider({
     setCurrentTracksWithIds(backendNormalizedTracks);
     shuffleManager.setIsShuffled(context?.shuffle || false);
     setCurrentContext(context || null);
-
-    console.log("[PLAY_TRACK_LIST] Waiting for player_state_changed event...");
   };
   const pause = async () => {
     if (player) await player.pause();

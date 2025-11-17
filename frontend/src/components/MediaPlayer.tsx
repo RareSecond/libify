@@ -124,21 +124,10 @@ export function MediaPlayer() {
   const isPollingOurDevice =
     currentPlayback?.device?.id === deviceId;
 
-  console.log("[MEDIA_PLAYER] Render check:");
-  console.log("[MEDIA_PLAYER] - isReady:", isReady);
-  console.log("[MEDIA_PLAYER] - deviceId:", deviceId);
-  console.log("[MEDIA_PLAYER] - currentTrack:", currentTrack?.name);
-  console.log("[MEDIA_PLAYER] - hasWebPlayerTrack:", hasWebPlayerTrack);
-  console.log("[MEDIA_PLAYER] - hasCrossDevicePlayback:", hasCrossDevicePlayback);
-  console.log("[MEDIA_PLAYER] - isPollingOurDevice:", isPollingOurDevice);
-
   // If neither web player nor cross-device playback, don't show anything
   if (!hasWebPlayerTrack && !hasCrossDevicePlayback) {
-    console.log("[MEDIA_PLAYER] NOT RENDERING - no track data available");
     return null;
   }
-
-  console.log("[MEDIA_PLAYER] RENDERING - showing Now Playing bar");
 
   // Use web player SDK data if available (priority), otherwise use cross-device polling data
   // Don't use cross-device data if it's actually our web player device (avoid conflicts)
