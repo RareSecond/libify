@@ -16,7 +16,7 @@ export function ActivityStatsCard({
 }: ActivityStatsCardProps) {
   return (
     <Card
-      className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5 h-full"
       padding="lg"
       radius="md"
       shadow="md"

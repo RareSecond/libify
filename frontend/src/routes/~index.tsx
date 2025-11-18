@@ -71,7 +71,7 @@ function HomePage() {
         ) : (
           <>
             {/* Top Stats Row */}
-            <Grid>
+            <Grid className="items-stretch">
               <Grid.Col span={{ base: 12, lg: 4 }}>
                 <LibrarySummaryCard
                   totalAlbums={dashboardStats?.totalAlbums || 0}
