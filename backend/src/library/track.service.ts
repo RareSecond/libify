@@ -407,6 +407,9 @@ export class TrackService {
 
     // Handle AND conditions (Smart Playlist rules)
     if (where.AND && Array.isArray(where.AND) && where.AND.length > 0) {
+      this.logger.debug(
+        `Processing ${where.AND.length} AND conditions for shuffle: ${JSON.stringify(where.AND)}`,
+      );
       // Process each AND condition and apply all filters
       for (const condition of where.AND) {
         const andCond = condition as Prisma.UserTrackWhereInput;
@@ -452,188 +455,228 @@ export class TrackService {
           };
 
           // Handle title filter
-          if (trackCond.title) {
-            if (trackCond.title.contains) {
-              query = query.where(
-                "st.title",
-                "ilike",
-                `%${trackCond.title.contains}%`,
-              );
-            } else if (trackCond.title.startsWith) {
-              query = query.where(
-                "st.title",
-                "ilike",
-                `${trackCond.title.startsWith}%`,
-              );
-            } else if (trackCond.title.endsWith) {
-              query = query.where(
-                "st.title",
-                "ilike",
-                `%${trackCond.title.endsWith}`,
-              );
-            } else if (trackCond.title.not) {
-              query = query.where("st.title", "!=", trackCond.title.not);
-            } else if (trackCond.title.NOT?.contains) {
-              query = query.where(
-                "st.title",
-                "not ilike",
-                `%${trackCond.title.NOT.contains}%`,
-              );
+          if (trackCond.title !== undefined) {
+            if (typeof trackCond.title === "string") {
+              // Direct value (from EQUALS operator)
+              query = query.where("st.title", "=", trackCond.title);
+            } else if (typeof trackCond.title === "object") {
+              if (trackCond.title.contains) {
+                query = query.where(
+                  "st.title",
+                  "ilike",
+                  `%${trackCond.title.contains}%`,
+                );
+              } else if (trackCond.title.startsWith) {
+                query = query.where(
+                  "st.title",
+                  "ilike",
+                  `${trackCond.title.startsWith}%`,
+                );
+              } else if (trackCond.title.endsWith) {
+                query = query.where(
+                  "st.title",
+                  "ilike",
+                  `%${trackCond.title.endsWith}`,
+                );
+              } else if (trackCond.title.not) {
+                query = query.where("st.title", "!=", trackCond.title.not);
+              } else if (trackCond.title.NOT?.contains) {
+                query = query.where(
+                  "st.title",
+                  "not ilike",
+                  `%${trackCond.title.NOT.contains}%`,
+                );
+              }
             }
           }
 
           // Handle artist filter
-          if (trackCond.artist?.name) {
+          if (trackCond.artist?.name !== undefined) {
             const artistName = trackCond.artist.name;
-            if (artistName.contains) {
+            if (typeof artistName === "string") {
+              // Direct value (from EQUALS operator)
               query = query.where(({ eb }) =>
                 eb(
                   sql`EXISTS (
                     SELECT 1 FROM "SpotifyArtist" sar
                     WHERE sar.id = st."artistId"
-                    AND sar.name ILIKE ${`%${artistName.contains}%`}
+                    AND sar.name = ${artistName}
                   )`,
                   "=",
                   sql`true`,
                 ),
               );
-            } else if (artistName.startsWith) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyArtist" sar
-                    WHERE sar.id = st."artistId"
-                    AND sar.name ILIKE ${`${artistName.startsWith}%`}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
-            } else if (artistName.endsWith) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyArtist" sar
-                    WHERE sar.id = st."artistId"
-                    AND sar.name ILIKE ${`%${artistName.endsWith}`}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
-            } else if (artistName.not) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyArtist" sar
-                    WHERE sar.id = st."artistId"
-                    AND sar.name != ${artistName.not}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
-            } else if (artistName.NOT?.contains) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyArtist" sar
-                    WHERE sar.id = st."artistId"
-                    AND sar.name NOT ILIKE ${`%${artistName.NOT.contains}%`}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
+            } else if (typeof artistName === "object") {
+              if (artistName.contains) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyArtist" sar
+                      WHERE sar.id = st."artistId"
+                      AND sar.name ILIKE ${`%${artistName.contains}%`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (artistName.startsWith) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyArtist" sar
+                      WHERE sar.id = st."artistId"
+                      AND sar.name ILIKE ${`${artistName.startsWith}%`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (artistName.endsWith) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyArtist" sar
+                      WHERE sar.id = st."artistId"
+                      AND sar.name ILIKE ${`%${artistName.endsWith}`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (artistName.not) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyArtist" sar
+                      WHERE sar.id = st."artistId"
+                      AND sar.name != ${artistName.not}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (artistName.NOT?.contains) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyArtist" sar
+                      WHERE sar.id = st."artistId"
+                      AND sar.name NOT ILIKE ${`%${artistName.NOT.contains}%`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              }
             }
           }
 
           // Handle album filter
-          if (trackCond.album?.name) {
+          if (trackCond.album?.name !== undefined) {
             const albumName = trackCond.album.name;
-            if (albumName.contains) {
+            if (typeof albumName === "string") {
+              // Direct value (from EQUALS operator)
               query = query.where(({ eb }) =>
                 eb(
                   sql`EXISTS (
                     SELECT 1 FROM "SpotifyAlbum" sa
                     WHERE sa.id = st."albumId"
-                    AND sa.name ILIKE ${`%${albumName.contains}%`}
+                    AND sa.name = ${albumName}
                   )`,
                   "=",
                   sql`true`,
                 ),
               );
-            } else if (albumName.startsWith) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyAlbum" sa
-                    WHERE sa.id = st."albumId"
-                    AND sa.name ILIKE ${`${albumName.startsWith}%`}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
-            } else if (albumName.endsWith) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyAlbum" sa
-                    WHERE sa.id = st."albumId"
-                    AND sa.name ILIKE ${`%${albumName.endsWith}`}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
-            } else if (albumName.not) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyAlbum" sa
-                    WHERE sa.id = st."albumId"
-                    AND sa.name != ${albumName.not}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
-            } else if (albumName.NOT?.contains) {
-              query = query.where(({ eb }) =>
-                eb(
-                  sql`EXISTS (
-                    SELECT 1 FROM "SpotifyAlbum" sa
-                    WHERE sa.id = st."albumId"
-                    AND sa.name NOT ILIKE ${`%${albumName.NOT.contains}%`}
-                  )`,
-                  "=",
-                  sql`true`,
-                ),
-              );
+            } else if (typeof albumName === "object") {
+              if (albumName.contains) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyAlbum" sa
+                      WHERE sa.id = st."albumId"
+                      AND sa.name ILIKE ${`%${albumName.contains}%`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (albumName.startsWith) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyAlbum" sa
+                      WHERE sa.id = st."albumId"
+                      AND sa.name ILIKE ${`${albumName.startsWith}%`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (albumName.endsWith) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyAlbum" sa
+                      WHERE sa.id = st."albumId"
+                      AND sa.name ILIKE ${`%${albumName.endsWith}`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (albumName.not) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyAlbum" sa
+                      WHERE sa.id = st."albumId"
+                      AND sa.name != ${albumName.not}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              } else if (albumName.NOT?.contains) {
+                query = query.where(({ eb }) =>
+                  eb(
+                    sql`EXISTS (
+                      SELECT 1 FROM "SpotifyAlbum" sa
+                      WHERE sa.id = st."albumId"
+                      AND sa.name NOT ILIKE ${`%${albumName.NOT.contains}%`}
+                    )`,
+                    "=",
+                    sql`true`,
+                  ),
+                );
+              }
             }
           }
 
           // Handle duration filters
-          if (trackCond.duration) {
-            if (trackCond.duration.gte) {
-              query = query.where("st.duration", ">=", trackCond.duration.gte);
-            }
-            if (trackCond.duration.lte) {
-              query = query.where("st.duration", "<=", trackCond.duration.lte);
-            }
-            if (trackCond.duration.gt) {
-              query = query.where("st.duration", ">", trackCond.duration.gt);
-            }
-            if (trackCond.duration.lt) {
-              query = query.where("st.duration", "<", trackCond.duration.lt);
-            }
-            if (trackCond.duration.equals) {
-              query = query.where(
-                "st.duration",
-                "=",
-                trackCond.duration.equals,
-              );
+          if (trackCond.duration !== undefined) {
+            if (typeof trackCond.duration === "number") {
+              // Direct value (from EQUALS operator)
+              query = query.where("st.duration", "=", trackCond.duration);
+            } else if (typeof trackCond.duration === "object") {
+              if (trackCond.duration.gte !== undefined) {
+                query = query.where("st.duration", ">=", trackCond.duration.gte);
+              }
+              if (trackCond.duration.lte !== undefined) {
+                query = query.where("st.duration", "<=", trackCond.duration.lte);
+              }
+              if (trackCond.duration.gt !== undefined) {
+                query = query.where("st.duration", ">", trackCond.duration.gt);
+              }
+              if (trackCond.duration.lt !== undefined) {
+                query = query.where("st.duration", "<", trackCond.duration.lt);
+              }
+              if (trackCond.duration.equals !== undefined) {
+                query = query.where(
+                  "st.duration",
+                  "=",
+                  trackCond.duration.equals,
+                );
+              }
             }
           }
         }
@@ -691,28 +734,33 @@ export class TrackService {
         }
 
         // Handle totalPlayCount filter
-        if (andCond.totalPlayCount) {
-          const numberFilter = andCond.totalPlayCount as {
-            equals?: number;
-            gt?: number;
-            gte?: number;
-            lt?: number;
-            lte?: number;
-          };
-          if (numberFilter.gte) {
-            query = query.where("ut.totalPlayCount", ">=", numberFilter.gte);
-          }
-          if (numberFilter.lte) {
-            query = query.where("ut.totalPlayCount", "<=", numberFilter.lte);
-          }
-          if (numberFilter.gt) {
-            query = query.where("ut.totalPlayCount", ">", numberFilter.gt);
-          }
-          if (numberFilter.lt) {
-            query = query.where("ut.totalPlayCount", "<", numberFilter.lt);
-          }
-          if (numberFilter.equals) {
-            query = query.where("ut.totalPlayCount", "=", numberFilter.equals);
+        if (andCond.totalPlayCount !== undefined) {
+          if (typeof andCond.totalPlayCount === "number") {
+            // Direct value (from EQUALS operator)
+            query = query.where("ut.totalPlayCount", "=", andCond.totalPlayCount);
+          } else if (typeof andCond.totalPlayCount === "object") {
+            const numberFilter = andCond.totalPlayCount as {
+              equals?: number;
+              gt?: number;
+              gte?: number;
+              lt?: number;
+              lte?: number;
+            };
+            if (numberFilter.gte !== undefined) {
+              query = query.where("ut.totalPlayCount", ">=", numberFilter.gte);
+            }
+            if (numberFilter.lte !== undefined) {
+              query = query.where("ut.totalPlayCount", "<=", numberFilter.lte);
+            }
+            if (numberFilter.gt !== undefined) {
+              query = query.where("ut.totalPlayCount", ">", numberFilter.gt);
+            }
+            if (numberFilter.lt !== undefined) {
+              query = query.where("ut.totalPlayCount", "<", numberFilter.lt);
+            }
+            if (numberFilter.equals !== undefined) {
+              query = query.where("ut.totalPlayCount", "=", numberFilter.equals);
+            }
           }
         }
 
@@ -720,6 +768,9 @@ export class TrackService {
         if (andCond.rating !== undefined) {
           if (andCond.rating === null) {
             query = query.where("ut.rating", "is", null);
+          } else if (typeof andCond.rating === "number") {
+            // Direct value (from EQUALS operator)
+            query = query.where("ut.rating", "=", andCond.rating);
           } else if (typeof andCond.rating === "object") {
             const ratingFilter = andCond.rating as {
               equals?: number;
@@ -729,16 +780,16 @@ export class TrackService {
               lte?: number;
               not?: number;
             };
-            if (ratingFilter.gte) {
+            if (ratingFilter.gte !== undefined) {
               query = query.where("ut.rating", ">=", ratingFilter.gte);
             }
-            if (ratingFilter.lte) {
+            if (ratingFilter.lte !== undefined) {
               query = query.where("ut.rating", "<=", ratingFilter.lte);
             }
-            if (ratingFilter.gt) {
+            if (ratingFilter.gt !== undefined) {
               query = query.where("ut.rating", ">", ratingFilter.gt);
             }
-            if (ratingFilter.lt) {
+            if (ratingFilter.lt !== undefined) {
               query = query.where("ut.rating", "<", ratingFilter.lt);
             }
             if (ratingFilter.equals !== undefined) {
