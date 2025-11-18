@@ -18,7 +18,6 @@ import {
   PaginatedTracksDto,
   TrackDto,
 } from "./dto/track.dto";
-import { SpotifyService } from "./spotify.service";
 
 // Interfaces removed - using direct database queries with UserAlbum and UserArtist models
 
@@ -29,7 +28,6 @@ export class TrackService {
   constructor(
     private databaseService: DatabaseService,
     private kyselyService: KyselyService,
-    private spotifyService: SpotifyService,
     private aggregationService: AggregationService,
   ) {}
 
@@ -140,7 +138,7 @@ export class TrackService {
       const tagCondition = where.tags.some as { tagId?: { in?: string[] } };
       if (tagCondition.tagId?.in) {
         query = query
-          .innerJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+          .innerJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
           .where("tt.tagId", "in", tagCondition.tagId.in);
       }
     }
@@ -421,7 +419,7 @@ export class TrackService {
       const tagCondition = where.tags.some as { tagId?: { in?: string[] } };
       if (tagCondition.tagId?.in) {
         query = query
-          .innerJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+          .innerJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
           .where("tt.tagId", "in", tagCondition.tagId.in);
       }
     }
@@ -615,7 +613,7 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
       .leftJoin("Tag as t", "tt.tagId", "t.id")
       .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .select([
@@ -724,7 +722,7 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
       .leftJoin("Tag as t", "tt.tagId", "t.id")
       .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .select([
@@ -817,6 +815,196 @@ export class TrackService {
     });
 
     return { tracks: trackDtos };
+  }
+
+  async getDashboardStats(userId: string) {
+    const db = this.kyselyService.database;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Get basic counts
+    const [totalTracksCount, totalAlbumsCount, totalArtistsCount] =
+      await Promise.all([
+        this.databaseService.userTrack.count({ where: { userId } }),
+        this.databaseService.userAlbum.count({ where: { userId } }),
+        this.databaseService.userArtist.count({ where: { userId } }),
+      ]);
+
+    // Get rating stats
+    const ratingStats = await db
+      .selectFrom("UserTrack")
+      .select([
+        sql<number>`COUNT(*)`.as("totalTracks"),
+        sql<number>`COUNT(rating)`.as("ratedTracks"),
+        sql<number>`AVG(rating)`.as("averageRating"),
+      ])
+      .where("userId", "=", userId)
+      .executeTakeFirst();
+
+    // Get activity stats for the past week
+    const activityStats = await db
+      .selectFrom("UserTrack")
+      .select([
+        sql<number>`COUNT(*) FILTER (WHERE "addedAt" >= ${sevenDaysAgo})`.as(
+          "tracksAddedThisWeek",
+        ),
+        sql<number>`COUNT(*) FILTER (WHERE "lastPlayedAt" >= ${sevenDaysAgo})`.as(
+          "tracksPlayedThisWeek",
+        ),
+        sql<number>`COUNT(*) FILTER (WHERE "ratedAt" >= ${sevenDaysAgo})`.as(
+          "tracksRatedThisWeek",
+        ),
+      ])
+      .where("userId", "=", userId)
+      .executeTakeFirst();
+
+    // Get actual play count from PlayHistory for the past week
+    const playCountResult = await db
+      .selectFrom("PlayHistory as ph")
+      .innerJoin("UserTrack as ut", "ph.userTrackId", "ut.id")
+      .select(sql<number>`COUNT(*)`.as("totalPlaysThisWeek"))
+      .where("ut.userId", "=", userId)
+      .where("ph.playedAt", ">=", sevenDaysAgo)
+      .executeTakeFirst();
+
+    // Get top 3 most played tracks this week
+    const topTracksThisWeek = await db
+      .selectFrom("PlayHistory as ph")
+      .innerJoin("UserTrack as ut", "ph.userTrackId", "ut.id")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyArtist as sa", "st.artistId", "sa.id")
+      .innerJoin("SpotifyAlbum as album", "st.albumId", "album.id")
+      .select([
+        "st.title as name",
+        "sa.name as info",
+        "album.imageUrl",
+        "st.spotifyId",
+        "ut.id",
+        sql<number>`COUNT(*)`.as("count"),
+      ])
+      .where("ut.userId", "=", userId)
+      .where("ph.playedAt", ">=", sevenDaysAgo)
+      .groupBy([
+        "st.id",
+        "st.title",
+        "sa.name",
+        "album.imageUrl",
+        "st.spotifyId",
+        "ut.id",
+      ])
+      .orderBy("count", "desc")
+      .limit(3)
+      .execute();
+
+    // Get top 3 most played artists this week
+    const topArtistsThisWeek = await db
+      .selectFrom("PlayHistory as ph")
+      .innerJoin("UserTrack as ut", "ph.userTrackId", "ut.id")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyArtist as sa", "st.artistId", "sa.id")
+      .select([
+        "sa.name",
+        "sa.imageUrl",
+        "sa.spotifyId",
+        "sa.id",
+        sql<number>`COUNT(*)`.as("count"),
+      ])
+      .where("ut.userId", "=", userId)
+      .where("ph.playedAt", ">=", sevenDaysAgo)
+      .groupBy(["sa.id", "sa.name", "sa.imageUrl", "sa.spotifyId"])
+      .orderBy("count", "desc")
+      .limit(3)
+      .execute();
+
+    // Get tag statistics using Prisma to avoid Kysely join issues
+    const totalTags = await this.databaseService.tag.count({
+      where: { userId },
+    });
+
+    const taggedTracksRaw = await this.databaseService.trackTag.groupBy({
+      by: ["userTrackId"],
+      where: { userTrack: { userId } },
+    });
+
+    const taggedTracks = taggedTracksRaw.length;
+
+    const tagsWithCounts = await this.databaseService.tag.findMany({
+      include: { _count: { select: { tracks: true } } },
+      orderBy: { tracks: { _count: "desc" } },
+      take: 5,
+      where: { userId },
+    });
+
+    const topTags = tagsWithCounts.map((tag) => ({
+      color: tag.color || undefined,
+      count: tag._count.tracks,
+      id: tag.id,
+      name: tag.name,
+    }));
+
+    // Get last sync date from user
+    const user = await this.databaseService.user.findUnique({
+      select: { lastPlaySyncedAt: true },
+      where: { id: userId },
+    });
+
+    const totalTracks = ratingStats?.totalTracks || 0;
+    const ratedTracks = ratingStats?.ratedTracks || 0;
+    const unratedTracks = totalTracks - ratedTracks;
+    const percentageRated =
+      totalTracks > 0 ? Math.round((ratedTracks / totalTracks) * 100) : 0;
+
+    const percentageTagged =
+      totalTracksCount > 0
+        ? Math.round((taggedTracks / totalTracksCount) * 100)
+        : 0;
+
+    return {
+      activityStats: {
+        totalPlaysThisWeek: Number(playCountResult?.totalPlaysThisWeek || 0),
+        tracksAddedThisWeek: Number(activityStats?.tracksAddedThisWeek || 0),
+        tracksPlayedThisWeek: Number(activityStats?.tracksPlayedThisWeek || 0),
+        tracksRatedThisWeek: Number(activityStats?.tracksRatedThisWeek || 0),
+      },
+      isSynced: totalTracksCount > 0,
+      lastSyncedAt: user?.lastPlaySyncedAt,
+      ratingStats: {
+        averageRating: Number(ratingStats?.averageRating || 0),
+        percentageRated,
+        ratedTracks,
+        totalTracks,
+        unratedTracks,
+      },
+      tagStats: {
+        percentageTagged,
+        taggedTracks,
+        topTags: topTags.map((tag) => ({
+          count: Number(tag.count),
+          id: tag.id,
+          info: tag.color || undefined,
+          name: tag.name,
+        })),
+        totalTags,
+      },
+      topArtistsThisWeek: topArtistsThisWeek.map((artist) => ({
+        count: Number(artist.count),
+        id: artist.id,
+        imageUrl: artist.imageUrl || undefined,
+        name: artist.name,
+        spotifyId: artist.spotifyId,
+      })),
+      topTracksThisWeek: topTracksThisWeek.map((track) => ({
+        count: Number(track.count),
+        id: track.id,
+        imageUrl: track.imageUrl || undefined,
+        info: track.info || undefined,
+        name: track.name,
+        spotifyId: track.spotifyId,
+      })),
+      totalAlbums: totalAlbumsCount,
+      totalArtists: totalArtistsCount,
+      totalTracks: totalTracksCount,
+    };
   }
 
   async getPlayHistory(
@@ -1641,7 +1829,6 @@ export class TrackService {
           tagIds,
           unratedOnly,
         },
-        where,
         skip,
       );
     }
@@ -1735,7 +1922,6 @@ export class TrackService {
   private async getUserTracksWithKysely(
     userId: string,
     query: GetTracksQueryDto,
-    where: Prisma.UserTrackWhereInput,
     skip: number,
   ): Promise<PaginatedTracksDto> {
     const { page = 1, pageSize = 20, sortBy, sortOrder = "desc" } = query;
@@ -1748,7 +1934,7 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "ut.id", "tt.userTrackId")
+      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
       .leftJoin("Tag as t", "tt.tagId", "t.id")
       .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .where("ut.userId", "=", userId);

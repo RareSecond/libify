@@ -685,6 +685,33 @@
         ]
       }
     },
+    "/library/dashboard/stats": {
+      "get": {
+        "operationId": "LibraryController_getDashboardStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Dashboard statistics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get dashboard statistics",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/genres": {
       "get": {
         "operationId": "LibraryController_getGenres",
@@ -2531,6 +2558,203 @@
         },
         "required": [
           "tracks"
+        ]
+      },
+      "ActivityStatsDto": {
+        "type": "object",
+        "properties": {
+          "totalPlaysThisWeek": {
+            "type": "number",
+            "description": "Total play count in last 7 days"
+          },
+          "tracksAddedThisWeek": {
+            "type": "number",
+            "description": "Number of tracks added in last 7 days"
+          },
+          "tracksPlayedThisWeek": {
+            "type": "number",
+            "description": "Number of tracks played in last 7 days"
+          },
+          "tracksRatedThisWeek": {
+            "type": "number",
+            "description": "Number of tracks rated in last 7 days"
+          }
+        },
+        "required": [
+          "totalPlaysThisWeek",
+          "tracksAddedThisWeek",
+          "tracksPlayedThisWeek",
+          "tracksRatedThisWeek"
+        ]
+      },
+      "RatingStatsDto": {
+        "type": "object",
+        "properties": {
+          "averageRating": {
+            "type": "number",
+            "description": "Average rating across all rated tracks"
+          },
+          "percentageRated": {
+            "type": "number",
+            "description": "Percentage of library rated (0-100)"
+          },
+          "ratedTracks": {
+            "type": "number",
+            "description": "Number of rated tracks"
+          },
+          "totalTracks": {
+            "type": "number",
+            "description": "Total number of tracks in library"
+          },
+          "unratedTracks": {
+            "type": "number",
+            "description": "Number of unrated tracks"
+          }
+        },
+        "required": [
+          "averageRating",
+          "percentageRated",
+          "ratedTracks",
+          "totalTracks",
+          "unratedTracks"
+        ]
+      },
+      "TopItemDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "Item count (play count or track count)"
+          },
+          "id": {
+            "type": "string",
+            "description": "Internal track/artist ID"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Image URL (album art or artist image)"
+          },
+          "info": {
+            "type": "string",
+            "description": "Additional info (artist name for tracks, genre for artists)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name (track title or artist name)"
+          },
+          "spotifyId": {
+            "type": "string",
+            "description": "Spotify ID"
+          }
+        },
+        "required": [
+          "count",
+          "name"
+        ]
+      },
+      "TagStatsDto": {
+        "type": "object",
+        "properties": {
+          "percentageTagged": {
+            "type": "number",
+            "description": "Percentage of library tagged (0-100)"
+          },
+          "taggedTracks": {
+            "type": "number",
+            "description": "Number of tracks with at least one tag"
+          },
+          "topTags": {
+            "description": "Top 5 most used tags",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "totalTags": {
+            "type": "number",
+            "description": "Total number of tags created"
+          }
+        },
+        "required": [
+          "percentageTagged",
+          "taggedTracks",
+          "topTags",
+          "totalTags"
+        ]
+      },
+      "DashboardStatsDto": {
+        "type": "object",
+        "properties": {
+          "activityStats": {
+            "description": "Activity statistics for the past week",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActivityStatsDto"
+              }
+            ]
+          },
+          "isSynced": {
+            "type": "boolean",
+            "description": "Whether library has been synced"
+          },
+          "lastSyncedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last sync date"
+          },
+          "ratingStats": {
+            "description": "Rating statistics",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RatingStatsDto"
+              }
+            ]
+          },
+          "tagStats": {
+            "description": "Tag statistics",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TagStatsDto"
+              }
+            ]
+          },
+          "topArtistsThisWeek": {
+            "description": "Top 3 most played artists this week",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topTracksThisWeek": {
+            "description": "Top 3 most played tracks this week",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "totalAlbums": {
+            "type": "number",
+            "description": "Total albums in user library"
+          },
+          "totalArtists": {
+            "type": "number",
+            "description": "Total artists in user library"
+          },
+          "totalTracks": {
+            "type": "number",
+            "description": "Total tracks in user library"
+          }
+        },
+        "required": [
+          "activityStats",
+          "isSynced",
+          "ratingStats",
+          "tagStats",
+          "topArtistsThisWeek",
+          "topTracksThisWeek",
+          "totalAlbums",
+          "totalArtists",
+          "totalTracks"
         ]
       },
       "PlayHistoryItemDto": {
