@@ -327,6 +327,7 @@ export class TrackService {
    * Used when shuffle is true to get truly random tracks
    * Converts Prisma where clause to Kysely for efficient database-level randomization
    */
+
   async fetchTracksForPlayWithRandomOrder(
     userId: string,
     where: Prisma.UserTrackWhereInput,
@@ -406,15 +407,14 @@ export class TrackService {
     }
 
     // Handle AND conditions (Smart Playlist rules)
+    // When smart playlists use AND logic, each condition must be applied to the query.
+    // Note: Prisma's buildCondition methods can return either direct values (for EQUALS)
+    // or nested objects (for other operators), so we check typeof before applying filters.
     if (where.AND && Array.isArray(where.AND) && where.AND.length > 0) {
-      this.logger.debug(
-        `Processing ${where.AND.length} AND conditions for shuffle: ${JSON.stringify(where.AND)}`,
-      );
-      // Process each AND condition and apply all filters
       for (const condition of where.AND) {
         const andCond = condition as Prisma.UserTrackWhereInput;
 
-        // Handle nested spotifyTrack conditions
+        // Handle nested spotifyTrack conditions (title, artist, album, duration)
         if (andCond.spotifyTrack) {
           const trackCond = andCond.spotifyTrack as {
             album?: {
@@ -659,10 +659,18 @@ export class TrackService {
               query = query.where("st.duration", "=", trackCond.duration);
             } else if (typeof trackCond.duration === "object") {
               if (trackCond.duration.gte !== undefined) {
-                query = query.where("st.duration", ">=", trackCond.duration.gte);
+                query = query.where(
+                  "st.duration",
+                  ">=",
+                  trackCond.duration.gte,
+                );
               }
               if (trackCond.duration.lte !== undefined) {
-                query = query.where("st.duration", "<=", trackCond.duration.lte);
+                query = query.where(
+                  "st.duration",
+                  "<=",
+                  trackCond.duration.lte,
+                );
               }
               if (trackCond.duration.gt !== undefined) {
                 query = query.where("st.duration", ">", trackCond.duration.gt);
@@ -737,7 +745,11 @@ export class TrackService {
         if (andCond.totalPlayCount !== undefined) {
           if (typeof andCond.totalPlayCount === "number") {
             // Direct value (from EQUALS operator)
-            query = query.where("ut.totalPlayCount", "=", andCond.totalPlayCount);
+            query = query.where(
+              "ut.totalPlayCount",
+              "=",
+              andCond.totalPlayCount,
+            );
           } else if (typeof andCond.totalPlayCount === "object") {
             const numberFilter = andCond.totalPlayCount as {
               equals?: number;
@@ -759,7 +771,11 @@ export class TrackService {
               query = query.where("ut.totalPlayCount", "<", numberFilter.lt);
             }
             if (numberFilter.equals !== undefined) {
-              query = query.where("ut.totalPlayCount", "=", numberFilter.equals);
+              query = query.where(
+                "ut.totalPlayCount",
+                "=",
+                numberFilter.equals,
+              );
             }
           }
         }
