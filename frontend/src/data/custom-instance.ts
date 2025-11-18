@@ -8,30 +8,41 @@ export const AXIOS_INSTANCE = Axios.create({
 /**
  * Encodes path segments in a URL to handle special characters like #, &, etc.
  * Only encodes the path segments, not query parameters or the protocol/host.
+ * Normalizes already-encoded segments to avoid double-encoding.
+ * Note: Does NOT treat # as a fragment delimiter since path parameters may contain #
  */
 const encodeUrlPathSegments = (url: string): string => {
-  // If it's a full URL with protocol, split it
-  const protocolMatch = url.match(/^(https?:\/\/[^/]+)(\/.*)?$/);
-  if (protocolMatch) {
-    const [, baseUrl, path] = protocolMatch;
-    if (!path) return url;
-    const segments = path
-      .split("/")
-      .map((segment) => encodeURIComponent(segment));
-    return baseUrl + segments.join("/");
-  }
+  // Split into protocol/host (if present), path, and query string
+  const protocolMatch = url.match(/^(https?:\/\/[^/?]+)/);
+  const prefix = protocolMatch ? protocolMatch[1] : "";
+  const urlWithoutProtocol = protocolMatch ? url.slice(prefix.length) : url;
 
-  // Otherwise, it's a relative path - encode each segment
-  const segments = url.split("/").map((segment) => {
-    // Don't encode empty segments (like the leading slash)
+  // Split path from query string (only split on ?)
+  const queryIndex = urlWithoutProtocol.indexOf("?");
+  const pathPart =
+    queryIndex === -1
+      ? urlWithoutProtocol
+      : urlWithoutProtocol.slice(0, queryIndex);
+  const querySuffix =
+    queryIndex === -1 ? "" : urlWithoutProtocol.slice(queryIndex);
+
+  // If no path, return as-is
+  if (!pathPart) return url;
+
+  // Split path into segments, decode then re-encode each to normalize
+  const segments = pathPart.split("/").map((segment) => {
+    // Preserve empty segments (like leading/trailing slashes)
     if (segment === "") return segment;
-    // Don't encode if it's already encoded
-    if (segment === decodeURIComponent(segment)) {
+    // Decode first (handles already-encoded segments), then re-encode
+    try {
+      return encodeURIComponent(decodeURIComponent(segment));
+    } catch {
+      // If decoding fails, encode as-is
       return encodeURIComponent(segment);
     }
-    return segment;
   });
-  return segments.join("/");
+
+  return prefix + segments.join("/") + querySuffix;
 };
 
 // add a second `options` argument here if you want to pass extra options to each generated query
