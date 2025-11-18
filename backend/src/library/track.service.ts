@@ -851,14 +851,20 @@ export class TrackService {
         sql<number>`COUNT(*) FILTER (WHERE "lastPlayedAt" >= ${sevenDaysAgo})`.as(
           "tracksPlayedThisWeek",
         ),
-        sql<number>`SUM("totalPlayCount") FILTER (WHERE "lastPlayedAt" >= ${sevenDaysAgo})`.as(
-          "totalPlaysThisWeek",
-        ),
         sql<number>`COUNT(*) FILTER (WHERE "ratedAt" >= ${sevenDaysAgo})`.as(
           "tracksRatedThisWeek",
         ),
       ])
       .where("userId", "=", userId)
+      .executeTakeFirst();
+
+    // Get actual play count from PlayHistory for the past week
+    const playCountResult = await db
+      .selectFrom("PlayHistory as ph")
+      .innerJoin("UserTrack as ut", "ph.userTrackId", "ut.id")
+      .select(sql<number>`COUNT(*)`.as("totalPlaysThisWeek"))
+      .where("ut.userId", "=", userId)
+      .where("ph.playedAt", ">=", sevenDaysAgo)
       .executeTakeFirst();
 
     // Get top 3 most played tracks this week
@@ -955,7 +961,7 @@ export class TrackService {
 
     return {
       activityStats: {
-        totalPlaysThisWeek: Number(activityStats?.totalPlaysThisWeek || 0),
+        totalPlaysThisWeek: Number(playCountResult?.totalPlaysThisWeek || 0),
         tracksAddedThisWeek: Number(activityStats?.tracksAddedThisWeek || 0),
         tracksPlayedThisWeek: Number(activityStats?.tracksPlayedThisWeek || 0),
         tracksRatedThisWeek: Number(activityStats?.tracksRatedThisWeek || 0),
