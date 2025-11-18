@@ -1,19 +1,46 @@
-import { Container, Grid, Group, Stack, Text } from "@mantine/core";
+import {
+  Center,
+  Container,
+  Grid,
+  Group,
+  Loader,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
-import { Disc, Library, Music, TrendingUp } from "lucide-react";
 
-import { RatingModeCard } from "@/components/dashboard/RatingModeCard";
+import { ActivityStatsCard } from "@/components/dashboard/ActivityStatsCard";
+import { LibrarySummaryCard } from "@/components/dashboard/LibrarySummaryCard";
+import { RatingProgressCard } from "@/components/dashboard/RatingProgressCard";
 import { RecentlyPlayed } from "@/components/dashboard/RecentlyPlayed";
+import { SyncPromptCard } from "@/components/dashboard/SyncPromptCard";
+import { TagOverviewCard } from "@/components/dashboard/TagOverviewCard";
+import { TopItemsCard } from "@/components/dashboard/TopItemsCard";
 import { LibrarySync } from "@/components/LibrarySync";
 import { PageTitle } from "@/components/PageTitle";
-import { StatsCard } from "@/components/stats/StatsCard";
 import { UserProfile } from "@/components/UserProfile";
-import { useLibraryControllerGetSyncLibraryStatus } from "@/data/api";
+import { useLibraryControllerGetDashboardStats } from "@/data/api";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
 function HomePage() {
-  const { data: syncStatus } = useLibraryControllerGetSyncLibraryStatus();
+  const {
+    data: dashboardStats,
+    isLoading,
+    refetch,
+  } = useLibraryControllerGetDashboardStats();
+
+  if (isLoading) {
+    return (
+      <Container className="py-8" fluid>
+        <Center className="h-[50vh]">
+          <Loader color="orange" size="lg" />
+        </Center>
+      </Container>
+    );
+  }
+
+  const isSynced = dashboardStats?.isSynced ?? false;
 
   return (
     <Container className="py-8" fluid>
@@ -22,64 +49,118 @@ function HomePage() {
           <div>
             <PageTitle title="Dashboard" />
             <Text className="text-dark-1" size="sm">
-              Welcome back! Here's what's happening with your music library
+              {isSynced
+                ? "Welcome back! Here's what's happening with your music library"
+                : "Get started by syncing your Spotify library"}
             </Text>
           </div>
         </Group>
 
-        {/* Stats Grid */}
-        <Grid>
-          <Grid.Col span={{ base: 12, lg: 3, md: 6 }}>
-            <StatsCard
-              icon={Music}
-              label="Total Tracks"
-              value={syncStatus?.totalTracks?.toLocaleString() || "0"}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, lg: 3, md: 6 }}>
-            <StatsCard
-              color="orange"
-              icon={Disc}
-              label="Total Albums"
-              value={syncStatus?.totalAlbums?.toLocaleString() || "0"}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, lg: 3, md: 6 }}>
-            <StatsCard
-              color="orange"
-              icon={Library}
-              label="Library Status"
-              value={syncStatus?.lastSync ? "Synced" : "Not Synced"}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, lg: 3, md: 6 }}>
-            <StatsCard
-              color="orange"
-              icon={TrendingUp}
-              label="Growth"
-              value="Active"
-            />
-          </Grid.Col>
-        </Grid>
+        {!isSynced ? (
+          <Grid>
+            <Grid.Col span={{ base: 12, lg: 8 }}>
+              <SyncPromptCard onSyncStarted={() => refetch()} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 4 }}>
+              <Stack gap="lg">
+                <UserProfile />
+                <LibrarySync onSyncComplete={() => refetch()} />
+              </Stack>
+            </Grid.Col>
+          </Grid>
+        ) : (
+          <>
+            {/* Top Stats Row */}
+            <Grid>
+              <Grid.Col span={{ base: 12, lg: 4 }}>
+                <LibrarySummaryCard
+                  totalAlbums={dashboardStats?.totalAlbums || 0}
+                  totalArtists={dashboardStats?.totalArtists || 0}
+                  totalTracks={dashboardStats?.totalTracks || 0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, lg: 4 }}>
+                <RatingProgressCard
+                  averageRating={dashboardStats?.ratingStats.averageRating || 0}
+                  percentageRated={
+                    dashboardStats?.ratingStats.percentageRated || 0
+                  }
+                  ratedTracks={dashboardStats?.ratingStats.ratedTracks || 0}
+                  totalTracks={dashboardStats?.ratingStats.totalTracks || 0}
+                  unratedTracks={dashboardStats?.ratingStats.unratedTracks || 0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, lg: 4 }}>
+                <ActivityStatsCard
+                  totalPlaysThisWeek={
+                    dashboardStats?.activityStats.totalPlaysThisWeek || 0
+                  }
+                  tracksAddedThisWeek={
+                    dashboardStats?.activityStats.tracksAddedThisWeek || 0
+                  }
+                  tracksPlayedThisWeek={
+                    dashboardStats?.activityStats.tracksPlayedThisWeek || 0
+                  }
+                  tracksRatedThisWeek={
+                    dashboardStats?.activityStats.tracksRatedThisWeek || 0
+                  }
+                />
+              </Grid.Col>
+            </Grid>
 
-        {/* Main Content Grid */}
-        <Grid>
-          {/* Left Column - Recent Activity */}
-          <Grid.Col span={{ base: 12, lg: 8 }}>
-            <Stack gap="lg">
-              <RecentlyPlayed />
-            </Stack>
-          </Grid.Col>
+            {/* Main Content Grid */}
+            <Grid>
+              {/* Left Column - Recent Activity & Top Items */}
+              <Grid.Col span={{ base: 12, lg: 8 }}>
+                <Stack gap="lg">
+                  <RecentlyPlayed />
+                  <Grid>
+                    <Grid.Col span={{ base: 12, md: 6 }}>
+                      <TopItemsCard
+                        items={dashboardStats?.topTracksThisWeek || []}
+                        title="Top Tracks This Week"
+                        type="tracks"
+                      />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 6 }}>
+                      <TopItemsCard
+                        items={dashboardStats?.topArtistsThisWeek || []}
+                        title="Top Artists This Week"
+                        type="artists"
+                      />
+                    </Grid.Col>
+                  </Grid>
+                </Stack>
+              </Grid.Col>
 
-          {/* Right Column - Profile & Actions */}
-          <Grid.Col span={{ base: 12, lg: 4 }}>
-            <Stack gap="lg">
-              <UserProfile />
-              <RatingModeCard />
-              <LibrarySync />
-            </Stack>
-          </Grid.Col>
-        </Grid>
+              {/* Right Column - Profile & Actions */}
+              <Grid.Col span={{ base: 12, lg: 4 }}>
+                <Stack gap="lg">
+                  <UserProfile />
+                  <TagOverviewCard
+                    percentageTagged={
+                      dashboardStats?.tagStats.percentageTagged || 0
+                    }
+                    taggedTracks={dashboardStats?.tagStats.taggedTracks || 0}
+                    topTags={dashboardStats?.tagStats.topTags || []}
+                    totalTags={dashboardStats?.tagStats.totalTags || 0}
+                    totalTracks={dashboardStats?.totalTracks || 0}
+                  />
+                  <LibrarySync
+                    lastSyncedAt={
+                      dashboardStats?.lastSyncedAt
+                        ? new Date(dashboardStats.lastSyncedAt)
+                        : undefined
+                    }
+                    onSyncComplete={() => refetch()}
+                    totalAlbums={dashboardStats?.totalAlbums || 0}
+                    totalTracks={dashboardStats?.totalTracks || 0}
+                  />
+                </Stack>
+              </Grid.Col>
+            </Grid>
+          </>
+        )}
       </Stack>
     </Container>
   );

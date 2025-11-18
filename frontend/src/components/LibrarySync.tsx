@@ -3,7 +3,6 @@ import { AlertCircle, CheckCircle, Music, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
-  useLibraryControllerGetSyncLibraryStatus,
   useLibraryControllerSyncLibrary,
   useLibraryControllerSyncRecentlyPlayed,
 } from "@/data/api";
@@ -13,7 +12,19 @@ import { formatLastSync } from "../utils/format";
 import { SyncOptionsAccordion } from "./sync/SyncOptionsAccordion";
 import { SyncProgress } from "./sync/SyncProgress";
 
-export function LibrarySync() {
+interface LibrarySyncProps {
+  lastSyncedAt?: Date;
+  onSyncComplete?: () => void;
+  totalAlbums?: number;
+  totalTracks?: number;
+}
+
+export function LibrarySync({
+  lastSyncedAt,
+  onSyncComplete,
+  totalAlbums = 0,
+  totalTracks = 0,
+}: LibrarySyncProps) {
   const [currentJobId, setCurrentJobId] = useState<null | string>(null);
   const { reset: resetProgress, status: syncProgress } =
     useSyncProgress(currentJobId);
@@ -25,10 +36,6 @@ export function LibrarySync() {
     syncLikedTracks: true,
     syncPlaylists: true,
   });
-
-  // Query for sync status
-  const { data: syncStatus, refetch: refetchStatus } =
-    useLibraryControllerGetSyncLibraryStatus();
 
   // Mutation for starting full sync
   const syncLibraryMutation = useLibraryControllerSyncLibrary({
@@ -66,7 +73,7 @@ export function LibrarySync() {
       syncProgress?.state === "failed"
     ) {
       refetchTimeout = setTimeout(() => {
-        refetchStatus();
+        onSyncComplete?.();
         if (syncProgress.state === "completed") {
           resetTimeout = setTimeout(() => {
             setCurrentJobId(null);
@@ -80,7 +87,7 @@ export function LibrarySync() {
       clearTimeout(refetchTimeout);
       clearTimeout(resetTimeout);
     };
-  }, [syncProgress?.state, refetchStatus, resetProgress]);
+  }, [syncProgress?.state, onSyncComplete, resetProgress]);
 
   return (
     <Card
@@ -91,7 +98,7 @@ export function LibrarySync() {
       withBorder
     >
       <Stack gap="md">
-        <Group align="center" justify="space-between">
+        <Group align="flex-start" justify="space-between">
           <div>
             <Text className="font-medium text-dark-0" size="lg">
               Library Sync
@@ -100,36 +107,34 @@ export function LibrarySync() {
               Keep your Spotify library in sync
             </Text>
           </div>
-          <div className="flex gap-2">
+          <Group gap="xs" wrap="nowrap">
             <Badge
               color="orange"
               leftSection={<Music size={14} />}
               size="lg"
               variant="light"
             >
-              {syncStatus?.totalTracks || 0} tracks
+              {totalTracks.toLocaleString()} tracks
             </Badge>
             <Badge
               color="orange"
               leftSection={<Music size={14} />}
               size="lg"
-              variant="dot"
+              variant="light"
             >
-              {syncStatus?.totalAlbums || 0} albums
+              {totalAlbums.toLocaleString()} albums
             </Badge>
-          </div>
+          </Group>
         </Group>
 
-        {syncStatus && (
-          <Group gap="xs">
-            <Text color="dimmed" size="sm">
-              Last synced:
-            </Text>
-            <Text className="font-medium" size="sm">
-              {formatLastSync(syncStatus.lastSync)}
-            </Text>
-          </Group>
-        )}
+        <Group gap="xs">
+          <Text color="dimmed" size="sm">
+            Last synced:
+          </Text>
+          <Text className="font-medium" size="sm">
+            {formatLastSync(lastSyncedAt?.toISOString() || null)}
+          </Text>
+        </Group>
 
         {syncProgress && <SyncProgress syncProgress={syncProgress} />}
 

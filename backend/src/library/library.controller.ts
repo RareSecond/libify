@@ -35,6 +35,7 @@ import { AlbumTracksResponseDto } from "./dto/album-tracks.dto";
 import { PaginatedAlbumsDto } from "./dto/album.dto";
 import { ArtistTracksResponseDto } from "./dto/artist-tracks.dto";
 import { PaginatedArtistsDto } from "./dto/artist.dto";
+import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
 import { GetAlbumsQueryDto } from "./dto/get-albums-query.dto";
 import { GetArtistsQueryDto } from "./dto/get-artists-query.dto";
 import {
@@ -227,6 +228,22 @@ export class LibraryController {
       req.user.id,
       decodeURIComponent(artist),
     );
+  }
+
+  @ApiOperation({ summary: "Get dashboard statistics" })
+  @ApiResponse({
+    description: "Dashboard statistics retrieved",
+    status: 200,
+    type: DashboardStatsDto,
+  })
+  @Get("dashboard/stats")
+  async getDashboardStats(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<DashboardStatsDto> {
+    const stats = await this.trackService.getDashboardStats(req.user.id);
+    return plainToInstance(DashboardStatsDto, stats, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get all unique genres in user library" })
