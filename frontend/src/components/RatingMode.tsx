@@ -105,6 +105,9 @@ export function RatingMode({ onClose, opened }: RatingModeProps) {
       // Use e.code to detect physical key, since e.key changes with Shift (1 becomes !, etc)
       const digitMatch = e.code.match(/^Digit([1-5])$/);
       if (digitMatch && libraryTrack) {
+        // Only allow Shift as a modifier - reject if Ctrl, Alt, or Meta are pressed
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+
         const baseRating = parseInt(digitMatch[1]);
         // If shift is pressed, subtract 0.5 for half star
         const rating = e.shiftKey ? baseRating - 0.5 : baseRating;
