@@ -53,7 +53,9 @@ export class PlaySyncProcessor extends WorkerHost {
       throw new Error("userId is required for sync-user-plays job");
     }
 
-    this.logger.log(`Starting play sync for user ${userId} (Job: ${job.id})`);
+    this.logger.log(
+      `🔄 PLAY SYNC PROCESSOR STARTED for user ${userId} (Job: ${job.id})`,
+    );
 
     try {
       // Get valid access token (auto-refreshes if expired)
@@ -72,49 +74,123 @@ export class PlaySyncProcessor extends WorkerHost {
         throw new Error(`User ${userId} not found`);
       }
 
-      // Convert lastPlaySyncedAt to Unix timestamp in milliseconds for Spotify API
-      const afterTimestamp = user.lastPlaySyncedAt
-        ? user.lastPlaySyncedAt.getTime()
-        : undefined;
+      this.logger.log(
+        `Last play synced at: ${user.lastPlaySyncedAt ? user.lastPlaySyncedAt.toISOString() : "never"}`,
+      );
 
-      // Fetch recently played tracks from Spotify (only plays after last sync)
+      // Fetch recently played tracks from Spotify (latest 50, no time filter)
+      // Note: Not using afterTimestamp to always get the full 50 tracks for debugging
       const recentlyPlayed = await this.spotifyService.getRecentlyPlayed(
         accessToken,
         50,
-        afterTimestamp,
       );
 
+      this.logger.log(
+        `Spotify returned ${recentlyPlayed?.length || 0} recently played tracks`,
+      );
+
+      // Log summary of tracks
+      if (recentlyPlayed && recentlyPlayed.length > 0) {
+        this.logger.log("Track summary:");
+        recentlyPlayed.forEach((item) => {
+          const timestamp = new Date(item.played_at).toLocaleString("en-US", {
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            month: "short",
+          });
+          const artist = item.track.artists?.[0]?.name || "Unknown Artist";
+          const track = item.track.name || "Unknown Track";
+          this.logger.log(`  ${timestamp} - ${artist} - ${track}`);
+        });
+      }
+
+      // ALWAYS write Spotify API response to file for debugging (even if 0 results)
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const debugFile = path.join(
+        process.cwd(),
+        `spotify-plays-debug-${Date.now()}.json`,
+      );
+      await fs.writeFile(
+        debugFile,
+        JSON.stringify(
+          {
+            count: recentlyPlayed?.length || 0,
+            items: recentlyPlayed || [],
+            lastPlaySyncedAt: user.lastPlaySyncedAt,
+            lastPlaySyncedAtFormatted: user.lastPlaySyncedAt
+              ? user.lastPlaySyncedAt.toISOString()
+              : "never",
+            note: "Always fetching latest 50 tracks (no after timestamp filter)",
+            userId,
+          },
+          null,
+          2,
+        ),
+      );
+      this.logger.log(`Spotify API response written to ${debugFile}`);
+
       if (!recentlyPlayed || recentlyPlayed.length === 0) {
-        this.logger.debug(`No new plays for user ${userId}`);
+        this.logger.log(`No new plays for user ${userId}`);
         return { newPlaysCount: 0 };
       }
 
-      this.logger.debug(
+      this.logger.log(
         `Processing ${recentlyPlayed.length} new plays for user ${userId}`,
       );
 
       let newPlaysCount = 0;
+      let skippedNotInLibrary = 0;
+      let skippedDuplicate = 0;
       let mostRecentPlayTimestamp: Date | null = null;
 
       for (const item of recentlyPlayed) {
         try {
-          // Handle track relinking: use original track ID if available
-          const spotifyTrackId = SpotifyService.getOriginalTrackId(item.track);
           const playedAt = new Date(item.played_at);
+          const trackName = `${item.track.artists?.[0]?.name || "Unknown"} - ${item.track.name}`;
+          const isrc = item.track.external_ids?.isrc;
+          const spotifyTrackId = SpotifyService.getOriginalTrackId(item.track);
 
           // Track the most recent play timestamp
           if (!mostRecentPlayTimestamp || playedAt > mostRecentPlayTimestamp) {
             mostRecentPlayTimestamp = playedAt;
           }
 
-          // Find the UserTrack for this Spotify track
-          const userTrack = await this.databaseService.userTrack.findFirst({
-            select: { id: true, spotifyTrackId: true },
-            where: { spotifyTrack: { spotifyId: spotifyTrackId }, userId },
-          });
+          // Find the UserTrack - prefer ISRC matching (handles relinking)
+          let userTrack;
+          if (isrc) {
+            // Primary: Match by ISRC (handles Spotify's relinking automatically)
+            userTrack = await this.databaseService.userTrack.findFirst({
+              select: { id: true, spotifyTrackId: true },
+              where: { spotifyTrack: { isrc }, userId },
+            });
+            if (userTrack) {
+              this.logger.log(
+                `✓ Found in library by ISRC: ${trackName} [ISRC: ${isrc}]`,
+              );
+            }
+          }
+
+          if (!userTrack) {
+            // Fallback: Match by Spotify ID (for tracks without ISRC or legacy data)
+            userTrack = await this.databaseService.userTrack.findFirst({
+              select: { id: true, spotifyTrackId: true },
+              where: { spotifyTrack: { spotifyId: spotifyTrackId }, userId },
+            });
+            if (userTrack) {
+              this.logger.log(
+                `✓ Found in library by Spotify ID: ${trackName} [${spotifyTrackId}]`,
+              );
+            }
+          }
 
           // Skip if track is not in user's library
           if (!userTrack) {
+            this.logger.log(
+              `⏭️  SKIPPED (not in library): ${trackName} [${spotifyTrackId}${isrc ? `, ISRC: ${isrc}` : ""}]`,
+            );
+            skippedNotInLibrary++;
             continue;
           }
 
@@ -144,6 +220,7 @@ export class PlaySyncProcessor extends WorkerHost {
               userTrack.spotifyTrackId,
             );
 
+            this.logger.log(`✅ IMPORTED: ${trackName}`);
             newPlaysCount++;
           } catch (error: unknown) {
             // P2002: Unique constraint violation (duplicate play)
@@ -154,9 +231,10 @@ export class PlaySyncProcessor extends WorkerHost {
               "code" in error &&
               error.code === "P2002"
             ) {
-              this.logger.debug(
-                `Duplicate play detected for track ${item.track.id} at ${playedAt.toISOString()}, skipping`,
+              this.logger.log(
+                `⏭️  SKIPPED (duplicate): ${trackName} at ${playedAt.toISOString()}`,
               );
+              skippedDuplicate++;
               continue;
             }
 
@@ -184,7 +262,7 @@ export class PlaySyncProcessor extends WorkerHost {
       }
 
       this.logger.log(
-        `Play sync completed for user ${userId}: ${newPlaysCount} new plays`,
+        `Play sync completed for user ${userId}: ${newPlaysCount} new plays imported, ${skippedNotInLibrary} skipped (not in library), ${skippedDuplicate} skipped (duplicates)`,
       );
 
       return { newPlaysCount };

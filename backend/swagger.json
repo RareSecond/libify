@@ -1407,10 +1407,24 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Play sync completed successfully"
+            "description": "Play sync completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaySyncResultDto"
+                }
+              }
+            }
           },
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaySyncResultDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3143,6 +3157,33 @@
               "completed",
               "failed"
             ]
+          }
+        },
+        "required": [
+          "jobId",
+          "message",
+          "status"
+        ]
+      },
+      "PlaySyncResultDto": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "Job ID for the sync operation"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable message about the sync result"
+          },
+          "newPlaysCount": {
+            "type": "number",
+            "description": "Number of new plays imported",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the sync job"
           }
         },
         "required": [

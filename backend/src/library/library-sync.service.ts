@@ -1197,6 +1197,9 @@ export class LibrarySyncService {
       accessToken,
     );
 
+    // Collect all track database IDs from this batch for ISRC population
+    const allTrackDatabaseIds = new Set<string>();
+
     for (const savedAlbum of albums) {
       try {
         // Create or update the Spotify entities (artist, album, tracks)
@@ -1205,6 +1208,11 @@ export class LibrarySyncService {
             savedAlbum,
             artistMap,
           );
+
+        // Collect database IDs for all tracks in this album
+        trackIds.forEach((trackId) => {
+          allTrackDatabaseIds.add(trackId);
+        });
 
         // Check if UserAlbum already exists
         const existingUserAlbum =
@@ -1268,6 +1276,49 @@ export class LibrarySyncService {
           error,
         );
         result.errors.push(`Album ${savedAlbum.album.name}: ${error.message}`);
+      }
+    }
+
+    // Batch fetch full track details to populate ISRC values
+    // This is needed because /me/albums returns simplified track objects without external_ids
+    if (allTrackDatabaseIds.size > 0) {
+      this.logger.log(
+        `Batch fetching full track details for ${allTrackDatabaseIds.size} album tracks to populate ISRC`,
+      );
+
+      try {
+        // Get Spotify IDs for these database tracks
+        const tracks = await this.databaseService.spotifyTrack.findMany({
+          select: { spotifyId: true },
+          where: { id: { in: Array.from(allTrackDatabaseIds) } },
+        });
+
+        const spotifyIds = tracks.map((t) => t.spotifyId);
+
+        if (spotifyIds.length > 0) {
+          // Fetch full track data from Spotify
+          const fullTrackData = await this.spotifyService.getTracksByIds(
+            accessToken,
+            spotifyIds,
+          );
+
+          // Populate ISRC values
+          const { skipped, updated } =
+            await this.aggregationService.populateISRCForTracks(
+              spotifyIds,
+              fullTrackData,
+            );
+
+          this.logger.log(
+            `ISRC population complete: ${updated} tracks updated, ${skipped} tracks without ISRC`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          "Failed to populate ISRC for album tracks",
+          error.message,
+        );
+        // Don't throw - ISRC population is non-critical
       }
     }
   }

@@ -1,6 +1,7 @@
 import {
   Avatar,
   Badge,
+  Button,
   Center,
   Group,
   Loader,
@@ -13,7 +14,7 @@ import {
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useNavigate } from "@tanstack/react-router";
-import { Music, Search } from "lucide-react";
+import { Music, RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
@@ -21,6 +22,7 @@ import {
   PlayHistoryItemDto,
   useLibraryControllerGetPlayHistory,
 } from "../data/api";
+import { usePlayHistorySync } from "../hooks/usePlayHistorySync";
 
 export function PlayHistoryTable() {
   const navigate = useNavigate();
@@ -31,11 +33,13 @@ export function PlayHistoryTable() {
 
   const { playTrackList } = useSpotifyPlayer();
 
-  const { data, isLoading } = useLibraryControllerGetPlayHistory({
+  const { data, isLoading, refetch } = useLibraryControllerGetPlayHistory({
     page,
     pageSize,
     search: debouncedSearch || undefined,
   });
+
+  const { isSyncing, syncPlays } = usePlayHistorySync(refetch);
 
   const handlePlayTrack = async (
     trackTitle: string,
@@ -93,12 +97,24 @@ export function PlayHistoryTable() {
 
   return (
     <Stack gap="md">
-      <TextInput
-        leftSection={<Search size={16} />}
-        onChange={(e) => setSearch(e.currentTarget.value)}
-        placeholder="Search tracks, artists, or albums..."
-        value={search}
-      />
+      <Group gap="md">
+        <TextInput
+          className="flex-1"
+          leftSection={<Search size={16} />}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+          placeholder="Search tracks, artists, or albums..."
+          value={search}
+        />
+        <Button
+          color="orange"
+          leftSection={<RefreshCw size={16} />}
+          loading={isSyncing}
+          onClick={() => syncPlays()}
+          variant="light"
+        >
+          Refresh History
+        </Button>
+      </Group>
 
       <div className="overflow-x-auto">
         <Table

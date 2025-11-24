@@ -58,6 +58,7 @@ export interface SpotifyAlbumTrack {
   disc_number: number;
   duration_ms: number;
   explicit: boolean;
+  external_ids?: { isrc?: string }; // NOTE: Spotify API does NOT return this for /me/albums (simplified track objects)
   external_urls: { spotify: string };
   href: string;
   id: string;

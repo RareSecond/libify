@@ -80,7 +80,8 @@ model SpotifyAlbum {
 // Shared Spotify track data - single source of truth
 model SpotifyTrack {
   id          String   @id @default(uuid())
-  spotifyId   String   @unique // Spotify track ID
+  spotifyId   String   @unique // Spotify track ID (any valid ID for this recording)
+  isrc        String?  @unique // ISRC code - unique identifier across all Spotify IDs for same recording
   title       String
   artistId    String
   albumId     String // Always required - even singles have albums
@@ -98,6 +99,7 @@ model SpotifyTrack {
   userTracks UserTrack[]
 
   @@index([spotifyId])
+  @@index([isrc])
   @@index([artistId])
   @@index([albumId])
   @@index([title])
