@@ -342,15 +342,6 @@ export class AggregationService {
     const spotifyTrackId = SpotifyService.getOriginalTrackId(spotifyTrackData);
     const isrc = spotifyTrackData.external_ids?.isrc;
 
-    // Log tracks without ISRC to file for debugging
-    if (!isrc) {
-      await this.logMissingISRC(
-        spotifyTrackData.name,
-        spotifyTrackData.artists[0]?.name || "Unknown Artist",
-        spotifyTrackId,
-      );
-    }
-
     // Primary: Check if track exists by ISRC (handles relinking)
     let track;
     if (isrc) {
@@ -460,12 +451,10 @@ export class AggregationService {
 
     for (const trackData of fullTrackData) {
       const isrc = trackData.external_ids?.isrc;
-      const spotifyTrackId = trackData.linked_from?.id || trackData.id;
+      const spotifyTrackId = this.getOriginalTrackId(trackData);
 
       if (!isrc) {
-        // Log tracks without ISRC
         skipped++;
-        await this.logMissingISRC("Unknown", "Unknown", spotifyTrackId);
         continue;
       }
 
@@ -487,9 +476,6 @@ export class AggregationService {
           data: { isrc },
           where: { id: track.id },
         });
-        this.logger.debug(
-          `Populated ISRC for track ${track.title}: ${isrc} [${spotifyTrackId}]`,
-        );
         updated++;
       }
     }
@@ -678,31 +664,17 @@ export class AggregationService {
    * Helper to extract original track ID from album track data (handles relinking)
    */
   private getOriginalAlbumTrackId(track: SpotifyAlbumTrack): string {
-    return track.linked_from?.id || track.id;
+    return this.getOriginalTrackId(track);
   }
 
   /**
-   * Log tracks without ISRC to a file for analysis
+   * Helper to extract original track ID from any track object (handles relinking)
+   * Works with both simplified album tracks and full track objects
    */
-  private async logMissingISRC(
-    trackName: string,
-    artistName: string,
-    spotifyId: string,
-  ): Promise<void> {
-    try {
-      const fs = await import("fs/promises");
-      const path = await import("path");
-      const logFile = path.join(process.cwd(), "missing-isrc.log");
-      const timestamp = new Date().toISOString();
-      const logEntry = `${timestamp} | ${artistName} - ${trackName} | ${spotifyId}\n`;
-
-      await fs.appendFile(logFile, logEntry);
-    } catch (error) {
-      // Silently fail - logging missing ISRC is non-critical
-      this.logger.error(
-        `Failed to log missing ISRC for track ${trackName}`,
-        error,
-      );
-    }
+  private getOriginalTrackId(track: {
+    id: string;
+    linked_from?: { id: string; uri?: string };
+  }): string {
+    return track.linked_from?.id || track.id;
   }
 }

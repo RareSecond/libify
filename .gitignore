@@ -2,5 +2,3 @@ node_modules
 .DS_Store
 .vscode
 database_dump.dump
-spotify-plays-debug-*.json
-missing-isrc.log
