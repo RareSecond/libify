@@ -616,25 +616,30 @@ export class LibraryController {
       // Poll the job status until it completes (max 30 seconds)
       const startTime = Date.now();
       const timeout = 30000;
-      let result: undefined | { newPlaysCount?: number };
+      let completedJob: null | typeof job = null;
 
       while (Date.now() - startTime < timeout) {
         const state = await job.getState();
 
         if (state === "completed") {
-          result = job.returnvalue;
+          // Refetch the job to get fresh returnvalue
+          completedJob = await this.playSyncQueue.getJob(jobId);
           break;
         }
 
         if (state === "failed") {
-          throw new Error(job.failedReason || "Job failed");
+          // Refetch the job to get fresh failedReason
+          const failedJob = await this.playSyncQueue.getJob(jobId);
+          throw new Error(
+            failedJob?.failedReason || "Job failed with unknown reason",
+          );
         }
 
         // Wait 100ms before checking again
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      if (!result) {
+      if (!completedJob) {
         this.logger.warn(`Job ${jobId} did not complete within timeout`);
         return {
           jobId,
@@ -642,6 +647,10 @@ export class LibraryController {
           status: "processing",
         };
       }
+
+      const result = completedJob.returnvalue as
+        | undefined
+        | { newPlaysCount?: number };
 
       this.logger.log(
         `Job ${jobId} completed with result:`,

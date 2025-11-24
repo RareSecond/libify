@@ -1,6 +1,6 @@
 import { notifications } from "@mantine/notifications";
 
-import { useLibraryControllerSyncPlays } from "../data/api";
+import { PlaySyncResultDto, useLibraryControllerSyncPlays } from "../data/api";
 
 export function usePlayHistorySync(onSuccess: () => void) {
   const { isPending: isSyncing, mutate: syncPlays } =
@@ -15,22 +15,38 @@ export function usePlayHistorySync(onSuccess: () => void) {
             title: "Sync failed",
           });
         },
-        onSuccess: (data) => {
-          const newPlaysCount = (data as unknown as { newPlaysCount?: number })
-            ?.newPlaysCount;
-          const message =
-            (data as unknown as { message?: string })?.message ||
-            "Play history has been refreshed from Spotify";
-
-          notifications.show({
-            color: newPlaysCount && newPlaysCount > 0 ? "green" : "blue",
-            message,
-            title:
-              newPlaysCount && newPlaysCount > 0
-                ? `${newPlaysCount} new plays imported`
-                : "Sync completed",
-          });
-          onSuccess();
+        onSuccess: (data: PlaySyncResultDto) => {
+          // Only treat as completed and trigger refetch when status is "completed"
+          if (data.status === "completed") {
+            notifications.show({
+              color:
+                data.newPlaysCount && data.newPlaysCount > 0 ? "green" : "blue",
+              message: data.message,
+              title:
+                data.newPlaysCount && data.newPlaysCount > 0
+                  ? `${data.newPlaysCount} new plays imported`
+                  : "Sync completed",
+            });
+            // Trigger refetch only on successful completion
+            onSuccess();
+          } else if (
+            data.status === "processing" ||
+            data.status === "unknown"
+          ) {
+            // Sync is still in progress or status unknown - inform user without refetching
+            notifications.show({
+              color: "blue",
+              message: data.message,
+              title: "Sync in progress",
+            });
+          } else {
+            // Unexpected status - show informational notification
+            notifications.show({
+              color: "yellow",
+              message: data.message,
+              title: `Sync status: ${data.status}`,
+            });
+          }
         },
       },
     });
