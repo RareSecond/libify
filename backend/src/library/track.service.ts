@@ -31,6 +31,26 @@ export class TrackService {
     private aggregationService: AggregationService,
   ) {}
 
+  async addTrackToLibrary(userId: string, trackId: string): Promise<void> {
+    const track = await this.databaseService.userTrack.findFirst({
+      where: { id: trackId, userId },
+    });
+
+    if (!track) {
+      throw new Error("Track not found");
+    }
+
+    if (track.addedToLibrary) {
+      // Track is already in the library
+      return;
+    }
+
+    await this.databaseService.userTrack.update({
+      data: { addedToLibrary: true },
+      where: { id: trackId },
+    });
+  }
+
   /**
    * Helper method to fetch tracks for playback - used by both library and playlist endpoints
    */
@@ -64,6 +84,12 @@ export class TrackService {
 
     return spotifyUris;
   }
+
+  /**
+   * Helper method to fetch tracks for playback with random order
+   * Used when shuffle is true to get truly random tracks
+   * Converts Prisma where clause to Kysely for efficient database-level randomization
+   */
 
   /**
    * Helper method to fetch tracks for playback using Kysely with NULLS LAST support
@@ -321,12 +347,6 @@ export class TrackService {
 
     return spotifyUris;
   }
-
-  /**
-   * Helper method to fetch tracks for playback with random order
-   * Used when shuffle is true to get truly random tracks
-   * Converts Prisma where clause to Kysely for efficient database-level randomization
-   */
 
   async fetchTracksForPlayWithRandomOrder(
     userId: string,
@@ -1494,7 +1514,13 @@ export class TrackService {
     userId: string,
     query: GetPlayHistoryQueryDto,
   ): Promise<PaginatedPlayHistoryDto> {
-    const { page = 1, pageSize = 50, search, trackId } = query;
+    const {
+      includeNonLibrary = true,
+      page = 1,
+      pageSize = 50,
+      search,
+      trackId,
+    } = query;
 
     const db = this.kyselyService.database;
 
@@ -1523,6 +1549,11 @@ export class TrackService {
       baseQuery = baseQuery.where("ut.id", "=", trackId);
     }
 
+    // Add library filter
+    if (!includeNonLibrary) {
+      baseQuery = baseQuery.where("ut.addedToLibrary", "=", true);
+    }
+
     // Get total count
     const countResult = await baseQuery
       .select((eb) => eb.fn.countAll<number>().as("count"))
@@ -1538,6 +1569,7 @@ export class TrackService {
         "ph.playedAt",
         "ph.duration",
         "ut.id as trackId",
+        "ut.addedToLibrary as trackAddedToLibrary",
         "st.title as trackTitle",
         "st.duration as trackDuration",
         "st.spotifyId as trackSpotifyId",
@@ -1556,6 +1588,7 @@ export class TrackService {
         duration: play.duration,
         id: play.id,
         playedAt: play.playedAt,
+        trackAddedToLibrary: play.trackAddedToLibrary,
         trackAlbum: play.trackAlbum,
         trackAlbumArt: play.trackAlbumArt,
         trackArtist: play.trackArtist,

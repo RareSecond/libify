@@ -111,6 +111,7 @@ model UserTrack {
   userId         String
   spotifyTrackId String
   addedAt        DateTime  @default(now())
+  addedToLibrary Boolean   @default(true) // false for auto-tracked plays, true for explicit library adds
   lastPlayedAt   DateTime?
   totalPlayCount Int       @default(0)
   rating         Float? // 0.5-5 stars in 0.5 increments (nullable since not all tracks are rated)
@@ -131,6 +132,7 @@ model UserTrack {
   @@index([userId, totalPlayCount, lastPlayedAt], name: "idx_user_plays")
   @@index([userId, lastPlayedAt], name: "idx_user_last_played")
   @@index([spotifyTrackId, userId], name: "idx_track_user")
+  @@index([userId, addedToLibrary])
 }
 
 model Tag {

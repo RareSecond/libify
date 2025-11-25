@@ -252,6 +252,34 @@
         ]
       }
     },
+    "/library/tracks/{trackId}/add-to-library": {
+      "post": {
+        "operationId": "LibraryController_addTrackToLibrary",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/tags": {
       "post": {
         "operationId": "LibraryController_createTag",
@@ -746,6 +774,16 @@
       "get": {
         "operationId": "LibraryController_getPlayHistory",
         "parameters": [
+          {
+            "name": "includeNonLibrary",
+            "required": false,
+            "in": "query",
+            "description": "Include non-library tracks (auto-tracked from play history)",
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
           {
             "name": "page",
             "required": false,
@@ -2786,6 +2824,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "trackAddedToLibrary": {
+            "type": "boolean",
+            "description": "Whether the track is explicitly in the user's library"
+          },
           "trackAlbum": {
             "type": "string"
           },
@@ -2812,6 +2854,7 @@
         "required": [
           "id",
           "playedAt",
+          "trackAddedToLibrary",
           "trackArtist",
           "trackDuration",
           "trackId",

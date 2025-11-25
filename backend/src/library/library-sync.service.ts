@@ -1245,6 +1245,7 @@ export class LibrarySyncService {
             const userTrack = await this.databaseService.userTrack.create({
               data: {
                 addedAt: new Date(savedAlbum.added_at),
+                addedToLibrary: true, // Explicitly added from album sync
                 spotifyTrackId,
                 userId,
               },
@@ -1366,7 +1367,12 @@ export class LibrarySyncService {
 
         if (!existingUserTrack) {
           const userTrack = await this.databaseService.userTrack.create({
-            data: { addedAt: new Date(added_at), spotifyTrackId, userId },
+            data: {
+              addedAt: new Date(added_at),
+              addedToLibrary: true, // Explicitly added from library sync
+              spotifyTrackId,
+              userId,
+            },
           });
           result.newTracks++;
 
@@ -1494,7 +1500,12 @@ export class LibrarySyncService {
         // Create UserTrack only if it doesn't exist
         if (!existingUserTrackIds.has(originalSpotifyId)) {
           const userTrack = await this.databaseService.userTrack.create({
-            data: { addedAt: new Date(added_at), spotifyTrackId, userId },
+            data: {
+              addedAt: new Date(added_at),
+              addedToLibrary: true, // Explicitly added from library sync
+              spotifyTrackId,
+              userId,
+            },
           });
           result.newTracks++;
 

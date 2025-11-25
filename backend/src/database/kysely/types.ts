@@ -154,6 +154,7 @@ export type UserPlaylist = {
 };
 export type UserTrack = {
   addedAt: Generated<Timestamp>;
+  addedToLibrary: Generated<boolean>;
   id: string;
   lastPlayedAt: null | Timestamp;
   ratedAt: null | Timestamp;
