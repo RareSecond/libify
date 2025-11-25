@@ -64,11 +64,22 @@ export function usePersistentSyncJob() {
     [],
   );
 
-  // Clear job ID when sync completes or fails
-  const clearSyncJob = useCallback(() => {
+  // Clear only localStorage (keeps job ID in state so results remain visible)
+  const clearPersistedJob = useCallback(() => {
+    localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
+  }, []);
+
+  // Fully reset - clears both localStorage and state
+  const resetSyncJob = useCallback(() => {
     localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
     setCurrentJobId(null);
   }, []);
 
-  return { clearSyncJob, currentJobId, isInitialized, startSyncJob };
+  return {
+    clearPersistedJob,
+    currentJobId,
+    isInitialized,
+    resetSyncJob,
+    startSyncJob,
+  };
 }
