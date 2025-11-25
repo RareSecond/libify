@@ -65,6 +65,7 @@ export type SpotifyTrack = {
   duration: number;
   explicit: Generated<boolean>;
   id: string;
+  isrc: null | string;
   lastUpdated: Generated<Timestamp>;
   popularity: null | number;
   previewUrl: null | string;

@@ -33,6 +33,7 @@ export interface SpotifyTrackData {
   album: { id: string; images: Array<{ url: string }>; name: string };
   artists: Array<{ id: string; name: string }>;
   duration_ms: number;
+  external_ids?: { isrc?: string };
   id: string;
   linked_from?: { id: string; uri: string };
   name: string;

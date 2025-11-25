@@ -42,6 +42,7 @@ import {
   GetPlayHistoryQueryDto,
   PaginatedPlayHistoryDto,
 } from "./dto/play-history.dto";
+import { PlaySyncResultDto } from "./dto/play-sync-result.dto";
 import { UpdateRatingDto } from "./dto/rating.dto";
 import { SyncOptionsDto } from "./dto/sync-options.dto";
 import {
@@ -86,6 +87,7 @@ export class LibraryController {
     private tagService: TagService,
     private playSyncService: PlaySyncService,
     @InjectQueue("sync") private syncQueue: Queue,
+    @InjectQueue("play-sync") private playSyncQueue: Queue,
   ) {}
 
   @ApiOperation({ summary: "Add a tag to a track" })
@@ -571,18 +573,103 @@ export class LibraryController {
   @ApiOperation({
     summary: "Manually sync recently played tracks from Spotify",
   })
-  @ApiResponse({ description: "Play sync completed successfully", status: 200 })
+  @ApiResponse({
+    description: "Play sync completed successfully",
+    status: 200,
+    type: PlaySyncResultDto,
+  })
   @Post("sync-plays")
   async syncPlays(
     @Req() req: AuthenticatedRequest,
-  ): Promise<{ message: string }> {
+  ): Promise<PlaySyncResultDto> {
     try {
+      this.logger.log(`Manual play sync triggered for user ${req.user.id}`);
+
+      // Remove any existing completed job with this ID to ensure fresh execution
+      const jobId = `play-sync-user-${req.user.id}`;
+      const existingJob = await this.playSyncQueue.getJob(jobId);
+      if (existingJob) {
+        const state = await existingJob.getState();
+        if (state === "completed" || state === "failed") {
+          await existingJob.remove();
+          this.logger.log(`Removed previous ${state} job ${jobId}`);
+        }
+      }
+
+      // Enqueue the sync job
       await this.playSyncService.triggerManualSync(req.user.id);
-      return { message: "Play sync completed successfully" };
+
+      // Get the newly created job to wait for completion
+      const job = await this.playSyncQueue.getJob(jobId);
+
+      if (!job) {
+        this.logger.error(`Job ${jobId} not found after enqueueing`);
+        return {
+          jobId,
+          message: "Play sync job enqueued but could not be tracked",
+          status: "unknown",
+        };
+      }
+
+      this.logger.log(`Waiting for job ${jobId} to complete...`);
+
+      // Poll the job status until it completes (max 30 seconds)
+      const startTime = Date.now();
+      const timeout = 30000;
+      let completedJob: null | typeof job = null;
+
+      while (Date.now() - startTime < timeout) {
+        const state = await job.getState();
+
+        if (state === "completed") {
+          // Refetch the job to get fresh returnvalue
+          completedJob = await this.playSyncQueue.getJob(jobId);
+          break;
+        }
+
+        if (state === "failed") {
+          // Refetch the job to get fresh failedReason
+          const failedJob = await this.playSyncQueue.getJob(jobId);
+          throw new Error(
+            failedJob?.failedReason || "Job failed with unknown reason",
+          );
+        }
+
+        // Wait 100ms before checking again
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      if (!completedJob) {
+        this.logger.warn(`Job ${jobId} did not complete within timeout`);
+        return {
+          jobId,
+          message: "Play sync is taking longer than expected",
+          status: "processing",
+        };
+      }
+
+      const result = completedJob.returnvalue as
+        | undefined
+        | { newPlaysCount?: number };
+
+      this.logger.log(
+        `Job ${jobId} completed with result:`,
+        JSON.stringify(result),
+      );
+
+      return {
+        jobId,
+        message: `Play sync completed: ${result?.newPlaysCount || 0} new plays imported`,
+        newPlaysCount: result?.newPlaysCount || 0,
+        status: "completed",
+      };
     } catch (error) {
-      this.logger.error("Failed to sync plays", error);
+      this.logger.error(
+        `Failed to sync plays for user ${req.user.id}`,
+        error instanceof Error ? error.stack : error,
+      );
       throw new HttpException(
-        "Failed to sync plays",
+        error instanceof Error ? error.message : "Failed to sync plays",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

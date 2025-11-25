@@ -260,6 +260,7 @@ export class AggregationService {
       album: { id: string; images: Array<{ url: string }>; name: string };
       artists: Array<{ id: string; name: string }>;
       duration_ms: number;
+      external_ids?: { isrc?: string };
       id: string;
       linked_from?: { id: string; uri: string };
       name: string;
@@ -339,22 +340,66 @@ export class AggregationService {
 
     // Handle track relinking: use original track ID if available
     const spotifyTrackId = SpotifyService.getOriginalTrackId(spotifyTrackData);
+    const isrc = spotifyTrackData.external_ids?.isrc;
 
-    // Since we assume Spotify metadata never changes, only create track if it doesn't exist
-    let track = await this.databaseService.spotifyTrack.findUnique({
-      where: { spotifyId: spotifyTrackId },
-    });
+    // Primary: Check if track exists by ISRC (handles relinking)
+    let track;
+    if (isrc) {
+      track = await this.databaseService.spotifyTrack.findUnique({
+        where: { isrc },
+      });
+    }
+
+    // Fallback: Check by Spotify ID (for tracks without ISRC or old data)
+    if (!track) {
+      track = await this.databaseService.spotifyTrack.findUnique({
+        where: { spotifyId: spotifyTrackId },
+      });
+    }
 
     if (!track) {
+      // Create new track with ISRC
       track = await this.databaseService.spotifyTrack.create({
         data: {
           albumId: album.id,
           artistId: artist.id,
           duration: spotifyTrackData.duration_ms,
+          isrc: isrc || null,
           spotifyId: spotifyTrackId,
           title: spotifyTrackData.name,
         },
       });
+      this.logger.debug(
+        `Created new track: ${spotifyTrackData.name} [${spotifyTrackId}${isrc ? `, ISRC: ${isrc}` : ""}]`,
+      );
+    } else {
+      // Track exists - update ISRC and/or Spotify ID if needed
+      const needsUpdate =
+        (isrc && !track.isrc) || // Add missing ISRC
+        track.spotifyId !== spotifyTrackId; // Update Spotify ID
+
+      if (needsUpdate) {
+        const updates: { isrc?: string; spotifyId?: string } = {};
+
+        if (isrc && !track.isrc) {
+          updates.isrc = isrc;
+          this.logger.log(
+            `Adding ISRC to existing track ${track.title}: ${isrc}`,
+          );
+        }
+
+        if (track.spotifyId !== spotifyTrackId) {
+          updates.spotifyId = spotifyTrackId;
+          this.logger.log(
+            `Updating Spotify ID for track ${track.title}: ${track.spotifyId} -> ${spotifyTrackId}`,
+          );
+        }
+
+        track = await this.databaseService.spotifyTrack.update({
+          data: updates,
+          where: { id: track.id },
+        });
+      }
     }
 
     return { albumId: album.id, artistId: artist.id, trackId: track.id };
@@ -387,6 +432,55 @@ export class AggregationService {
       .orderBy("totalPlays", "desc")
       .limit(limit)
       .execute();
+  }
+
+  /**
+   * Batch update ISRC values for album tracks using full track data from Spotify
+   * This is needed because /me/albums returns simplified track objects without external_ids
+   */
+  async populateISRCForTracks(
+    spotifyTrackIds: string[],
+    fullTrackData: Array<{
+      external_ids?: { isrc?: string };
+      id: string;
+      linked_from?: { id: string; uri: string };
+    }>,
+  ): Promise<{ skipped: number; updated: number }> {
+    let updated = 0;
+    let skipped = 0;
+
+    for (const trackData of fullTrackData) {
+      const isrc = trackData.external_ids?.isrc;
+      const spotifyTrackId = this.getOriginalTrackId(trackData);
+
+      if (!isrc) {
+        skipped++;
+        continue;
+      }
+
+      // Find the track by Spotify ID
+      const track = await this.databaseService.spotifyTrack.findUnique({
+        where: { spotifyId: spotifyTrackId },
+      });
+
+      if (!track) {
+        this.logger.warn(
+          `Track ${spotifyTrackId} not found in database during ISRC population`,
+        );
+        continue;
+      }
+
+      // Update ISRC if missing
+      if (!track.isrc) {
+        await this.databaseService.spotifyTrack.update({
+          data: { isrc },
+          where: { id: track.id },
+        });
+        updated++;
+      }
+    }
+
+    return { skipped, updated };
   }
 
   async updateAllUserStats(userId: string): Promise<void> {
@@ -570,6 +664,17 @@ export class AggregationService {
    * Helper to extract original track ID from album track data (handles relinking)
    */
   private getOriginalAlbumTrackId(track: SpotifyAlbumTrack): string {
+    return this.getOriginalTrackId(track);
+  }
+
+  /**
+   * Helper to extract original track ID from any track object (handles relinking)
+   * Works with both simplified album tracks and full track objects
+   */
+  private getOriginalTrackId(track: {
+    id: string;
+    linked_from?: { id: string; uri?: string };
+  }): string {
     return track.linked_from?.id || track.id;
   }
 }
