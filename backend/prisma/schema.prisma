@@ -294,4 +294,5 @@ enum SourceType {
   PLAYLIST
   ALBUM
   ARTIST_TOP_TRACKS
+  PLAY_HISTORY
 }

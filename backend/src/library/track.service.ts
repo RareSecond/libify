@@ -49,6 +49,22 @@ export class TrackService {
       data: { addedToLibrary: true },
       where: { id: trackId },
     });
+
+    // Add source tracking for play history
+    const existingSource = await this.databaseService.trackSource.findFirst({
+      where: { sourceType: SourceType.PLAY_HISTORY, userTrackId: trackId },
+    });
+
+    if (!existingSource) {
+      await this.databaseService.trackSource.create({
+        data: {
+          sourceId: null,
+          sourceName: "Play History",
+          sourceType: SourceType.PLAY_HISTORY,
+          userTrackId: trackId,
+        },
+      });
+    }
   }
 
   /**
@@ -2221,7 +2237,10 @@ export class TrackService {
     } = query;
 
     // Build where clause
-    const where: Prisma.UserTrackWhereInput = { userId };
+    const where: Prisma.UserTrackWhereInput = {
+      addedToLibrary: true, // Only show tracks explicitly in library
+      userId,
+    };
 
     // Add search filter
     if (search) {
@@ -2453,7 +2472,8 @@ export class TrackService {
       .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
       .leftJoin("Tag as t", "tt.tagId", "t.id")
       .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
-      .where("ut.userId", "=", userId);
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true); // Only show tracks explicitly in library
 
     // Apply search filter
     if (query.search) {

@@ -1089,7 +1089,8 @@
                   "LIKED_SONGS",
                   "PLAYLIST",
                   "ALBUM",
-                  "ARTIST_TOP_TRACKS"
+                  "ARTIST_TOP_TRACKS",
+                  "PLAY_HISTORY"
                 ]
               }
             }
@@ -1246,7 +1247,8 @@
                   "LIKED_SONGS",
                   "PLAYLIST",
                   "ALBUM",
-                  "ARTIST_TOP_TRACKS"
+                  "ARTIST_TOP_TRACKS",
+                  "PLAY_HISTORY"
                 ]
               }
             }
@@ -2376,7 +2378,8 @@
               "LIKED_SONGS",
               "PLAYLIST",
               "ALBUM",
-              "ARTIST_TOP_TRACKS"
+              "ARTIST_TOP_TRACKS",
+              "PLAY_HISTORY"
             ]
           }
         },
