@@ -4,6 +4,8 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Disc, History, Home, Library, ListMusic, User } from "lucide-react";
 import { ReactNode, useEffect } from "react";
 
+import { HeaderUserMenu } from "./HeaderUserMenu";
+
 interface AppShellLayoutProps {
   children: ReactNode;
 }
@@ -33,20 +35,23 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
       padding="md"
     >
       <AppShell.Header className="border-b border-dark-5 bg-gradient-to-r from-dark-8 via-dark-7 to-dark-8">
-        <Group className="h-full px-4">
-          <Burger
-            color="var(--color-orange-5)"
-            hiddenFrom="sm"
-            onClick={toggle}
-            opened={opened}
-            size="sm"
-          />
-          <Text
-            className="font-bold bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent"
-            size="xl"
-          >
-            Spotlib
-          </Text>
+        <Group className="h-full px-4" justify="space-between">
+          <Group>
+            <Burger
+              color="var(--color-orange-5)"
+              hiddenFrom="sm"
+              onClick={toggle}
+              opened={opened}
+              size="sm"
+            />
+            <Text
+              className="font-bold bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent"
+              size="xl"
+            >
+              Spotlib
+            </Text>
+          </Group>
+          <HeaderUserMenu />
         </Group>
       </AppShell.Header>
 
