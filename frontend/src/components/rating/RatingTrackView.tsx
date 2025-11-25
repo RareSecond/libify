@@ -2,21 +2,12 @@ import { Button, Group, Image, Stack, Text, Title } from "@mantine/core";
 
 import { InlineTagEditor } from "@/components/InlineTagEditor";
 import { RatingSelector } from "@/components/RatingSelector";
+import { TrackDto } from "@/data/api";
 import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
-
-interface LibraryTrack {
-  album?: string;
-  albumArt?: string;
-  artist: string;
-  id: string;
-  rating?: null | number;
-  tags: Array<{ color?: string; id: string; name: string }>;
-  title: string;
-}
 
 interface RatingTrackViewProps {
   currentTrackIndex: number;
-  libraryTrack: LibraryTrack;
+  libraryTrack: TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
   onMouseRating: () => void;
   onPrevious: () => void;
