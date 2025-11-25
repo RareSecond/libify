@@ -1,6 +1,10 @@
 import { Loader, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { RatingEmptyState } from "@/components/rating/RatingEmptyState";
@@ -15,6 +19,8 @@ export const Route = createFileRoute("/rating")({ component: RatingPage });
 
 function RatingPage() {
   const navigate = useNavigate();
+  const routerState = useRouterState();
+  const isOnRatingPage = routerState.location.pathname === "/rating";
   const {
     currentTrack,
     currentTrackIndex,
@@ -127,7 +133,7 @@ function RatingPage() {
 
   // Start playing shuffled unrated tracks
   useEffect(() => {
-    if (!isReady || hasStartedPlaybackRef.current) return;
+    if (!isReady || !isOnRatingPage || hasStartedPlaybackRef.current) return;
 
     playTrackList(["placeholder"], {
       contextType: "library",
@@ -135,7 +141,7 @@ function RatingPage() {
       unratedOnly: true,
     });
     hasStartedPlaybackRef.current = true;
-  }, [isReady, playTrackList]);
+  }, [isReady, isOnRatingPage, playTrackList]);
 
   if (totalUnratedCount === 0) {
     return <RatingEmptyState onClose={handleClose} />;

@@ -104,24 +104,21 @@ function AuthWrapper() {
   // Authenticated - show app with navigation
   const isRatingMode = currentPath === "/rating";
 
-  // Rating mode: fullscreen without shell/header/sidebar but with MediaPlayer
-  if (isRatingMode) {
-    return (
-      <SpotifyPlayerProvider>
+  // Single SpotifyPlayerProvider instance to prevent remounting when switching routes
+  return (
+    <SpotifyPlayerProvider>
+      {isRatingMode ? (
+        // Rating mode: fullscreen without shell/header/sidebar but with MediaPlayer
         <div className="min-h-screen bg-dark-7">
           <Outlet />
           <MediaPlayer />
         </div>
-      </SpotifyPlayerProvider>
-    );
-  }
-
-  return (
-    <SpotifyPlayerProvider>
-      <AppShellLayout>
-        <Outlet />
-        <MediaPlayer />
-      </AppShellLayout>
+      ) : (
+        <AppShellLayout>
+          <Outlet />
+          <MediaPlayer />
+        </AppShellLayout>
+      )}
     </SpotifyPlayerProvider>
   );
 }
