@@ -103,6 +103,18 @@ export class LibraryController {
     return { message: "Tag added to track" };
   }
 
+  @ApiOperation({ summary: "Add track to user library" })
+  @ApiResponse({ description: "Track added to library", status: 200 })
+  @ApiResponse({ description: "Track not found", status: 404 })
+  @Post("tracks/:trackId/add-to-library")
+  async addTrackToLibrary(
+    @Req() req: AuthenticatedRequest,
+    @Param("trackId") trackId: string,
+  ): Promise<{ message: string }> {
+    await this.trackService.addTrackToLibrary(req.user.id, trackId);
+    return { message: "Track added to library" };
+  }
+
   @ApiOperation({ summary: "Create a new tag" })
   @ApiResponse({
     description: "Tag created",
@@ -259,6 +271,8 @@ export class LibraryController {
     return this.trackService.getUserGenres(req.user.id);
   }
 
+  // Tag management endpoints
+
   @ApiOperation({ summary: "Get user play history" })
   @ApiResponse({
     description: "Paginated list of play history",
@@ -272,8 +286,6 @@ export class LibraryController {
   ): Promise<PaginatedPlayHistoryDto> {
     return this.trackService.getPlayHistory(req.user.id, query);
   }
-
-  // Tag management endpoints
 
   @ApiOperation({
     summary: "Pre-count items to be synced (tracks, albums, playlists)",

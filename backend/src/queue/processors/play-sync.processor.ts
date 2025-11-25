@@ -132,10 +132,51 @@ export class PlaySyncProcessor extends WorkerHost {
             });
           }
 
-          // Skip if track is not in user's library
+          // If track is not in user's library, create UserTrack with addedToLibrary: false
           if (!userTrack) {
-            skippedNotInLibrary++;
-            continue;
+            try {
+              // Fetch artist data for the track
+              const artistId = item.track.artists[0]?.id;
+              const artistMap = new Map();
+              if (artistId) {
+                const artistData = await this.spotifyService.getArtist(
+                  accessToken,
+                  artistId,
+                );
+                if (artistData) {
+                  artistMap.set(artistId, artistData);
+                }
+              }
+
+              // Create or update Spotify entities (artist, album, track)
+              const { trackId: spotifyTrackId } =
+                await this.aggregationService.createOrUpdateSpotifyEntities(
+                  item.track,
+                  artistMap,
+                );
+
+              // Create UserTrack with addedToLibrary: false (auto-tracked from play history)
+              userTrack = await this.databaseService.userTrack.create({
+                data: {
+                  addedToLibrary: false,
+                  spotifyTrackId,
+                  totalPlayCount: 0,
+                  userId,
+                },
+                select: { id: true, spotifyTrackId: true },
+              });
+
+              this.logger.debug(
+                `Auto-created UserTrack for non-library play: ${item.track.name}`,
+              );
+            } catch (error) {
+              this.logger.error(
+                `Failed to auto-create UserTrack for ${item.track.name}`,
+                error,
+              );
+              skippedNotInLibrary++;
+              continue;
+            }
           }
 
           // Record play atomically: create PlayHistory + update UserTrack

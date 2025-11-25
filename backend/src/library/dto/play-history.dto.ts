@@ -1,8 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Expose, Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from "class-validator";
 
 export class GetPlayHistoryQueryDto {
+  @ApiPropertyOptional({
+    default: true,
+    description: "Include non-library tracks (auto-tracked from play history)",
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  includeNonLibrary?: boolean = true;
+
   @ApiPropertyOptional({ default: 1, description: "Page number", minimum: 1 })
   @IsInt()
   @IsOptional()
@@ -74,6 +90,12 @@ export class PlayHistoryItemDto {
   @ApiProperty()
   @Expose()
   playedAt: Date;
+
+  @ApiProperty({
+    description: "Whether the track is explicitly in the user's library",
+  })
+  @Expose()
+  trackAddedToLibrary: boolean;
 
   @ApiPropertyOptional()
   @Expose()

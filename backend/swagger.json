@@ -252,6 +252,41 @@
         ]
       }
     },
+    "/library/tracks/{trackId}/add-to-library": {
+      "post": {
+        "operationId": "LibraryController_addTrackToLibrary",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Track added to library"
+          },
+          "201": {
+            "description": ""
+          },
+          "404": {
+            "description": "Track not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add track to user library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/tags": {
       "post": {
         "operationId": "LibraryController_createTag",
@@ -747,6 +782,16 @@
         "operationId": "LibraryController_getPlayHistory",
         "parameters": [
           {
+            "name": "includeNonLibrary",
+            "required": false,
+            "in": "query",
+            "description": "Include non-library tracks (auto-tracked from play history)",
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
@@ -1051,7 +1096,8 @@
                   "LIKED_SONGS",
                   "PLAYLIST",
                   "ALBUM",
-                  "ARTIST_TOP_TRACKS"
+                  "ARTIST_TOP_TRACKS",
+                  "PLAY_HISTORY"
                 ]
               }
             }
@@ -1208,7 +1254,8 @@
                   "LIKED_SONGS",
                   "PLAYLIST",
                   "ALBUM",
-                  "ARTIST_TOP_TRACKS"
+                  "ARTIST_TOP_TRACKS",
+                  "PLAY_HISTORY"
                 ]
               }
             }
@@ -2338,7 +2385,8 @@
               "LIKED_SONGS",
               "PLAYLIST",
               "ALBUM",
-              "ARTIST_TOP_TRACKS"
+              "ARTIST_TOP_TRACKS",
+              "PLAY_HISTORY"
             ]
           }
         },
@@ -2786,6 +2834,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "trackAddedToLibrary": {
+            "type": "boolean",
+            "description": "Whether the track is explicitly in the user's library"
+          },
           "trackAlbum": {
             "type": "string"
           },
@@ -2812,6 +2864,7 @@
         "required": [
           "id",
           "playedAt",
+          "trackAddedToLibrary",
           "trackArtist",
           "trackDuration",
           "trackId",
