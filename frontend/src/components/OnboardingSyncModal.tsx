@@ -1,25 +1,21 @@
-import { Button, Card, Modal, Progress, Text } from "@mantine/core";
+import { Button, Modal, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
-import { Clock, Library, Music, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
+import { SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
 import {
   useLibraryControllerSyncLibrary,
   useLibraryControllerSyncRecentlyPlayed,
 } from "@/data/api";
+import { PartialSyncProgress } from "@/hooks/useSyncProgress";
+
+import { SyncingView } from "./sync/SyncingView";
+import { FullSyncCard, QuickSyncCard } from "./sync/SyncOptionCard";
 
 interface OnboardingSyncModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface SyncProgress {
-  current?: number;
-  message?: string;
-  percentage?: number;
-  phase?: string;
-  total?: number;
 }
 
 export function OnboardingSyncModal({
@@ -31,7 +27,7 @@ export function OnboardingSyncModal({
     null,
   );
   const [isSyncing, setIsSyncing] = useState(false);
-  const [progress, setProgress] = useState<SyncProgress>({
+  const [progress, setProgress] = useState<PartialSyncProgress>({
     message: "Starting sync...",
     percentage: 0,
   });
@@ -65,7 +61,7 @@ export function OnboardingSyncModal({
       newSocket.emit("subscribe", { jobId });
     });
 
-    newSocket.on("progress", (data: { progress: SyncProgress }) => {
+    newSocket.on("progress", (data: { progress: PartialSyncProgress }) => {
       setProgress(data.progress);
     });
 
@@ -74,6 +70,9 @@ export function OnboardingSyncModal({
         message: "Sync complete! Redirecting...",
         percentage: 100,
       });
+
+      // Clear persisted job on completion
+      localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
 
       // Clear any existing timeout before creating a new one
       if (completionTimeoutRef.current) {
@@ -91,6 +90,8 @@ export function OnboardingSyncModal({
 
     newSocket.on("failed", (data: { error: string }) => {
       setProgress({ message: `Sync failed: ${data.error}`, percentage: 0 });
+      // Clear persisted job on failure
+      localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
       setIsSyncing(false);
       setSelectedOption(null);
       setJobId(null);
@@ -101,6 +102,8 @@ export function OnboardingSyncModal({
       const errorMessage =
         error?.message || "Connection error. Please try again.";
       setProgress({ message: `Sync error: ${errorMessage}`, percentage: 0 });
+      // Clear persisted job on error
+      localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
       setIsSyncing(false);
       setSelectedOption(null);
       setJobId(null);
@@ -116,12 +119,20 @@ export function OnboardingSyncModal({
     };
   }, [jobId, onClose, navigate]);
 
+  const storeSyncJob = (id: string, type: "full" | "quick") => {
+    localStorage.setItem(
+      SYNC_JOB_STORAGE_KEY,
+      JSON.stringify({ jobId: id, startedAt: Date.now(), type }),
+    );
+  };
+
   const handleQuickSync = async () => {
     setSelectedOption("quick");
     setIsSyncing(true);
 
     try {
       const response = await quickSyncMutation.mutateAsync();
+      storeSyncJob(response.jobId, "quick");
       setJobId(response.jobId);
     } catch {
       setProgress({
@@ -139,6 +150,7 @@ export function OnboardingSyncModal({
 
     try {
       const response = await fullSyncMutation.mutateAsync({ data: {} });
+      storeSyncJob(response.jobId, "full");
       setJobId(response.jobId);
     } catch {
       setProgress({
@@ -175,61 +187,8 @@ export function OnboardingSyncModal({
           <Text className="text-sm text-gray-600 mb-4">
             Choose how you'd like to sync your Spotify library:
           </Text>
-
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow border-2 border-transparent hover:border-orange-500"
-            onClick={handleQuickSync}
-            padding="lg"
-            radius="md"
-            shadow="sm"
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Zap className="text-orange-600" size={24} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Text className="text-lg font-semibold">Quick Sync</Text>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                    Recommended
-                  </span>
-                </div>
-                <Text className="text-sm text-gray-600 mb-2">
-                  Sync 50 tracks and 10 albums to try features instantly
-                </Text>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock size={16} />
-                  <span>~30 seconds</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow border-2 border-transparent hover:border-orange-500"
-            onClick={handleFullSync}
-            padding="lg"
-            radius="md"
-            shadow="sm"
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Library className="text-blue-600" size={24} />
-              </div>
-              <div className="flex-1">
-                <Text className="text-lg font-semibold mb-2">Full Sync</Text>
-                <Text className="text-sm text-gray-600 mb-2">
-                  Sync your entire Spotify library (all tracks, albums, and
-                  playlists)
-                </Text>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock size={16} />
-                  <span>~2-5 minutes</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
+          <QuickSyncCard onClick={handleQuickSync} />
+          <FullSyncCard onClick={handleFullSync} />
           <div className="flex justify-center pt-2">
             <Button onClick={handleSkip} size="sm" variant="subtle">
               Skip for now
@@ -237,42 +196,7 @@ export function OnboardingSyncModal({
           </div>
         </div>
       ) : (
-        <div className="space-y-6 py-4">
-          <div className="flex items-center justify-center">
-            <div className="p-4 bg-orange-100 rounded-full">
-              <Music className="text-orange-600 animate-pulse" size={48} />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Text className="text-sm font-medium text-center">
-              {progress.message || "Syncing your library..."}
-            </Text>
-            {progress.current != null &&
-              progress.total != null &&
-              progress.total > 0 && (
-                <Text className="text-xs text-gray-600 text-center">
-                  {progress.current} / {progress.total} items
-                </Text>
-              )}
-          </div>
-
-          <Progress
-            animated
-            className="w-full"
-            color="orange"
-            radius="xl"
-            size="lg"
-            striped
-            value={progress.percentage || 0}
-          />
-
-          {progress.phase && progress.phase !== "0" && (
-            <Text className="text-xs text-gray-600 text-center">
-              Phase: {progress.phase}
-            </Text>
-          )}
-        </div>
+        <SyncingView progress={progress} />
       )}
     </Modal>
   );
