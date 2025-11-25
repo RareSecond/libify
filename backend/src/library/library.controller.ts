@@ -103,6 +103,9 @@ export class LibraryController {
     return { message: "Tag added to track" };
   }
 
+  @ApiOperation({ summary: "Add track to user library" })
+  @ApiResponse({ description: "Track added to library", status: 200 })
+  @ApiResponse({ description: "Track not found", status: 404 })
   @Post("tracks/:trackId/add-to-library")
   async addTrackToLibrary(
     @Req() req: AuthenticatedRequest,
