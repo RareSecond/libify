@@ -3,27 +3,19 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
+import { SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
 import {
   useLibraryControllerSyncLibrary,
   useLibraryControllerSyncRecentlyPlayed,
 } from "@/data/api";
+import { PartialSyncProgress } from "@/hooks/useSyncProgress";
 
 import { SyncingView } from "./sync/SyncingView";
 import { FullSyncCard, QuickSyncCard } from "./sync/SyncOptionCard";
 
-const SYNC_JOB_STORAGE_KEY = "spotlib-active-sync-job";
-
 interface OnboardingSyncModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface SyncProgress {
-  current?: number;
-  message?: string;
-  percentage?: number;
-  phase?: string;
-  total?: number;
 }
 
 export function OnboardingSyncModal({
@@ -35,7 +27,7 @@ export function OnboardingSyncModal({
     null,
   );
   const [isSyncing, setIsSyncing] = useState(false);
-  const [progress, setProgress] = useState<SyncProgress>({
+  const [progress, setProgress] = useState<PartialSyncProgress>({
     message: "Starting sync...",
     percentage: 0,
   });
@@ -69,7 +61,7 @@ export function OnboardingSyncModal({
       newSocket.emit("subscribe", { jobId });
     });
 
-    newSocket.on("progress", (data: { progress: SyncProgress }) => {
+    newSocket.on("progress", (data: { progress: PartialSyncProgress }) => {
       setProgress(data.progress);
     });
 

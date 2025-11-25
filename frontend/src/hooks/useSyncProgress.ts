@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
+/** Partial sync progress for simplified progress displays (e.g., onboarding modal) */
+export interface PartialSyncProgress {
+  current?: number;
+  message?: string;
+  percentage?: number;
+  phase?: string;
+  total?: number;
+}
+
 export interface SyncJobStatus {
   error?: string;
   jobId: string;

@@ -1,16 +1,10 @@
 import { Progress, Text } from "@mantine/core";
 import { Music } from "lucide-react";
 
-interface SyncingViewProps {
-  progress: SyncProgress;
-}
+import { PartialSyncProgress } from "@/hooks/useSyncProgress";
 
-interface SyncProgress {
-  current?: number;
-  message?: string;
-  percentage?: number;
-  phase?: string;
-  total?: number;
+interface SyncingViewProps {
+  progress: PartialSyncProgress;
 }
 
 export function SyncingView({ progress }: SyncingViewProps) {

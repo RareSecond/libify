@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
 import { libraryControllerGetSyncStatusByJobId } from "@/data/api";
-
-const SYNC_JOB_STORAGE_KEY = "spotlib-active-sync-job";
 
 interface StoredSyncJob {
   jobId: string;
