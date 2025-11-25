@@ -13,6 +13,7 @@
 import { Route as rootRoute } from "./routes/~__root";
 import { Route as WelcomeImport } from "./routes/~welcome";
 import { Route as TracksImport } from "./routes/~tracks";
+import { Route as RatingImport } from "./routes/~rating";
 import { Route as PlaylistsImport } from "./routes/~playlists";
 import { Route as PlayHistoryImport } from "./routes/~play-history";
 import { Route as ArtistsImport } from "./routes/~artists";
@@ -37,6 +38,12 @@ const WelcomeRoute = WelcomeImport.update({
 const TracksRoute = TracksImport.update({
   id: "/tracks",
   path: "/tracks",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const RatingRoute = RatingImport.update({
+  id: "/rating",
+  path: "/rating",
   getParentRoute: () => rootRoute,
 } as any);
 
@@ -149,6 +156,13 @@ declare module "@tanstack/react-router" {
       path: "/playlists";
       fullPath: "/playlists";
       preLoaderRoute: typeof PlaylistsImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/rating": {
+      id: "/rating";
+      path: "/rating";
+      fullPath: "/rating";
+      preLoaderRoute: typeof RatingImport;
       parentRoute: typeof rootRoute;
     };
     "/tracks": {
@@ -265,6 +279,7 @@ export interface FileRoutesByFullPath {
   "/artists": typeof ArtistsRouteWithChildren;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
+  "/rating": typeof RatingRoute;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
   "/artists/$artist": typeof ArtistsArtistRoute;
@@ -279,6 +294,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/play-history": typeof PlayHistoryRoute;
+  "/rating": typeof RatingRoute;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
   "/artists/$artist": typeof ArtistsArtistRoute;
@@ -297,6 +313,7 @@ export interface FileRoutesById {
   "/artists": typeof ArtistsRouteWithChildren;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
+  "/rating": typeof RatingRoute;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
   "/artists/$artist": typeof ArtistsArtistRoute;
@@ -316,6 +333,7 @@ export interface FileRouteTypes {
     | "/artists"
     | "/play-history"
     | "/playlists"
+    | "/rating"
     | "/tracks"
     | "/welcome"
     | "/artists/$artist"
@@ -329,6 +347,7 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/play-history"
+    | "/rating"
     | "/tracks"
     | "/welcome"
     | "/artists/$artist"
@@ -345,6 +364,7 @@ export interface FileRouteTypes {
     | "/artists"
     | "/play-history"
     | "/playlists"
+    | "/rating"
     | "/tracks"
     | "/welcome"
     | "/artists/$artist"
@@ -363,6 +383,7 @@ export interface RootRouteChildren {
   ArtistsRoute: typeof ArtistsRouteWithChildren;
   PlayHistoryRoute: typeof PlayHistoryRoute;
   PlaylistsRoute: typeof PlaylistsRouteWithChildren;
+  RatingRoute: typeof RatingRoute;
   TracksRoute: typeof TracksRoute;
   WelcomeRoute: typeof WelcomeRoute;
   AuthSuccessRoute: typeof AuthSuccessRoute;
@@ -374,6 +395,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArtistsRoute: ArtistsRouteWithChildren,
   PlayHistoryRoute: PlayHistoryRoute,
   PlaylistsRoute: PlaylistsRouteWithChildren,
+  RatingRoute: RatingRoute,
   TracksRoute: TracksRoute,
   WelcomeRoute: WelcomeRoute,
   AuthSuccessRoute: AuthSuccessRoute,
@@ -394,6 +416,7 @@ export const routeTree = rootRoute
         "/artists",
         "/play-history",
         "/playlists",
+        "/rating",
         "/tracks",
         "/welcome",
         "/auth/success"
@@ -425,6 +448,9 @@ export const routeTree = rootRoute
         "/playlists/$id",
         "/playlists/"
       ]
+    },
+    "/rating": {
+      "filePath": "~rating.tsx"
     },
     "/tracks": {
       "filePath": "~tracks.tsx"

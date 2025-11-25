@@ -15,6 +15,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronDown,
   ChevronUp,
@@ -39,11 +40,11 @@ import { useCurrentPlayback } from "../hooks/useCurrentPlayback";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
 import { formatTime } from "../utils/format";
 import { InlineTagEditor } from "./InlineTagEditor";
-import { RatingMode } from "./RatingMode";
 import { RatingSelector } from "./RatingSelector";
 import { TrackSources } from "./TrackSources";
 
 export function MediaPlayer() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentPlayback, refetch: refetchPlayback } = useCurrentPlayback();
 
@@ -90,7 +91,6 @@ export function MediaPlayer() {
   const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
-  const [isRatingModeOpen, setIsRatingModeOpen] = useState(false);
   const [mobileExpanded, { toggle: toggleMobileExpanded }] =
     useDisclosure(false);
 
@@ -374,7 +374,7 @@ export function MediaPlayer() {
               <Tooltip label="Enter Rating Mode">
                 <ActionIcon
                   color="orange"
-                  onClick={() => setIsRatingModeOpen(true)}
+                  onClick={() => navigate({ to: "/rating" })}
                   size="md"
                   variant="light"
                 >
@@ -580,7 +580,7 @@ export function MediaPlayer() {
 
                 <ActionIcon
                   color="orange"
-                  onClick={() => setIsRatingModeOpen(true)}
+                  onClick={() => navigate({ to: "/rating" })}
                   size="xl"
                   variant="light"
                 >
@@ -614,12 +614,6 @@ export function MediaPlayer() {
           </Stack>
         </Collapse>
       </Stack>
-
-      {/* Rating Mode Modal */}
-      <RatingMode
-        onClose={() => setIsRatingModeOpen(false)}
-        opened={isRatingModeOpen}
-      />
     </Card>
   );
 }

@@ -102,6 +102,20 @@ function AuthWrapper() {
   }
 
   // Authenticated - show app with navigation
+  const isRatingMode = currentPath === "/rating";
+
+  // Rating mode: fullscreen without shell/header/sidebar but with MediaPlayer
+  if (isRatingMode) {
+    return (
+      <SpotifyPlayerProvider>
+        <div className="min-h-screen bg-dark-7">
+          <Outlet />
+          <MediaPlayer />
+        </div>
+      </SpotifyPlayerProvider>
+    );
+  }
+
   return (
     <SpotifyPlayerProvider>
       <AppShellLayout>

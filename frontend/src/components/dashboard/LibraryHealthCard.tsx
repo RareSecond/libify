@@ -74,9 +74,7 @@ export function LibraryHealthCard({
               <Button
                 className="mt-3"
                 color="orange"
-                onClick={() =>
-                  navigate({ search: { genres: [] }, to: "/tracks" })
-                }
+                onClick={() => navigate({ to: "/rating" })}
                 size="xs"
                 variant="light"
               >
