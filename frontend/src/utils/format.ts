@@ -43,19 +43,25 @@ export const formatTime = (ms: number): string => {
 };
 
 /**
- * Format last sync time as relative time string
+ * Format relative time from a Date object
  */
-export const formatLastSync = (lastSync: null | string): string => {
-  if (!lastSync) return "Never";
-  const date = new Date(lastSync);
+export const formatRelativeTime = (date: Date): string => {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins} minutes ago`;
-  if (diffHours < 24) return `${diffHours} hours ago`;
-  return `${diffDays} days ago`;
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
+/**
+ * Format last sync time as relative time string
+ */
+export const formatLastSync = (lastSync: null | string): string => {
+  if (!lastSync) return "Never";
+  return formatRelativeTime(new Date(lastSync));
 };
