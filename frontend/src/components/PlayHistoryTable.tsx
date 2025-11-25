@@ -24,6 +24,14 @@ import {
 import { usePlayHistorySync } from "../hooks/usePlayHistorySync";
 import { PlayHistoryTableRow } from "./PlayHistoryTableRow";
 
+const NOTIFICATION_MESSAGES = {
+  addToLibraryError: "Failed to add track to library",
+  addToLibrarySuccess: "Success",
+  playError: "Failed to play track",
+  playErrorMessage: "Please make sure Spotify is open on one of your devices",
+  playSuccess: "Now playing",
+} as const;
+
 export function PlayHistoryTable() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
@@ -50,13 +58,13 @@ export function PlayHistoryTable() {
       notifications.show({
         color: "green",
         message: `Added "${trackTitle}" to your library`,
-        title: "Success",
+        title: NOTIFICATION_MESSAGES.addToLibrarySuccess,
       });
       refetch();
     } catch {
       notifications.show({
         color: "red",
-        message: "Failed to add track to library",
+        message: NOTIFICATION_MESSAGES.addToLibraryError,
         title: "Error",
       });
     }
@@ -75,16 +83,15 @@ export function PlayHistoryTable() {
       notifications.show({
         color: "orange",
         message: trackTitle,
-        title: "Now playing",
+        title: NOTIFICATION_MESSAGES.playSuccess,
       });
     } catch (error) {
       notifications.show({
         color: "red",
         message:
           (error as Error & { response?: { data?: { message?: string } } })
-            .response?.data?.message ||
-          "Please make sure Spotify is open on one of your devices",
-        title: "Failed to play track",
+            .response?.data?.message || NOTIFICATION_MESSAGES.playErrorMessage,
+        title: NOTIFICATION_MESSAGES.playError,
       });
     }
   };

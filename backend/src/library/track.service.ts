@@ -23,6 +23,7 @@ import {
 
 @Injectable()
 export class TrackService {
+  private static readonly PLAY_HISTORY_SOURCE_NAME = "Play History";
   private readonly logger = new Logger(TrackService.name);
 
   constructor(
@@ -51,20 +52,11 @@ export class TrackService {
     });
 
     // Add source tracking for play history
-    const existingSource = await this.databaseService.trackSource.findFirst({
-      where: { sourceType: SourceType.PLAY_HISTORY, userTrackId: trackId },
-    });
-
-    if (!existingSource) {
-      await this.databaseService.trackSource.create({
-        data: {
-          sourceId: null,
-          sourceName: "Play History",
-          sourceType: SourceType.PLAY_HISTORY,
-          userTrackId: trackId,
-        },
-      });
-    }
+    await this.ensureTrackSource(
+      trackId,
+      SourceType.PLAY_HISTORY,
+      TrackService.PLAY_HISTORY_SOURCE_NAME,
+    );
   }
 
   /**
@@ -100,12 +92,6 @@ export class TrackService {
 
     return spotifyUris;
   }
-
-  /**
-   * Helper method to fetch tracks for playback with random order
-   * Used when shuffle is true to get truly random tracks
-   * Converts Prisma where clause to Kysely for efficient database-level randomization
-   */
 
   /**
    * Helper method to fetch tracks for playback using Kysely with NULLS LAST support
@@ -363,6 +349,12 @@ export class TrackService {
 
     return spotifyUris;
   }
+
+  /**
+   * Helper method to fetch tracks for playback with random order
+   * Used when shuffle is true to get truly random tracks
+   * Converts Prisma where clause to Kysely for efficient database-level randomization
+   */
 
   async fetchTracksForPlayWithRandomOrder(
     userId: string,
@@ -2452,6 +2444,32 @@ export class TrackService {
     );
 
     return updated.rating;
+  }
+
+  /**
+   * Ensures a TrackSource exists for the given track and source type.
+   * Creates it if it doesn't exist, otherwise does nothing.
+   */
+  private async ensureTrackSource(
+    userTrackId: string,
+    sourceType: SourceType,
+    sourceName?: string,
+    sourceId?: string,
+  ): Promise<void> {
+    const existingSource = await this.databaseService.trackSource.findFirst({
+      where: { sourceType, userTrackId },
+    });
+
+    if (!existingSource) {
+      await this.databaseService.trackSource.create({
+        data: {
+          sourceId: sourceId ?? null,
+          sourceName: sourceName ?? null,
+          sourceType,
+          userTrackId,
+        },
+      });
+    }
   }
 
   private async getUserTracksWithKysely(
