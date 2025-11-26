@@ -39,6 +39,7 @@ export class AggregationService {
         FROM "UserTrack" ut
         INNER JOIN "SpotifyTrack" st ON ut."spotifyTrackId" = st.id
         WHERE ut."userId" = ${userId}
+          AND ut."addedToLibrary" = true
         GROUP BY ut."userId", st."albumId"
       )
       INSERT INTO "UserAlbum" (
@@ -97,6 +98,7 @@ export class AggregationService {
         FROM "UserTrack" ut
         INNER JOIN "SpotifyTrack" st ON ut."spotifyTrackId" = st.id
         WHERE ut."userId" = ${userId}
+          AND ut."addedToLibrary" = true
         GROUP BY ut."userId", st."artistId"
       )
       INSERT INTO "UserArtist" (
@@ -526,6 +528,7 @@ export class AggregationService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .where("ut.userId", "=", userId)
       .where("st.albumId", "=", albumId)
+      .where("ut.addedToLibrary", "=", true)
       .select([
         sql<number>`COUNT(*)::int`.as("trackCount"),
         sql<number>`SUM(st.duration)::int`.as("totalDuration"),
@@ -596,6 +599,7 @@ export class AggregationService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .where("ut.userId", "=", userId)
       .where("st.artistId", "=", artistId)
+      .where("ut.addedToLibrary", "=", true)
       .select([
         sql<number>`COUNT(*)::int`.as("trackCount"),
         sql<number>`COUNT(DISTINCT st."albumId")::int`.as("albumCount"),
