@@ -1177,6 +1177,7 @@ export class TrackService {
           )`.as("sources"),
       ])
       .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
       .where("sar.name", "=", artist)
       .where("sa.name", "=", album)
       .groupBy([
@@ -1284,6 +1285,7 @@ export class TrackService {
           )`.as("sources"),
       ])
       .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
       .where("sar.name", "=", artist)
       .groupBy([
         "ut.id",
