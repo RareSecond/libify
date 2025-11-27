@@ -50,7 +50,8 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   // data contains an object with tracks property
   const tracks: TrackDto[] = data?.tracks || [];
   const albumArt = tracks[0]?.albumArt;
-  const albumId = `${artist}|${album}`;
+  // Use the actual database albumId from track data for playback context
+  const albumId = tracks[0]?.albumId;
   const totalDuration = tracks.reduce(
     (sum: number, track: TrackDto) => sum + track.duration,
     0,

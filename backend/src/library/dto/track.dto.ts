@@ -207,6 +207,10 @@ export class TrackDto {
   @Expose()
   albumArt?: string;
 
+  @ApiProperty({ description: "Internal album ID for playback context" })
+  @Expose()
+  albumId: string;
+
   @ApiProperty()
   @Expose()
   artist: string;
@@ -218,6 +222,10 @@ export class TrackDto {
   })
   @Expose()
   artistGenres: string[];
+
+  @ApiProperty({ description: "Internal artist ID for playback context" })
+  @Expose()
+  artistId: string;
 
   @ApiProperty({ description: "Duration in milliseconds" })
   @Expose()

@@ -30,6 +30,8 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   }
 
   const tracks = data?.tracks || [];
+  // Use the actual database artistId from track data for playback context
+  const artistId = tracks[0]?.artistId;
 
   if (tracks.length === 0) {
     return (
@@ -42,6 +44,6 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   }
 
   return (
-    <TracksTable contextId={artist} contextType="artist" tracks={tracks} />
+    <TracksTable contextId={artistId} contextType="artist" tracks={tracks} />
   );
 }

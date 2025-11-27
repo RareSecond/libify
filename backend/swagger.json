@@ -2427,6 +2427,10 @@
           "albumArt": {
             "type": "string"
           },
+          "albumId": {
+            "type": "string",
+            "description": "Internal album ID for playback context"
+          },
           "artist": {
             "type": "string"
           },
@@ -2437,6 +2441,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "artistId": {
+            "type": "string",
+            "description": "Internal artist ID for playback context"
           },
           "duration": {
             "type": "number",
@@ -2482,8 +2490,10 @@
         },
         "required": [
           "addedAt",
+          "albumId",
           "artist",
           "artistGenres",
+          "artistId",
           "duration",
           "id",
           "sources",

@@ -130,12 +130,22 @@ export class PlaybackService {
         throw new Error("Spotify access token not found");
       }
 
-      // Build queue (200 tracks max)
+      // Calculate minimum tracks needed to include clicked position + buffer for next tracks
+      // If user clicked track 285, we need at least 286 tracks, plus some buffer for "next" functionality
+      const clickedPosition =
+        context.pageNumber !== undefined &&
+        context.pageSize !== undefined &&
+        context.clickedIndex !== undefined
+          ? (context.pageNumber - 1) * context.pageSize + context.clickedIndex
+          : 0;
+      // Ensure we fetch at least clickedPosition + 100 (buffer for next tracks), minimum 200
+      const limit = Math.max(200, clickedPosition + 100);
+
       const queueStart = Date.now();
-      const trackUris = await this.queueService.buildQueue(
+      const { offset, trackUris } = await this.queueService.buildQueue(
         userId,
         context,
-        200,
+        limit,
       );
       const queueDuration = Date.now() - queueStart;
 
@@ -143,12 +153,13 @@ export class PlaybackService {
         throw new Error("No tracks found for the given context");
       }
 
-      // Send all tracks to Spotify in one call
+      // Send all tracks to Spotify in one call, with offset to start at clicked track
       const spotifyStart = Date.now();
       await this.spotifyService.playTracks(
         accessToken,
         trackUris,
         context.deviceId,
+        offset,
       );
       const spotifyDuration = Date.now() - spotifyStart;
 

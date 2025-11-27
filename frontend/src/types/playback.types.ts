@@ -5,11 +5,11 @@ export interface PlayContext {
     | "album"
     | "artist"
     | "library"
-    | "play_history"
     | "playlist"
     | "recently_played"
     | "smart_playlist"
-    | "top_tracks";
+    | "top_tracks"
+    | "track";
   pageNumber?: number;
   pageSize?: number;
   search?: string;

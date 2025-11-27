@@ -37,7 +37,7 @@ export class QueueService {
     userId: string,
     context: PlayContext,
     limit = 200,
-  ): Promise<string[]> {
+  ): Promise<{ offset: number; trackUris: string[] }> {
     const startTime = Date.now();
     this.logger.log(`Building queue for user ${userId} with limit ${limit}`, {
       ...context,
@@ -45,17 +45,18 @@ export class QueueService {
       sortOrder: context.sortOrder || "(undefined)",
     });
 
-    // Calculate skip amount based on pagination
-    let skip = 0;
+    // Calculate offset for playback start position based on pagination
+    let offset = 0;
     if (
       context.pageNumber !== undefined &&
       context.pageSize !== undefined &&
       context.clickedIndex !== undefined &&
-      !context.shuffle // Don't skip for shuffle
+      !context.shuffle // Don't apply offset for shuffle
     ) {
-      skip = (context.pageNumber - 1) * context.pageSize + context.clickedIndex;
+      offset =
+        (context.pageNumber - 1) * context.pageSize + context.clickedIndex;
       this.logger.log(
-        `Calculated skip: ${skip} (page ${context.pageNumber}, size ${context.pageSize}, index ${context.clickedIndex})`,
+        `Calculated offset: ${offset} (page ${context.pageNumber}, size ${context.pageSize}, index ${context.clickedIndex})`,
       );
     }
 
@@ -69,7 +70,7 @@ export class QueueService {
             userId,
             context.contextId,
             context.shuffle,
-            skip,
+            0,
             limit,
           );
         }
@@ -82,19 +83,19 @@ export class QueueService {
             userId,
             context.contextId,
             context.shuffle,
-            skip,
+            0,
             limit,
           );
         }
         break;
 
       case ContextType.LIBRARY:
-        // Get user tracks with skip and limit
+        // Get user tracks - fetch from offset to build queue starting at clicked track
         trackUris = await this.trackService.getTracksForPlay(userId, {
           pageSize: limit,
           search: context.search,
           shouldShuffle: context.shuffle,
-          skip,
+          skip: 0,
           sortBy: context.sortBy as
             | "addedAt"
             | "album"
@@ -120,7 +121,7 @@ export class QueueService {
           trackUris = await this.getPlaylistTracks(
             userId,
             context.contextId,
-            skip,
+            0,
             limit,
           );
         }
@@ -133,44 +134,52 @@ export class QueueService {
             userId,
             context.contextId,
             context.shuffle,
-            skip,
+            0,
             limit,
           );
         }
         break;
 
       case ContextType.TRACK:
-        // Single track
+        // Single track - no offset needed
         if (context.contextId) {
           trackUris = [context.contextId];
+          offset = 0;
         }
         break;
     }
 
+    // Ensure offset doesn't exceed available tracks
+    if (offset >= trackUris.length) {
+      offset = 0;
+    }
+
     const duration = Date.now() - startTime;
     this.logger.log(
-      `Built queue with ${trackUris.length} tracks in ${duration}ms (skip: ${skip})`,
+      `Built queue with ${trackUris.length} tracks in ${duration}ms (offset: ${offset})`,
     );
 
-    return trackUris;
+    return { offset, trackUris };
   }
 
   private async getAlbumTracks(
     userId: string,
     albumId: string,
     shuffle?: boolean,
-    skip = 0,
+    _skip = 0,
     limit = 200,
   ): Promise<string[]> {
+    const db = this.kysely.database;
+
     // If shuffling, use RANDOM() to get truly random tracks from album
     if (shuffle) {
-      const db = this.kysely.database;
       const tracks = await db
         .selectFrom("SpotifyTrack as st")
         .innerJoin("UserTrack as ut", "st.id", "ut.spotifyTrackId")
         .select("st.spotifyId")
         .where("st.albumId", "=", albumId)
         .where("ut.userId", "=", userId)
+        .where("ut.addedToLibrary", "=", true)
         .orderBy(sql`RANDOM()`)
         .limit(limit)
         .execute();
@@ -180,33 +189,41 @@ export class QueueService {
         .map((t) => `spotify:track:${t.spotifyId}`);
     }
 
-    // Non-shuffle: use track number ordering
-    const tracks = await this.database.spotifyTrack.findMany({
-      orderBy: { trackNumber: "asc" },
-      skip,
-      take: limit,
-      where: { albumId, userTracks: { some: { userId } } },
-    });
+    // Non-shuffle: order by title ASC - MUST match track.service.ts:getAlbumTracks
+    const tracks = await db
+      .selectFrom("SpotifyTrack as st")
+      .innerJoin("UserTrack as ut", "st.id", "ut.spotifyTrackId")
+      .select("st.spotifyId")
+      .where("st.albumId", "=", albumId)
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .orderBy("st.title", "asc")
+      .limit(limit)
+      .execute();
 
-    return tracks.map((t) => `spotify:track:${t.spotifyId}`);
+    return tracks
+      .filter((t) => t.spotifyId)
+      .map((t) => `spotify:track:${t.spotifyId}`);
   }
 
   private async getArtistTracks(
     userId: string,
     artistId: string,
     shuffle?: boolean,
-    skip = 0,
+    _skip = 0,
     limit = 200,
   ): Promise<string[]> {
+    const db = this.kysely.database;
+
     // If shuffling, use RANDOM() to get truly random tracks from entire artist catalog
     if (shuffle) {
-      const db = this.kysely.database;
       const tracks = await db
         .selectFrom("SpotifyTrack as st")
         .innerJoin("UserTrack as ut", "st.id", "ut.spotifyTrackId")
         .select("st.spotifyId")
         .where("st.artistId", "=", artistId)
         .where("ut.userId", "=", userId)
+        .where("ut.addedToLibrary", "=", true)
         .orderBy(sql`RANDOM()`)
         .limit(limit)
         .execute();
@@ -216,15 +233,23 @@ export class QueueService {
         .map((t) => `spotify:track:${t.spotifyId}`);
     }
 
-    // Non-shuffle: use popularity ordering
-    const tracks = await this.database.spotifyTrack.findMany({
-      orderBy: { popularity: "desc" },
-      skip,
-      take: limit,
-      where: { artistId, userTracks: { some: { userId } } },
-    });
+    // Non-shuffle: order by album name, then title - MUST match track.service.ts:getArtistTracks
+    const tracks = await db
+      .selectFrom("SpotifyTrack as st")
+      .innerJoin("UserTrack as ut", "st.id", "ut.spotifyTrackId")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .select("st.spotifyId")
+      .where("st.artistId", "=", artistId)
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .orderBy("sa.name", "asc")
+      .orderBy("st.title", "asc")
+      .limit(limit)
+      .execute();
 
-    return tracks.map((t) => `spotify:track:${t.spotifyId}`);
+    return tracks
+      .filter((t) => t.spotifyId)
+      .map((t) => `spotify:track:${t.spotifyId}`);
   }
 
   private async getPlaylistTracks(
