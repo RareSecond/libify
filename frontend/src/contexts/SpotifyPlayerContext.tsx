@@ -15,6 +15,7 @@ import {
 } from "@/data/api";
 import { useShuffleManager } from "@/hooks/useShuffleManager";
 import { useSpotifyAPI } from "@/hooks/useSpotifyAPI";
+import { mapToPlaybackContext, trackPlaybackStarted } from "@/lib/posthog";
 import { PlayContext } from "@/types/playback.types";
 import {
   SpotifyPlayer,
@@ -414,6 +415,14 @@ export function SpotifyPlayerProvider({
     const backendNormalizedTracks = data.trackUris.map((uri: string) => ({
       spotifyUri: uri,
     }));
+
+    // Track playback analytics
+    trackPlaybackStarted({
+      context: mapToPlaybackContext(context?.contextType, context?.unratedOnly),
+      context_id: context?.contextId,
+      shuffle: context?.shuffle,
+      track_count: data.trackUris.length,
+    });
 
     setCurrentTrackList(data.trackUris);
     setCurrentTrackIndex(context?.clickedIndex ?? 0);

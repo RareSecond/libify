@@ -1,10 +1,15 @@
 import { Card } from "@mantine/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   useLibraryControllerSyncLibrary,
   useLibraryControllerSyncRecentlyPlayed,
 } from "@/data/api";
+import {
+  trackSyncCompleted,
+  trackSyncFailed,
+  trackSyncStarted,
+} from "@/lib/posthog";
 
 import { usePersistentSyncJob } from "../hooks/usePersistentSyncJob";
 import { useSyncProgress } from "../hooks/useSyncProgress";
@@ -43,6 +48,9 @@ export function LibrarySync({
     syncPlaylists: true,
   });
 
+  const syncStartTimeRef = useRef<null | number>(null);
+  const hasTrackedCompletionRef = useRef<null | string>(null);
+
   const syncLibraryMutation = useLibraryControllerSyncLibrary({
     mutation: {
       onError: () => {
@@ -50,6 +58,8 @@ export function LibrarySync({
         resetProgress();
       },
       onSuccess: (data) => {
+        trackSyncStarted({ albums: totalAlbums, tracks: totalTracks });
+        syncStartTimeRef.current = Date.now();
         startSyncJob(data.jobId, "full");
       },
     },
@@ -62,20 +72,45 @@ export function LibrarySync({
         resetProgress();
       },
       onSuccess: (data) => {
+        trackSyncStarted();
+        syncStartTimeRef.current = Date.now();
         startSyncJob(data.jobId, "quick");
       },
     },
   });
 
   useEffect(() => {
-    if (
-      syncProgress?.state === "completed" ||
-      syncProgress?.state === "failed"
-    ) {
+    if (syncProgress?.state === "completed" && syncProgress.result) {
+      // Track completion only once per job
+      if (hasTrackedCompletionRef.current !== currentJobId) {
+        const duration = syncStartTimeRef.current
+          ? Math.round((Date.now() - syncStartTimeRef.current) / 1000)
+          : 0;
+        trackSyncCompleted(duration, {
+          albums: syncProgress.result.totalAlbums || 0,
+          artists: 0, // Not tracked in sync result
+          tracks: syncProgress.result.totalTracks || 0,
+        });
+        hasTrackedCompletionRef.current = currentJobId;
+      }
+      clearPersistedJob();
+      onSyncComplete?.();
+    } else if (syncProgress?.state === "failed") {
+      if (hasTrackedCompletionRef.current !== currentJobId) {
+        trackSyncFailed(syncProgress.error || "Unknown error");
+        hasTrackedCompletionRef.current = currentJobId;
+      }
       clearPersistedJob();
       onSyncComplete?.();
     }
-  }, [syncProgress?.state, onSyncComplete, clearPersistedJob]);
+  }, [
+    syncProgress?.state,
+    syncProgress?.result,
+    syncProgress?.error,
+    currentJobId,
+    onSyncComplete,
+    clearPersistedJob,
+  ]);
 
   const handleStartNewSync = () => {
     resetSyncJob();

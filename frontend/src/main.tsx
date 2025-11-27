@@ -3,8 +3,12 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
 import "./index.css";
+import { initPostHog } from "./lib/posthog";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
+
+// Initialize PostHog analytics
+initPostHog();
 
 // Create a new router instance
 const router = createRouter({ routeTree });
