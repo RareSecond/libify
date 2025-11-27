@@ -178,6 +178,24 @@ export type PlaybackContext =
   | "smart_playlist"
   | "top_tracks";
 
+const CONTEXT_TYPE_MAP: Record<string, PlaybackContext> = {
+  album: "album",
+  artist: "artist",
+  library: "library",
+  play_history: "play_history",
+  recently_played: "recently_played",
+  smart_playlist: "smart_playlist",
+  top_tracks: "top_tracks",
+};
+
+export const mapToPlaybackContext = (
+  contextType?: string,
+  unratedOnly?: boolean,
+): PlaybackContext => {
+  if (unratedOnly) return "rating_mode";
+  return CONTEXT_TYPE_MAP[contextType || "library"] || "library";
+};
+
 export interface PlaybackEventProperties {
   context: PlaybackContext;
   context_id?: string;
