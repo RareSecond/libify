@@ -1,4 +1,17 @@
-import { Center, Loader, Text } from "@mantine/core";
+import {
+  Button,
+  Center,
+  Group,
+  Loader,
+  Paper,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Play, Shuffle } from "lucide-react";
+
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 
 import { useLibraryControllerGetArtistTracks } from "../data/api";
 import { TracksTable } from "./TracksTable";
@@ -8,8 +21,31 @@ interface ArtistDetailProps {
 }
 
 export function ArtistDetail({ artist }: ArtistDetailProps) {
-  const { data, error, isLoading } =
+  const navigate = useNavigate();
+  const { playTrackList } = useSpotifyPlayer();
+  const { data, error, isLoading, refetch } =
     useLibraryControllerGetArtistTracks(artist);
+
+  // Get artistId from first track for playback context
+  const artistId = data?.tracks?.[0]?.artistId;
+
+  const handlePlayFromBeginning = async () => {
+    if (!artistId) return;
+    await playTrackList(["placeholder"], {
+      contextId: artistId,
+      contextType: "artist",
+      shuffle: false,
+    });
+  };
+
+  const handlePlayShuffled = async () => {
+    if (!artistId) return;
+    await playTrackList(["placeholder"], {
+      contextId: artistId,
+      contextType: "artist",
+      shuffle: true,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -30,8 +66,6 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   }
 
   const tracks = data?.tracks || [];
-  // Use the actual database artistId from track data for playback context
-  const artistId = tracks[0]?.artistId;
 
   if (tracks.length === 0) {
     return (
@@ -44,6 +78,49 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   }
 
   return (
-    <TracksTable contextId={artistId} contextType="artist" tracks={tracks} />
+    <Stack gap="md">
+      <Group justify="space-between">
+        <Button
+          leftSection={<ArrowLeft size={16} />}
+          onClick={() => navigate({ to: "/artists" })}
+          size="xs"
+          variant="subtle"
+        >
+          Back to Artists
+        </Button>
+        <Group gap="xs">
+          <Button
+            disabled={tracks.length === 0}
+            leftSection={<Play size={16} />}
+            onClick={handlePlayFromBeginning}
+            size="sm"
+            variant="filled"
+          >
+            Play
+          </Button>
+          <Button
+            disabled={tracks.length === 0}
+            leftSection={<Shuffle size={16} />}
+            onClick={handlePlayShuffled}
+            size="sm"
+            variant="outline"
+          >
+            Shuffle
+          </Button>
+        </Group>
+      </Group>
+
+      <Paper className="p-4" radius="md" shadow="xs">
+        <Title className="mb-4" order={3}>
+          {artist}
+        </Title>
+        <TracksTable
+          contextId={artistId}
+          contextType="artist"
+          onRefetch={refetch}
+          tracks={tracks}
+        />
+      </Paper>
+    </Stack>
   );
 }

@@ -11,7 +11,9 @@ import {
   Title,
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Clock, Music, Play, Star } from "lucide-react";
+import { ArrowLeft, Clock, Music, Play, Shuffle, Star } from "lucide-react";
+
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 
 import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
 import { formatDurationDetailed } from "../utils/format";
@@ -24,10 +26,32 @@ interface AlbumDetailProps {
 
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
+  const { playTrackList } = useSpotifyPlayer();
 
   // Use the album-specific endpoint
   const { data, error, isLoading, refetch } =
     useLibraryControllerGetAlbumTracks(artist, album);
+
+  // Get albumId from first track for playback context
+  const albumId = data?.tracks?.[0]?.albumId;
+
+  const handlePlayFromBeginning = async () => {
+    if (!albumId) return;
+    await playTrackList(["placeholder"], {
+      contextId: albumId,
+      contextType: "album",
+      shuffle: false,
+    });
+  };
+
+  const handlePlayShuffled = async () => {
+    if (!albumId) return;
+    await playTrackList(["placeholder"], {
+      contextId: albumId,
+      contextType: "album",
+      shuffle: true,
+    });
+  };
 
   if (error) {
     return (
@@ -50,8 +74,6 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   // data contains an object with tracks property
   const tracks: TrackDto[] = data?.tracks || [];
   const albumArt = tracks[0]?.albumArt;
-  // Use the actual database albumId from track data for playback context
-  const albumId = tracks[0]?.albumId;
   const totalDuration = tracks.reduce(
     (sum: number, track: TrackDto) => sum + track.duration,
     0,
@@ -72,14 +94,36 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
 
   return (
     <Stack gap="md">
-      <Button
-        leftSection={<ArrowLeft size={16} />}
-        onClick={() => navigate({ to: "/albums" })}
-        size="xs"
-        variant="subtle"
-      >
-        Back to Albums
-      </Button>
+      <Group justify="space-between">
+        <Button
+          leftSection={<ArrowLeft size={16} />}
+          onClick={() => navigate({ to: "/albums" })}
+          size="xs"
+          variant="subtle"
+        >
+          Back to Albums
+        </Button>
+        <Group gap="xs">
+          <Button
+            disabled={tracks.length === 0}
+            leftSection={<Play size={16} />}
+            onClick={handlePlayFromBeginning}
+            size="sm"
+            variant="filled"
+          >
+            Play
+          </Button>
+          <Button
+            disabled={tracks.length === 0}
+            leftSection={<Shuffle size={16} />}
+            onClick={handlePlayShuffled}
+            size="sm"
+            variant="outline"
+          >
+            Shuffle
+          </Button>
+        </Group>
+      </Group>
 
       <Paper className="p-6" radius="md" shadow="xs">
         <Group align="start" gap="xl" wrap="nowrap">
