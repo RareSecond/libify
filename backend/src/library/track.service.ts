@@ -1137,6 +1137,8 @@ export class TrackService {
         "st.spotifyId",
         "st.title",
         "st.duration",
+        "st.albumId",
+        "st.artistId",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -1190,6 +1192,8 @@ export class TrackService {
         "st.spotifyId",
         "st.title",
         "st.duration",
+        "st.albumId",
+        "st.artistId",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -1204,8 +1208,10 @@ export class TrackService {
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
+        albumId: track.albumId,
         artist: track.artistName,
         artistGenres: track.artistGenres,
+        artistId: track.artistId,
         duration: track.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -1247,6 +1253,8 @@ export class TrackService {
         "st.spotifyId",
         "st.title",
         "st.duration",
+        "st.albumId",
+        "st.artistId",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -1297,6 +1305,8 @@ export class TrackService {
         "st.spotifyId",
         "st.title",
         "st.duration",
+        "st.albumId",
+        "st.artistId",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -1311,8 +1321,10 @@ export class TrackService {
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
+        albumId: track.albumId,
         artist: track.artistName,
         artistGenres: track.artistGenres,
+        artistId: track.artistId,
         duration: track.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -1644,8 +1656,10 @@ export class TrackService {
       addedAt: track.addedAt,
       album: track.spotifyTrack.album?.name || null,
       albumArt: track.spotifyTrack.album?.imageUrl || null,
+      albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
       artistGenres: track.spotifyTrack.artist.genres,
+      artistId: track.spotifyTrack.artistId,
       duration: track.spotifyTrack.duration,
       id: track.id,
       lastPlayedAt: track.lastPlayedAt,
@@ -1694,8 +1708,10 @@ export class TrackService {
       addedAt: track.addedAt,
       album: track.spotifyTrack.album?.name || null,
       albumArt: track.spotifyTrack.album?.imageUrl || null,
+      albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
       artistGenres: track.spotifyTrack.artist.genres,
+      artistId: track.spotifyTrack.artistId,
       duration: track.spotifyTrack.duration,
       id: track.id,
       lastPlayedAt: track.lastPlayedAt,
@@ -1727,8 +1743,11 @@ export class TrackService {
   ): Promise<string[]> {
     const { shouldShuffle, skip = 0, ...trackQuery } = query;
 
-    // Build where clause similar to getUserTracks
-    const where: Prisma.UserTrackWhereInput = { userId };
+    // Build where clause - MUST match getUserTracks exactly for index consistency
+    const where: Prisma.UserTrackWhereInput = {
+      addedToLibrary: true, // Only include tracks explicitly in library (matches getUserTracks)
+      userId,
+    };
 
     if (trackQuery.search) {
       where.OR = [
@@ -1760,6 +1779,11 @@ export class TrackService {
 
     if (trackQuery.minRating) {
       where.rating = { gte: trackQuery.minRating };
+    }
+
+    // Add unrated filter - MUST match getUserTracks for index consistency
+    if (trackQuery.unratedOnly) {
+      where.rating = null;
     }
 
     if (trackQuery.sourceTypes && trackQuery.sourceTypes.length > 0) {
@@ -2386,8 +2410,10 @@ export class TrackService {
         addedAt: track.addedAt,
         album: track.spotifyTrack.album.name,
         albumArt: track.spotifyTrack.album.imageUrl || null,
+        albumId: track.spotifyTrack.albumId,
         artist: track.spotifyTrack.artist.name,
         artistGenres: track.spotifyTrack.artist.genres,
+        artistId: track.spotifyTrack.artistId,
         duration: track.spotifyTrack.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,
@@ -2556,6 +2582,8 @@ export class TrackService {
         "st.spotifyId",
         "st.title",
         "st.duration",
+        "st.albumId",
+        "st.artistId",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -2603,6 +2631,8 @@ export class TrackService {
         "st.spotifyId",
         "st.title",
         "st.duration",
+        "st.albumId",
+        "st.artistId",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -2635,8 +2665,10 @@ export class TrackService {
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
+        albumId: track.albumId,
         artist: track.artistName,
         artistGenres: track.artistGenres,
+        artistId: track.artistId,
         duration: track.duration,
         id: track.id,
         lastPlayedAt: track.lastPlayedAt,

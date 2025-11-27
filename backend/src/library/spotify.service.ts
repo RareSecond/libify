@@ -465,6 +465,7 @@ export class SpotifyService {
     accessToken: string,
     trackUris: string[],
     deviceId?: string,
+    offset?: number,
   ): Promise<void> {
     const startTime = Date.now();
 
@@ -479,14 +480,18 @@ export class SpotifyService {
         deviceId,
       );
 
-      await this.spotifyApi.put(
-        "/me/player/play",
-        { uris: trackUris },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: { device_id: targetDeviceId },
-        },
-      );
+      // Build request body with optional offset for starting at a specific track
+      const body: { offset?: { position: number }; uris: string[] } = {
+        uris: trackUris,
+      };
+      if (offset !== undefined && offset > 0) {
+        body.offset = { position: offset };
+      }
+
+      await this.spotifyApi.put("/me/player/play", body, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { device_id: targetDeviceId },
+      });
 
       const duration = Date.now() - startTime;
       this.logger.log(

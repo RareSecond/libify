@@ -73,13 +73,14 @@ export function PlayHistoryTable() {
   const handlePlayTrack = async (
     trackTitle: string,
     spotifyId: string,
-    trackId: string,
+    _trackId: string,
   ) => {
     try {
-      await playTrackList(
-        [{ spotifyUri: `spotify:track:${spotifyId}`, trackId }],
-        { contextType: "play_history" },
-      );
+      // Use TRACK context type with the Spotify URI as contextId for single track playback
+      await playTrackList([{ spotifyUri: `spotify:track:${spotifyId}` }], {
+        contextId: `spotify:track:${spotifyId}`,
+        contextType: "track",
+      });
 
       notifications.show({
         color: "orange",
