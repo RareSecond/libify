@@ -11,6 +11,11 @@ import {
   useLibraryControllerRemoveTagFromTrack,
   useLibraryControllerUpdateTag,
 } from "../data/api";
+import {
+  trackTagApplied,
+  trackTagCreated,
+  trackTagRemoved,
+} from "../lib/posthog";
 import { TagFormModal } from "./tags/TagFormModal";
 import { TagList } from "./tags/TagList";
 import { TrackTagsInput } from "./tags/TrackTagsInput";
@@ -58,6 +63,7 @@ export function TagManager({
       await createTagMutation.mutateAsync({
         data: { color: values.color, name: values.name },
       });
+      trackTagCreated(values.name);
       notifications.show({
         color: "green",
         message: `Tag "${values.name}" has been created`,
@@ -121,6 +127,7 @@ export function TagManager({
 
     try {
       await addTagToTrackMutation.mutateAsync({ data: { tagId }, trackId });
+      trackTagApplied(1);
       notifications.show({
         color: "green",
         message: "Tag has been added to the track",
@@ -141,6 +148,7 @@ export function TagManager({
 
     try {
       await removeTagFromTrackMutation.mutateAsync({ tagId, trackId });
+      trackTagRemoved();
       notifications.show({
         color: "green",
         message: "Tag has been removed from the track",

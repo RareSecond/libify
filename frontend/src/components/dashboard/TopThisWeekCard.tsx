@@ -36,9 +36,10 @@ export function TopThisWeekCard({
     if (!item.spotifyId || !item.id) return;
 
     try {
-      await playTrackList([
-        { spotifyUri: `spotify:track:${item.spotifyId}`, trackId: item.id },
-      ]);
+      await playTrackList(
+        [{ spotifyUri: `spotify:track:${item.spotifyId}`, trackId: item.id }],
+        { contextType: "top_tracks" },
+      );
 
       notifications.show({
         color: "orange",

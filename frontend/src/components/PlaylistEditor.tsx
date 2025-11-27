@@ -26,6 +26,7 @@ import {
   usePlaylistsControllerCreate,
   usePlaylistsControllerUpdate,
 } from "../data/api";
+import { trackPlaylistCreated } from "../lib/posthog";
 import { defaultRule, operatorsByField } from "../utils/playlistConstants";
 import { validatePlaylistRules } from "../utils/playlistValidation";
 import { PlaylistRuleRow } from "./playlist/PlaylistRuleRow";
@@ -141,6 +142,7 @@ export function PlaylistEditor({
         });
       } else {
         await createMutation.mutateAsync({ data });
+        trackPlaylistCreated(values.criteria.rules.length);
         notifications.show({
           color: "green",
           message: "Playlist created successfully",

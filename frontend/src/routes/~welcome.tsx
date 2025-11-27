@@ -15,6 +15,7 @@ import { DashboardMockup } from "@/components/welcome/DashboardMockup";
 import { FloatingAlbums } from "@/components/welcome/FloatingAlbums";
 import { HeroSection } from "@/components/welcome/HeroSection";
 import { PainPointsGrid } from "@/components/welcome/PainPointsGrid";
+import { trackSignupStarted } from "@/lib/posthog";
 
 export const Route = createFileRoute("/welcome")({ component: WelcomePage });
 
@@ -26,6 +27,7 @@ const features = [
 
 function WelcomePage() {
   const handleConnectSpotify = () => {
+    trackSignupStarted();
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/spotify`;
   };
 

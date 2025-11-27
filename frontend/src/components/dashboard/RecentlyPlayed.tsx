@@ -29,9 +29,10 @@ export function RecentlyPlayed() {
     trackId: string,
   ) => {
     try {
-      await playTrackList([
-        { spotifyUri: `spotify:track:${spotifyId}`, trackId },
-      ]);
+      await playTrackList(
+        [{ spotifyUri: `spotify:track:${spotifyId}`, trackId }],
+        { contextType: "recently_played" },
+      );
 
       notifications.show({
         color: "orange",

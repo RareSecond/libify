@@ -14,6 +14,11 @@ import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useLibraryControllerGetTracks } from "@/data/api";
 import { useLibraryTrack } from "@/hooks/useLibraryTrack";
 import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
+import {
+  trackRatingModeEntered,
+  trackRatingModeExited,
+  trackTrackRated,
+} from "@/lib/posthog";
 
 export const Route = createFileRoute("/rating")({ component: RatingPage });
 
@@ -34,6 +39,8 @@ function RatingPage() {
   } = useSpotifyPlayer();
   const [ratedCount, setRatedCount] = useState(0);
   const hasStartedPlaybackRef = useRef(false);
+  const sessionStartTimeRef = useRef<number>(Date.now());
+  const hasTrackedEntryRef = useRef(false);
 
   const updateRatingMutation = useTrackRatingMutation();
 
@@ -53,8 +60,12 @@ function RatingPage() {
   });
 
   const handleClose = useCallback(() => {
+    const timeSpent = Math.round(
+      (Date.now() - sessionStartTimeRef.current) / 1000,
+    );
+    trackRatingModeExited(ratedCount, timeSpent);
     navigate({ to: "/" });
-  }, [navigate]);
+  }, [navigate, ratedCount]);
 
   const handleSkip = useCallback(async () => {
     await nextTrack();
@@ -64,11 +75,15 @@ function RatingPage() {
     await previousTrack();
   }, [previousTrack]);
 
-  const handleKeyboardRating = useCallback(() => {
-    if (updateRatingMutation.isPending) return;
-    setRatedCount((prev) => prev + 1);
-    setTimeout(() => handleSkip(), 500);
-  }, [handleSkip, updateRatingMutation.isPending]);
+  const handleKeyboardRating = useCallback(
+    (rating: number) => {
+      if (updateRatingMutation.isPending) return;
+      trackTrackRated(rating, "rating_mode");
+      setRatedCount((prev) => prev + 1);
+      setTimeout(() => handleSkip(), 500);
+    },
+    [handleSkip, updateRatingMutation.isPending],
+  );
 
   const handleMouseRating = useCallback(() => {
     setRatedCount((prev) => prev + 1);
@@ -101,7 +116,7 @@ function RatingPage() {
                 title: "Rating Error",
               });
             },
-            onSuccess: () => handleKeyboardRating(),
+            onSuccess: () => handleKeyboardRating(rating),
           },
         );
       }
@@ -130,6 +145,14 @@ function RatingPage() {
     handleSkip,
     handleClose,
   ]);
+
+  // Track rating mode entry
+  useEffect(() => {
+    if (totalUnratedCount > 0 && !hasTrackedEntryRef.current) {
+      trackRatingModeEntered(totalUnratedCount);
+      hasTrackedEntryRef.current = true;
+    }
+  }, [totalUnratedCount]);
 
   // Start playing shuffled unrated tracks
   useEffect(() => {

@@ -7,12 +7,13 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { AppShellLayout } from "../components/AppShell";
 import { MediaPlayer } from "../components/MediaPlayer";
 import { SpotifyPlayerProvider } from "../contexts/SpotifyPlayerContext";
 import { useAuthControllerGetProfile } from "../data/api";
+import { identifyUser, trackPageView } from "../lib/posthog";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ function AuthWrapper() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
+  const identifiedUserRef = useRef<null | number>(null);
 
   const {
     data: profile,
@@ -69,6 +71,22 @@ function AuthWrapper() {
       staleTime: 5 * 60 * 1000, // 5 minutes
     },
   });
+
+  // Track page views on route changes
+  useEffect(() => {
+    trackPageView(currentPath);
+  }, [currentPath]);
+
+  // Identify user in PostHog once authenticated
+  useEffect(() => {
+    if (profile && identifiedUserRef.current !== profile.id) {
+      identifyUser(String(profile.id), {
+        email: profile.email,
+        name: profile.name,
+      });
+      identifiedUserRef.current = profile.id;
+    }
+  }, [profile]);
 
   // Handle authentication-based redirects
   useEffect(() => {
