@@ -412,7 +412,10 @@ export class PlaylistsService {
     userId: string,
     criteria: PlaylistCriteriaDto,
   ): Prisma.UserTrackWhereInput {
-    const baseWhere: Prisma.UserTrackWhereInput = { userId };
+    const baseWhere: Prisma.UserTrackWhereInput = {
+      addedToLibrary: true,
+      userId,
+    };
 
     if (!criteria.rules || criteria.rules.length === 0) {
       return baseWhere;
