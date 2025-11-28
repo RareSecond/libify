@@ -201,7 +201,7 @@ export function ArtistsOverview() {
           <Pagination
             boundaries={1}
             onChange={(newPage) => updateSearch({ page: newPage })}
-            siblings={1}
+            siblings={3}
             total={data.totalPages}
             value={page}
           />

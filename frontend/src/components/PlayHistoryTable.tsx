@@ -177,8 +177,10 @@ export function PlayHistoryTable() {
       {totalPages > 1 && (
         <Center>
           <Pagination
+            boundaries={1}
             color="orange"
             onChange={setPage}
+            siblings={3}
             total={totalPages}
             value={page}
             withEdges
