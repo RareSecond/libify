@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Avatar,
   Badge,
+  Box,
   Group,
   Stack,
   Table,
@@ -12,7 +13,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Music, PlusSquare } from "lucide-react";
 
 import { PlayHistoryItemDto } from "../data/api";
-import { formatDate, formatDuration } from "./PlayHistoryTable.helpers";
+import { formatDate } from "./PlayHistoryTable.helpers";
 
 interface PlayHistoryTableRowProps {
   isAddingToLibrary: boolean;
@@ -49,60 +50,58 @@ export function PlayHistoryTableRow({
               <Music size={20} />
             </Avatar>
           )}
-          <Stack gap={2}>
-            <Text className="font-medium text-dark-0" lineClamp={1} size="sm">
-              {item.trackTitle}
+          <Box className="min-w-0">
+            <Group gap="xs" wrap="nowrap">
+              <Text className="font-medium text-dark-0" lineClamp={1} size="sm">
+                {item.trackTitle}
+              </Text>
+              {!item.trackAddedToLibrary && (
+                <Badge className="shrink-0" color="gray" size="xs" variant="dot">
+                  Not in library
+                </Badge>
+              )}
+            </Group>
+            <Text className="text-dark-2" lineClamp={1} size="xs">
+              <Text
+                className="cursor-pointer hover:underline hover:text-orange-5"
+                component="span"
+                inherit
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate({
+                    params: { artist: item.trackArtist },
+                    to: "/artists/$artist",
+                  });
+                }}
+              >
+                {item.trackArtist}
+              </Text>
+              {item.trackAlbum && (
+                <>
+                  {" — "}
+                  <Text
+                    className="cursor-pointer hover:underline hover:text-orange-5"
+                    component="span"
+                    inherit
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate({
+                        params: { album: item.trackAlbum!, artist: item.trackArtist },
+                        to: "/albums/$artist/$album",
+                      });
+                    }}
+                  >
+                    {item.trackAlbum}
+                  </Text>
+                </>
+              )}
             </Text>
-            {!item.trackAddedToLibrary && (
-              <Badge color="gray" size="xs" variant="dot">
-                Not in library
-              </Badge>
-            )}
-          </Stack>
+          </Box>
         </Group>
       </Table.Td>
-      <Table.Td>
-        <Text
-          className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
-          lineClamp={1}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate({
-              params: { artist: item.trackArtist },
-              to: "/artists/$artist",
-            });
-          }}
-          size="sm"
-        >
-          {item.trackArtist}
-        </Text>
-      </Table.Td>
-      <Table.Td>
-        <Text
-          className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
-          lineClamp={1}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (item.trackAlbum) {
-              navigate({
-                params: { album: item.trackAlbum, artist: item.trackArtist },
-                to: "/albums/$artist/$album",
-              });
-            }
-          }}
-          size="sm"
-        >
-          {item.trackAlbum || "-"}
-        </Text>
-      </Table.Td>
-      <Table.Td>
-        <Badge color="orange" size="sm" variant="dot">
+      <Table.Td className="whitespace-nowrap">
+        <Text className="text-dark-2" size="xs">
           {formatDate(item.playedAt)}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        <Text className="text-dark-1" size="sm">
-          {formatDuration(item.trackDuration)}
         </Text>
       </Table.Td>
       <Table.Td onClick={(e) => e.stopPropagation()}>
