@@ -16,7 +16,9 @@ import { ArrowLeft, Clock, Music, Play, Shuffle, Star } from "lucide-react";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 
 import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
+import { useColumnVisibility } from "../hooks/useColumnVisibility";
 import { formatDurationDetailed } from "../utils/format";
+import { ColumnVisibilityMenu } from "./ColumnVisibilityMenu";
 import { TracksTable } from "./TracksTable";
 
 interface AlbumDetailProps {
@@ -27,6 +29,8 @@ interface AlbumDetailProps {
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
+  const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
+    useColumnVisibility();
 
   // Use the album-specific endpoint
   const { data, error, isLoading, refetch } =
@@ -183,12 +187,20 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
       </Paper>
 
       <Paper className="p-4" radius="md" shadow="xs">
-        <Text className="mb-2 text-sm text-gray-600">Album Tracks</Text>
+        <Group className="mb-2" justify="space-between">
+          <Text className="text-sm text-gray-600">Album Tracks</Text>
+          <ColumnVisibilityMenu
+            columnVisibility={columnVisibility}
+            onToggle={toggleColumnVisibility}
+          />
+        </Group>
 
         <TracksTable
+          columnVisibility={columnVisibility}
           contextId={albumId}
           contextType="album"
           isLoading={false}
+          onColumnVisibilityChange={setColumnVisibility}
           onRefetch={refetch}
           tracks={tracks}
         />

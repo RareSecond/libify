@@ -1,6 +1,11 @@
 import { Center, Loader, Table } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  getCoreRowModel,
+  Updater,
+  useReactTable,
+  VisibilityState,
+} from "@tanstack/react-table";
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
@@ -11,9 +16,11 @@ import { TracksTableBody } from "./TracksTableBody";
 import { TracksTableHeader } from "./TracksTableHeader";
 
 interface TracksTableProps {
+  columnVisibility?: VisibilityState;
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   isLoading?: boolean;
+  onColumnVisibilityChange?: (updaterOrValue: Updater<VisibilityState>) => void;
   onRatingChange?: () => void;
   onRefetch?: () => void;
   onSortChange?: (columnId: string) => void;
@@ -26,9 +33,11 @@ interface TracksTableProps {
 }
 
 export function TracksTable({
+  columnVisibility,
   contextId,
   contextType,
   isLoading,
+  onColumnVisibilityChange,
   onRatingChange,
   onRefetch,
   onSortChange,
@@ -126,8 +135,10 @@ export function TracksTable({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     onColumnOrderChange: setColumnOrder,
+    onColumnVisibilityChange,
     state: {
       columnOrder,
+      columnVisibility,
       sorting: sortBy ? [{ desc: sortOrder === "desc", id: sortBy }] : [],
     },
   });

@@ -4,7 +4,6 @@ import {
   Badge,
   Box,
   Group,
-  Stack,
   Table,
   Text,
   Tooltip,
@@ -56,7 +55,12 @@ export function PlayHistoryTableRow({
                 {item.trackTitle}
               </Text>
               {!item.trackAddedToLibrary && (
-                <Badge className="shrink-0" color="gray" size="xs" variant="dot">
+                <Badge
+                  className="shrink-0"
+                  color="gray"
+                  size="xs"
+                  variant="dot"
+                >
                   Not in library
                 </Badge>
               )}
@@ -86,7 +90,10 @@ export function PlayHistoryTableRow({
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate({
-                        params: { album: item.trackAlbum!, artist: item.trackArtist },
+                        params: {
+                          album: item.trackAlbum!,
+                          artist: item.trackArtist,
+                        },
                         to: "/albums/$artist/$album",
                       });
                     }}
