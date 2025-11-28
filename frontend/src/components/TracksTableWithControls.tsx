@@ -169,9 +169,9 @@ export function TracksTableWithControls({
       {data && data.totalPages > 1 && (
         <Center className="mt-3 md:mt-6">
           <Pagination
-            boundaries={0}
+            boundaries={1}
             onChange={(newPage) => onPageChange?.(newPage)}
-            siblings={0}
+            siblings={3}
             size="sm"
             total={data.totalPages}
             value={page}

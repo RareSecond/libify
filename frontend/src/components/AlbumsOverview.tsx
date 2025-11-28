@@ -221,7 +221,7 @@ export function AlbumsOverview() {
             boundaries={1}
             color="orange"
             onChange={(newPage) => updateSearch({ page: newPage })}
-            siblings={1}
+            siblings={3}
             total={data.totalPages}
             value={page}
           />
