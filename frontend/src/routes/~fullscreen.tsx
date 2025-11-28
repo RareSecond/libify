@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 
 import { FullscreenHeader } from "@/components/fullscreen/FullscreenHeader";
+import { FullscreenSpotifyTrackView } from "@/components/fullscreen/FullscreenSpotifyTrackView";
 import { FullscreenTrackView } from "@/components/fullscreen/FullscreenTrackView";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useLibraryTrack } from "@/hooks/useLibraryTrack";
@@ -27,7 +28,7 @@ function FullscreenPage() {
   const originalSpotifyId =
     currentTrack?.linked_from?.id || currentTrack?.id || "";
 
-  const { libraryTrack, refetchLibraryTrack } = useLibraryTrack({
+  const { isLoading, libraryTrack, refetchLibraryTrack } = useLibraryTrack({
     spotifyId: originalSpotifyId,
   });
 
@@ -100,7 +101,9 @@ function FullscreenPage() {
           Previous · Esc = Back
         </Text>
 
-        {libraryTrack ? (
+        {isLoading ? (
+          <Loader color="orange" size="xl" />
+        ) : libraryTrack ? (
           <FullscreenTrackView
             currentTrackIndex={currentTrackIndex}
             libraryTrack={libraryTrack}
@@ -109,7 +112,12 @@ function FullscreenPage() {
             onPrevious={handlePrevious}
           />
         ) : (
-          <Loader color="orange" size="xl" />
+          <FullscreenSpotifyTrackView
+            currentTrackIndex={currentTrackIndex}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            track={currentTrack}
+          />
         )}
       </div>
     </div>
