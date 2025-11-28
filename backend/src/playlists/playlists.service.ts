@@ -163,12 +163,16 @@ export class PlaylistsService {
     userId: string,
     playlistId: string,
     shuffle = false,
+    sortBy?: string,
+    sortOrder?: "asc" | "desc",
   ): Promise<string[]> {
     const playlist = await this.findOne(userId, playlistId);
     const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
 
     const where = this.buildWhereClause(userId, criteria);
-    const orderBy = this.buildOrderBy(criteria);
+    const orderBy = sortBy
+      ? this.buildOrderByClause(sortBy, sortOrder || "desc")
+      : this.buildOrderBy(criteria);
 
     // Get all tracks up to playlist limit (or 500 max for Spotify API compatibility)
     const maxTracks = criteria.limit ? Math.min(criteria.limit, 500) : 500;
@@ -254,9 +258,9 @@ export class PlaylistsService {
 
   private buildOrderBy(
     criteria: PlaylistCriteriaDto,
-  ): Prisma.UserTrackOrderByWithRelationInput {
+  ): Prisma.UserTrackOrderByWithRelationInput[] {
     if (!criteria.orderBy) {
-      return { addedAt: "desc" };
+      return [{ addedAt: "desc" }, { id: "asc" }];
     }
 
     const direction = criteria.orderDirection || "desc";
@@ -266,33 +270,45 @@ export class PlaylistsService {
   /**
    * Builds a Prisma orderBy clause based on field name and direction.
    * Handles field name normalization for both API and criteria formats.
+   * Returns an array with secondary sort by id for deterministic ordering.
    */
   private buildOrderByClause(
     field: string,
     direction: "asc" | "desc",
-  ): Prisma.UserTrackOrderByWithRelationInput {
+  ): Prisma.UserTrackOrderByWithRelationInput[] {
     // Normalize field names from criteria format to database field format
     const normalizedField = this.normalizeFieldName(field);
 
+    // Secondary sort by id ensures deterministic ordering when primary sort has ties
+    const secondarySort: Prisma.UserTrackOrderByWithRelationInput = {
+      id: "asc",
+    };
+
     switch (normalizedField) {
       case "addedAt":
-        return { addedAt: direction };
+        return [{ addedAt: direction }, secondarySort];
       case "album":
-        return { spotifyTrack: { album: { name: direction } } };
+        return [
+          { spotifyTrack: { album: { name: direction } } },
+          secondarySort,
+        ];
       case "artist":
-        return { spotifyTrack: { artist: { name: direction } } };
+        return [
+          { spotifyTrack: { artist: { name: direction } } },
+          secondarySort,
+        ];
       case "duration":
-        return { spotifyTrack: { duration: direction } };
+        return [{ spotifyTrack: { duration: direction } }, secondarySort];
       case "lastPlayedAt":
-        return { lastPlayedAt: direction };
+        return [{ lastPlayedAt: direction }, secondarySort];
       case "rating":
-        return { rating: direction };
+        return [{ rating: direction }, secondarySort];
       case "title":
-        return { spotifyTrack: { title: direction } };
+        return [{ spotifyTrack: { title: direction } }, secondarySort];
       case "totalPlayCount":
-        return { totalPlayCount: direction };
+        return [{ totalPlayCount: direction }, secondarySort];
       default:
-        return { addedAt: "desc" };
+        return [{ addedAt: "desc" }, secondarySort];
     }
   }
 

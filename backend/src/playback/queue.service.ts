@@ -136,6 +136,8 @@ export class QueueService {
             context.shuffle,
             0,
             limit,
+            context.sortBy,
+            context.sortOrder as "asc" | "desc" | undefined,
           );
         }
         break;
@@ -272,6 +274,8 @@ export class QueueService {
     shuffle?: boolean,
     skip = 0,
     limit = 200,
+    sortBy?: string,
+    sortOrder?: "asc" | "desc",
   ): Promise<string[]> {
     try {
       // Use PlaylistsService which has full criteria evaluation logic
@@ -279,6 +283,8 @@ export class QueueService {
         userId,
         smartPlaylistId,
         shuffle || false,
+        sortBy,
+        sortOrder,
       );
 
       // Apply skip and limit to match pagination
