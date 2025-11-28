@@ -89,6 +89,12 @@ export function SpotifyPlayerProvider({
   const shouldAutoPlayNext = useRef(false);
   const isMountedRef = useRef(true);
   const attachedPlayerRef = useRef<null | SpotifyPlayer>(null);
+  const currentTrackListRef = useRef<string[]>([]);
+
+  // Keep the ref in sync with state so playerStateChangedHandler can access current list
+  useEffect(() => {
+    currentTrackListRef.current = currentTrackList;
+  }, [currentTrackList]);
   const listenersRef = useRef<
     { event: string; handler: (data?: unknown) => void }[]
   >([]);
@@ -161,6 +167,15 @@ export function SpotifyPlayerProvider({
         setIsPlaying(newIsPlaying);
         setPosition(state.position);
         setDuration(newTrack.duration_ms);
+
+        // Sync currentTrackIndex with the actual playing track
+        const trackList = currentTrackListRef.current;
+        if (trackList.length > 0 && newTrack.uri) {
+          const newIndex = trackList.indexOf(newTrack.uri);
+          if (newIndex !== -1) {
+            setCurrentTrackIndex(newIndex);
+          }
+        }
       };
 
       const readyHandler = (data: unknown) => {
