@@ -120,13 +120,13 @@ function AuthWrapper() {
   }
 
   // Authenticated - show app with navigation
-  const isRatingMode = currentPath === "/rating";
+  const isFullscreenMode = currentPath === "/fullscreen";
 
   // Single SpotifyPlayerProvider instance to prevent remounting when switching routes
   return (
     <SpotifyPlayerProvider>
-      {isRatingMode ? (
-        // Rating mode: fullscreen without shell/header/sidebar but with MediaPlayer
+      {isFullscreenMode ? (
+        // Fullscreen mode: without shell/header/sidebar but with MediaPlayer
         <div className="min-h-screen bg-dark-7">
           <Outlet />
           <MediaPlayer />

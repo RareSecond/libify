@@ -4,6 +4,7 @@ import { Heart, Star, Tag } from "lucide-react";
 
 interface LibraryHealthCardProps {
   averageRating: number;
+  onStartRating: () => void;
   percentageRated: number;
   percentageTagged: number;
   ratedTracks: number;
@@ -14,6 +15,7 @@ interface LibraryHealthCardProps {
 
 export function LibraryHealthCard({
   averageRating,
+  onStartRating,
   percentageRated,
   percentageTagged,
   ratedTracks,
@@ -74,7 +76,7 @@ export function LibraryHealthCard({
               <Button
                 className="mt-3"
                 color="orange"
-                onClick={() => navigate({ to: "/rating" })}
+                onClick={onStartRating}
                 size="xs"
                 variant="light"
               >

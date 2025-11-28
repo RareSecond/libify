@@ -370,11 +370,11 @@ export function MediaPlayer() {
           {/* Volume Control & Device Info */}
           <Group className="flex-1" justify="flex-end">
             <Group align="center" gap="xs">
-              {/* Rating Mode Button */}
-              <Tooltip label="Enter Rating Mode">
+              {/* Fullscreen Mode Button */}
+              <Tooltip label="Enter Fullscreen Mode">
                 <ActionIcon
                   color="orange"
-                  onClick={() => navigate({ to: "/rating" })}
+                  onClick={() => navigate({ to: "/fullscreen" })}
                   size="md"
                   variant="light"
                 >
@@ -580,7 +580,7 @@ export function MediaPlayer() {
 
                 <ActionIcon
                   color="orange"
-                  onClick={() => navigate({ to: "/rating" })}
+                  onClick={() => navigate({ to: "/fullscreen" })}
                   size="xl"
                   variant="light"
                 >

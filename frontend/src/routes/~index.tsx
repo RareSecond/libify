@@ -7,7 +7,7 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Disc, Music, User } from "lucide-react";
 
 import { LibraryHealthCard } from "@/components/dashboard/LibraryHealthCard";
@@ -18,6 +18,7 @@ import { TopThisWeekCard } from "@/components/dashboard/TopThisWeekCard";
 import { WeeklyActivityCard } from "@/components/dashboard/WeeklyActivityCard";
 import { LibrarySync } from "@/components/LibrarySync";
 import { PageTitle } from "@/components/PageTitle";
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useLibraryControllerGetDashboardStats } from "@/data/api";
 
 export const Route = createFileRoute("/")({ component: HomePage });
@@ -29,11 +30,22 @@ interface LibrarySummaryInlineProps {
 }
 
 function HomePage() {
+  const navigate = useNavigate();
+  const { playTrackList } = useSpotifyPlayer();
   const {
     data: dashboardStats,
     isLoading,
     refetch,
   } = useLibraryControllerGetDashboardStats();
+
+  const handleStartRating = async () => {
+    await playTrackList(["placeholder"], {
+      contextType: "library",
+      shuffle: true,
+      unratedOnly: true,
+    });
+    navigate({ to: "/fullscreen" });
+  };
 
   if (isLoading) {
     return (
@@ -85,6 +97,7 @@ function HomePage() {
             {/* Library Health - Full Width Hero */}
             <LibraryHealthCard
               averageRating={dashboardStats?.ratingStats.averageRating || 0}
+              onStartRating={handleStartRating}
               percentageRated={dashboardStats?.ratingStats.percentageRated || 0}
               percentageTagged={dashboardStats?.tagStats.percentageTagged || 0}
               ratedTracks={dashboardStats?.ratingStats.ratedTracks || 0}

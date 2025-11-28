@@ -103,23 +103,9 @@ export const trackSyncFailed = (error: string): void => {
 
 // --- RATING (Primary Engagement) ---
 
-export const trackRatingModeEntered = (unratedCount: number): void => {
-  trackEvent("rating_mode_entered", { unrated_count: unratedCount });
-};
-
-export const trackRatingModeExited = (
-  tracksRated: number,
-  timeSpent: number,
-): void => {
-  trackEvent("rating_mode_exited", {
-    time_spent_seconds: timeSpent,
-    tracks_rated: tracksRated,
-  });
-};
-
 export const trackTrackRated = (
   rating: number,
-  source: "album" | "artist" | "library" | "rating_mode",
+  source: "album" | "artist" | "fullscreen" | "library",
 ): void => {
   trackEvent("track_rated", { rating, source });
 };
@@ -173,7 +159,6 @@ export type PlaybackContext =
   | "artist"
   | "library"
   | "play_history"
-  | "rating_mode"
   | "recently_played"
   | "smart_playlist"
   | "top_tracks";
@@ -188,11 +173,7 @@ const CONTEXT_TYPE_MAP: Record<string, PlaybackContext> = {
   top_tracks: "top_tracks",
 };
 
-export const mapToPlaybackContext = (
-  contextType?: string,
-  unratedOnly?: boolean,
-): PlaybackContext => {
-  if (unratedOnly) return "rating_mode";
+export const mapToPlaybackContext = (contextType?: string): PlaybackContext => {
   return CONTEXT_TYPE_MAP[contextType || "library"] || "library";
 };
 
