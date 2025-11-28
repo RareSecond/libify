@@ -1,19 +1,27 @@
 import { Center, Loader, Table } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  getCoreRowModel,
+  Updater,
+  useReactTable,
+  VisibilityState,
+} from "@tanstack/react-table";
 import { useState } from "react";
 
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
+import { useColumnSizing } from "../hooks/useColumnSizing";
 import { useTracksTableColumns } from "../hooks/useTracksTableColumns";
 import { TracksTableBody } from "./TracksTableBody";
 import { TracksTableHeader } from "./TracksTableHeader";
 
 interface TracksTableProps {
+  columnVisibility?: VisibilityState;
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   isLoading?: boolean;
+  onColumnVisibilityChange?: (updaterOrValue: Updater<VisibilityState>) => void;
   onRatingChange?: () => void;
   onRefetch?: () => void;
   onSortChange?: (columnId: string) => void;
@@ -26,9 +34,11 @@ interface TracksTableProps {
 }
 
 export function TracksTable({
+  columnVisibility,
   contextId,
   contextType,
   isLoading,
+  onColumnVisibilityChange,
   onRatingChange,
   onRefetch,
   onSortChange,
@@ -100,12 +110,14 @@ export function TracksTable({
     "duration",
     "totalPlayCount",
     "lastPlayedAt",
+    "addedAt",
     "rating",
     "tags",
     "sources",
   ];
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
+  const { columnSizing, setColumnSizing } = useColumnSizing();
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
@@ -126,8 +138,12 @@ export function TracksTable({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     onColumnOrderChange: setColumnOrder,
+    onColumnSizingChange: setColumnSizing,
+    onColumnVisibilityChange,
     state: {
       columnOrder,
+      columnSizing,
+      columnVisibility,
       sorting: sortBy ? [{ desc: sortOrder === "desc", id: sortBy }] : [],
     },
   });
@@ -192,6 +208,7 @@ export function TracksTable({
           onDragStart={handleDragStart}
           onDrop={handleDrop}
           onSortChange={onSortChange}
+          table={table}
         />
         <TracksTableBody
           isPlaying={isPlaying}

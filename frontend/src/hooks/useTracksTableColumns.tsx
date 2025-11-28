@@ -139,6 +139,17 @@ export function useTracksTableColumns({
         size: 100,
       },
       {
+        accessorKey: "addedAt",
+        cell: ({ getValue }) => (
+          <Text className="text-gray-600" size="xs">
+            {formatDate(getValue() as string | undefined)}
+          </Text>
+        ),
+        header: "Added",
+        id: "addedAt",
+        size: 100,
+      },
+      {
         accessorKey: "rating",
         cell: ({ row }) => (
           <RatingSelector

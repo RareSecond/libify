@@ -138,6 +138,7 @@ export function PlayHistoryTable() {
 
       <div className="overflow-x-auto">
         <Table
+          className="table-auto"
           highlightOnHover
           horizontalSpacing="md"
           striped
@@ -146,18 +147,15 @@ export function PlayHistoryTable() {
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Track</Table.Th>
-              <Table.Th>Artist</Table.Th>
-              <Table.Th>Album</Table.Th>
-              <Table.Th>Played At</Table.Th>
-              <Table.Th>Duration</Table.Th>
+              <Table.Th className="w-full">Track</Table.Th>
+              <Table.Th className="whitespace-nowrap">Played At</Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {items.length === 0 ? (
               <Table.Tr>
-                <Table.Td className="text-center" colSpan={6}>
+                <Table.Td className="text-center" colSpan={3}>
                   <Text className="text-dark-1">No play history found</Text>
                 </Table.Td>
               </Table.Tr>

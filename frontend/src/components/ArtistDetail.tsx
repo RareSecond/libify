@@ -14,6 +14,8 @@ import { ArrowLeft, Play, Shuffle } from "lucide-react";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 
 import { useLibraryControllerGetArtistTracks } from "../data/api";
+import { useColumnVisibility } from "../hooks/useColumnVisibility";
+import { ColumnVisibilityMenu } from "./ColumnVisibilityMenu";
 import { TracksTable } from "./TracksTable";
 
 interface ArtistDetailProps {
@@ -25,6 +27,8 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   const { playTrackList } = useSpotifyPlayer();
   const { data, error, isLoading, refetch } =
     useLibraryControllerGetArtistTracks(artist);
+  const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
+    useColumnVisibility();
 
   // Get artistId from first track for playback context
   const artistId = data?.tracks?.[0]?.artistId;
@@ -111,12 +115,18 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
       </Group>
 
       <Paper className="p-4" radius="md" shadow="xs">
-        <Title className="mb-4" order={3}>
-          {artist}
-        </Title>
+        <Group className="mb-4" justify="space-between">
+          <Title order={3}>{artist}</Title>
+          <ColumnVisibilityMenu
+            columnVisibility={columnVisibility}
+            onToggle={toggleColumnVisibility}
+          />
+        </Group>
         <TracksTable
+          columnVisibility={columnVisibility}
           contextId={artistId}
           contextType="artist"
+          onColumnVisibilityChange={setColumnVisibility}
           onRefetch={refetch}
           tracks={tracks}
         />

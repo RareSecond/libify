@@ -1,5 +1,5 @@
 import { Table } from "@mantine/core";
-import { flexRender, Header } from "@tanstack/react-table";
+import { flexRender, Header, Table as ReactTable } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { TrackDto } from "../data/api";
@@ -13,6 +13,7 @@ interface TracksTableHeaderProps {
   onDragStart: (e: React.DragEvent, columnId: string) => void;
   onDrop: (e: React.DragEvent) => void;
   onSortChange?: (columnId: string) => void;
+  table: ReactTable<TrackDto>;
 }
 
 export function TracksTableHeader({
@@ -24,6 +25,7 @@ export function TracksTableHeader({
   onDragStart,
   onDrop,
   onSortChange,
+  table,
 }: TracksTableHeaderProps) {
   return (
     <Table.Thead>
@@ -40,15 +42,16 @@ export function TracksTableHeader({
             "sources",
           ].includes(columnId);
 
+          const isResizing =
+            table.getState().columnSizingInfo.isResizingColumn ===
+            header.column.id;
+
           return (
             <Table.Th
-              className={`relative select-none transition-opacity duration-200 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"} ${hiddenOnMobile ? "hidden md:table-cell" : ""}`}
-              draggable
+              className={`relative select-none transition-opacity duration-200 ${hiddenOnMobile ? "hidden md:table-cell" : ""}`}
               key={header.id}
-              onDragEnd={onDragEnd}
               onDragEnter={(e) => onDragEnter(e, header.column.id)}
               onDragOver={onDragOver}
-              onDragStart={(e) => onDragStart(e, header.column.id)}
               onDrop={onDrop}
               // eslint-disable-next-line react/forbid-component-props
               style={{
@@ -57,14 +60,16 @@ export function TracksTableHeader({
               }}
             >
               <div
-                className={`flex items-center gap-1 text-xs md:text-sm ${canSort ? "cursor-pointer" : ""}`}
+                className={`flex items-center gap-1 text-xs md:text-sm pr-2 ${draggedColumn ? "cursor-grabbing" : "cursor-grab"} ${canSort ? "hover:text-orange-5" : ""}`}
+                draggable
                 onClick={(e) => {
                   if (canSort && onSortChange) {
                     e.stopPropagation();
                     onSortChange(header.column.id);
                   }
                 }}
-                onDragStart={(e) => e.stopPropagation()}
+                onDragEnd={onDragEnd}
+                onDragStart={(e) => onDragStart(e, header.column.id)}
               >
                 {flexRender(
                   header.column.columnDef.header,
@@ -82,6 +87,16 @@ export function TracksTableHeader({
                   </span>
                 )}
               </div>
+              {header.column.getCanResize() && (
+                <div
+                  className={`absolute right-0 top-0 h-full w-2 cursor-col-resize select-none touch-none bg-transparent hover:bg-orange-5 ${
+                    isResizing ? "bg-orange-5" : ""
+                  }`}
+                  onDoubleClick={() => header.column.resetSize()}
+                  onMouseDown={header.getResizeHandler()}
+                  onTouchStart={header.getResizeHandler()}
+                />
+              )}
             </Table.Th>
           );
         })}

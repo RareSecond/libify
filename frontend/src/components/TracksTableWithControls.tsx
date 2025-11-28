@@ -11,6 +11,8 @@ import { Search } from "lucide-react";
 import { ReactNode } from "react";
 
 import { TrackDto } from "../data/api";
+import { useColumnVisibility } from "../hooks/useColumnVisibility";
+import { ColumnVisibilityMenu } from "./ColumnVisibilityMenu";
 import { FiltersDrawer } from "./FiltersDrawer";
 import { TracksTable } from "./TracksTable";
 
@@ -65,6 +67,9 @@ export function TracksTableWithControls({
   sortBy,
   sortOrder,
 }: TracksTableWithControlsProps) {
+  const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
+    useColumnVisibility();
+
   if (error) {
     return (
       <Center className="h-[400px]">
@@ -98,15 +103,23 @@ export function TracksTableWithControls({
             {extraControls}
           </Group>
 
-          {!hidePageSize && (
-            <Select
-              className="w-[100px]"
-              data={["10", "20", "50", "100"]}
-              label="Page size"
-              onChange={(value) => onPageSizeChange?.(parseInt(value || "20"))}
-              value={pageSize.toString()}
+          <Group gap="sm">
+            {!hidePageSize && (
+              <Select
+                className="w-[100px]"
+                data={["10", "20", "50", "100"]}
+                label="Page size"
+                onChange={(value) =>
+                  onPageSizeChange?.(parseInt(value || "20"))
+                }
+                value={pageSize.toString()}
+              />
+            )}
+            <ColumnVisibilityMenu
+              columnVisibility={columnVisibility}
+              onToggle={toggleColumnVisibility}
             />
-          )}
+          </Group>
         </Group>
       )}
 
@@ -137,9 +150,11 @@ export function TracksTableWithControls({
       </Text>
 
       <TracksTable
+        columnVisibility={columnVisibility}
         contextId={contextId}
         contextType={contextType}
         isLoading={isLoading}
+        onColumnVisibilityChange={setColumnVisibility}
         onRatingChange={onRatingChange}
         onRefetch={onRefetch}
         onSortChange={onSortChange}
