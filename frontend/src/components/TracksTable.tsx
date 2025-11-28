@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
+import { useColumnSizing } from "../hooks/useColumnSizing";
 import { useTracksTableColumns } from "../hooks/useTracksTableColumns";
 import { TracksTableBody } from "./TracksTableBody";
 import { TracksTableHeader } from "./TracksTableHeader";
@@ -115,6 +116,7 @@ export function TracksTable({
   ];
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);
+  const { columnSizing, setColumnSizing } = useColumnSizing();
 
   // Handle Spotify track relinking: If linked_from exists, use the original track ID
   // See: https://developer.spotify.com/documentation/web-api/concepts/track-relinking
@@ -135,9 +137,11 @@ export function TracksTable({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     onColumnOrderChange: setColumnOrder,
+    onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange,
     state: {
       columnOrder,
+      columnSizing,
       columnVisibility,
       sorting: sortBy ? [{ desc: sortOrder === "desc", id: sortBy }] : [],
     },
@@ -203,6 +207,7 @@ export function TracksTable({
           onDragStart={handleDragStart}
           onDrop={handleDrop}
           onSortChange={onSortChange}
+          table={table}
         />
         <TracksTableBody
           isPlaying={isPlaying}
