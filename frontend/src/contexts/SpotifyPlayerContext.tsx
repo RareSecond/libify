@@ -438,50 +438,12 @@ export function SpotifyPlayerProvider({
     if (player) await player.resume();
   };
   const nextTrack = async () => {
-    if (!player || currentTrackList.length === 0) return;
-    const nextIndex = currentTrackIndex + 1;
-    if (nextIndex < currentTrackList.length) {
-      const nextUri = currentTrackList[nextIndex];
-      const response = await fetch(
-        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-        {
-          body: JSON.stringify({ uris: [nextUri] }),
-          headers: {
-            "Authorization": `Bearer ${await getAccessToken()}`,
-            "Content-Type": "application/json",
-          },
-          method: "PUT",
-        },
-      );
-      if (response.ok) {
-        setCurrentTrackIndex(nextIndex);
-      }
-    } else {
-      await player.nextTrack();
-    }
+    if (!player) return;
+    await player.nextTrack();
   };
   const previousTrack = async () => {
-    if (!player || currentTrackList.length === 0) return;
-    const prevIndex = currentTrackIndex - 1;
-    if (prevIndex >= 0) {
-      const prevUri = currentTrackList[prevIndex];
-      const response = await fetch(
-        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-        {
-          body: JSON.stringify({ uris: [prevUri] }),
-          headers: {
-            "Authorization": `Bearer ${await getAccessToken()}`,
-            "Content-Type": "application/json",
-          },
-          method: "PUT",
-        },
-      );
-      if (response.ok) {
-        setCurrentTrackIndex(prevIndex);
-      }
-    } else {
-      await player.previousTrack();
-    }
+    if (!player) return;
+    await player.previousTrack();
   };
   const seek = async (newPosition: number) => {
     if (player) {
