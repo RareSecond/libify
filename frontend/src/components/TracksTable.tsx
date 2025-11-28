@@ -110,6 +110,7 @@ export function TracksTable({
     "duration",
     "totalPlayCount",
     "lastPlayedAt",
+    "addedAt",
     "rating",
     "tags",
     "sources",

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 const STORAGE_KEY = "tracks-table-column-visibility";
 
 const DEFAULT_VISIBILITY: VisibilityState = {
+  addedAt: true,
   album: true,
   albumArt: true,
   artist: true,

@@ -3,6 +3,7 @@ import { VisibilityState } from "@tanstack/react-table";
 import { Columns3 } from "lucide-react";
 
 const COLUMN_LABELS: Record<string, string> = {
+  addedAt: "Added",
   album: "Album",
   albumArt: "Album Art",
   artist: "Artist",
