@@ -418,7 +418,7 @@ export function SpotifyPlayerProvider({
 
     // Track playback analytics
     trackPlaybackStarted({
-      context: mapToPlaybackContext(context?.contextType, context?.unratedOnly),
+      context: mapToPlaybackContext(context?.contextType),
       context_id: context?.contextId,
       shuffle: context?.shuffle,
       track_count: data.trackUris.length,

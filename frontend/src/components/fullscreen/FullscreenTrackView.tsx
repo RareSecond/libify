@@ -3,27 +3,22 @@ import { Button, Group, Image, Stack, Text, Title } from "@mantine/core";
 import { InlineTagEditor } from "@/components/InlineTagEditor";
 import { RatingSelector } from "@/components/RatingSelector";
 import { TrackDto } from "@/data/api";
-import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
 
-interface RatingTrackViewProps {
+interface FullscreenTrackViewProps {
   currentTrackIndex: number;
   libraryTrack: TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
-  onMouseRating: () => void;
+  onNext: () => void;
   onPrevious: () => void;
-  onSkip: () => void;
-  updateRatingMutation: ReturnType<typeof useTrackRatingMutation>;
 }
 
-export function RatingTrackView({
+export function FullscreenTrackView({
   currentTrackIndex,
   libraryTrack,
   onLibraryTrackUpdate,
-  onMouseRating,
+  onNext,
   onPrevious,
-  onSkip,
-  updateRatingMutation,
-}: RatingTrackViewProps) {
+}: FullscreenTrackViewProps) {
   return (
     <>
       {/* Album Art - flex to fill remaining space */}
@@ -52,12 +47,7 @@ export function RatingTrackView({
 
       {/* Rating Stars */}
       <Stack align="center" className="mt-2" gap="xs">
-        <Text className="text-dark-1 font-bold uppercase tracking-wider text-sm md:text-lg">
-          Rate This Track
-        </Text>
         <RatingSelector
-          externalMutation={updateRatingMutation}
-          onRatingChange={onMouseRating}
           rating={libraryTrack.rating ?? null}
           size="xl"
           trackId={libraryTrack.id}
@@ -87,8 +77,8 @@ export function RatingTrackView({
         >
           Previous (P)
         </Button>
-        <Button color="orange" onClick={onSkip} size="sm">
-          Skip (N)
+        <Button color="orange" onClick={onNext} size="sm">
+          Next (N)
         </Button>
       </Group>
     </>
