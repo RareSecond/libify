@@ -1,7 +1,7 @@
 import { Center, Loader, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { FullscreenHeader } from "@/components/fullscreen/FullscreenHeader";
 import { FullscreenSpotifyTrackView } from "@/components/fullscreen/FullscreenSpotifyTrackView";
@@ -35,6 +35,7 @@ function FullscreenPage() {
   });
 
   const updateRatingMutation = useTrackRatingMutation();
+  const isAdvancingRef = useRef(false);
 
   const handleClose = useCallback(() => {
     trackEvent("fullscreen_mode_exited");
@@ -79,8 +80,19 @@ function FullscreenPage() {
                 title: "Rating Error",
               });
             },
-            onSuccess: () => {
-              trackEvent("track_rated", { rating, source: "fullscreen_mode" });
+            onSuccess: async () => {
+              if (isAdvancingRef.current) return;
+              isAdvancingRef.current = true;
+              try {
+                trackEvent("track_rated", {
+                  rating,
+                  source: "fullscreen_mode",
+                });
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                await handleNext();
+              } finally {
+                isAdvancingRef.current = false;
+              }
             },
           },
         );
