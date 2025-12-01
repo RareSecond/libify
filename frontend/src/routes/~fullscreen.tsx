@@ -79,8 +79,10 @@ function FullscreenPage() {
                 title: "Rating Error",
               });
             },
-            onSuccess: () => {
+            onSuccess: async () => {
               trackEvent("track_rated", { rating, source: "fullscreen_mode" });
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              await handleNext();
             },
           },
         );
