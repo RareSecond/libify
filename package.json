@@ -16,10 +16,7 @@
     "test": "npm run test --workspaces --if-present",
     "cq": "npm run typecheck && npm run lint && npm run prettier:check && npm run test",
     "cq:local": "npm run typecheck && npm run lint && npm run prettier:fix",
-    "cq:fix": "jd-kit run cq-fix",
-    "restoredb": "psql \"postgresql://postgres:postgres@localhost:5432/postgres\" -c \"DROP DATABASE IF EXISTS spotlib;\" && psql \"postgresql://postgres:postgres@localhost:5432/postgres\" -c \"CREATE DATABASE spotlib;\" && pg_restore -d \"postgresql://postgres:postgres@localhost:5432/spotlib\" --no-owner --no-privileges database_dump.dump",
-    "dumpdb": "pg_dump -Fc \"postgresql://postgres.hlgdhhecijdwehrkvyau:Utility-Reputably-Shakable2@aws-0-eu-central-1.pooler.supabase.com:5432/postgres\" > database_dump.dump",
-    "clonedb": "npm run dumpdb && npm run restoredb"
+    "cq:fix": "jd-kit run cq-fix"
   },
   "author": "",
   "license": "ISC",

@@ -53,15 +53,6 @@ function FullscreenPage() {
     await refetchLibraryTrack();
   };
 
-  const handleKeyboardRating = useCallback(
-    (rating: number) => {
-      if (updateRatingMutation.isPending) return;
-      trackEvent("track_rated", { rating, source: "fullscreen_mode" });
-      setTimeout(() => handleNext(), 500);
-    },
-    [handleNext, updateRatingMutation.isPending],
-  );
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -69,6 +60,9 @@ function FullscreenPage() {
       const digitMatch = e.code.match(/^Digit([1-5])$/);
       if (digitMatch && libraryTrack) {
         if (e.ctrlKey || e.altKey || e.metaKey) return;
+        if (updateRatingMutation.isPending) return;
+
+        e.preventDefault();
 
         const baseRating = parseInt(digitMatch[1]);
         const rating = e.shiftKey ? baseRating - 0.5 : baseRating;
@@ -85,7 +79,9 @@ function FullscreenPage() {
                 title: "Rating Error",
               });
             },
-            onSuccess: () => handleKeyboardRating(rating),
+            onSuccess: () => {
+              trackEvent("track_rated", { rating, source: "fullscreen_mode" });
+            },
           },
         );
       }
@@ -109,7 +105,6 @@ function FullscreenPage() {
     pause,
     resume,
     updateRatingMutation,
-    handleKeyboardRating,
     handlePrevious,
     handleNext,
     handleClose,
