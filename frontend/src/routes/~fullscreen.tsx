@@ -1,4 +1,5 @@
 import { Center, Loader, Stack, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 
@@ -7,6 +8,7 @@ import { FullscreenSpotifyTrackView } from "@/components/fullscreen/FullscreenSp
 import { FullscreenTrackView } from "@/components/fullscreen/FullscreenTrackView";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useLibraryTrack } from "@/hooks/useLibraryTrack";
+import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
 import { trackEvent } from "@/lib/posthog";
 
 export const Route = createFileRoute("/fullscreen")({
@@ -32,6 +34,8 @@ function FullscreenPage() {
     spotifyId: originalSpotifyId,
   });
 
+  const updateRatingMutation = useTrackRatingMutation();
+
   const handleClose = useCallback(() => {
     trackEvent("fullscreen_mode_exited");
     router.history.back();
@@ -49,9 +53,43 @@ function FullscreenPage() {
     await refetchLibraryTrack();
   };
 
+  const handleKeyboardRating = useCallback(
+    (rating: number) => {
+      if (updateRatingMutation.isPending) return;
+      trackEvent("track_rated", { rating, source: "fullscreen_mode" });
+      setTimeout(() => handleNext(), 500);
+    },
+    [handleNext, updateRatingMutation.isPending],
+  );
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Rating shortcuts: 1-5 for full stars, Shift+1-5 for half stars
+      const digitMatch = e.code.match(/^Digit([1-5])$/);
+      if (digitMatch && libraryTrack) {
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+        const baseRating = parseInt(digitMatch[1]);
+        const rating = e.shiftKey ? baseRating - 0.5 : baseRating;
+        updateRatingMutation.mutate(
+          { data: { rating }, trackId: libraryTrack.id },
+          {
+            onError: (error) => {
+              // eslint-disable-next-line no-console
+              console.error("Failed to update track rating:", error);
+              notifications.show({
+                color: "red",
+                message:
+                  "Failed to save rating. Please try again or skip to the next track.",
+                title: "Rating Error",
+              });
+            },
+            onSuccess: () => handleKeyboardRating(rating),
+          },
+        );
+      }
+
       if (e.key === " " && e.target === document.body) {
         e.preventDefault();
         if (isPlaying) pause();
@@ -65,7 +103,17 @@ function FullscreenPage() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [isPlaying, pause, resume, handlePrevious, handleNext, handleClose]);
+  }, [
+    libraryTrack,
+    isPlaying,
+    pause,
+    resume,
+    updateRatingMutation,
+    handleKeyboardRating,
+    handlePrevious,
+    handleNext,
+    handleClose,
+  ]);
 
   // Track fullscreen mode entry
   useEffect(() => {
@@ -97,8 +145,8 @@ function FullscreenPage() {
 
       <div className="flex-1 flex flex-col items-center px-4 md:px-8 pb-4 gap-2 min-h-0">
         <Text className="text-dark-3 text-center text-xs md:text-sm hidden md:block">
-          <strong>Shortcuts:</strong> Space = Play/Pause · N = Next · P =
-          Previous · Esc = Back
+          <strong>Shortcuts:</strong> 1-5 = Full Stars · Shift+1-5 = Half Stars
+          · Space = Play/Pause · N = Next · P = Previous · Esc = Back
         </Text>
 
         {isLoading ? (
