@@ -517,6 +517,35 @@ export class SpotifyService {
     }
   }
 
+  async previousTrack(accessToken: string): Promise<void> {
+    try {
+      await this.spotifyApi.post(
+        "/me/player/previous",
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      this.logger.log("Skipped to previous track");
+    } catch (error) {
+      const axiosError = error as {
+        message: string;
+        response?: { data?: unknown; status?: number };
+        stack?: string;
+      };
+      const errorDetails = {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        stack: axiosError.stack,
+        status: axiosError.response?.status,
+      };
+      this.logger.error(
+        "Failed to skip to previous track",
+        JSON.stringify(errorDetails, null, 2),
+      );
+      throw error;
+    }
+  }
+
   async resumePlayback(accessToken: string): Promise<void> {
     try {
       await this.spotifyApi.put(

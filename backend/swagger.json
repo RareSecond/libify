@@ -1730,6 +1730,46 @@
         ]
       }
     },
+    "/playback/previous": {
+      "post": {
+        "operationId": "PlaybackController_previous",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Skipped to previous track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackControlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Skip to previous track",
+        "tags": [
+          "playback"
+        ]
+      }
+    },
     "/playback/resume": {
       "post": {
         "operationId": "PlaybackController_resume",

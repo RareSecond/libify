@@ -5,7 +5,7 @@ import { RatingSelector } from "@/components/RatingSelector";
 import { TrackDto } from "@/data/api";
 
 interface FullscreenTrackViewProps {
-  currentTrackIndex: number;
+  currentTrackIndex?: number;
   libraryTrack: TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
   onNext: () => void;
@@ -13,7 +13,7 @@ interface FullscreenTrackViewProps {
 }
 
 export function FullscreenTrackView({
-  currentTrackIndex,
+  currentTrackIndex = -1,
   libraryTrack,
   onLibraryTrackUpdate,
   onNext,
