@@ -13,6 +13,7 @@ import {
   useAuthControllerGetProfile,
   useAuthControllerLogout,
 } from "@/data/api";
+import { resetUser } from "@/lib/posthog";
 
 export function HeaderUserMenu() {
   const { data, isLoading } = useAuthControllerGetProfile();
@@ -28,6 +29,7 @@ export function HeaderUserMenu() {
         });
       },
       onSuccess: () => {
+        resetUser();
         window.location.href = "/";
       },
     });

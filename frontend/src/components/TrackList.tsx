@@ -1,10 +1,11 @@
 import { ActionIcon, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { Play, Shuffle, Tag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { trackLibraryFiltered, trackLibrarySearched } from "@/lib/posthog";
 
 import {
   useLibraryControllerGetGenres,
@@ -30,6 +31,9 @@ export function TrackList() {
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
   const { advanceTooltip, currentTooltip, skipOnboarding } = useOnboarding();
+
+  const prevDebouncedSearchRef = useRef<string | undefined>(undefined);
+  const prevGenresRef = useRef<string[]>(genres);
 
   const { debouncedSearch, localSearch, setLocalSearch } = useDebouncedSearch(
     search,
@@ -61,6 +65,30 @@ export function TrackList() {
   });
 
   const { data: genresData } = useLibraryControllerGetGenres();
+
+  // Track search when debounced value changes and data is loaded
+  useEffect(() => {
+    if (
+      debouncedSearch !== prevDebouncedSearchRef.current &&
+      debouncedSearch !== undefined &&
+      debouncedSearch !== "" &&
+      !isLoading &&
+      data
+    ) {
+      trackLibrarySearched(data.tracks.length > 0);
+      prevDebouncedSearchRef.current = debouncedSearch;
+    }
+  }, [debouncedSearch, isLoading, data]);
+
+  // Track genre filter changes
+  useEffect(() => {
+    const genresChanged =
+      JSON.stringify(genres) !== JSON.stringify(prevGenresRef.current);
+    if (genresChanged && genres.length > 0) {
+      trackLibraryFiltered({ genre: genres.join(",") });
+    }
+    prevGenresRef.current = genres;
+  }, [genres]);
 
   const updateSearch = (
     newSearch: Partial<{

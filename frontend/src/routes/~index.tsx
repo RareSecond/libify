@@ -9,6 +9,7 @@ import {
 } from "@mantine/core";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Disc, Music, User } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { LibraryHealthCard } from "@/components/dashboard/LibraryHealthCard";
 import { RecentlyPlayed } from "@/components/dashboard/RecentlyPlayed";
@@ -20,6 +21,7 @@ import { LibrarySync } from "@/components/LibrarySync";
 import { PageTitle } from "@/components/PageTitle";
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useLibraryControllerGetDashboardStats } from "@/data/api";
+import { trackDashboardViewed } from "@/lib/posthog";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
@@ -37,6 +39,19 @@ function HomePage() {
     isLoading,
     refetch,
   } = useLibraryControllerGetDashboardStats();
+  const hasTrackedViewRef = useRef(false);
+
+  // Track dashboard view once stats are loaded
+  useEffect(() => {
+    if (!isLoading && dashboardStats && !hasTrackedViewRef.current) {
+      trackDashboardViewed({
+        ratedPercentage: dashboardStats.ratingStats?.percentageRated || 0,
+        taggedPercentage: dashboardStats.tagStats?.percentageTagged || 0,
+        totalTracks: dashboardStats.totalTracks || 0,
+      });
+      hasTrackedViewRef.current = true;
+    }
+  }, [isLoading, dashboardStats]);
 
   const handleStartRating = async () => {
     await playTrackList(["placeholder"], {

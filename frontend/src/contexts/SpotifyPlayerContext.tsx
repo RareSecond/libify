@@ -15,7 +15,13 @@ import {
 } from "@/data/api";
 import { useShuffleManager } from "@/hooks/useShuffleManager";
 import { useSpotifyAPI } from "@/hooks/useSpotifyAPI";
-import { mapToPlaybackContext, trackPlaybackStarted } from "@/lib/posthog";
+import {
+  mapToPlaybackContext,
+  trackPlaybackPaused,
+  trackPlaybackResumed,
+  trackPlaybackSkipped,
+  trackPlaybackStarted,
+} from "@/lib/posthog";
 import { PlayContext } from "@/types/playback.types";
 import {
   SpotifyPlayer,
@@ -447,14 +453,21 @@ export function SpotifyPlayerProvider({
     setCurrentContext(context || null);
   };
   const pause = async () => {
-    if (player) await player.pause();
+    if (player) {
+      await player.pause();
+      trackPlaybackPaused();
+    }
   };
   const resume = async () => {
-    if (player) await player.resume();
+    if (player) {
+      await player.resume();
+      trackPlaybackResumed();
+    }
   };
   const nextTrack = async () => {
     if (!player) return;
     await player.nextTrack();
+    trackPlaybackSkipped(mapToPlaybackContext(currentContext?.contextType));
   };
   const previousTrack = async () => {
     if (!player) return;

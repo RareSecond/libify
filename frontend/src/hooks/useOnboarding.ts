@@ -5,6 +5,7 @@ import {
   useAuthControllerGetProfile,
   useAuthControllerUpdateOnboarding,
 } from "@/data/api";
+import { trackOnboardingStep } from "@/lib/posthog";
 
 const ONBOARDING_STORAGE_KEY = "spotlib-onboarding-completed";
 const CURRENT_TOOLTIP_KEY = "spotlib-current-tooltip";
@@ -85,6 +86,11 @@ export function useOnboarding() {
       ? steps.indexOf(localState.currentTooltip)
       : -1;
 
+    // Track completion of current step
+    if (localState.currentTooltip) {
+      trackOnboardingStep(localState.currentTooltip, true);
+    }
+
     if (currentIndex < steps.length - 1) {
       const nextTooltip = steps[currentIndex + 1];
       localStorage.setItem(CURRENT_TOOLTIP_KEY, nextTooltip);
@@ -100,8 +106,12 @@ export function useOnboarding() {
   ]);
 
   const skipOnboarding = useCallback(() => {
+    // Track skipped step
+    if (localState.currentTooltip) {
+      trackOnboardingStep(localState.currentTooltip, false);
+    }
     completeOnboarding();
-  }, [completeOnboarding]);
+  }, [completeOnboarding, localState.currentTooltip]);
 
   const resetOnboarding = useCallback(() => {
     // For testing purposes

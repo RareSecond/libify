@@ -1,9 +1,10 @@
 import { Button } from "@mantine/core";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { OnboardingSyncModal } from "@/components/OnboardingSyncModal";
 import { useAuthControllerGetProfile } from "@/data/api";
+import { trackSignupCompleted } from "@/lib/posthog";
 
 export const Route = createFileRoute("/auth/success")({
   component: RouteComponent,
@@ -13,6 +14,15 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data: profile, isLoading } = useAuthControllerGetProfile();
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const hasTrackedSignupRef = useRef(false);
+
+  // Track signup completion once when authenticated
+  useEffect(() => {
+    if (!isLoading && profile && !hasTrackedSignupRef.current) {
+      trackSignupCompleted();
+      hasTrackedSignupRef.current = true;
+    }
+  }, [isLoading, profile]);
 
   useEffect(() => {
     if (isLoading) return;
