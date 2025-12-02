@@ -189,6 +189,25 @@ export class PlaybackService {
     }
   }
 
+  async previous(userId: string): Promise<PlaybackControlResponseDto> {
+    try {
+      const accessToken = await this.authService.getSpotifyAccessToken(userId);
+      if (!accessToken) {
+        throw new Error("Spotify access token not found");
+      }
+
+      await this.spotifyService.previousTrack(accessToken);
+      return plainToInstance(
+        PlaybackControlResponseDto,
+        { message: "Skipped to previous track" },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      this.logger.error("Failed to skip to previous track", error);
+      throw error;
+    }
+  }
+
   async resume(userId: string): Promise<PlaybackControlResponseDto> {
     try {
       const accessToken = await this.authService.getSpotifyAccessToken(userId);

@@ -152,6 +152,32 @@ export class PlaybackController {
     }
   }
 
+  @ApiOperation({ summary: "Skip to previous track" })
+  @ApiResponse({
+    description: "Skipped to previous track",
+    status: 200,
+    type: PlaybackControlResponseDto,
+  })
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @Post("previous")
+  async previous(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<PlaybackControlResponseDto> {
+    try {
+      const result = await this.playbackService.previous(req.user.id);
+
+      return plainToInstance(PlaybackControlResponseDto, result, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      this.logger.error("Failed to skip to previous track", error);
+      throw new HttpException(
+        error.message || "Failed to skip to previous track",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @ApiOperation({ summary: "Resume playback" })
   @ApiResponse({
     description: "Playback resumed",
