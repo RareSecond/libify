@@ -10,8 +10,10 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { trackArtistViewed } from "@/lib/posthog";
 
 import { useLibraryControllerGetArtistTracks } from "../data/api";
 import { useColumnVisibility } from "../hooks/useColumnVisibility";
@@ -29,6 +31,15 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
     useLibraryControllerGetArtistTracks(artist);
   const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
     useColumnVisibility();
+  const hasTrackedViewRef = useRef(false);
+
+  // Track artist view once data is loaded
+  useEffect(() => {
+    if (!isLoading && data?.tracks && !hasTrackedViewRef.current) {
+      trackArtistViewed(artist, data.tracks.length);
+      hasTrackedViewRef.current = true;
+    }
+  }, [isLoading, data, artist]);
 
   // Get artistId from first track for playback context
   const artistId = data?.tracks?.[0]?.artistId;

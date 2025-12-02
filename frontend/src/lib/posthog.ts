@@ -110,10 +110,6 @@ export const trackTrackRated = (
   trackEvent("track_rated", { rating, source });
 };
 
-export const trackRatingCleared = (source: string): void => {
-  trackEvent("rating_cleared", { source });
-};
-
 // --- TAGGING (Value Creation) ---
 
 export const trackTagCreated = (tagName: string): void => {

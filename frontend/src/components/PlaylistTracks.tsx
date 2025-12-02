@@ -1,9 +1,10 @@
 import { Button, Center, Group, Loader, Stack, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { trackPlaylistViewed } from "@/lib/posthog";
 
 import {
   PaginatedTracksDto,
@@ -26,6 +27,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
     PlaylistsControllerGetTracksSortBy | undefined
   >();
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const hasTrackedViewRef = useRef(false);
 
   const { data: playlist, isLoading: playlistLoading } =
     usePlaylistsControllerFindOne(playlistId);
@@ -36,6 +38,14 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
       sortBy,
       sortOrder,
     });
+
+  // Track playlist view once data is loaded
+  useEffect(() => {
+    if (!isLoading && data?.tracks && !hasTrackedViewRef.current) {
+      trackPlaylistViewed(data.total || data.tracks.length);
+      hasTrackedViewRef.current = true;
+    }
+  }, [isLoading, data]);
 
   const handlePlayFromBeginning = async () => {
     // Backend will build the queue based on context

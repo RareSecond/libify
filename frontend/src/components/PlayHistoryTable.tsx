@@ -22,6 +22,7 @@ import {
   useLibraryControllerGetPlayHistory,
 } from "../data/api";
 import { usePlayHistorySync } from "../hooks/usePlayHistorySync";
+import { trackAddedToLibraryFromHistory } from "../lib/posthog";
 import { PlayHistoryTableRow } from "./PlayHistoryTableRow";
 
 const NOTIFICATION_MESSAGES = {
@@ -55,6 +56,7 @@ export function PlayHistoryTable() {
   const handleAddToLibrary = async (trackId: string, trackTitle: string) => {
     try {
       await addToLibraryMutation.mutateAsync({ trackId });
+      trackAddedToLibraryFromHistory();
       notifications.show({
         color: "green",
         message: `Added "${trackTitle}" to your library`,
