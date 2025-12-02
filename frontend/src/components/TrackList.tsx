@@ -76,8 +76,8 @@ export function TrackList() {
       data
     ) {
       trackLibrarySearched(data.tracks.length > 0);
+      prevDebouncedSearchRef.current = debouncedSearch;
     }
-    prevDebouncedSearchRef.current = debouncedSearch;
   }, [debouncedSearch, isLoading, data]);
 
   // Track genre filter changes

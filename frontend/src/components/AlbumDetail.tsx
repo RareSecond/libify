@@ -12,9 +12,10 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Music, Play, Shuffle, Star } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback } from "react";
 
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { useTrackView } from "@/hooks/useTrackView";
 import { trackAlbumViewed } from "@/lib/posthog";
 
 import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
@@ -33,19 +34,20 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const { playTrackList } = useSpotifyPlayer();
   const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
     useColumnVisibility();
-  const hasTrackedViewRef = useRef(false);
 
   // Use the album-specific endpoint
   const { data, error, isLoading, refetch } =
     useLibraryControllerGetAlbumTracks(artist, album);
 
   // Track album view once data is loaded
-  useEffect(() => {
-    if (!isLoading && data?.tracks && !hasTrackedViewRef.current) {
-      trackAlbumViewed(album, data.tracks.length);
-      hasTrackedViewRef.current = true;
-    }
-  }, [isLoading, data, album]);
+  const albumIdentity = `${artist}/${album}`;
+  const trackCount = data?.tracks?.length ?? 0;
+  useTrackView(
+    albumIdentity,
+    isLoading,
+    !!data?.tracks,
+    useCallback(() => trackAlbumViewed(album, trackCount), [album, trackCount]),
+  );
 
   // Get albumId from first track for playback context
   const albumId = data?.tracks?.[0]?.albumId;
