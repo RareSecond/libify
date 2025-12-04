@@ -1,4 +1,4 @@
-import { AppShell, Burger, Group, NavLink, Text } from "@mantine/core";
+import { AppShell, Burger, Group, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Disc, History, Home, Library, ListMusic, User } from "lucide-react";
@@ -44,12 +44,11 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
               opened={opened}
               size="sm"
             />
-            <Text
-              className="font-bold bg-gradient-to-r from-orange-4 to-orange-6 bg-clip-text text-transparent"
-              size="xl"
-            >
-              Spotlib
-            </Text>
+            <img
+              alt="Codex.fm"
+              className="h-8"
+              src="/logo.png"
+            />
           </Group>
           <HeaderUserMenu />
         </Group>

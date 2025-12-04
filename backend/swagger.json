@@ -2171,14 +2171,14 @@
     }
   },
   "info": {
-    "title": "Libify API",
+    "title": "Codex.fm API",
     "description": "Spotify library management API",
     "version": "0.0.1",
     "contact": {}
   },
   "tags": [
     {
-      "name": "libify",
+      "name": "codex.fm",
       "description": ""
     }
   ],

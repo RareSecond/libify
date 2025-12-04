@@ -12,10 +12,10 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV === "development") {
     const config = new DocumentBuilder()
-      .setTitle("Libify API")
+      .setTitle("Codex.fm API")
       .setDescription("Spotify library management API")
       .setVersion("0.0.1")
-      .addTag("libify")
+      .addTag("codex.fm")
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
