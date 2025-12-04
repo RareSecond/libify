@@ -29,9 +29,10 @@ interface JobProgressData {
   cors: {
     credentials: true,
     origin: [
-      "http://127.0.0.1:6543",
-      "http://localhost:6543",
-      process.env.APP_URL || "http://127.0.0.1:6543",
+      /^http:\/\/localhost:\d+$/,
+      /^http:\/\/127\.0\.0\.1:\d+$/,
+      /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
+      ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
     ],
   },
   namespace: "/sync",
