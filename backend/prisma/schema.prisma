@@ -26,6 +26,7 @@ model User {
   tokenExpiresAt         DateTime? // Token expiration time
   lastPlaySyncedAt       DateTime? // Timestamp of the most recent play synced from Spotify
   hasCompletedOnboarding Boolean   @default(false) // First-time user onboarding completion
+  isWhitelisted          Boolean   @default(false) // Beta access whitelist
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 

@@ -99,6 +99,7 @@ export type User = {
   email: string;
   hasCompletedOnboarding: Generated<boolean>;
   id: string;
+  isWhitelisted: Generated<boolean>;
   lastPlaySyncedAt: null | Timestamp;
   name: null | string;
   provider: string;
