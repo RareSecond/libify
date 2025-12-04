@@ -84,6 +84,14 @@ export class AuthController {
     @Res() res: Response,
   ) {
     const user = req.user;
+
+    if (!user.isWhitelisted) {
+      res.redirect(
+        `${process.env.FRONTEND_URL}/auth/error?reason=not_whitelisted`,
+      );
+      return;
+    }
+
     const loginResult = await this.authService.login(user);
 
     res.cookie("jwt", loginResult.access_token, {

@@ -20,6 +20,7 @@ import { identifyUser, trackPageView } from "../lib/posthog";
 
 // Route path constants
 const ROUTES = {
+  AUTH_ERROR: "/auth/error",
   FULLSCREEN: "/fullscreen",
   HOME: "/",
   WELCOME: "/welcome",
@@ -105,12 +106,11 @@ function AuthWrapper() {
     data: profile,
     error,
     isLoading,
-  } = useAuthControllerGetProfile({
-    query: AUTH_QUERY_CONFIG,
-  });
+  } = useAuthControllerGetProfile({ query: AUTH_QUERY_CONFIG });
 
   const isAuthenticated = !error && !!profile;
-  const isWelcomePage = currentPath === ROUTES.WELCOME;
+  const isPublicPage =
+    currentPath === ROUTES.WELCOME || currentPath === ROUTES.AUTH_ERROR;
 
   // Track page views on route changes
   useEffect(() => {
@@ -130,10 +130,10 @@ function AuthWrapper() {
 
   // Redirect unauthenticated users to welcome page
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && !isWelcomePage) {
+    if (!isLoading && !isAuthenticated && !isPublicPage) {
       navigate({ to: ROUTES.WELCOME });
     }
-  }, [isLoading, isAuthenticated, isWelcomePage, navigate]);
+  }, [isLoading, isAuthenticated, isPublicPage, navigate]);
 
   // Show loading spinner while auth is being determined
   if (isLoading) {
@@ -147,8 +147,8 @@ function AuthWrapper() {
     profile: profile ?? null,
   };
 
-  // Welcome page - render without SpotifyPlayerProvider
-  if (isWelcomePage) {
+  // Public pages (welcome, auth error) - render without SpotifyPlayerProvider
+  if (isPublicPage) {
     return (
       <AuthContext.Provider value={authContextValue}>
         <Outlet />
