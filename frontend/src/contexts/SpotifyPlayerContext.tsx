@@ -271,8 +271,8 @@ export function SpotifyPlayerProvider({
 
       isInitializing = true;
       const playerName = import.meta.env.DEV
-        ? "Spotlib Web Player (Dev)"
-        : "Spotlib Web Player";
+        ? "Codex.fm Web Player (Dev)"
+        : "Codex.fm Web Player";
       const spotifyPlayer = new window.Spotify.Player({
         getOAuthToken: (cb) => {
           getAccessToken()

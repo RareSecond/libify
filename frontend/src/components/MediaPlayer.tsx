@@ -151,8 +151,8 @@ export function MediaPlayer() {
       : 0;
   const displayDeviceName = hasWebPlayerTrack
     ? import.meta.env.DEV
-      ? "Spotlib Web Player (Dev)"
-      : "Spotlib Web Player"
+      ? "Codex.fm Web Player (Dev)"
+      : "Codex.fm Web Player"
     : shouldUseCrossDeviceData
       ? (currentPlayback?.device?.name ?? "Unknown Device")
       : "Unknown Device";
