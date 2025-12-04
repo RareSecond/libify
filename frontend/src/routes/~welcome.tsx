@@ -1,5 +1,5 @@
 import { Button, Container, Stack, Text } from "@mantine/core";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   Disc3,
@@ -10,12 +10,15 @@ import {
   Star,
   Zap,
 } from "lucide-react";
+import { useEffect } from "react";
 
 import { DashboardMockup } from "@/components/welcome/DashboardMockup";
 import { FloatingAlbums } from "@/components/welcome/FloatingAlbums";
 import { HeroSection } from "@/components/welcome/HeroSection";
 import { PainPointsGrid } from "@/components/welcome/PainPointsGrid";
 import { trackSignupStarted } from "@/lib/posthog";
+
+import { useAuth } from "./~__root";
 
 export const Route = createFileRoute("/welcome")({ component: WelcomePage });
 
@@ -26,10 +29,25 @@ const features = [
 ];
 
 function WelcomePage() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate({ to: "/" });
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleConnectSpotify = () => {
     trackSignupStarted();
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/spotify`;
   };
+
+  // Don't render while redirecting
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-dark-9 relative overflow-hidden">

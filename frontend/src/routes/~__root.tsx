@@ -7,15 +7,55 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 
 import { AppShellLayout } from "../components/AppShell";
 import { MediaPlayer } from "../components/MediaPlayer";
 import { SpotifyPlayerProvider } from "../contexts/SpotifyPlayerContext";
-import { useAuthControllerGetProfile } from "../data/api";
+import {
+  AuthControllerGetProfileQueryResult,
+  useAuthControllerGetProfile,
+} from "../data/api";
 import { identifyUser, trackPageView } from "../lib/posthog";
 
+// Route path constants
+const ROUTES = {
+  FULLSCREEN: "/fullscreen",
+  HOME: "/",
+  WELCOME: "/welcome",
+} as const;
+
+// Auth query configuration
+const AUTH_QUERY_CONFIG = {
+  retry: false,
+  staleTime: 5 * 60 * 1000, // 5 minutes
+} as const;
+
 const queryClient = new QueryClient();
+
+// Auth context to share auth state with child routes
+interface AuthContextType {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  profile: AuthControllerGetProfileQueryResult | null;
+}
+
+// Reusable full-screen loading spinner
+function FullScreenLoader() {
+  return (
+    <Center className="h-screen">
+      <Loader size="lg" />
+    </Center>
+  );
+}
+
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  isLoading: true,
+  profile: null,
+});
+
+export const useAuth = () => useContext(AuthContext);
 
 // Custom dark theme with orange as primary color
 const theme = createTheme({
@@ -66,11 +106,11 @@ function AuthWrapper() {
     error,
     isLoading,
   } = useAuthControllerGetProfile({
-    query: {
-      retry: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
+    query: AUTH_QUERY_CONFIG,
   });
+
+  const isAuthenticated = !error && !!profile;
+  const isWelcomePage = currentPath === ROUTES.WELCOME;
 
   // Track page views on route changes
   useEffect(() => {
@@ -88,56 +128,58 @@ function AuthWrapper() {
     }
   }, [profile]);
 
-  // Handle authentication-based redirects
+  // Redirect unauthenticated users to welcome page
   useEffect(() => {
-    if (isLoading) return;
-
-    const isAuthenticated = !error && !!profile;
-    const isWelcomePage = currentPath === "/welcome";
-
-    // Redirect unauthenticated users to welcome page
-    if (!isAuthenticated && !isWelcomePage) {
-      navigate({ to: "/welcome" });
+    if (!isLoading && !isAuthenticated && !isWelcomePage) {
+      navigate({ to: ROUTES.WELCOME });
     }
+  }, [isLoading, isAuthenticated, isWelcomePage, navigate]);
 
-    // Redirect authenticated users away from welcome page to dashboard
-    if (isAuthenticated && isWelcomePage) {
-      navigate({ to: "/" });
-    }
-  }, [isLoading, error, profile, currentPath, navigate]);
-
+  // Show loading spinner while auth is being determined
   if (isLoading) {
+    return <FullScreenLoader />;
+  }
+
+  // Provide auth context to all routes
+  const authContextValue: AuthContextType = {
+    isAuthenticated,
+    isLoading,
+    profile: profile ?? null,
+  };
+
+  // Welcome page - render without SpotifyPlayerProvider
+  if (isWelcomePage) {
     return (
-      <Center className="h-screen">
-        <Loader size="lg" />
-      </Center>
+      <AuthContext.Provider value={authContextValue}>
+        <Outlet />
+      </AuthContext.Provider>
     );
   }
 
-  // Not authenticated - show welcome page
-  if (error || !profile) {
-    return <Outlet />;
+  // Not authenticated and not on welcome page - show loading while redirect happens
+  if (!isAuthenticated) {
+    return <FullScreenLoader />;
   }
 
-  // Authenticated - show app with navigation
-  const isFullscreenMode = currentPath === "/fullscreen";
+  // Authenticated - show app with navigation and SpotifyPlayerProvider
+  const isFullscreenMode = currentPath === ROUTES.FULLSCREEN;
 
-  // Single SpotifyPlayerProvider instance to prevent remounting when switching routes
   return (
-    <SpotifyPlayerProvider>
-      {isFullscreenMode ? (
-        // Fullscreen mode: without shell/header/sidebar but with MediaPlayer
-        <div className="min-h-screen bg-dark-7">
-          <Outlet />
-          <MediaPlayer />
-        </div>
-      ) : (
-        <AppShellLayout>
-          <Outlet />
-          <MediaPlayer />
-        </AppShellLayout>
-      )}
-    </SpotifyPlayerProvider>
+    <AuthContext.Provider value={authContextValue}>
+      <SpotifyPlayerProvider>
+        {isFullscreenMode ? (
+          <div className="min-h-screen bg-dark-7">
+            <Outlet />
+            <MediaPlayer />
+          </div>
+        ) : (
+          <AppShellLayout>
+            <Outlet />
+            <MediaPlayer />
+          </AppShellLayout>
+        )}
+      </SpotifyPlayerProvider>
+    </AuthContext.Provider>
   );
 }
 
