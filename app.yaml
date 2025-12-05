@@ -9,6 +9,23 @@ domains:
     type: ALIAS
     zone: codex.fm
 
+ingress:
+  rules:
+    - component:
+        name: api
+      match:
+        authority:
+          exact: api.codex.fm
+        path:
+          prefix: /
+    - component:
+        name: frontend
+      match:
+        authority:
+          exact: codex.fm
+        path:
+          prefix: /
+
 services:
   # API Service
   - name: api
@@ -24,10 +41,6 @@ services:
       http_path: /api/health
       timeout_seconds: 10
       port: 3000
-    routes:
-      - path: /
-    domains:
-      - domain: api.codex.fm
     envs:
       - key: NODE_ENV
         value: production
@@ -57,10 +70,6 @@ static_sites:
       branch: master
       deploy_on_push: true
     source_dir: frontend
-    routes:
-      - path: /
-    domains:
-      - domain: codex.fm
     catchall_document: index.html
     envs:
       - key: VITE_API_URL
