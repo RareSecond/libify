@@ -26,7 +26,7 @@ model User {
   tokenExpiresAt         DateTime? // Token expiration time
   lastPlaySyncedAt       DateTime? // Timestamp of the most recent play synced from Spotify
   hasCompletedOnboarding Boolean   @default(false) // First-time user onboarding completion
-  isWhitelisted          Boolean   @default(false) // Beta access whitelist
+  isWhitelisted          Boolean   @default(true) // Beta access whitelist
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
@@ -250,20 +250,20 @@ model UserAlbum {
 
 // User-specific playlist data for tracking sync status
 model UserPlaylist {
-  id              String   @id @default(uuid())
-  userId          String
-  spotifyId       String   // Spotify playlist ID
-  name            String
-  description     String?
-  snapshotId      String   // Spotify snapshot ID for change detection
-  totalTracks     Int
-  ownerId         String   // Spotify user ID of playlist owner
-  ownerName       String?
-  collaborative   Boolean  @default(false)
-  public          Boolean  @default(false)
-  lastSyncedAt    DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  userId        String
+  spotifyId     String // Spotify playlist ID
+  name          String
+  description   String?
+  snapshotId    String // Spotify snapshot ID for change detection
+  totalTracks   Int
+  ownerId       String // Spotify user ID of playlist owner
+  ownerName     String?
+  collaborative Boolean  @default(false)
+  public        Boolean  @default(false)
+  lastSyncedAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
