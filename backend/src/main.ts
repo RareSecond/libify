@@ -30,6 +30,7 @@ async function bootstrap() {
     /^http:\/\/localhost:\d+$/,
     /^http:\/\/127\.0\.0\.1:\d+$/,
     /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
+    /^https?:\/\/(?:[\w-]+\.)*codex\.fm$/,
   ];
 
   // Add FRONTEND_URL if it exists

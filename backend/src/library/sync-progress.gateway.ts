@@ -32,6 +32,7 @@ interface JobProgressData {
       /^http:\/\/localhost:\d+$/,
       /^http:\/\/127\.0\.0\.1:\d+$/,
       /^https?:\/\/(?:[\w-]+\.)*codictive\.be$/,
+      /^https?:\/\/(?:[\w-]+\.)*codex\.fm$/,
       ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
     ],
   },
