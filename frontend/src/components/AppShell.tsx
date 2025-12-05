@@ -44,11 +44,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
               opened={opened}
               size="sm"
             />
-            <img
-              alt="Codex.fm"
-              className="h-8"
-              src="/logo.png"
-            />
+            <img alt="Codex.fm" className="h-8" src="/logo.png" />
           </Group>
           <HeaderUserMenu />
         </Group>
