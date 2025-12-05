@@ -18,6 +18,9 @@ import { useLibraryTrack } from "@/hooks/useLibraryTrack";
 import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
 import { trackEvent } from "@/lib/posthog";
 
+const SHORTCUTS_TEXT =
+  "1-5 = Full Stars · Shift+1-5 = Half Stars · Space = Play/Pause · N = Next · P = Previous · Esc = Back";
+
 export const Route = createFileRoute("/fullscreen")({
   component: FullscreenPage,
 });
@@ -118,6 +121,14 @@ function FullscreenPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore shortcuts when typing in input fields
+      const target = e.target as HTMLElement;
+      const isInputElement =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+      if (isInputElement) return;
+
       // Rating shortcuts: 1-5 for full stars, Shift+1-5 for half stars
       const digitMatch = e.code.match(/^Digit([1-5])$/);
       if (digitMatch && libraryTrack) {
@@ -159,11 +170,10 @@ function FullscreenPage() {
         );
       }
 
-      if (e.key === " " && e.target === document.body) {
+      if (e.key === " ") {
         e.preventDefault();
         handlePlayPause();
       }
-
       if (e.key === "n" || e.key === "ArrowRight") handleNext();
       if (e.key === "p" || e.key === "ArrowLeft") handlePrevious();
       if (e.key === "Escape") handleClose();
@@ -181,9 +191,7 @@ function FullscreenPage() {
   ]);
 
   // Track fullscreen mode entry
-  useEffect(() => {
-    trackEvent("fullscreen_mode_entered");
-  }, []);
+  useEffect(() => trackEvent("fullscreen_mode_entered"), []);
 
   // No track playing on web player or remote device - show message
   if (!currentTrack && !isRemotePlayback) {
@@ -217,8 +225,7 @@ function FullscreenPage() {
             </Badge>
           )}
           <Text className="text-dark-3 text-center text-xs md:text-sm hidden md:block">
-            <strong>Shortcuts:</strong> 1-5 = Full Stars · Shift+1-5 = Half
-            Stars · Space = Play/Pause · N = Next · P = Previous · Esc = Back
+            <strong>Shortcuts:</strong> {SHORTCUTS_TEXT}
           </Text>
 
           {isLoading ? (
@@ -257,8 +264,7 @@ function FullscreenPage() {
 
       <div className="flex-1 flex flex-col items-center px-4 md:px-8 pb-4 gap-2 min-h-0">
         <Text className="text-dark-3 text-center text-xs md:text-sm hidden md:block">
-          <strong>Shortcuts:</strong> 1-5 = Full Stars · Shift+1-5 = Half Stars
-          · Space = Play/Pause · N = Next · P = Previous · Esc = Back
+          <strong>Shortcuts:</strong> {SHORTCUTS_TEXT}
         </Text>
 
         {isLoading ? (
