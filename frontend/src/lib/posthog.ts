@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL as string | undefined;
 const POSTHOG_HOST = API_URL ? `${API_URL}/ph` : "https://eu.i.posthog.com";
 
 export const isPostHogEnabled = (): boolean => {
+  return true;
   return !!POSTHOG_KEY && import.meta.env.PROD;
 };
 

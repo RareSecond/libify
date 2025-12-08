@@ -2,13 +2,20 @@ import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as cookieParser from "cookie-parser";
+import * as express from "express";
 import * as fs from "fs";
 
 import { ApiModule } from "./api.module";
 
 async function bootstrap() {
   const logger = new Logger("Bootstrap");
-  const app = await NestFactory.create(ApiModule);
+  const app = await NestFactory.create(ApiModule, { rawBody: true });
+
+  // Parse text/plain bodies as raw buffers for PostHog proxy
+  app.use(
+    "/ph",
+    express.raw({ type: "text/plain", limit: "10mb" }),
+  );
 
   if (process.env.NODE_ENV === "development") {
     const config = new DocumentBuilder()
