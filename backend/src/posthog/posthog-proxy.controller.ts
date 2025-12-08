@@ -27,18 +27,36 @@ export class PosthogProxyController {
       const headers: Record<string, string> = {};
 
       // Forward relevant headers
-      if (req.headers["content-type"]) {
-        headers["content-type"] = req.headers["content-type"] as string;
+      const headersToForward = [
+        "accept",
+        "accept-encoding",
+        "accept-language",
+        "authorization",
+        "content-type",
+        "origin",
+        "referer",
+        "user-agent",
+        "x-forwarded-for",
+      ];
+
+      for (const header of headersToForward) {
+        if (req.headers[header]) {
+          headers[header] = req.headers[header] as string;
+        }
       }
-      if (req.headers["user-agent"]) {
-        headers["user-agent"] = req.headers["user-agent"] as string;
+
+      // Prepare body for non-GET/HEAD requests
+      let body: string | undefined;
+      if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
+        body =
+          typeof req.body === "string" ? req.body : JSON.stringify(req.body);
       }
 
       const response = await fetch(targetUrl, {
-        body:
-          req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
+        body,
         headers,
         method: req.method,
+        signal: AbortSignal.timeout(30000),
       });
 
       // Forward response headers
