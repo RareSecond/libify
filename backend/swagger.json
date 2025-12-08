@@ -2168,6 +2168,202 @@
           "playlists"
         ]
       }
+    },
+    "/ph/{path}": {
+      "get": {
+        "operationId": "PosthogProxyController_proxyAll_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "post": {
+        "operationId": "PosthogProxyController_proxyAll_post",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "put": {
+        "operationId": "PosthogProxyController_proxyAll_put",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "delete": {
+        "operationId": "PosthogProxyController_proxyAll_delete",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "patch": {
+        "operationId": "PosthogProxyController_proxyAll_patch",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "options": {
+        "operationId": "PosthogProxyController_proxyAll_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "head": {
+        "operationId": "PosthogProxyController_proxyAll_head",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "search": {
+        "operationId": "PosthogProxyController_proxyAll_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      }
+    },
+    "/ph/static/{path}": {
+      "get": {
+        "operationId": "PosthogProxyController_proxyStatic_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "post": {
+        "operationId": "PosthogProxyController_proxyStatic_post",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "put": {
+        "operationId": "PosthogProxyController_proxyStatic_put",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "delete": {
+        "operationId": "PosthogProxyController_proxyStatic_delete",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "patch": {
+        "operationId": "PosthogProxyController_proxyStatic_patch",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "options": {
+        "operationId": "PosthogProxyController_proxyStatic_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "head": {
+        "operationId": "PosthogProxyController_proxyStatic_head",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      },
+      "search": {
+        "operationId": "PosthogProxyController_proxyStatic_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PosthogProxy"
+        ]
+      }
     }
   },
   "info": {
