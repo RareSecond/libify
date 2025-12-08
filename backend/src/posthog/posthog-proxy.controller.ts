@@ -1,9 +1,11 @@
 import { All, Controller, Req, Res } from "@nestjs/common";
+import { ApiExcludeController } from "@nestjs/swagger";
 import { Request, Response } from "express";
 
 const POSTHOG_HOST = "https://eu.i.posthog.com";
 const POSTHOG_ASSETS_HOST = "https://eu-assets.i.posthog.com";
 
+@ApiExcludeController()
 @Controller("ph")
 export class PosthogProxyController {
   @All("*path")
