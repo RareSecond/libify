@@ -8,18 +8,16 @@ const POSTHOG_ASSETS_HOST = "https://eu-assets.i.posthog.com";
 @ApiExcludeController()
 @Controller("ph")
 export class PosthogProxyController {
-  @All("*path")
+  @All("*")
   async proxyAll(@Req() req: Request, @Res() res: Response) {
-    const path =
-      req.params["path"] || (req.params as unknown as string[]).join("/");
+    const path = req.params[0] || "";
     const targetUrl = `${POSTHOG_HOST}/${path}${req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : ""}`;
     return this.proxyRequest(req, res, targetUrl);
   }
 
-  @All("static/*path")
+  @All("static/*")
   async proxyStatic(@Req() req: Request, @Res() res: Response) {
-    const path =
-      req.params["path"] || (req.params as unknown as string[]).join("/");
+    const path = req.params[0] || "";
     const targetUrl = `${POSTHOG_ASSETS_HOST}/static/${path}`;
     return this.proxyRequest(req, res, targetUrl);
   }
