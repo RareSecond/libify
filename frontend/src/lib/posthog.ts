@@ -1,8 +1,8 @@
 import posthog from "posthog-js";
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
-const POSTHOG_HOST =
-  (import.meta.env.VITE_POSTHOG_HOST as string) || "https://us.i.posthog.com";
+const API_URL = import.meta.env.VITE_API_URL as string | undefined;
+const POSTHOG_HOST = API_URL ? `${API_URL}/ph` : "https://eu.i.posthog.com";
 
 export const isPostHogEnabled = (): boolean => {
   return !!POSTHOG_KEY && import.meta.env.PROD;

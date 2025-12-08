@@ -13,6 +13,7 @@ import { HealthModule } from "./health/health.module";
 import { LibraryModule } from "./library/library.module";
 import { PlaybackModule } from "./playback/playback.module";
 import { PlaylistsModule } from "./playlists/playlists.module";
+import { PosthogModule } from "./posthog/posthog.module";
 import { QueueModule } from "./queue/queue.module";
 
 @Module({
@@ -32,6 +33,7 @@ import { QueueModule } from "./queue/queue.module";
     LibraryModule,
     PlaybackModule,
     PlaylistsModule,
+    PosthogModule,
     QueueModule, // Required for Redis configuration (HealthModule & LibraryModule need it)
   ],
   providers: [AppService],
