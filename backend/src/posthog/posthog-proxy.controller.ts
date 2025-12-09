@@ -1,4 +1,4 @@
-import { All, Controller, Logger, Req, Res } from "@nestjs/common";
+import { All, Controller, Req, Res } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
 import { Request, Response } from "express";
 
@@ -8,17 +8,12 @@ const POSTHOG_ASSETS_HOST = "https://eu-assets.i.posthog.com";
 @ApiExcludeController()
 @Controller("ph")
 export class PosthogProxyController {
-  private readonly logger = new Logger(PosthogProxyController.name);
-
   @All("static/*")
   async proxyAllStatic(@Req() req: Request, @Res() res: Response) {
     // Extract path after /ph/static/
     const fullPath = req.originalUrl.replace(/^\/ph\/static\//, "");
     const [path, query] = fullPath.split("?");
     const targetUrl = `${POSTHOG_ASSETS_HOST}/static/${path}${query ? `?${query}` : ""}`;
-    this.logger.log(
-      `[STATIC] ${req.method} ${req.originalUrl} -> ${targetUrl}`,
-    );
     return this.proxyRequest(req, res, targetUrl);
   }
 
@@ -28,8 +23,6 @@ export class PosthogProxyController {
     const fullPath = req.originalUrl.replace(/^\/ph\//, "");
     const [path, query] = fullPath.split("?");
     const targetUrl = `${POSTHOG_HOST}/${path}${query ? `?${query}` : ""}`;
-    this.logger.log(`[REST] ${req.method} ${req.originalUrl} -> ${targetUrl}`);
-    this.logger.log(`  path: "${path}", query: "${query}"`);
     return this.proxyRequest(req, res, targetUrl);
   }
 
@@ -63,14 +56,9 @@ export class PosthogProxyController {
       if (req.method !== "GET" && req.method !== "HEAD") {
         const contentType = req.headers["content-type"] || "";
 
-        this.logger.log(
-          `  Body debug: req.body=${!!req.body}, isBuffer=${Buffer.isBuffer(req.body)}, type=${typeof req.body}, contentType=${contentType}`,
-        );
-
         if (Buffer.isBuffer(req.body)) {
           // Raw body from express.raw() middleware (text/plain with gzip data)
           body = req.body;
-          this.logger.log(`  Body: Buffer of ${req.body.length} bytes`);
         } else if (typeof req.body === "string") {
           body = req.body;
         } else if (contentType.includes("application/x-www-form-urlencoded")) {
@@ -83,17 +71,12 @@ export class PosthogProxyController {
         }
       }
 
-      this.logger.log(`  Fetching: ${req.method} ${targetUrl}`);
-      this.logger.log(`  Headers: ${JSON.stringify(headers)}`);
-
       const response = await fetch(targetUrl, {
         body,
         headers,
         method: req.method,
         signal: AbortSignal.timeout(30000),
       });
-
-      this.logger.log(`  Response: ${response.status} ${response.statusText}`);
 
       // Forward response headers
       response.headers.forEach((value, key) => {
@@ -118,9 +101,6 @@ export class PosthogProxyController {
         res.send(Buffer.from(buffer));
       }
     } catch (error) {
-      this.logger.error(
-        `  Proxy error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
       res
         .status(502)
         .json({

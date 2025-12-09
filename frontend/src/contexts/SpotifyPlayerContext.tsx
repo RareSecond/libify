@@ -396,7 +396,7 @@ export function SpotifyPlayerProvider({
   ) => {
     if (!player || !deviceId) {
       throw new Error(
-        "Spotify player not ready. Please make sure Spotify is open on one of your devices.",
+        "Spotify player is connecting. Please wait a moment and try again.",
       );
     }
     if (tracks.length === 0) {

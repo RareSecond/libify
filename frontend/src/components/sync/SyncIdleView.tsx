@@ -6,6 +6,7 @@ import { formatLastSync } from "@/utils/format";
 import { SyncOptionsAccordion } from "./SyncOptionsAccordion";
 
 interface SyncIdleViewProps {
+  isFirstSync?: boolean;
   isInitialized: boolean;
   lastSyncedAt?: Date;
   onStartFullSync: () => void;
@@ -37,6 +38,7 @@ interface SyncIdleViewProps {
 }
 
 export function SyncIdleView({
+  isFirstSync = false,
   isInitialized,
   lastSyncedAt,
   onStartFullSync,
@@ -53,40 +55,46 @@ export function SyncIdleView({
       <Group align="flex-start" justify="space-between">
         <div>
           <Text className="font-medium text-dark-0" size="lg">
-            Library Sync
+            {isFirstSync ? "Sync Your Library" : "Library Sync"}
           </Text>
           <Text className="text-dark-1" size="sm">
-            Keep your Spotify library in sync
+            {isFirstSync
+              ? "Import your Spotify library to explore, rate tracks, and get personalized insights"
+              : "Keep your Spotify library in sync"}
           </Text>
         </div>
-        <Group gap="xs" wrap="nowrap">
-          <Badge
-            color="orange"
-            leftSection={<Music size={14} />}
-            size="lg"
-            variant="light"
-          >
-            {totalTracks.toLocaleString()} tracks
-          </Badge>
-          <Badge
-            color="orange"
-            leftSection={<Music size={14} />}
-            size="lg"
-            variant="light"
-          >
-            {totalAlbums.toLocaleString()} albums
-          </Badge>
-        </Group>
+        {!isFirstSync && (
+          <Group gap="xs" wrap="nowrap">
+            <Badge
+              color="orange"
+              leftSection={<Music size={14} />}
+              size="lg"
+              variant="light"
+            >
+              {totalTracks.toLocaleString()} tracks
+            </Badge>
+            <Badge
+              color="orange"
+              leftSection={<Music size={14} />}
+              size="lg"
+              variant="light"
+            >
+              {totalAlbums.toLocaleString()} albums
+            </Badge>
+          </Group>
+        )}
       </Group>
 
-      <Group gap="xs">
-        <Text color="dimmed" size="sm">
-          Last synced:
-        </Text>
-        <Text className="font-medium" size="sm">
-          {formatLastSync(lastSyncedAt?.toISOString() || null)}
-        </Text>
-      </Group>
+      {!isFirstSync && (
+        <Group gap="xs">
+          <Text color="dimmed" size="sm">
+            Last synced:
+          </Text>
+          <Text className="font-medium" size="sm">
+            {formatLastSync(lastSyncedAt?.toISOString() || null)}
+          </Text>
+        </Group>
+      )}
 
       {syncLibraryMutation.isError && (
         <Alert
@@ -112,12 +120,14 @@ export function SyncIdleView({
         </Alert>
       )}
 
-      <Text color="dimmed" size="xs">
-        <strong>Full Sync:</strong> Sync entire library (tracks, albums,
-        playlists)
-        {import.meta.env.DEV &&
-          " • Quick Sync: Sync recently played tracks only (fast, shows progress)"}
-      </Text>
+      {!isFirstSync && (
+        <Text color="dimmed" size="xs">
+          <strong>Full Sync:</strong> Sync entire library (tracks, albums,
+          playlists)
+          {import.meta.env.DEV &&
+            " • Quick Sync: Sync recently played tracks only (fast, shows progress)"}
+        </Text>
+      )}
 
       <SyncOptionsAccordion
         onChange={onSyncOptionsChange}
@@ -138,9 +148,13 @@ export function SyncIdleView({
           onClick={onStartFullSync}
           variant="gradient"
         >
-          {syncLibraryMutation.isPending ? "Starting..." : "Full Sync"}
+          {syncLibraryMutation.isPending
+            ? "Starting..."
+            : isFirstSync
+              ? "Start Sync"
+              : "Full Sync"}
         </Button>
-        {import.meta.env.DEV && (
+        {!isFirstSync && import.meta.env.DEV && (
           <Button
             color="orange"
             disabled={

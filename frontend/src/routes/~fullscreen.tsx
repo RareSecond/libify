@@ -81,7 +81,9 @@ function FullscreenPage() {
       return;
     }
     // Post-creation actions - playlists created successfully at this point
-    trackEvent("onboarding_playlists_created", { playlistCount: SEED_PLAYLISTS.length });
+    trackEvent("onboarding_playlists_created", {
+      playlistCount: SEED_PLAYLISTS.length,
+    });
     trackEvent("onboarding_completed", { path: "rating" });
     notifications.show({
       color: "green",

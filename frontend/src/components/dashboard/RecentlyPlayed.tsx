@@ -31,7 +31,7 @@ export function RecentlyPlayed() {
     try {
       await playTrackList(
         [{ spotifyUri: `spotify:track:${spotifyId}`, trackId }],
-        { contextType: "recently_played" },
+        { contextId: `spotify:track:${spotifyId}`, contextType: "track" },
       );
 
       notifications.show({
@@ -39,12 +39,12 @@ export function RecentlyPlayed() {
         message: trackTitle,
         title: "Now playing",
       });
-    } catch {
-      notifications.show({
-        color: "red",
-        message: "Please make sure Spotify is open on one of your devices",
-        title: "Failed to play track",
-      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to play track. Please try again.";
+      notifications.show({ color: "red", message, title: "Playback error" });
     }
   };
 
