@@ -1633,6 +1633,129 @@ export class TrackService {
     );
   }
 
+  /**
+   * Get random unrated tracks for onboarding
+   * Returns full TrackDto objects (not just URIs)
+   */
+  async getRandomUnratedTracks(
+    userId: string,
+    limit: number,
+  ): Promise<TrackDto[]> {
+    const db = this.kyselyService.database;
+
+    // Build query with all joins needed for full TrackDto
+    const tracks = await db
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
+      .leftJoin("Tag as t", "tt.tagId", "t.id")
+      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .where("ut.rating", "is", null) // Only unrated tracks
+      .select([
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "st.albumId",
+        "st.artistId",
+        "sa.name as albumName",
+        "sa.imageUrl as albumImageUrl",
+        "sar.name as artistName",
+        "sar.genres as artistGenres",
+        sql<Array<{ color: null | string; id: string; name: string }>>`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', t.id,
+                'name', t.name,
+                'color', t.color
+              )
+            ) FILTER (WHERE t.id IS NOT NULL),
+            '[]'::json
+          )`.as("tags"),
+        sql<
+          Array<{
+            createdAt: Date;
+            id: string;
+            sourceId: null | string;
+            sourceName: null | string;
+            sourceType: string;
+          }>
+        >`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', ts.id,
+                'sourceType', ts."sourceType",
+                'sourceName', ts."sourceName",
+                'sourceId', ts."sourceId",
+                'createdAt', ts."createdAt"
+              )
+            ) FILTER (WHERE ts.id IS NOT NULL),
+            '[]'::json
+          )`.as("sources"),
+      ])
+      .groupBy([
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "st.albumId",
+        "st.artistId",
+        "sa.name",
+        "sa.imageUrl",
+        "sar.name",
+        "sar.genres",
+      ])
+      .orderBy(sql`RANDOM()`)
+      .limit(limit)
+      .execute();
+
+    // Transform to DTOs
+    const trackDtos = tracks.map((track) => {
+      const dto = {
+        addedAt: track.addedAt,
+        album: track.albumName,
+        albumArt: track.albumImageUrl,
+        albumId: track.albumId,
+        artist: track.artistName,
+        artistGenres: track.artistGenres,
+        artistId: track.artistId,
+        duration: track.duration,
+        id: track.id,
+        lastPlayedAt: track.lastPlayedAt,
+        ratedAt: track.ratedAt,
+        rating: track.rating,
+        sources: track.sources,
+        spotifyId: track.spotifyId,
+        tags: track.tags,
+        title: track.title,
+        totalPlayCount: track.totalPlayCount,
+      };
+      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+    });
+
+    this.logger.log(
+      `Fetched ${trackDtos.length} random unrated tracks for onboarding`,
+    );
+
+    return trackDtos;
+  }
+
   async getTrackById(
     userId: string,
     trackId: string,

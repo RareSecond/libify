@@ -10,6 +10,7 @@ import {
   Logger,
   Param,
   ParseBoolPipe,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -285,6 +286,28 @@ export class LibraryController {
     @Query() query: GetPlayHistoryQueryDto,
   ): Promise<PaginatedPlayHistoryDto> {
     return this.trackService.getPlayHistory(req.user.id, query);
+  }
+
+  @ApiOperation({ summary: "Get random unrated tracks for onboarding" })
+  @ApiQuery({
+    description: "Number of tracks to return",
+    name: "limit",
+    required: false,
+    type: Number,
+  })
+  @ApiResponse({
+    description: "List of random unrated tracks",
+    status: 200,
+    type: [TrackDto],
+  })
+  @Get("tracks/random-unrated")
+  async getRandomUnratedTracks(
+    @Req() req: AuthenticatedRequest,
+    @Query("limit", new DefaultValuePipe(3), ParseIntPipe) limit: number,
+  ): Promise<TrackDto[]> {
+    // Cap at 10 to prevent abuse
+    const cappedLimit = Math.min(limit, 10);
+    return this.trackService.getRandomUnratedTracks(req.user.id, cappedLimit);
   }
 
   @ApiOperation({
@@ -689,7 +712,7 @@ export class LibraryController {
 
   @ApiOperation({
     summary:
-      "Start quick sync job (50 liked tracks, 10 albums, 3 playlists) - returns job ID for WebSocket progress",
+      "Start quick sync job (50 most recent liked tracks) - returns job ID for WebSocket progress",
   })
   @ApiResponse({
     description: "Quick sync job queued successfully",

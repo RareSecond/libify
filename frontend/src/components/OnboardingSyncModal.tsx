@@ -1,17 +1,24 @@
 import { Button, Modal, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useNavigate } from "@tanstack/react-router";
+import { Clock, Library } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 import { SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
+import { useOnboarding } from "@/contexts/OnboardingContext";
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import {
-  useLibraryControllerSyncLibrary,
+  useLibraryControllerGetTracks,
   useLibraryControllerSyncRecentlyPlayed,
 } from "@/data/api";
 import { PartialSyncProgress } from "@/hooks/useSyncProgress";
+import { trackEvent } from "@/lib/posthog";
 
+import { OnboardingRatingPrompt } from "./OnboardingRatingPrompt";
 import { SyncingView } from "./sync/SyncingView";
-import { FullSyncCard, QuickSyncCard } from "./sync/SyncOptionCard";
+
+type ModalPhase = "initial" | "rating-prompt" | "syncing";
 
 interface OnboardingSyncModalProps {
   isOpen: boolean;
@@ -23,29 +30,33 @@ export function OnboardingSyncModal({
   onClose,
 }: OnboardingSyncModalProps) {
   const navigate = useNavigate();
-  const [selectedOption, setSelectedOption] = useState<"full" | "quick" | null>(
-    null,
-  );
-  const [isSyncing, setIsSyncing] = useState(false);
+  const onboarding = useOnboarding();
+  const { play } = useSpotifyPlayer();
+  const [phase, setPhase] = useState<ModalPhase>("initial");
   const [progress, setProgress] = useState<PartialSyncProgress>({
     message: "Starting sync...",
     percentage: 0,
   });
   const [jobId, setJobId] = useState<null | string>(null);
+  const [syncedTrackCount, setSyncedTrackCount] = useState(50);
   const completionTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
 
   const quickSyncMutation = useLibraryControllerSyncRecentlyPlayed();
-  const fullSyncMutation = useLibraryControllerSyncLibrary();
 
-  // Initialize onboarding state when modal opens
+  // Fetch unrated tracks for onboarding
+  const { refetch: refetchUnratedTracks } = useLibraryControllerGetTracks(
+    { pageSize: 3, unratedOnly: true },
+    { query: { enabled: false } }, // Only fetch when needed
+  );
+
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Reset onboarding state to ensure fresh start
-      // This modal only shows for users who haven't completed onboarding
-      localStorage.removeItem("spotlib-onboarding-completed");
-      localStorage.setItem("spotlib-current-tooltip", "sort");
+      setPhase("initial");
+      setProgress({ message: "Starting sync...", percentage: 0 });
+      setJobId(null);
     }
   }, [isOpen]);
 
@@ -65,35 +76,42 @@ export function OnboardingSyncModal({
       setProgress(data.progress);
     });
 
-    newSocket.on("completed", () => {
-      setProgress({
-        message: "Sync complete! Redirecting...",
-        percentage: 100,
-      });
+    newSocket.on(
+      "completed",
+      (data?: { result?: { totalTracks?: number } }) => {
+        setProgress({ message: "Sync complete!", percentage: 100 });
 
-      // Clear persisted job on completion
-      localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
+        // Clear persisted job on completion
+        localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
 
-      // Clear any existing timeout before creating a new one
-      if (completionTimeoutRef.current) {
-        clearTimeout(completionTimeoutRef.current);
-      }
+        // Track the count if available
+        if (data?.result?.totalTracks) {
+          setSyncedTrackCount(data.result.totalTracks);
+        }
 
-      completionTimeoutRef.current = setTimeout(() => {
-        setIsSyncing(false);
-        setSelectedOption(null);
-        setJobId(null);
-        onClose();
-        navigate({ search: { genres: [] }, to: "/tracks" });
-      }, 1500);
-    });
+        trackEvent("onboarding_sync_completed", {
+          trackCount: data?.result?.totalTracks || 50,
+        });
+
+        // Clear any existing timeout before creating a new one
+        if (completionTimeoutRef.current) {
+          clearTimeout(completionTimeoutRef.current);
+        }
+
+        // Show rating prompt after a short delay
+        completionTimeoutRef.current = setTimeout(() => {
+          setJobId(null);
+          setPhase("rating-prompt");
+          trackEvent("onboarding_rating_prompt_shown");
+        }, 1000);
+      },
+    );
 
     newSocket.on("failed", (data: { error: string }) => {
       setProgress({ message: `Sync failed: ${data.error}`, percentage: 0 });
       // Clear persisted job on failure
       localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
-      setIsSyncing(false);
-      setSelectedOption(null);
+      setPhase("initial");
       setJobId(null);
     });
 
@@ -104,8 +122,7 @@ export function OnboardingSyncModal({
       setProgress({ message: `Sync error: ${errorMessage}`, percentage: 0 });
       // Clear persisted job on error
       localStorage.removeItem(SYNC_JOB_STORAGE_KEY);
-      setIsSyncing(false);
-      setSelectedOption(null);
+      setPhase("initial");
       setJobId(null);
     });
 
@@ -119,52 +136,91 @@ export function OnboardingSyncModal({
     };
   }, [jobId, onClose, navigate]);
 
-  const storeSyncJob = (id: string, type: "full" | "quick") => {
+  const storeSyncJob = (id: string) => {
     localStorage.setItem(
       SYNC_JOB_STORAGE_KEY,
-      JSON.stringify({ jobId: id, startedAt: Date.now(), type }),
+      JSON.stringify({ jobId: id, startedAt: Date.now(), type: "quick" }),
     );
   };
 
-  const handleQuickSync = async () => {
-    setSelectedOption("quick");
-    setIsSyncing(true);
+  const handleStartSync = async () => {
+    setPhase("syncing");
+    trackEvent("onboarding_sync_started", { trackCount: 50 });
 
     try {
       const response = await quickSyncMutation.mutateAsync();
-      storeSyncJob(response.jobId, "quick");
+      storeSyncJob(response.jobId);
       setJobId(response.jobId);
     } catch {
       setProgress({
         message: "Failed to start sync. Please try again.",
         percentage: 0,
       });
-      setIsSyncing(false);
-      setSelectedOption(null);
+      setPhase("initial");
     }
   };
 
-  const handleFullSync = async () => {
-    setSelectedOption("full");
-    setIsSyncing(true);
+  const handleStartRating = async () => {
+    trackEvent("onboarding_rating_started");
 
     try {
-      const response = await fullSyncMutation.mutateAsync({ data: {} });
-      storeSyncJob(response.jobId, "full");
-      setJobId(response.jobId);
+      // Fetch unrated tracks
+      const result = await refetchUnratedTracks();
+      const tracks = result.data?.tracks?.slice(0, 3);
+
+      if (!tracks || tracks.length === 0) {
+        notifications.show({
+          color: "red",
+          message: "No unrated tracks found. Try syncing more tracks first.",
+          title: "No tracks available",
+        });
+        return;
+      }
+
+      // Start onboarding with the tracks
+      onboarding?.startOnboarding(tracks);
+
+      // Play the first track
+      if (tracks[0]?.spotifyId) {
+        await play(`spotify:track:${tracks[0].spotifyId}`);
+      }
+
+      // Navigate to fullscreen
+      onClose();
+      navigate({ to: "/fullscreen" });
     } catch {
-      setProgress({
-        message: "Failed to start sync. Please try again.",
-        percentage: 0,
+      notifications.show({
+        color: "red",
+        message: "Failed to start rating. Please try again.",
+        title: "Error",
       });
-      setIsSyncing(false);
-      setSelectedOption(null);
     }
   };
 
-  const handleSkip = () => {
+  const handleSkipRating = () => {
+    trackEvent("onboarding_rating_skipped");
+    onClose();
+    navigate({
+      search: { genres: [], showRatingReminder: true },
+      to: "/tracks",
+    });
+  };
+
+  const handleSkipAll = () => {
     onClose();
     navigate({ search: { genres: [] }, to: "/tracks" });
+  };
+
+  const isSyncing = phase === "syncing";
+  const isRatingPrompt = phase === "rating-prompt";
+
+  const getTitle = () => {
+    if (isRatingPrompt) return null; // OnboardingRatingPrompt has its own title
+    return (
+      <Text className="text-xl font-bold text-white">
+        Let's get your library set up!
+      </Text>
+    );
   };
 
   return (
@@ -175,28 +231,61 @@ export function OnboardingSyncModal({
       onClose={isSyncing ? () => {} : onClose}
       opened={isOpen}
       size="lg"
-      title={
-        <Text className="text-xl font-bold">
-          Let's get your library set up!
-        </Text>
-      }
-      withCloseButton={!isSyncing}
+      title={getTitle()}
+      withCloseButton={!isSyncing && !isRatingPrompt}
     >
-      {!isSyncing && !selectedOption ? (
+      {phase === "initial" && (
         <div className="space-y-4">
-          <Text className="text-sm text-gray-600 mb-4">
-            Choose how you'd like to sync your Spotify library:
+          <Text className="text-sm text-gray-400 mb-4">
+            We'll sync 50 of your most recent saved tracks so you can start
+            exploring. You can always do a full import later.
           </Text>
-          <QuickSyncCard onClick={handleQuickSync} />
-          <FullSyncCard onClick={handleFullSync} />
+
+          {/* Sync card */}
+          <div
+            className="cursor-pointer hover:shadow-md transition-shadow border-2 border-transparent hover:border-orange-500 rounded-lg p-4 bg-dark-6 shadow-sm"
+            onClick={handleStartSync}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-orange-900/30 rounded-lg">
+                <Library className="text-orange-500" size={24} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Text className="text-lg font-semibold text-white">
+                    Sync My Library
+                  </Text>
+                  <span className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded-full">
+                    Quick
+                  </span>
+                </div>
+                <Text className="text-sm text-gray-400 mb-2">
+                  Import your recent saved tracks to get started
+                </Text>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Clock size={16} />
+                  <span>~30 seconds</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-center pt-2">
-            <Button onClick={handleSkip} size="sm" variant="subtle">
+            <Button onClick={handleSkipAll} size="sm" variant="subtle">
               Skip for now
             </Button>
           </div>
         </div>
-      ) : (
-        <SyncingView progress={progress} />
+      )}
+
+      {phase === "syncing" && <SyncingView progress={progress} />}
+
+      {phase === "rating-prompt" && (
+        <OnboardingRatingPrompt
+          onSkip={handleSkipRating}
+          onStartRating={handleStartRating}
+          trackCount={syncedTrackCount}
+        />
       )}
     </Modal>
   );

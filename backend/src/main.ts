@@ -12,10 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create(ApiModule, { rawBody: true });
 
   // Parse text/plain bodies as raw buffers for PostHog proxy
-  app.use(
-    "/ph",
-    express.raw({ type: "text/plain", limit: "10mb" }),
-  );
+  app.use("/ph", express.raw({ limit: "10mb", type: "text/plain" }));
 
   if (process.env.NODE_ENV === "development") {
     const config = new DocumentBuilder()

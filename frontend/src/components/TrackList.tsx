@@ -4,7 +4,6 @@ import { Play, Shuffle, Tag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
-import { useOnboarding } from "@/hooks/useOnboarding";
 import { trackLibraryFiltered, trackLibrarySearched } from "@/lib/posthog";
 
 import {
@@ -14,7 +13,6 @@ import {
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~tracks";
 import { GenreFilter } from "./filters/GenreFilter";
-import { OnboardingTooltips } from "./OnboardingTooltips";
 import { TagManager } from "./TagManager";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
@@ -30,7 +28,6 @@ export function TrackList() {
     sortOrder = "desc",
   } = Route.useSearch();
   const [showTagManager, setShowTagManager] = useState(false);
-  const { advanceTooltip, currentTooltip, skipOnboarding } = useOnboarding();
 
   const prevDebouncedSearchRef = useRef<string | undefined>(undefined);
   const prevGenresRef = useRef<string[]>(genres);
@@ -108,11 +105,6 @@ export function TrackList() {
       sortOrder?: "asc" | "desc";
     }>,
   ) => {
-    // Check if this is a sort action for onboarding
-    if (newSearch.sortBy && currentTooltip === "sort") {
-      advanceTooltip();
-    }
-
     navigate({
       search: (prev) => ({
         ...prev,
@@ -210,9 +202,7 @@ export function TrackList() {
             updateSearch({ page: 1, pageSize: newPageSize })
           }
           onRatingChange={() => {
-            if (currentTooltip === "rate") {
-              advanceTooltip();
-            }
+            // Callback for when a rating changes
           }}
           onRefetch={refetch}
           onSearchChange={setLocalSearch}
@@ -233,12 +223,6 @@ export function TrackList() {
           search={localSearch}
           sortBy={sortBy}
           sortOrder={sortOrder}
-        />
-
-        <OnboardingTooltips
-          currentTooltip={currentTooltip}
-          hasTracks={Boolean(data?.tracks && data.tracks.length > 0)}
-          skipOnboarding={skipOnboarding}
         />
       </div>
 

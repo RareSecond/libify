@@ -11,6 +11,7 @@ import { createContext, useContext, useEffect, useRef } from "react";
 
 import { AppShellLayout } from "../components/AppShell";
 import { MediaPlayer } from "../components/MediaPlayer";
+import { OnboardingProvider } from "../contexts/OnboardingContext";
 import { SpotifyPlayerProvider } from "../contexts/SpotifyPlayerContext";
 import {
   AuthControllerGetProfileQueryResult,
@@ -167,17 +168,19 @@ function AuthWrapper() {
   return (
     <AuthContext.Provider value={authContextValue}>
       <SpotifyPlayerProvider>
-        {isFullscreenMode ? (
-          <div className="min-h-screen bg-dark-7">
-            <Outlet />
-            <MediaPlayer />
-          </div>
-        ) : (
-          <AppShellLayout>
-            <Outlet />
-            <MediaPlayer />
-          </AppShellLayout>
-        )}
+        <OnboardingProvider>
+          {isFullscreenMode ? (
+            <div className="min-h-screen bg-dark-7">
+              <Outlet />
+              <MediaPlayer />
+            </div>
+          ) : (
+            <AppShellLayout>
+              <Outlet />
+              <MediaPlayer />
+            </AppShellLayout>
+          )}
+        </OnboardingProvider>
       </SpotifyPlayerProvider>
     </AuthContext.Provider>
   );
