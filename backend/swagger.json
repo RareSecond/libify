@@ -856,6 +856,46 @@
         ]
       }
     },
+    "/library/tracks/random-unrated": {
+      "get": {
+        "operationId": "LibraryController_getRandomUnratedTracks",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of tracks to return",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of random unrated tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get random unrated tracks for onboarding",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/sync/count": {
       "get": {
         "operationId": "LibraryController_getSyncItemCounts",
@@ -1519,7 +1559,7 @@
             "bearer": []
           }
         ],
-        "summary": "Start quick sync job (50 liked tracks, 10 albums, 3 playlists) - returns job ID for WebSocket progress",
+        "summary": "Start quick sync job (50 most recent liked tracks) - returns job ID for WebSocket progress",
         "tags": [
           "library"
         ]
@@ -3694,8 +3734,11 @@
             "description": "Order by field"
           },
           "orderDirection": {
-            "type": "object",
-            "description": "Order direction"
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string"
           },
           "rules": {
             "type": "array",

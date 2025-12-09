@@ -11,6 +11,11 @@ import {
 
 import { PlaylistRuleDto } from "./playlist-rule.dto";
 
+export enum OrderDirection {
+  ASC = "asc",
+  DESC = "desc",
+}
+
 export enum PlaylistRuleLogic {
   AND = "and",
   OR = "or",
@@ -31,10 +36,10 @@ export class PlaylistCriteriaDto {
   @IsString()
   orderBy?: string;
 
-  @ApiProperty({ description: "Order direction", required: false })
+  @ApiProperty({ enum: OrderDirection, required: false })
+  @IsEnum(OrderDirection)
   @IsOptional()
-  @IsString()
-  orderDirection?: "asc" | "desc";
+  orderDirection?: OrderDirection;
 
   @ApiProperty({ type: [PlaylistRuleDto] })
   @IsArray()

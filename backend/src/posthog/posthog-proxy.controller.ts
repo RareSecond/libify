@@ -63,7 +63,9 @@ export class PosthogProxyController {
       if (req.method !== "GET" && req.method !== "HEAD") {
         const contentType = req.headers["content-type"] || "";
 
-        this.logger.log(`  Body debug: req.body=${!!req.body}, isBuffer=${Buffer.isBuffer(req.body)}, type=${typeof req.body}, contentType=${contentType}`);
+        this.logger.log(
+          `  Body debug: req.body=${!!req.body}, isBuffer=${Buffer.isBuffer(req.body)}, type=${typeof req.body}, contentType=${contentType}`,
+        );
 
         if (Buffer.isBuffer(req.body)) {
           // Raw body from express.raw() middleware (text/plain with gzip data)
@@ -73,7 +75,9 @@ export class PosthogProxyController {
           body = req.body;
         } else if (contentType.includes("application/x-www-form-urlencoded")) {
           // Preserve form data format
-          body = new URLSearchParams(req.body as Record<string, string>).toString();
+          body = new URLSearchParams(
+            req.body as Record<string, string>,
+          ).toString();
         } else if (req.body && Object.keys(req.body).length > 0) {
           body = JSON.stringify(req.body);
         }
@@ -114,11 +118,15 @@ export class PosthogProxyController {
         res.send(Buffer.from(buffer));
       }
     } catch (error) {
-      this.logger.error(`  Proxy error: ${error instanceof Error ? error.message : "Unknown error"}`);
-      res.status(502).json({
-        error: "Proxy error",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
+      this.logger.error(
+        `  Proxy error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      res
+        .status(502)
+        .json({
+          error: "Proxy error",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
     }
   }
 }

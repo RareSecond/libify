@@ -1,25 +1,24 @@
-import { Badge, Center, Loader, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useCallback, useEffect, useRef } from "react";
 
+import { FullscreenContent } from "@/components/fullscreen/FullscreenContent";
+import { FullscreenEmptyState } from "@/components/fullscreen/FullscreenEmptyState";
 import { FullscreenHeader } from "@/components/fullscreen/FullscreenHeader";
-import { FullscreenSpotifyTrackView } from "@/components/fullscreen/FullscreenSpotifyTrackView";
-import { FullscreenTrackView } from "@/components/fullscreen/FullscreenTrackView";
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
-import {
-  usePlaybackControllerNext,
-  usePlaybackControllerPause,
-  usePlaybackControllerPrevious,
-  usePlaybackControllerResume,
-} from "@/data/api";
-import { useCurrentPlayback } from "@/hooks/useCurrentPlayback";
+import { FullscreenLoadingState } from "@/components/fullscreen/FullscreenLoadingState";
+import { OnboardingProgress } from "@/components/fullscreen/OnboardingProgress";
+import { SEED_PLAYLISTS } from "@/constants/seedPlaylists";
+import { useOnboarding } from "@/contexts/OnboardingContext";
+import { usePlaylistsControllerCreate } from "@/data/api";
+import { useFullscreenKeyboard } from "@/hooks/useFullscreenKeyboard";
+import { useFullscreenPlayback } from "@/hooks/useFullscreenPlayback";
 import { useLibraryTrack } from "@/hooks/useLibraryTrack";
 import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
 import { trackEvent } from "@/lib/posthog";
-
-const SHORTCUTS_TEXT =
-  "1-5 = Full Stars · Shift+1-5 = Half Stars · Space = Play/Pause · N = Next · P = Previous · Esc = Back";
 
 export const Route = createFileRoute("/fullscreen")({
   component: FullscreenPage,
@@ -27,265 +26,194 @@ export const Route = createFileRoute("/fullscreen")({
 
 function FullscreenPage() {
   const router = useRouter();
+  const navigate = useNavigate();
+  const onboarding = useOnboarding();
+  const isOnboarding = onboarding?.isOnboarding ?? false;
+
   const {
     currentTrack,
     currentTrackIndex,
-    isPlaying,
-    nextTrack,
-    pause,
-    previousTrack,
-    resume,
-  } = useSpotifyPlayer();
+    handleNext,
+    handlePlayPause,
+    handlePrevious,
+    isRemotePlayback,
+    remoteDevice,
+    remoteTrack,
+  } = useFullscreenPlayback({ isOnboarding, onboarding });
 
-  // Get polled playback for cross-device support
-  const { currentPlayback, refetch: refetchPlayback } = useCurrentPlayback();
+  const createPlaylistMutation = usePlaylistsControllerCreate();
 
-  // Remote playback API controls
-  const { mutate: remoteNext } = usePlaybackControllerNext();
-  const { mutate: remotePrevious } = usePlaybackControllerPrevious();
-  const { mutate: remotePause } = usePlaybackControllerPause();
-  const { mutate: remoteResume } = usePlaybackControllerResume();
-
-  // Determine if we're playing on a remote device (not the web player)
-  const isRemotePlayback = !currentTrack && currentPlayback?.track;
-  const remoteTrack = currentPlayback?.track;
-  const remoteDevice = currentPlayback?.device;
-
-  // Get Spotify ID from either web player or remote playback
-  const originalSpotifyId = currentTrack
-    ? currentTrack.linked_from?.id || currentTrack.id || ""
-    : remoteTrack?.id || "";
+  const spotifyId = isOnboarding
+    ? onboarding?.tracks[onboarding.currentIndex]?.spotifyId || ""
+    : currentTrack?.linked_from?.id ||
+      currentTrack?.id ||
+      remoteTrack?.id ||
+      "";
 
   const { isLoading, libraryTrack, refetchLibraryTrack } = useLibraryTrack({
-    spotifyId: originalSpotifyId,
+    spotifyId,
   });
-
   const updateRatingMutation = useTrackRatingMutation();
   const isAdvancingRef = useRef(false);
+  const isCompletingRef = useRef(false);
+
+  const handleLibraryTrackUpdate = useCallback(async () => {
+    await refetchLibraryTrack();
+  }, [refetchLibraryTrack]);
+
+  const completeOnboarding = useCallback(async () => {
+    if (isCompletingRef.current) return;
+    isCompletingRef.current = true;
+    try {
+      await Promise.all(
+        SEED_PLAYLISTS.map((p) =>
+          createPlaylistMutation.mutateAsync({ data: p }),
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to create seed playlists:", err); // eslint-disable-line no-console
+      notifications.show({
+        color: "red",
+        message: "Failed to create playlists. Please try again.",
+        title: "Error",
+      });
+      isCompletingRef.current = false;
+      return;
+    }
+    // Post-creation actions - playlists created successfully at this point
+    trackEvent("onboarding_playlists_created", { playlistCount: SEED_PLAYLISTS.length });
+    trackEvent("onboarding_completed", { path: "rating" });
+    notifications.show({
+      color: "green",
+      message: "Check out your new smart playlists!",
+      title: "Onboarding complete!",
+    });
+    onboarding?.exitOnboarding();
+    navigate({ to: "/playlists" });
+    isCompletingRef.current = false;
+  }, [createPlaylistMutation, navigate, onboarding]);
 
   const handleClose = useCallback(() => {
-    trackEvent("fullscreen_mode_exited");
-    router.history.back();
-  }, [router]);
-
-  const handleNext = useCallback(async () => {
-    if (isRemotePlayback) {
-      remoteNext(undefined, {
-        onSuccess: () => {
-          setTimeout(() => refetchPlayback(), 500);
-        },
+    if (isOnboarding) {
+      trackEvent("onboarding_rating_skipped");
+      onboarding?.exitOnboarding();
+      navigate({
+        search: { genres: [], showRatingReminder: true },
+        to: "/tracks",
       });
     } else {
-      await nextTrack();
+      trackEvent("fullscreen_mode_exited");
+      router.history.back();
     }
-  }, [isRemotePlayback, nextTrack, refetchPlayback, remoteNext]);
+  }, [isOnboarding, onboarding, navigate, router]);
 
-  const handlePrevious = useCallback(async () => {
-    if (isRemotePlayback) {
-      remotePrevious(undefined, {
-        onSuccess: () => {
-          setTimeout(() => refetchPlayback(), 500);
-        },
-      });
-    } else {
-      await previousTrack();
-    }
-  }, [isRemotePlayback, previousTrack, refetchPlayback, remotePrevious]);
-
-  const handlePlayPause = useCallback(() => {
-    if (isRemotePlayback) {
-      if (currentPlayback?.isPlaying) {
-        remotePause(undefined, { onSuccess: () => refetchPlayback() });
-      } else {
-        remoteResume(undefined, { onSuccess: () => refetchPlayback() });
-      }
-    } else {
-      if (isPlaying) pause();
-      else resume();
-    }
-  }, [
-    isRemotePlayback,
-    currentPlayback?.isPlaying,
-    isPlaying,
-    pause,
-    resume,
-    remotePause,
-    remoteResume,
-    refetchPlayback,
-  ]);
-
-  const handleLibraryTrackUpdate = async () => {
-    await refetchLibraryTrack();
-  };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignore shortcuts when typing in input fields
-      const target = e.target as HTMLElement;
-      const isInputElement =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
-      if (isInputElement) return;
-
-      // Rating shortcuts: 1-5 for full stars, Shift+1-5 for half stars
-      const digitMatch = e.code.match(/^Digit([1-5])$/);
-      if (digitMatch && libraryTrack) {
-        if (e.ctrlKey || e.altKey || e.metaKey) return;
-        if (updateRatingMutation.isPending) return;
-
-        e.preventDefault();
-
-        const baseRating = parseInt(digitMatch[1]);
-        const rating = e.shiftKey ? baseRating - 0.5 : baseRating;
-        updateRatingMutation.mutate(
-          { data: { rating }, trackId: libraryTrack.id },
-          {
-            onError: (error) => {
-              // eslint-disable-next-line no-console
-              console.error("Failed to update track rating:", error);
-              notifications.show({
-                color: "red",
-                message:
-                  "Failed to save rating. Please try again or skip to the next track.",
-                title: "Rating Error",
-              });
-            },
-            onSuccess: async () => {
-              if (isAdvancingRef.current) return;
-              isAdvancingRef.current = true;
-              try {
-                trackEvent("track_rated", {
-                  rating,
-                  source: "fullscreen_mode",
-                });
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                await handleNext();
-              } finally {
-                isAdvancingRef.current = false;
-              }
-            },
+  const handleRating = useCallback(
+    (rating: number) => {
+      if (!libraryTrack || isAdvancingRef.current) return;
+      isAdvancingRef.current = true;
+      updateRatingMutation.mutate(
+        { data: { rating }, trackId: libraryTrack.id },
+        {
+          onError: () => {
+            notifications.show({
+              color: "red",
+              message: "Failed to save rating.",
+              title: "Rating Error",
+            });
+            isAdvancingRef.current = false;
           },
-        );
-      }
+          onSuccess: async () => {
+            try {
+              trackEvent(
+                isOnboarding ? "onboarding_track_rated" : "track_rated",
+                isOnboarding
+                  ? { rating, trackIndex: (onboarding?.currentIndex ?? 0) + 1 }
+                  : { rating, source: "fullscreen_mode" },
+              );
+              await new Promise((r) => setTimeout(r, 500));
+              if (isOnboarding) {
+                const isLast =
+                  (onboarding?.currentIndex ?? 0) >=
+                  (onboarding?.totalTracks ?? 0) - 1;
+                await handleNext();
+                onboarding?.advance(rating);
+                if (isLast) {
+                  trackEvent("onboarding_rating_completed", {
+                    ratings: onboarding?.ratings ?? [],
+                  });
+                  await completeOnboarding();
+                }
+              } else await handleNext();
+            } finally {
+              isAdvancingRef.current = false;
+            }
+          },
+        },
+      );
+    },
+    [
+      libraryTrack,
+      isOnboarding,
+      onboarding,
+      updateRatingMutation,
+      handleNext,
+      completeOnboarding,
+    ],
+  );
 
-      if (e.key === " ") {
-        e.preventDefault();
-        handlePlayPause();
-      }
-      if (e.key === "n" || e.key === "ArrowRight") handleNext();
-      if (e.key === "p" || e.key === "ArrowLeft") handlePrevious();
-      if (e.key === "Escape") handleClose();
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [
+  useFullscreenKeyboard({
+    isRatingPending: updateRatingMutation.isPending,
     libraryTrack,
-    updateRatingMutation,
-    handlePrevious,
-    handleNext,
-    handleClose,
-    handlePlayPause,
-  ]);
+    onClose: handleClose,
+    onNext: handleNext,
+    onPlayPause: handlePlayPause,
+    onPrevious: handlePrevious,
+    onRating: handleRating,
+  });
 
-  // Track fullscreen mode entry
-  useEffect(() => trackEvent("fullscreen_mode_entered"), []);
-
-  // No track playing on web player or remote device - show message
-  if (!currentTrack && !isRemotePlayback) {
-    return (
-      <div className="h-[calc(100vh-120px)] flex flex-col py-4">
-        <FullscreenHeader onClose={handleClose} />
-        <Center className="flex-1">
-          <Stack align="center" gap="md">
-            <Text className="text-dark-2" size="xl">
-              No track is currently playing
-            </Text>
-            <Text className="text-dark-3" size="sm">
-              Start playing something to see it in fullscreen mode
-            </Text>
-          </Stack>
-        </Center>
-      </div>
+  useEffect(() => {
+    trackEvent(
+      isOnboarding
+        ? "onboarding_fullscreen_entered"
+        : "fullscreen_mode_entered",
     );
+  }, [isOnboarding]);
+
+  // Loading/empty states
+  if (isOnboarding && !libraryTrack) {
+    return <FullscreenLoadingState closeText="Skip" onClose={handleClose} />;
+  }
+  if (!isOnboarding && !currentTrack && !isRemotePlayback) {
+    return <FullscreenEmptyState onClose={handleClose} />;
   }
 
-  // Remote playback (playing on another device)
-  if (isRemotePlayback && remoteTrack) {
-    return (
-      <div className="h-[calc(100vh-120px)] flex flex-col py-4 overflow-y-auto">
-        <FullscreenHeader onClose={handleClose} />
-
-        <div className="flex-1 flex flex-col items-center px-4 md:px-8 pb-4 gap-2 min-h-0">
-          {remoteDevice && (
-            <Badge color="blue" size="lg" variant="light">
-              Playing on {remoteDevice.name}
-            </Badge>
-          )}
-          <Text className="text-dark-3 text-center text-xs md:text-sm hidden md:block">
-            <strong>Shortcuts:</strong> {SHORTCUTS_TEXT}
-          </Text>
-
-          {isLoading ? (
-            <Loader color="orange" size="xl" />
-          ) : libraryTrack ? (
-            <FullscreenTrackView
-              libraryTrack={libraryTrack}
-              onLibraryTrackUpdate={handleLibraryTrackUpdate}
-              onNext={handleNext}
-              onPrevious={handlePrevious}
-            />
-          ) : (
-            <FullscreenSpotifyTrackView
-              currentTrackIndex={0}
-              onNext={handleNext}
-              onPrevious={handlePrevious}
-              track={{
-                album: {
-                  images: remoteTrack.album.images.map((url) => ({ url })),
-                  name: remoteTrack.album.name,
-                },
-                artists: remoteTrack.artists.map((a) => ({ name: a.name })),
-                name: remoteTrack.name,
-              }}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Web player playback (currentTrack exists)
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col py-4 overflow-y-auto">
-      <FullscreenHeader onClose={handleClose} />
-
-      <div className="flex-1 flex flex-col items-center px-4 md:px-8 pb-4 gap-2 min-h-0">
-        <Text className="text-dark-3 text-center text-xs md:text-sm hidden md:block">
-          <strong>Shortcuts:</strong> {SHORTCUTS_TEXT}
-        </Text>
-
-        {isLoading ? (
-          <Loader color="orange" size="xl" />
-        ) : libraryTrack ? (
-          <FullscreenTrackView
-            currentTrackIndex={currentTrackIndex}
-            libraryTrack={libraryTrack}
-            onLibraryTrackUpdate={handleLibraryTrackUpdate}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-          />
-        ) : currentTrack ? (
-          <FullscreenSpotifyTrackView
-            currentTrackIndex={currentTrackIndex}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            track={currentTrack}
-          />
-        ) : null}
-      </div>
+      <FullscreenHeader
+        closeText={isOnboarding ? "Skip" : undefined}
+        onClose={handleClose}
+      />
+      {isOnboarding && (
+        <OnboardingProgress
+          currentIndex={onboarding?.currentIndex ?? 0}
+          totalTracks={onboarding?.totalTracks ?? 1}
+        />
+      )}
+      <FullscreenContent
+        currentTrack={currentTrack}
+        currentTrackIndex={
+          isOnboarding ? (onboarding?.currentIndex ?? 0) : currentTrackIndex
+        }
+        isLoading={isLoading}
+        isOnboarding={isOnboarding}
+        isRemotePlayback={!!isRemotePlayback}
+        libraryTrack={libraryTrack}
+        onLibraryTrackUpdate={handleLibraryTrackUpdate}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        remoteDevice={remoteDevice}
+        remoteTrack={remoteTrack}
+      />
     </div>
   );
 }
