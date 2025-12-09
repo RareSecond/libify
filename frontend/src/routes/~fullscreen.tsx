@@ -70,17 +70,6 @@ function FullscreenPage() {
           createPlaylistMutation.mutateAsync({ data: p }),
         ),
       );
-      trackEvent("onboarding_playlists_created", {
-        playlistCount: SEED_PLAYLISTS.length,
-      });
-      trackEvent("onboarding_completed", { path: "rating" });
-      notifications.show({
-        color: "green",
-        message: "Check out your new smart playlists!",
-        title: "Onboarding complete!",
-      });
-      onboarding?.exitOnboarding();
-      navigate({ to: "/playlists" });
     } catch (err) {
       console.error("Failed to create seed playlists:", err); // eslint-disable-line no-console
       notifications.show({
@@ -88,9 +77,20 @@ function FullscreenPage() {
         message: "Failed to create playlists. Please try again.",
         title: "Error",
       });
-    } finally {
       isCompletingRef.current = false;
+      return;
     }
+    // Post-creation actions - playlists created successfully at this point
+    trackEvent("onboarding_playlists_created", { playlistCount: SEED_PLAYLISTS.length });
+    trackEvent("onboarding_completed", { path: "rating" });
+    notifications.show({
+      color: "green",
+      message: "Check out your new smart playlists!",
+      title: "Onboarding complete!",
+    });
+    onboarding?.exitOnboarding();
+    navigate({ to: "/playlists" });
+    isCompletingRef.current = false;
   }, [createPlaylistMutation, navigate, onboarding]);
 
   const handleClose = useCallback(() => {
