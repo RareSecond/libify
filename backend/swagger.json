@@ -3734,8 +3734,11 @@
             "description": "Order by field"
           },
           "orderDirection": {
-            "type": "object",
-            "description": "Order direction"
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string"
           },
           "rules": {
             "type": "array",

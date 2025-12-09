@@ -55,11 +55,20 @@ export function useFullscreenPlayback({
     } else {
       await nextTrack();
     }
-  }, [isOnboarding, onboarding, play, isRemotePlayback, nextTrack, refetchPlayback, remoteNext]);
+  }, [
+    isOnboarding,
+    onboarding,
+    play,
+    isRemotePlayback,
+    nextTrack,
+    refetchPlayback,
+    remoteNext,
+  ]);
 
   const handlePrevious = useCallback(async () => {
     if (isOnboarding) {
-      const prev = onboarding?.tracks[Math.max(0, (onboarding?.currentIndex ?? 0) - 1)];
+      const prev =
+        onboarding?.tracks[Math.max(0, (onboarding?.currentIndex ?? 0) - 1)];
       if (prev?.spotifyId) await play(`spotify:track:${prev.spotifyId}`);
     } else if (isRemotePlayback) {
       remotePrevious(undefined, {
@@ -68,17 +77,35 @@ export function useFullscreenPlayback({
     } else {
       await previousTrack();
     }
-  }, [isOnboarding, onboarding, play, isRemotePlayback, previousTrack, refetchPlayback, remotePrevious]);
+  }, [
+    isOnboarding,
+    onboarding,
+    play,
+    isRemotePlayback,
+    previousTrack,
+    refetchPlayback,
+    remotePrevious,
+  ]);
 
   const handlePlayPause = useCallback(() => {
     if (isRemotePlayback) {
-      if (currentPlayback?.isPlaying) remotePause(undefined, { onSuccess: () => refetchPlayback() });
+      if (currentPlayback?.isPlaying)
+        remotePause(undefined, { onSuccess: () => refetchPlayback() });
       else remoteResume(undefined, { onSuccess: () => refetchPlayback() });
     } else {
       if (isPlaying) pause();
       else resume();
     }
-  }, [isRemotePlayback, currentPlayback?.isPlaying, isPlaying, pause, resume, remotePause, remoteResume, refetchPlayback]);
+  }, [
+    isRemotePlayback,
+    currentPlayback?.isPlaying,
+    isPlaying,
+    pause,
+    resume,
+    remotePause,
+    remoteResume,
+    refetchPlayback,
+  ]);
 
   return {
     currentPlayback,

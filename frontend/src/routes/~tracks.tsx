@@ -36,7 +36,7 @@ export const Route = createFileRoute("/tracks")({
 
 function TracksPage() {
   const { showRatingReminder } = useSearch({ from: "/tracks" });
-  const [isDismissed, setIsDismissed] = useState(isRatingReminderDismissed);
+  const [isDismissed, setIsDismissed] = useState(isRatingReminderDismissed());
 
   const handleDismiss = useCallback(() => {
     setIsDismissed(true);

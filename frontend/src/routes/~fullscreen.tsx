@@ -1,5 +1,9 @@
 import { notifications } from "@mantine/notifications";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useCallback, useEffect, useRef } from "react";
 
 import { FullscreenContent } from "@/components/fullscreen/FullscreenContent";
@@ -41,9 +45,14 @@ function FullscreenPage() {
 
   const spotifyId = isOnboarding
     ? onboarding?.tracks[onboarding.currentIndex]?.spotifyId || ""
-    : currentTrack?.linked_from?.id || currentTrack?.id || remoteTrack?.id || "";
+    : currentTrack?.linked_from?.id ||
+      currentTrack?.id ||
+      remoteTrack?.id ||
+      "";
 
-  const { isLoading, libraryTrack, refetchLibraryTrack } = useLibraryTrack({ spotifyId });
+  const { isLoading, libraryTrack, refetchLibraryTrack } = useLibraryTrack({
+    spotifyId,
+  });
   const updateRatingMutation = useTrackRatingMutation();
   const isAdvancingRef = useRef(false);
   const isCompletingRef = useRef(false);
@@ -56,16 +65,31 @@ function FullscreenPage() {
     if (isCompletingRef.current) return;
     isCompletingRef.current = true;
     try {
-      await Promise.all(SEED_PLAYLISTS.map((p) => createPlaylistMutation.mutateAsync({ data: p })));
-      trackEvent("onboarding_playlists_created", { playlistCount: SEED_PLAYLISTS.length });
+      await Promise.all(
+        SEED_PLAYLISTS.map((p) =>
+          createPlaylistMutation.mutateAsync({ data: p }),
+        ),
+      );
+      trackEvent("onboarding_playlists_created", {
+        playlistCount: SEED_PLAYLISTS.length,
+      });
       trackEvent("onboarding_completed", { path: "rating" });
-      notifications.show({ color: "green", message: "Check out your new smart playlists!", title: "Onboarding complete!" });
-    } catch (err) {
-      console.error("Failed to create seed playlists:", err); // eslint-disable-line no-console
-    } finally {
-      isCompletingRef.current = false;
+      notifications.show({
+        color: "green",
+        message: "Check out your new smart playlists!",
+        title: "Onboarding complete!",
+      });
       onboarding?.exitOnboarding();
       navigate({ to: "/playlists" });
+    } catch (err) {
+      console.error("Failed to create seed playlists:", err); // eslint-disable-line no-console
+      notifications.show({
+        color: "red",
+        message: "Failed to create playlists. Please try again.",
+        title: "Error",
+      });
+    } finally {
+      isCompletingRef.current = false;
     }
   }, [createPlaylistMutation, navigate, onboarding]);
 
@@ -73,7 +97,10 @@ function FullscreenPage() {
     if (isOnboarding) {
       trackEvent("onboarding_rating_skipped");
       onboarding?.exitOnboarding();
-      navigate({ search: { genres: [], showRatingReminder: true }, to: "/tracks" });
+      navigate({
+        search: { genres: [], showRatingReminder: true },
+        to: "/tracks",
+      });
     } else {
       trackEvent("fullscreen_mode_exited");
       router.history.back();
@@ -159,7 +186,10 @@ function FullscreenPage() {
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col py-4 overflow-y-auto">
-      <FullscreenHeader closeText={isOnboarding ? "Skip" : undefined} onClose={handleClose} />
+      <FullscreenHeader
+        closeText={isOnboarding ? "Skip" : undefined}
+        onClose={handleClose}
+      />
       {isOnboarding && (
         <OnboardingProgress
           currentIndex={onboarding?.currentIndex ?? 0}
@@ -168,7 +198,9 @@ function FullscreenPage() {
       )}
       <FullscreenContent
         currentTrack={currentTrack}
-        currentTrackIndex={isOnboarding ? (onboarding?.currentIndex ?? 0) : currentTrackIndex}
+        currentTrackIndex={
+          isOnboarding ? (onboarding?.currentIndex ?? 0) : currentTrackIndex
+        }
         isLoading={isLoading}
         isOnboarding={isOnboarding}
         isRemotePlayback={!!isRemotePlayback}

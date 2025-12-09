@@ -37,13 +37,15 @@ export function useFullscreenKeyboard({
           e.shiftKey ? parseInt(digitMatch[1]) - 0.5 : parseInt(digitMatch[1]),
         );
       }
-      if (e.key === " ") {
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey || e.shiftKey;
+      if (e.key === " " && !hasModifier) {
         e.preventDefault();
         onPlayPause();
       }
-      if (e.key === "n" || e.key === "ArrowRight") onNext();
-      if (e.key === "p" || e.key === "ArrowLeft") onPrevious();
-      if (e.key === "Escape") onClose();
+      if ((e.key === "n" || e.key === "ArrowRight") && !hasModifier) onNext();
+      if ((e.key === "p" || e.key === "ArrowLeft") && !hasModifier)
+        onPrevious();
+      if (e.key === "Escape" && !hasModifier) onClose();
     };
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);

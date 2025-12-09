@@ -1,6 +1,6 @@
 import { Badge, Loader, Text } from "@mantine/core";
 
-import { LibraryTrackWithDetailsResponseDto } from "@/data/api";
+import { TrackDto } from "@/data/api";
 
 import { FullscreenRemoteTrackView } from "./FullscreenRemoteTrackView";
 import { FullscreenSpotifyTrackView } from "./FullscreenSpotifyTrackView";
@@ -10,17 +10,31 @@ const SHORTCUTS_TEXT =
   "1-5 = Full Stars · Shift+1-5 = Half Stars · Space = Play/Pause · N = Next · P = Previous · Esc = Back";
 
 interface FullscreenContentProps {
-  currentTrack?: null | Spotify.Track;
+  currentTrack?: null | SpotifyTrack;
   currentTrackIndex: number;
   isLoading: boolean;
   isOnboarding: boolean;
   isRemotePlayback: boolean;
-  libraryTrack: LibraryTrackWithDetailsResponseDto | null;
+  libraryTrack?: null | TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
   onNext: () => void;
   onPrevious: () => void;
   remoteDevice?: null | { name: string };
-  remoteTrack?: null | { album: { images: string[]; name: string }; artists: { name: string }[]; name: string };
+  remoteTrack?: null | RemoteTrack;
+}
+
+interface RemoteTrack {
+  album: { images: string[]; name: string };
+  artists: { name: string }[];
+  name: string;
+}
+
+interface SpotifyTrack {
+  album: { images: Array<{ url: string }>; name: string };
+  artists: Array<{ name: string }>;
+  id?: string;
+  linked_from?: { id: string };
+  name: string;
 }
 
 export function FullscreenContent({
@@ -64,7 +78,11 @@ export function FullscreenContent({
           track={currentTrack}
         />
       ) : isRemotePlayback && remoteTrack ? (
-        <FullscreenRemoteTrackView onNext={onNext} onPrevious={onPrevious} remoteTrack={remoteTrack} />
+        <FullscreenRemoteTrackView
+          onNext={onNext}
+          onPrevious={onPrevious}
+          remoteTrack={remoteTrack}
+        />
       ) : null}
     </div>
   );

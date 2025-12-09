@@ -1,6 +1,7 @@
 import {
   CreateSmartPlaylistDto,
   PlaylistCriteriaDtoLogic,
+  PlaylistCriteriaDtoOrderDirection,
   PlaylistRuleDtoField,
   PlaylistRuleDtoOperator,
 } from "@/data/api";
@@ -11,8 +12,7 @@ export const SEED_PLAYLISTS: CreateSmartPlaylistDto[] = [
     criteria: {
       logic: PlaylistCriteriaDtoLogic.and,
       orderBy: "ratedAt",
-      orderDirection:
-        "desc" as unknown as CreateSmartPlaylistDto["criteria"]["orderDirection"],
+      orderDirection: PlaylistCriteriaDtoOrderDirection.desc,
       rules: [
         {
           field: PlaylistRuleDtoField.rating,
@@ -28,8 +28,7 @@ export const SEED_PLAYLISTS: CreateSmartPlaylistDto[] = [
     criteria: {
       logic: PlaylistCriteriaDtoLogic.and,
       orderBy: "rating",
-      orderDirection:
-        "desc" as unknown as CreateSmartPlaylistDto["criteria"]["orderDirection"],
+      orderDirection: PlaylistCriteriaDtoOrderDirection.desc,
       rules: [
         {
           field: PlaylistRuleDtoField.rating,
@@ -45,8 +44,7 @@ export const SEED_PLAYLISTS: CreateSmartPlaylistDto[] = [
     criteria: {
       logic: PlaylistCriteriaDtoLogic.and,
       orderBy: "rating",
-      orderDirection:
-        "desc" as unknown as CreateSmartPlaylistDto["criteria"]["orderDirection"],
+      orderDirection: PlaylistCriteriaDtoOrderDirection.desc,
       rules: [
         {
           field: PlaylistRuleDtoField.rating,
