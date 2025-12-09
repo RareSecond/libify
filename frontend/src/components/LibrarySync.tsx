@@ -19,6 +19,7 @@ import { SyncFailedView } from "./sync/SyncFailedView";
 import { SyncIdleView } from "./sync/SyncIdleView";
 
 interface LibrarySyncProps {
+  isFirstSync?: boolean;
   lastSyncedAt?: Date;
   onSyncComplete?: () => void;
   totalAlbums?: number;
@@ -26,6 +27,7 @@ interface LibrarySyncProps {
 }
 
 export function LibrarySync({
+  isFirstSync = false,
   lastSyncedAt,
   onSyncComplete,
   totalAlbums = 0,
@@ -124,10 +126,14 @@ export function LibrarySync({
 
   return (
     <Card
-      className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      className={
+        isFirstSync
+          ? "bg-gradient-to-br from-dark-6 to-dark-8 border-orange-7"
+          : "bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+      }
       padding="lg"
       radius="md"
-      shadow="md"
+      shadow={isFirstSync ? "lg" : "md"}
       withBorder
     >
       {isCompleted && syncProgress.result ? (
@@ -144,6 +150,7 @@ export function LibrarySync({
         <SyncActiveView syncProgress={syncProgress} />
       ) : (
         <SyncIdleView
+          isFirstSync={isFirstSync}
           isInitialized={isInitialized}
           lastSyncedAt={lastSyncedAt}
           onStartFullSync={() =>

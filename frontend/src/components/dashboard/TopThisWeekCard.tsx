@@ -38,7 +38,7 @@ export function TopThisWeekCard({
     try {
       await playTrackList(
         [{ spotifyUri: `spotify:track:${item.spotifyId}`, trackId: item.id }],
-        { contextType: "top_tracks" },
+        { contextId: `spotify:track:${item.spotifyId}`, contextType: "track" },
       );
 
       notifications.show({
@@ -46,12 +46,12 @@ export function TopThisWeekCard({
         message: item.name,
         title: "Now playing",
       });
-    } catch {
-      notifications.show({
-        color: "red",
-        message: "Please make sure Spotify is open on one of your devices",
-        title: "Failed to play track",
-      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to play track. Please try again.";
+      notifications.show({ color: "red", message, title: "Playback error" });
     }
   };
 

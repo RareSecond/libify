@@ -208,7 +208,7 @@ export function OnboardingSyncModal({
 
   const handleSkipAll = () => {
     onClose();
-    navigate({ search: { genres: [] }, to: "/tracks" });
+    navigate({ to: "/" });
   };
 
   const isSyncing = phase === "syncing";

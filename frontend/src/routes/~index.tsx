@@ -13,7 +13,6 @@ import { useEffect, useRef } from "react";
 
 import { LibraryHealthCard } from "@/components/dashboard/LibraryHealthCard";
 import { RecentlyPlayed } from "@/components/dashboard/RecentlyPlayed";
-import { SyncPromptCard } from "@/components/dashboard/SyncPromptCard";
 import { SyncStatusBar } from "@/components/dashboard/SyncStatusBar";
 import { TopThisWeekCard } from "@/components/dashboard/TopThisWeekCard";
 import { WeeklyActivityCard } from "@/components/dashboard/WeeklyActivityCard";
@@ -99,14 +98,7 @@ function HomePage() {
         </div>
 
         {!isSynced ? (
-          <Grid>
-            <Grid.Col span={{ base: 12, lg: 8 }}>
-              <SyncPromptCard onSyncStarted={() => refetch()} />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, lg: 4 }}>
-              <LibrarySync onSyncComplete={() => refetch()} />
-            </Grid.Col>
-          </Grid>
+          <LibrarySync isFirstSync onSyncComplete={() => refetch()} />
         ) : (
           <>
             {/* Library Health - Full Width Hero */}
