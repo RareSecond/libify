@@ -123,27 +123,30 @@ function FullscreenPage() {
             isAdvancingRef.current = false;
           },
           onSuccess: async () => {
-            trackEvent(
-              isOnboarding ? "onboarding_track_rated" : "track_rated",
-              isOnboarding
-                ? { rating, trackIndex: (onboarding?.currentIndex ?? 0) + 1 }
-                : { rating, source: "fullscreen_mode" },
-            );
-            await new Promise((r) => setTimeout(r, 500));
-            if (isOnboarding) {
-              const isLast =
-                (onboarding?.currentIndex ?? 0) >=
-                (onboarding?.totalTracks ?? 0) - 1;
-              await handleNext();
-              onboarding?.advance(rating);
-              if (isLast) {
-                trackEvent("onboarding_rating_completed", {
-                  ratings: onboarding?.ratings ?? [],
-                });
-                await completeOnboarding();
-              }
-            } else await handleNext();
-            isAdvancingRef.current = false;
+            try {
+              trackEvent(
+                isOnboarding ? "onboarding_track_rated" : "track_rated",
+                isOnboarding
+                  ? { rating, trackIndex: (onboarding?.currentIndex ?? 0) + 1 }
+                  : { rating, source: "fullscreen_mode" },
+              );
+              await new Promise((r) => setTimeout(r, 500));
+              if (isOnboarding) {
+                const isLast =
+                  (onboarding?.currentIndex ?? 0) >=
+                  (onboarding?.totalTracks ?? 0) - 1;
+                await handleNext();
+                onboarding?.advance(rating);
+                if (isLast) {
+                  trackEvent("onboarding_rating_completed", {
+                    ratings: onboarding?.ratings ?? [],
+                  });
+                  await completeOnboarding();
+                }
+              } else await handleNext();
+            } finally {
+              isAdvancingRef.current = false;
+            }
           },
         },
       );
