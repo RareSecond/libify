@@ -1,0 +1,71 @@
+import { Badge, Loader, Text } from "@mantine/core";
+
+import { LibraryTrackWithDetailsResponseDto } from "@/data/api";
+
+import { FullscreenRemoteTrackView } from "./FullscreenRemoteTrackView";
+import { FullscreenSpotifyTrackView } from "./FullscreenSpotifyTrackView";
+import { FullscreenTrackView } from "./FullscreenTrackView";
+
+const SHORTCUTS_TEXT =
+  "1-5 = Full Stars · Shift+1-5 = Half Stars · Space = Play/Pause · N = Next · P = Previous · Esc = Back";
+
+interface FullscreenContentProps {
+  currentTrack?: null | Spotify.Track;
+  currentTrackIndex: number;
+  isLoading: boolean;
+  isOnboarding: boolean;
+  isRemotePlayback: boolean;
+  libraryTrack: LibraryTrackWithDetailsResponseDto | null;
+  onLibraryTrackUpdate: () => Promise<void>;
+  onNext: () => void;
+  onPrevious: () => void;
+  remoteDevice?: null | { name: string };
+  remoteTrack?: null | { album: { images: string[]; name: string }; artists: { name: string }[]; name: string };
+}
+
+export function FullscreenContent({
+  currentTrack,
+  currentTrackIndex,
+  isLoading,
+  isOnboarding,
+  isRemotePlayback,
+  libraryTrack,
+  onLibraryTrackUpdate,
+  onNext,
+  onPrevious,
+  remoteDevice,
+  remoteTrack,
+}: FullscreenContentProps) {
+  return (
+    <div className="flex-1 flex flex-col items-center px-4 md:px-8 pb-4 gap-2 min-h-0">
+      {remoteDevice && !isOnboarding && (
+        <Badge color="blue" size="lg" variant="light">
+          Playing on {remoteDevice.name}
+        </Badge>
+      )}
+      <Text className="text-dark-3 text-center text-xs md:text-sm hidden md:block">
+        <strong>Shortcuts:</strong> {SHORTCUTS_TEXT}
+      </Text>
+      {isLoading && !isOnboarding ? (
+        <Loader color="orange" size="xl" />
+      ) : libraryTrack ? (
+        <FullscreenTrackView
+          currentTrackIndex={currentTrackIndex}
+          libraryTrack={libraryTrack}
+          onLibraryTrackUpdate={onLibraryTrackUpdate}
+          onNext={onNext}
+          onPrevious={onPrevious}
+        />
+      ) : currentTrack ? (
+        <FullscreenSpotifyTrackView
+          currentTrackIndex={currentTrackIndex}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          track={currentTrack}
+        />
+      ) : isRemotePlayback && remoteTrack ? (
+        <FullscreenRemoteTrackView onNext={onNext} onPrevious={onPrevious} remoteTrack={remoteTrack} />
+      ) : null}
+    </div>
+  );
+}
