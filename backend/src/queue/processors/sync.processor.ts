@@ -94,7 +94,11 @@ class ThrottledProgressUpdater {
   }
 }
 
-@Processor("sync")
+@Processor("sync", {
+  // Share the Redis connection with the Queue instead of creating a duplicate
+  // This reduces the number of Redis connections per worker
+  sharedConnection: true,
+})
 export class SyncProcessor extends WorkerHost {
   private readonly logger = new Logger(SyncProcessor.name);
 
