@@ -44,7 +44,7 @@ jobs:
 
           MIGRATION_FILE=$(ls -t prisma/migrations/*/migration.sql | head -n 1)
 
-          if grep -q -v '^\s*--' "$MIGRATION_FILE" | grep -q -v '^\s*$'; then
+          if grep -v '^\s*--' "$MIGRATION_FILE" | grep -v '^\s*$' | grep -q .; then
             echo "❌ Schema drift detected!"
             echo ""
             echo "Migration that would be generated:"
