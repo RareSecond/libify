@@ -13,6 +13,7 @@ import { notifications } from "@mantine/notifications";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
+import { DEFAULT_TAG_COLOR } from "@/constants/tags";
 import {
   useLibraryControllerCreateTag,
   useLibraryControllerGetTags,
@@ -75,7 +76,7 @@ export function BulkTagModal({
     setIsCreatingTag(true);
     try {
       const response = await createTagMutation.mutateAsync({
-        data: { color: "#339af0", name: newTagName.trim() },
+        data: { color: DEFAULT_TAG_COLOR, name: newTagName.trim() },
       });
       await refetchTags();
       setTagId(response.id);

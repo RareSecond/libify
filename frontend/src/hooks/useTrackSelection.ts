@@ -4,6 +4,15 @@ import { BulkOperationFilterDto, TrackDto } from "@/data/api";
 
 export type SelectionMode = "all_matching" | "none" | "page";
 
+/** Props passed to components that need selection state for rendering */
+export interface SelectionRenderProps {
+  isAllOnPageSelected: boolean;
+  isSomeOnPageSelected: boolean;
+  isTrackSelected: (trackId: string) => boolean;
+  selectAllOnPage: () => void;
+  toggleTrack: (trackId: string) => void;
+}
+
 export type UseTrackSelectionReturn = ReturnType<typeof useTrackSelection>;
 
 interface UseTrackSelectionOptions {
@@ -67,11 +76,6 @@ export function useTrackSelection({
     setSelectionMode("none");
   }, []);
 
-  const resetSelection = useCallback(() => {
-    setSelectedIds(new Set());
-    setSelectionMode("none");
-  }, []);
-
   const selectionCount = useMemo(() => {
     if (selectionMode === "all_matching") {
       return totalMatchingTracks;
@@ -109,7 +113,8 @@ export function useTrackSelection({
     isAllOnPageSelected,
     isSomeOnPageSelected,
     isTrackSelected,
-    resetSelection,
+    // Alias for clearSelection - kept for API compatibility
+    resetSelection: clearSelection,
     selectAllMatching,
     selectAllOnPage,
     selectedIds,

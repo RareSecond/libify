@@ -3,19 +3,16 @@ import { ReactNode, useEffect, useMemo } from "react";
 
 import { BulkOperationFilterDto, TrackDto } from "../data/api";
 import { useBulkOperations } from "../hooks/useBulkOperations";
-import { useTrackSelection } from "../hooks/useTrackSelection";
+import {
+  SelectionRenderProps,
+  useTrackSelection,
+} from "../hooks/useTrackSelection";
 import { BulkActionBar } from "./BulkActionBar";
 import { BulkRatingModal } from "./BulkRatingModal";
 import { BulkTagModal } from "./BulkTagModal";
 
 interface BulkSelectionWrapperProps {
-  children: (selection: {
-    isAllOnPageSelected: boolean;
-    isSomeOnPageSelected: boolean;
-    isTrackSelected: (trackId: string) => boolean;
-    selectAllOnPage: () => void;
-    toggleTrack: (trackId: string) => void;
-  }) => ReactNode;
+  children: (selection: SelectionRenderProps) => ReactNode;
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   currentFilters: Omit<
