@@ -1,4 +1,10 @@
-import { Global, Module, OnModuleDestroy } from "@nestjs/common";
+import {
+  Global,
+  Inject,
+  Logger,
+  Module,
+  OnModuleDestroy,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Redis from "ioredis";
 
@@ -70,17 +76,18 @@ export const REDIS_CLIENT = "REDIS_CLIENT";
   ],
 })
 export class RedisModule implements OnModuleDestroy {
-  // Inject the Redis client for cleanup - we need to get it from the module
-  private static redisClient: null | Redis = null;
+  private readonly logger = new Logger(RedisModule.name);
 
-  constructor(private readonly configService: ConfigService) {}
-
-  static setClient(client: Redis) {
-    RedisModule.redisClient = client;
-  }
+  constructor(@Inject(REDIS_CLIENT) private readonly redisClient: Redis) {}
 
   async onModuleDestroy() {
-    // The Redis client will be cleaned up by BullMQ when it closes
-    // We don't need to manually disconnect as BullMQ manages the connection lifecycle
+    try {
+      await this.redisClient.quit();
+      this.logger.log("Redis connection closed");
+    } catch (error) {
+      this.logger.error(
+        `Error closing Redis connection: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   }
 }
