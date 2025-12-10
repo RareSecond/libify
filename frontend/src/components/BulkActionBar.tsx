@@ -1,6 +1,7 @@
 import { ActionIcon, Badge, Button, Group, Paper } from "@mantine/core";
 import { Star, Tag, X } from "lucide-react";
 
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { SelectionMode } from "@/hooks/useTrackSelection";
 
 interface BulkActionBarProps {
@@ -22,11 +23,14 @@ export function BulkActionBar({
   selectionMode,
   totalMatchingTracks,
 }: BulkActionBarProps) {
+  const { currentTrack } = useSpotifyPlayer();
+  const hasActivePlayer = currentTrack !== null;
+
   if (selectionCount === 0) return null;
 
   return (
     <Paper
-      className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 p-3 shadow-lg"
+      className={`fixed left-1/2 z-50 -translate-x-1/2 p-3 shadow-lg ${hasActivePlayer ? "bottom-28 md:bottom-32" : "bottom-4"}`}
       radius="md"
       withBorder
     >
