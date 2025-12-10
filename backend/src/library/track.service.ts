@@ -546,6 +546,11 @@ export class TrackService {
       .select("st.spotifyId")
       .where("ut.userId", "=", userId);
 
+    // Apply addedToLibrary filter if present (always true for smart playlists)
+    if (where.addedToLibrary === true) {
+      query = query.where("ut.addedToLibrary", "=", true);
+    }
+
     // Apply all filters inline with full type safety
 
     // Handle OR conditions (e.g., search across title/artist/album)
@@ -998,7 +1003,7 @@ export class TrackService {
               gte?: number;
               lt?: number;
               lte?: number;
-              not?: number;
+              not?: null | number;
             };
             if (ratingFilter.gte !== undefined) {
               query = query.where("ut.rating", ">=", ratingFilter.gte);
@@ -1015,7 +1020,10 @@ export class TrackService {
             if (ratingFilter.equals !== undefined) {
               query = query.where("ut.rating", "=", ratingFilter.equals);
             }
-            if (ratingFilter.not !== undefined) {
+            if ("not" in ratingFilter && ratingFilter.not === null) {
+              // "not: null" means rating IS NOT NULL (has a rating)
+              query = query.where("ut.rating", "is not", null);
+            } else if (ratingFilter.not !== undefined) {
               query = query.where("ut.rating", "!=", ratingFilter.not);
             }
           }

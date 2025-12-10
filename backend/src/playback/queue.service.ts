@@ -315,24 +315,16 @@ export class QueueService {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
   ): Promise<string[]> {
-    try {
-      // Use PlaylistsService which has full criteria evaluation logic
-      const allTracks = await this.playlistsService.getTracksForPlay(
-        userId,
-        smartPlaylistId,
-        shuffle || false,
-        sortBy,
-        sortOrder,
-      );
+    // Use PlaylistsService which has full criteria evaluation logic
+    const allTracks = await this.playlistsService.getTracksForPlay(
+      userId,
+      smartPlaylistId,
+      shuffle || false,
+      sortBy,
+      sortOrder,
+    );
 
-      // Apply skip and limit to match pagination
-      return allTracks.slice(skip, skip + limit);
-    } catch (error) {
-      this.logger.error(
-        `Failed to get smart playlist tracks for ${smartPlaylistId}`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      return [];
-    }
+    // Apply skip and limit to match pagination
+    return allTracks.slice(skip, skip + limit);
   }
 }

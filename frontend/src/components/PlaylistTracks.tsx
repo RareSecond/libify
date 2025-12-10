@@ -81,7 +81,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
           <Button
             className="mb-2"
             leftSection={<ArrowLeft size={16} />}
-            onClick={() => navigate({ to: "/playlists" })}
+            onClick={() => navigate({ to: "/smart-playlists" })}
             size="xs"
             variant="subtle"
           >
