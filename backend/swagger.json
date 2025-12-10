@@ -959,6 +959,132 @@
         ]
       }
     },
+    "/library/playlists": {
+      "get": {
+        "operationId": "LibraryController_getPlaylists",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 24,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search query for playlist name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "avgRating",
+                "lastPlayed",
+                "name",
+                "totalPlayCount",
+                "trackCount"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "asc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of playlists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPlaylistsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all Spotify playlists in user library",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/playlists/{id}/tracks": {
+      "get": {
+        "operationId": "LibraryController_getPlaylistTracks",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tracks from the playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistTracksResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tracks from a specific playlist",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/tracks/random-unrated": {
       "get": {
         "operationId": "LibraryController_getRandomUnratedTracks",
@@ -3263,6 +3389,155 @@
           "pageSize",
           "total",
           "totalPages"
+        ]
+      },
+      "PlaylistDto": {
+        "type": "object",
+        "properties": {
+          "avgRating": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average rating of rated tracks"
+          },
+          "collaborative": {
+            "type": "boolean",
+            "description": "Whether this is a collaborative playlist"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Playlist description"
+          },
+          "id": {
+            "type": "string",
+            "description": "Playlist internal ID"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Playlist cover image URL"
+          },
+          "lastPlayed": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Date when any track from playlist was last played"
+          },
+          "name": {
+            "type": "string",
+            "description": "Playlist name"
+          },
+          "ownerName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Playlist owner name"
+          },
+          "public": {
+            "type": "boolean",
+            "description": "Whether this is a public playlist"
+          },
+          "spotifyId": {
+            "type": "string",
+            "description": "Spotify playlist ID"
+          },
+          "totalDuration": {
+            "type": "number",
+            "description": "Total duration of all tracks in milliseconds"
+          },
+          "totalPlayCount": {
+            "type": "number",
+            "description": "Total play count across all tracks"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks in playlist"
+          }
+        },
+        "required": [
+          "avgRating",
+          "collaborative",
+          "description",
+          "id",
+          "imageUrl",
+          "lastPlayed",
+          "name",
+          "ownerName",
+          "public",
+          "spotifyId",
+          "totalDuration",
+          "totalPlayCount",
+          "trackCount"
+        ]
+      },
+      "PaginatedPlaylistsDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "description": "Current page number"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of items per page"
+          },
+          "playlists": {
+            "description": "List of playlists",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of playlists"
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "playlists",
+          "total",
+          "totalPages"
+        ]
+      },
+      "PlaylistTracksResponseDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Playlist description"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Playlist cover image URL"
+          },
+          "name": {
+            "type": "string",
+            "description": "Playlist name"
+          },
+          "spotifyId": {
+            "type": "string",
+            "description": "Spotify playlist ID"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackDto"
+            }
+          }
+        },
+        "required": [
+          "description",
+          "imageUrl",
+          "name",
+          "spotifyId",
+          "tracks"
         ]
       },
       "SyncItemCountsDto": {

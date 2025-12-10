@@ -893,9 +893,12 @@ export class LibrarySyncService {
     userId: string,
     playlist: SpotifyPlaylist,
   ): Promise<void> {
+    const imageUrl = playlist.images?.[0]?.url || null;
+
     await this.databaseService.userPlaylist.upsert({
       create: {
         description: playlist.description,
+        imageUrl,
         lastSyncedAt: new Date(),
         name: playlist.name,
         ownerId: playlist.owner.id,
@@ -907,6 +910,7 @@ export class LibrarySyncService {
       },
       update: {
         description: playlist.description,
+        imageUrl,
         lastSyncedAt: new Date(),
         name: playlist.name,
         ownerName: playlist.owner.display_name || null,

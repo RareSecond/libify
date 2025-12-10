@@ -138,17 +138,24 @@ export type UserArtist = {
   userId: string;
 };
 export type UserPlaylist = {
+  avgRating: null | number;
   collaborative: Generated<boolean>;
   createdAt: Generated<Timestamp>;
   description: null | string;
+  firstAddedAt: Generated<Timestamp>;
   id: string;
+  imageUrl: null | string;
+  lastPlayedAt: null | Timestamp;
   lastSyncedAt: Generated<Timestamp>;
   name: string;
   ownerId: string;
   ownerName: null | string;
   public: Generated<boolean>;
+  ratedTrackCount: Generated<number>;
   snapshotId: string;
   spotifyId: string;
+  totalDuration: Generated<number>;
+  totalPlayCount: Generated<number>;
   totalTracks: number;
   updatedAt: Timestamp;
   userId: string;
