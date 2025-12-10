@@ -1,4 +1,4 @@
-import { Box, Center, Group, Text } from "@mantine/core";
+import { Box, Center, Checkbox, Group, Text } from "@mantine/core";
 import { ColumnDef } from "@tanstack/react-table";
 import { Music, Volume2 } from "lucide-react";
 import { useMemo } from "react";
@@ -16,19 +16,62 @@ const formatDate = (date: null | string | undefined) => {
 
 interface UseTracksTableColumnsOptions {
   currentTrack?: { id?: string };
+  isAllOnPageSelected?: boolean;
   isPlaying: boolean;
+  isSomeOnPageSelected?: boolean;
+  isTrackSelected?: (trackId: string) => boolean;
   onRatingChange?: () => void;
   onRefetch?: () => void;
+  onSelectAllOnPage?: () => void;
+  onToggleTrack?: (trackId: string) => void;
+  showSelection?: boolean;
 }
 
 export function useTracksTableColumns({
   currentTrack,
+  isAllOnPageSelected,
   isPlaying,
+  isSomeOnPageSelected,
+  isTrackSelected,
   onRatingChange,
   onRefetch,
+  onSelectAllOnPage,
+  onToggleTrack,
+  showSelection = false,
 }: UseTracksTableColumnsOptions) {
-  return useMemo<ColumnDef<TrackDto>[]>(
-    () => [
+  return useMemo<ColumnDef<TrackDto>[]>(() => {
+    const columns: ColumnDef<TrackDto>[] = [];
+
+    // Optionally add selection column
+    if (
+      showSelection &&
+      onToggleTrack &&
+      onSelectAllOnPage &&
+      isTrackSelected
+    ) {
+      columns.push({
+        cell: ({ row }) => (
+          <Checkbox
+            checked={isTrackSelected(row.original.id)}
+            onChange={() => onToggleTrack(row.original.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        enableSorting: false,
+        header: () => (
+          <Checkbox
+            checked={isAllOnPageSelected}
+            indeterminate={isSomeOnPageSelected}
+            onChange={onSelectAllOnPage}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        id: "select",
+        size: 40,
+      });
+    }
+
+    columns.push(
       {
         cell: ({ row }) => {
           const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
@@ -184,7 +227,19 @@ export function useTracksTableColumns({
         id: "sources",
         size: 200,
       },
-    ],
-    [currentTrack?.id, isPlaying, onRatingChange, onRefetch],
-  );
+    );
+
+    return columns;
+  }, [
+    currentTrack?.id,
+    isAllOnPageSelected,
+    isPlaying,
+    isSomeOnPageSelected,
+    isTrackSelected,
+    onRatingChange,
+    onRefetch,
+    onSelectAllOnPage,
+    onToggleTrack,
+    showSelection,
+  ]);
 }

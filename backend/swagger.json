@@ -287,6 +287,109 @@
         ]
       }
     },
+    "/library/tracks/bulk-rate": {
+      "post": {
+        "operationId": "LibraryController_bulkRateTracks",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkRatingRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk rating completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkOperationResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkOperationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bulk rate tracks",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/tracks/bulk-tag": {
+      "post": {
+        "operationId": "LibraryController_bulkTagTracks",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkTagRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk tag operation completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkOperationResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkOperationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Tag not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bulk add or remove tag from tracks",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/tags": {
       "post": {
         "operationId": "LibraryController_createTag",
@@ -2296,6 +2399,160 @@
           }
         },
         "required": [
+          "tagId"
+        ]
+      },
+      "BulkOperationFilterDto": {
+        "type": "object",
+        "properties": {
+          "albumId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Filter by album ID (internal)"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Filter by artist ID (internal)"
+          },
+          "genres": {
+            "description": "Filter by artist genres",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Filter by minimum rating"
+          },
+          "playlistId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Filter by smart playlist ID"
+          },
+          "search": {
+            "type": "string",
+            "description": "Search query for title, artist, album"
+          },
+          "sourceTypes": {
+            "type": "array",
+            "description": "Filter by source types",
+            "items": {
+              "type": "string",
+              "enum": [
+                "LIKED_SONGS",
+                "PLAYLIST",
+                "ALBUM",
+                "ARTIST_TOP_TRACKS",
+                "PLAY_HISTORY"
+              ]
+            }
+          },
+          "tagIds": {
+            "description": "Filter by tag IDs",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "unratedOnly": {
+            "type": "boolean",
+            "description": "Filter for unrated tracks only"
+          }
+        }
+      },
+      "BulkRatingRequestDto": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "description": "Filter criteria for tracks to rate (alternative to trackIds)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BulkOperationFilterDto"
+              }
+            ]
+          },
+          "overwriteExisting": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to overwrite existing ratings (false = only rate unrated tracks)"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 5,
+            "description": "Rating value (0.5-5 in 0.5 increments)",
+            "example": 4.5
+          },
+          "trackIds": {
+            "description": "Explicit track IDs to rate (alternative to filter)",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "rating"
+        ]
+      },
+      "BulkOperationResponseDto": {
+        "type": "object",
+        "properties": {
+          "affectedCount": {
+            "type": "number",
+            "description": "Number of tracks affected"
+          },
+          "message": {
+            "type": "string",
+            "description": "Result message"
+          }
+        },
+        "required": [
+          "affectedCount",
+          "message"
+        ]
+      },
+      "BulkTagRequestDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action to perform",
+            "enum": [
+              "add",
+              "remove"
+            ]
+          },
+          "filter": {
+            "description": "Filter criteria for tracks to tag (alternative to trackIds)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BulkOperationFilterDto"
+              }
+            ]
+          },
+          "tagId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tag ID to add or remove"
+          },
+          "trackIds": {
+            "description": "Explicit track IDs to tag (alternative to filter)",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "action",
           "tagId"
         ]
       },

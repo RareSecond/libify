@@ -171,6 +171,7 @@ export function TrackList() {
       <div className="relative">
         <TracksTableWithControls
           contextType="library"
+          currentFilters={{ genres, search: debouncedSearch }}
           data={data}
           error={error}
           extraControls={
@@ -221,6 +222,7 @@ export function TrackList() {
           page={page}
           pageSize={pageSize}
           search={localSearch}
+          showSelection
           sortBy={sortBy}
           sortOrder={sortOrder}
         />

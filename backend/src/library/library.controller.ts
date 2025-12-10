@@ -36,6 +36,11 @@ import { AlbumTracksResponseDto } from "./dto/album-tracks.dto";
 import { PaginatedAlbumsDto } from "./dto/album.dto";
 import { ArtistTracksResponseDto } from "./dto/artist-tracks.dto";
 import { PaginatedArtistsDto } from "./dto/artist.dto";
+import {
+  BulkOperationResponseDto,
+  BulkRatingRequestDto,
+  BulkTagRequestDto,
+} from "./dto/bulk-operations.dto";
 import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
 import { GetAlbumsQueryDto } from "./dto/get-albums-query.dto";
 import { GetArtistsQueryDto } from "./dto/get-artists-query.dto";
@@ -114,6 +119,40 @@ export class LibraryController {
   ): Promise<{ message: string }> {
     await this.trackService.addTrackToLibrary(req.user.id, trackId);
     return { message: "Track added to library" };
+  }
+
+  @ApiOperation({ summary: "Bulk rate tracks" })
+  @ApiResponse({
+    description: "Bulk rating completed",
+    status: 200,
+    type: BulkOperationResponseDto,
+  })
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @Post("tracks/bulk-rate")
+  async bulkRateTracks(
+    @Req() req: AuthenticatedRequest,
+    @Body() bulkRatingDto: BulkRatingRequestDto,
+  ): Promise<BulkOperationResponseDto> {
+    return this.trackService.bulkRateTracks(req.user.id, bulkRatingDto);
+  }
+
+  @ApiOperation({ summary: "Bulk add or remove tag from tracks" })
+  @ApiResponse({
+    description: "Bulk tag operation completed",
+    status: 200,
+    type: BulkOperationResponseDto,
+  })
+  @ApiResponse({ description: "Bad request", status: 400 })
+  @ApiResponse({ description: "Tag not found", status: 404 })
+  @Post("tracks/bulk-tag")
+  async bulkTagTracks(
+    @Req() req: AuthenticatedRequest,
+    @Body() bulkTagDto: BulkTagRequestDto,
+  ): Promise<BulkOperationResponseDto> {
+    if (bulkTagDto.action === "add") {
+      return this.trackService.bulkAddTagToTracks(req.user.id, bulkTagDto);
+    }
+    return this.trackService.bulkRemoveTagFromTracks(req.user.id, bulkTagDto);
   }
 
   @ApiOperation({ summary: "Create a new tag" })
