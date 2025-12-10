@@ -1812,6 +1812,8 @@ export class TrackService {
   async getPlaylistTracks(
     userId: string,
     playlistId: string,
+    page = 1,
+    pageSize = 20,
   ): Promise<PlaylistTracksResponseDto> {
     const db = this.kyselyService.database;
 
@@ -1823,6 +1825,21 @@ export class TrackService {
     if (!playlist) {
       throw new NotFoundException("Playlist not found");
     }
+
+    // Get total count for pagination
+    const countResult = await db
+      .selectFrom("TrackSource as ts")
+      .innerJoin("UserTrack as ut", "ut.id", "ts.userTrackId")
+      .select(sql<number>`count(*)`.as("count"))
+      .where("ts.sourceType", "=", "PLAYLIST")
+      .where("ts.sourceId", "=", playlist.spotifyId)
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .executeTakeFirst();
+
+    const total = Number(countResult?.count || 0);
+    const totalPages = Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
 
     // Get tracks from TrackSource where sourceType is PLAYLIST and sourceId matches
     const tracks = await db
@@ -1885,6 +1902,8 @@ export class TrackService {
         "ts.createdAt",
       ])
       .orderBy("ts.createdAt", "asc")
+      .offset(offset)
+      .limit(pageSize)
       .execute();
 
     // Transform to DTOs
@@ -1914,7 +1933,11 @@ export class TrackService {
       description: playlist.description,
       imageUrl: playlist.imageUrl,
       name: playlist.name,
+      page,
+      pageSize,
       spotifyId: playlist.spotifyId,
+      total,
+      totalPages,
       tracks: trackDtos,
     };
   }

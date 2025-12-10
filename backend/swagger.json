@@ -1060,6 +1060,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Number of tracks per page",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -3521,9 +3539,25 @@
             "type": "string",
             "description": "Playlist name"
           },
+          "page": {
+            "type": "number",
+            "description": "Current page number"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of items per page"
+          },
           "spotifyId": {
             "type": "string",
             "description": "Spotify playlist ID"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of tracks"
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages"
           },
           "tracks": {
             "type": "array",
@@ -3536,7 +3570,11 @@
           "description",
           "imageUrl",
           "name",
+          "page",
+          "pageSize",
           "spotifyId",
+          "total",
+          "totalPages",
           "tracks"
         ]
       },

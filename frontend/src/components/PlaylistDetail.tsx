@@ -15,7 +15,8 @@ import { ArrowLeft, Clock, ListMusic, Play, Shuffle, Star } from "lucide-react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
-import { TrackDto, useLibraryControllerGetPlaylistTracks } from "../data/api";
+import { useLibraryControllerGetPlaylistTracks } from "../data/api";
+import { Route } from "../routes/~playlists.$id";
 import { formatDurationDetailed } from "../utils/format";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
@@ -24,11 +25,12 @@ interface PlaylistDetailProps {
 }
 
 export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { page = 1, pageSize = 20 } = Route.useSearch();
   const { playTrackList } = useSpotifyPlayer();
 
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetPlaylistTracks(playlistId);
+    useLibraryControllerGetPlaylistTracks(playlistId, { page, pageSize });
 
   const handlePlayFromBeginning = async () => {
     if (!data?.tracks?.length || !data.spotifyId) return;
@@ -50,6 +52,16 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
     });
   };
 
+  const handlePageChange = (newPage: number) => {
+    navigate({ search: (prev) => ({ ...prev, page: newPage }) });
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    navigate({
+      search: (prev) => ({ ...prev, page: 1, pageSize: newPageSize }),
+    });
+  };
+
   if (error) {
     return (
       <Center className="h-[400px]">
@@ -68,19 +80,6 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
     );
   }
 
-  const tracks: TrackDto[] = data?.tracks || [];
-  const totalDuration = tracks.reduce((sum, track) => sum + track.duration, 0);
-  const totalPlayCount = tracks.reduce(
-    (sum, track) => sum + track.totalPlayCount,
-    0,
-  );
-  const ratedTracks = tracks.filter((t) => t.rating);
-  const avgRating =
-    ratedTracks.length > 0
-      ? ratedTracks.reduce((sum, t) => sum + (t.rating || 0), 0) /
-        ratedTracks.length
-      : null;
-
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -94,7 +93,7 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
         </Button>
         <Group gap="xs">
           <Button
-            disabled={tracks.length === 0}
+            disabled={!data?.total}
             leftSection={<Play size={16} />}
             onClick={handlePlayFromBeginning}
             size="sm"
@@ -103,7 +102,7 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
             Play
           </Button>
           <Button
-            disabled={tracks.length === 0}
+            disabled={!data?.total}
             leftSection={<Shuffle size={16} />}
             onClick={handlePlayShuffled}
             size="sm"
@@ -147,25 +146,40 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
                 <Text className="text-gray-600" size="sm">
                   Tracks:
                 </Text>
-                <Text className="font-medium">{tracks.length}</Text>
+                <Text className="font-medium">{data?.total || 0}</Text>
               </Group>
 
               <Group gap="xs">
                 <Clock className="opacity-50" size={16} />
                 <Text className="font-medium">
-                  {formatDurationDetailed(totalDuration)}
+                  {formatDurationDetailed(
+                    data?.tracks?.reduce((sum, t) => sum + t.duration, 0) || 0,
+                  )}
                 </Text>
               </Group>
 
               <Group gap="xs">
                 <Play className="opacity-50" size={16} />
-                <Text className="font-medium">{totalPlayCount} plays</Text>
+                <Text className="font-medium">
+                  {data?.tracks?.reduce(
+                    (sum, t) => sum + t.totalPlayCount,
+                    0,
+                  ) || 0}{" "}
+                  plays
+                </Text>
               </Group>
 
-              {avgRating && (
+              {data?.tracks && data.tracks.some((t) => t.rating) && (
                 <Group gap="xs">
                   <Star className="opacity-50" size={16} />
-                  <Text className="font-medium">{avgRating.toFixed(1)}</Text>
+                  <Text className="font-medium">
+                    {(
+                      data.tracks
+                        .filter((t) => t.rating)
+                        .reduce((sum, t) => sum + (t.rating || 0), 0) /
+                      data.tracks.filter((t) => t.rating).length
+                    ).toFixed(1)}
+                  </Text>
                 </Group>
               )}
             </Group>
@@ -174,16 +188,21 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
       </Paper>
 
       <TracksTableWithControls
+        contextId={data?.spotifyId}
+        contextType="playlist"
         data={{
-          page: 1,
-          pageSize: tracks.length,
-          total: tracks.length,
-          totalPages: 1,
-          tracks,
+          page: data?.page || 1,
+          pageSize: data?.pageSize || 20,
+          total: data?.total || 0,
+          totalPages: data?.totalPages || 1,
+          tracks: data?.tracks || [],
         }}
-        hidePageSize
         hideSearch
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
         onRefetch={refetch}
+        page={page}
+        pageSize={pageSize}
         showSelection
       />
     </Stack>

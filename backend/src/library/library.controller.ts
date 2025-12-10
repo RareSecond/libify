@@ -363,6 +363,18 @@ export class LibraryController {
   // Tag management endpoints
 
   @ApiOperation({ summary: "Get tracks from a specific playlist" })
+  @ApiQuery({
+    description: "Page number",
+    name: "page",
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    description: "Number of tracks per page",
+    name: "pageSize",
+    required: false,
+    type: Number,
+  })
   @ApiResponse({
     description: "List of tracks from the playlist",
     status: 200,
@@ -372,8 +384,10 @@ export class LibraryController {
   async getPlaylistTracks(
     @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("pageSize", new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
   ): Promise<PlaylistTracksResponseDto> {
-    return this.trackService.getPlaylistTracks(req.user.id, id);
+    return this.trackService.getPlaylistTracks(req.user.id, id, page, pageSize);
   }
 
   @ApiOperation({ summary: "Get random unrated tracks for onboarding" })

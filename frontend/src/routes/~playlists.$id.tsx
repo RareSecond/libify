@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 
 import { PageTitle } from "../components/PageTitle";
 import { PlaylistDetail } from "../components/PlaylistDetail";
 
+const playlistDetailSearchSchema = z.object({
+  page: z.number().min(1).optional().catch(1),
+  pageSize: z.number().min(1).max(100).optional().catch(20),
+});
+
 export const Route = createFileRoute("/playlists/$id")({
   component: PlaylistDetailPage,
+  validateSearch: (search) => playlistDetailSearchSchema.parse(search),
 });
 
 function PlaylistDetailPage() {
