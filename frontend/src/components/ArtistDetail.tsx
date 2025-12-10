@@ -3,7 +3,6 @@ import {
   Center,
   Group,
   Loader,
-  Paper,
   Stack,
   Text,
   Title,
@@ -17,9 +16,7 @@ import { useTrackView } from "@/hooks/useTrackView";
 import { trackArtistViewed } from "@/lib/posthog";
 
 import { useLibraryControllerGetArtistTracks } from "../data/api";
-import { useColumnVisibility } from "../hooks/useColumnVisibility";
-import { ColumnVisibilityMenu } from "./ColumnVisibilityMenu";
-import { TracksTable } from "./TracksTable";
+import { TracksTableWithControls } from "./TracksTableWithControls";
 
 interface ArtistDetailProps {
   artist: string;
@@ -30,8 +27,6 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   const { playTrackList } = useSpotifyPlayer();
   const { data, error, isLoading, refetch } =
     useLibraryControllerGetArtistTracks(artist);
-  const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
-    useColumnVisibility();
 
   // Track artist view once data is loaded
   const trackCount = data?.tracks?.length ?? 0;
@@ -129,23 +124,24 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
         </Group>
       </Group>
 
-      <Paper className="p-4" radius="md" shadow="xs">
-        <Group className="mb-4" justify="space-between">
-          <Title order={3}>{artist}</Title>
-          <ColumnVisibilityMenu
-            columnVisibility={columnVisibility}
-            onToggle={toggleColumnVisibility}
-          />
-        </Group>
-        <TracksTable
-          columnVisibility={columnVisibility}
-          contextId={artistId}
-          contextType="artist"
-          onColumnVisibilityChange={setColumnVisibility}
-          onRefetch={refetch}
-          tracks={tracks}
-        />
-      </Paper>
+      <Title className="mb-2" order={3}>
+        {artist}
+      </Title>
+      <TracksTableWithControls
+        contextId={artistId}
+        contextType="artist"
+        data={{
+          page: 1,
+          pageSize: tracks.length,
+          total: tracks.length,
+          totalPages: 1,
+          tracks,
+        }}
+        hidePageSize
+        hideSearch
+        onRefetch={refetch}
+        showSelection
+      />
     </Stack>
   );
 }

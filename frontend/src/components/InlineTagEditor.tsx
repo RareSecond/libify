@@ -3,6 +3,7 @@ import { notifications } from "@mantine/notifications";
 import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { DEFAULT_TAG_COLOR } from "../constants/tags";
 import {
   useLibraryControllerAddTagToTrack,
   useLibraryControllerCreateTag,
@@ -72,7 +73,7 @@ export function InlineTagEditor({
     if (!tag) {
       try {
         const response = await createTagMutation.mutateAsync({
-          data: { color: "#339af0", name: tagName },
+          data: { color: DEFAULT_TAG_COLOR, name: tagName },
         });
         await refetchTags();
         tag = response;

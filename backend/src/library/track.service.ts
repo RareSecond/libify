@@ -1,4 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { Prisma, SourceType } from "@prisma/client";
 import { plainToInstance } from "class-transformer";
 import { sql } from "kysely";
@@ -8,6 +13,12 @@ import { KyselyService } from "../database/kysely/kysely.service";
 import { AggregationService } from "./aggregation.service";
 import { AlbumDto, PaginatedAlbumsDto } from "./dto/album.dto";
 import { ArtistDto, PaginatedArtistsDto } from "./dto/artist.dto";
+import {
+  BulkOperationFilterDto,
+  BulkOperationResponseDto,
+  BulkRatingRequestDto,
+  BulkTagRequestDto,
+} from "./dto/bulk-operations.dto";
 import {
   GetPlayHistoryQueryDto,
   PaginatedPlayHistoryDto,
@@ -57,6 +68,175 @@ export class TrackService {
       SourceType.PLAY_HISTORY,
       TrackService.PLAY_HISTORY_SOURCE_NAME,
     );
+  }
+
+  /**
+   * Bulk add tag to tracks
+   * Skips tracks that already have the tag
+   */
+  async bulkAddTagToTracks(
+    userId: string,
+    request: BulkTagRequestDto,
+  ): Promise<BulkOperationResponseDto> {
+    const db = this.kyselyService.database;
+
+    // Verify tag belongs to user
+    const tag = await this.databaseService.tag.findFirst({
+      where: { id: request.tagId, userId },
+    });
+
+    if (!tag) {
+      throw new NotFoundException("Tag not found");
+    }
+
+    // Get track IDs to tag
+    const trackIds = await this.resolveTrackIds(userId, request);
+
+    if (trackIds.length === 0) {
+      return { affectedCount: 0, message: "No tracks matched the criteria" };
+    }
+
+    // Get tracks that already have this tag
+    const existingTags = await db
+      .selectFrom("TrackTag")
+      .select("userTrackId")
+      .where("tagId", "=", request.tagId)
+      .where("userTrackId", "in", trackIds)
+      .execute();
+
+    const existingTrackIds = new Set(existingTags.map((t) => t.userTrackId));
+    const newTrackIds = trackIds.filter((id) => !existingTrackIds.has(id));
+
+    if (newTrackIds.length === 0) {
+      return { affectedCount: 0, message: "All tracks already have this tag" };
+    }
+
+    // Insert new tag associations
+    await db
+      .insertInto("TrackTag")
+      .values(
+        newTrackIds.map((trackId) => ({
+          createdAt: sql`NOW()`,
+          tagId: request.tagId,
+          userTrackId: trackId,
+        })),
+      )
+      .execute();
+
+    return {
+      affectedCount: newTrackIds.length,
+      message: `Added tag to ${newTrackIds.length} tracks`,
+    };
+  }
+
+  /**
+   * Bulk rate tracks
+   * Can optionally overwrite existing ratings
+   */
+  async bulkRateTracks(
+    userId: string,
+    request: BulkRatingRequestDto,
+  ): Promise<BulkOperationResponseDto> {
+    const db = this.kyselyService.database;
+
+    // Get track IDs to rate
+    const trackIds = await this.resolveTrackIds(userId, request);
+
+    if (trackIds.length === 0) {
+      return { affectedCount: 0, message: "No tracks matched the criteria" };
+    }
+
+    // Build update query
+    let query = db
+      .updateTable("UserTrack")
+      .set({ ratedAt: sql`NOW()`, rating: request.rating })
+      .where("userId", "=", userId)
+      .where("id", "in", trackIds);
+
+    // If not overwriting, only rate unrated tracks
+    if (!request.overwriteExisting) {
+      query = query.where("rating", "is", null);
+    }
+
+    const result = await query.executeTakeFirst();
+    const affectedCount = Number(result?.numUpdatedRows ?? 0);
+
+    // Get unique album/artist IDs from affected tracks for aggregation
+    if (affectedCount > 0) {
+      const affectedTracks = await db
+        .selectFrom("UserTrack as ut")
+        .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+        .select(["st.albumId", "st.artistId"])
+        .where("ut.id", "in", trackIds)
+        .where("ut.userId", "=", userId)
+        .execute();
+
+      const uniqueAlbumIds = [...new Set(affectedTracks.map((t) => t.albumId))];
+      const uniqueArtistIds = [
+        ...new Set(affectedTracks.map((t) => t.artistId)),
+      ];
+
+      // Update aggregations in parallel
+      await Promise.all([
+        ...uniqueAlbumIds.map((id) =>
+          this.aggregationService.updateUserAlbumStats(userId, id),
+        ),
+        ...uniqueArtistIds.map((id) =>
+          this.aggregationService.updateUserArtistStats(userId, id),
+        ),
+      ]);
+    }
+
+    return {
+      affectedCount,
+      message: `Successfully rated ${affectedCount} tracks`,
+    };
+  }
+
+  /**
+   * Helper method to fetch tracks for playback with random order
+   * Used when shuffle is true to get truly random tracks
+   * Converts Prisma where clause to Kysely for efficient database-level randomization
+   */
+
+  /**
+   * Bulk remove tag from tracks
+   */
+  async bulkRemoveTagFromTracks(
+    userId: string,
+    request: BulkTagRequestDto,
+  ): Promise<BulkOperationResponseDto> {
+    const db = this.kyselyService.database;
+
+    // Verify tag belongs to user
+    const tag = await this.databaseService.tag.findFirst({
+      where: { id: request.tagId, userId },
+    });
+
+    if (!tag) {
+      throw new NotFoundException("Tag not found");
+    }
+
+    // Get track IDs
+    const trackIds = await this.resolveTrackIds(userId, request);
+
+    if (trackIds.length === 0) {
+      return { affectedCount: 0, message: "No tracks matched the criteria" };
+    }
+
+    // Delete tag associations
+    const result = await db
+      .deleteFrom("TrackTag")
+      .where("tagId", "=", request.tagId)
+      .where("userTrackId", "in", trackIds)
+      .executeTakeFirst();
+
+    const affectedCount = Number(result?.numDeletedRows ?? 0);
+
+    return {
+      affectedCount,
+      message: `Removed tag from ${affectedCount} tracks`,
+    };
   }
 
   /**
@@ -349,12 +529,6 @@ export class TrackService {
 
     return spotifyUris;
   }
-
-  /**
-   * Helper method to fetch tracks for playback with random order
-   * Used when shuffle is true to get truly random tracks
-   * Converts Prisma where clause to Kysely for efficient database-level randomization
-   */
 
   async fetchTracksForPlayWithRandomOrder(
     userId: string,
@@ -1860,6 +2034,90 @@ export class TrackService {
     return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
   }
 
+  /**
+   * Get track IDs matching a filter
+   * Used for bulk operations
+   */
+  async getTrackIdsByFilter(
+    userId: string,
+    filter: BulkOperationFilterDto,
+  ): Promise<string[]> {
+    const db = this.kyselyService.database;
+
+    // Build base query with distinct to avoid duplicates from tag/source joins
+    let query = db
+      .selectFrom("UserTrack as ut")
+      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
+      .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
+      .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
+      .select("ut.id")
+      .distinct()
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true);
+
+    // Apply album filter
+    if (filter.albumId) {
+      query = query.where("st.albumId", "=", filter.albumId);
+    }
+
+    // Apply artist filter
+    if (filter.artistId) {
+      query = query.where("st.artistId", "=", filter.artistId);
+    }
+
+    // Apply search filter
+    if (filter.search) {
+      query = query.where((eb) =>
+        eb.or([
+          eb("st.title", "ilike", `%${filter.search}%`),
+          eb("sar.name", "ilike", `%${filter.search}%`),
+          eb("sa.name", "ilike", `%${filter.search}%`),
+        ]),
+      );
+    }
+
+    // Apply genre filter
+    if (filter.genres && filter.genres.length > 0) {
+      query = query.where(({ eb }) =>
+        eb(
+          sql`sar.genres && ARRAY[${sql.join(filter.genres!.map((g) => sql.lit(g)))}]::text[]`,
+          "=",
+          sql`true`,
+        ),
+      );
+    }
+
+    // Apply rating filter
+    if (filter.minRating) {
+      query = query.where("ut.rating", ">=", filter.minRating);
+    }
+
+    // Apply unrated filter
+    if (filter.unratedOnly) {
+      query = query.where("ut.rating", "is", null);
+    }
+
+    // Apply tag filter
+    if (filter.tagIds && filter.tagIds.length > 0) {
+      query = query
+        .innerJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
+        .where("tt.tagId", "in", filter.tagIds);
+    }
+
+    // Apply source type filter
+    if (filter.sourceTypes && filter.sourceTypes.length > 0) {
+      query = query
+        .innerJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
+        .where("ts.sourceType", "in", filter.sourceTypes);
+    }
+
+    // TODO: Add smart playlist support when needed
+    // For now, playlistId is not supported
+
+    const tracks = await query.execute();
+    return tracks.map((t) => t.id);
+  }
+
   async getTracksForPlay(
     userId: string,
     query: GetTracksQueryDto & { shouldShuffle?: boolean; skip?: number },
@@ -2813,5 +3071,40 @@ export class TrackService {
       { page, pageSize, total, totalPages, tracks: trackDtos },
       { excludeExtraneousValues: true },
     );
+  }
+
+  /**
+   * Resolve track IDs from either explicit trackIds or filter
+   */
+  private async resolveTrackIds(
+    userId: string,
+    request: {
+      excludeTrackIds?: string[];
+      filter?: BulkOperationFilterDto;
+      trackIds?: string[];
+    },
+  ): Promise<string[]> {
+    if (request.trackIds && request.trackIds.length > 0) {
+      // Verify all track IDs belong to the user
+      const validTracks = await this.databaseService.userTrack.findMany({
+        select: { id: true },
+        where: { addedToLibrary: true, id: { in: request.trackIds }, userId },
+      });
+      return validTracks.map((t) => t.id);
+    }
+
+    if (request.filter) {
+      const trackIds = await this.getTrackIdsByFilter(userId, request.filter);
+
+      // Apply exclusions if provided (for "select all except" functionality)
+      if (request.excludeTrackIds && request.excludeTrackIds.length > 0) {
+        const excludeSet = new Set(request.excludeTrackIds);
+        return trackIds.filter((id) => !excludeSet.has(id));
+      }
+
+      return trackIds;
+    }
+
+    throw new BadRequestException("Either trackIds or filter must be provided");
   }
 }

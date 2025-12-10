@@ -20,14 +20,20 @@ interface TracksTableProps {
   columnVisibility?: VisibilityState;
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
+  isAllOnPageSelected?: boolean;
   isLoading?: boolean;
+  isSomeOnPageSelected?: boolean;
+  isTrackSelected?: (trackId: string) => boolean;
   onColumnVisibilityChange?: (updaterOrValue: Updater<VisibilityState>) => void;
   onRatingChange?: () => void;
   onRefetch?: () => void;
+  onSelectAllOnPage?: () => void;
   onSortChange?: (columnId: string) => void;
+  onToggleTrack?: (trackId: string) => void;
   page?: number;
   pageSize?: number;
   search?: string;
+  showSelection?: boolean;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   tracks: TrackDto[];
@@ -37,14 +43,20 @@ export function TracksTable({
   columnVisibility,
   contextId,
   contextType,
+  isAllOnPageSelected,
   isLoading,
+  isSomeOnPageSelected,
+  isTrackSelected,
   onColumnVisibilityChange,
   onRatingChange,
   onRefetch,
+  onSelectAllOnPage,
   onSortChange,
+  onToggleTrack,
   page = 1,
   pageSize = 20,
   search,
+  showSelection = false,
   sortBy,
   sortOrder,
   tracks,
@@ -103,6 +115,7 @@ export function TracksTable({
   };
 
   const defaultColumnOrder = [
+    ...(showSelection ? ["select"] : []),
     "albumArt",
     "title",
     "artist",
@@ -125,9 +138,15 @@ export function TracksTable({
 
   const columns = useTracksTableColumns({
     currentTrack: currentTrack ? { id: originalSpotifyId } : undefined,
+    isAllOnPageSelected,
     isPlaying,
+    isSomeOnPageSelected,
+    isTrackSelected,
     onRatingChange,
     onRefetch,
+    onSelectAllOnPage,
+    onToggleTrack,
+    showSelection,
   });
 
   const table = useReactTable({

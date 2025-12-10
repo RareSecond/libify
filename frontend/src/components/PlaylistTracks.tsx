@@ -141,6 +141,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
         }}
         page={page}
         pageSize={pageSize}
+        showSelection
         sortBy={sortBy}
         sortOrder={sortOrder}
       />

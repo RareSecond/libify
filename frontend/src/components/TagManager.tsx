@@ -3,6 +3,7 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useEffect, useState } from "react";
 
+import { DEFAULT_TAG_COLOR } from "../constants/tags";
 import {
   useLibraryControllerAddTagToTrack,
   useLibraryControllerCreateTag,
@@ -52,7 +53,7 @@ export function TagManager({
   }, [trackTags]);
 
   const form = useForm({
-    initialValues: { color: "#339af0", name: "" },
+    initialValues: { color: DEFAULT_TAG_COLOR, name: "" },
     validate: {
       name: (value: string) => (!value.trim() ? "Tag name is required" : null),
     },
@@ -177,7 +178,7 @@ export function TagManager({
       if (!tag) {
         try {
           const response = await createTagMutation.mutateAsync({
-            data: { color: "#339af0", name: tagName },
+            data: { color: DEFAULT_TAG_COLOR, name: tagName },
           });
           await refetchTags();
           tag = response;
@@ -223,7 +224,10 @@ export function TagManager({
           onDeleteTag={handleDeleteTag}
           onEditTag={(tag) => {
             setEditingTag(tag);
-            form.setValues({ color: tag.color || "#339af0", name: tag.name });
+            form.setValues({
+              color: tag.color || DEFAULT_TAG_COLOR,
+              name: tag.name,
+            });
             setIsModalOpen(true);
           }}
           tags={allTags}
