@@ -10,7 +10,10 @@
     "lint": "eslint . --fix",
     "prettier:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "prettier:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint:check": "eslint . --max-warnings 0",
+    "prettier": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "cq:local": "npm run prettier && npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@mantine/charts": "^7.17.8",

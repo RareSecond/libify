@@ -1,6 +1,19 @@
 {
   "version": "1.0.0",
-  "synced": {},
+  "synced": {
+    ".claude/hooks/instant-quality.sh": {
+      "version": "1.0.0",
+      "hash": "a3a694b566dc836e02a1cb0c60811a1a3a35164a8b775aba0471d8038595c4c3",
+      "modified": false,
+      "lastSync": "2025-12-10T08:55:07.430Z"
+    },
+    ".claude/hooks/quality-gate.sh": {
+      "version": "1.0.0",
+      "hash": "10512477462db04572d432883d1164f10fc68fc0e9c02b63f554fca43a2b3d70",
+      "modified": false,
+      "lastSync": "2025-12-10T08:55:07.432Z"
+    }
+  },
   "variables": {
     "MONOREPO_ROOT": ".",
     "BACKEND_PATH": "backend",
