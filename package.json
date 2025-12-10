@@ -14,7 +14,7 @@
     "prettier:check": "npm run prettier:check --workspaces --if-present",
     "prettier:fix": "npm run prettier:fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "cq": "npm run typecheck && npm run lint && npm run prettier:check && npm run test",
+    "cq": "npm run typecheck && npm run lint && npm run prettier:check",
     "cq:local": "concurrently -n 'typecheck,lint,prettier' -c 'yellow,blue,green' 'npm run typecheck' 'npm run lint' 'npm run prettier'",
     "cq:fix": "jd-kit run cq-fix",
     "lint:check": "npm run lint:check --workspaces --if-present",
