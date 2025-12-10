@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { Prisma, SourceType } from "@prisma/client";
 import { plainToInstance } from "class-transformer";
 import { sql } from "kysely";
@@ -81,7 +86,7 @@ export class TrackService {
     });
 
     if (!tag) {
-      throw new BadRequestException("Tag not found");
+      throw new NotFoundException("Tag not found");
     }
 
     // Get track IDs to tag
@@ -209,7 +214,7 @@ export class TrackService {
     });
 
     if (!tag) {
-      throw new BadRequestException("Tag not found");
+      throw new NotFoundException("Tag not found");
     }
 
     // Get track IDs
@@ -2039,13 +2044,14 @@ export class TrackService {
   ): Promise<string[]> {
     const db = this.kyselyService.database;
 
-    // Build base query
+    // Build base query with distinct to avoid duplicates from tag/source joins
     let query = db
       .selectFrom("UserTrack as ut")
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .select("ut.id")
+      .distinct()
       .where("ut.userId", "=", userId)
       .where("ut.addedToLibrary", "=", true);
 

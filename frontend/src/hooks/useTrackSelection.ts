@@ -87,17 +87,50 @@ export function useTrackSelection({
   );
 
   const selectAllOnPage = useCallback(() => {
-    // If all on page are already selected, deselect all
-    const allSelected =
-      tracks.length > 0 && tracks.every((t) => selectedIds.has(t.id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-      setSelectionMode("none");
-    } else {
-      setSelectedIds(new Set(tracks.map((t) => t.id)));
-      setSelectionMode("page");
+    const pageIds = tracks.map((t) => t.id);
+
+    if (selectionMode === "none" || selectionMode === "page") {
+      // Standard toggle behavior for none/page modes
+      const allSelected =
+        tracks.length > 0 && tracks.every((t) => selectedIds.has(t.id));
+      if (allSelected) {
+        setSelectedIds(new Set());
+        setSelectionMode("none");
+      } else {
+        setSelectedIds(new Set(pageIds));
+        setSelectionMode("page");
+      }
+    } else if (selectionMode === "all_matching") {
+      // In all_matching mode, all tracks are selected globally
+      // "Deselect page" adds page IDs to exclusions
+      setSelectedIds(new Set(pageIds));
+      setSelectionMode("all_matching_except");
+    } else if (selectionMode === "all_matching_except") {
+      // selectedIds is the exclusion set
+      // Check if all page tracks are currently selected (not in exclusions)
+      const allOnPageSelected = tracks.every((t) => !selectedIds.has(t.id));
+
+      if (allOnPageSelected) {
+        // "Deselect page" - add page IDs to exclusions
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          pageIds.forEach((id) => next.add(id));
+          return next;
+        });
+      } else {
+        // "Select page" - remove page IDs from exclusions
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          pageIds.forEach((id) => next.delete(id));
+          // If no more exclusions, switch back to all_matching
+          if (next.size === 0) {
+            setSelectionMode("all_matching");
+          }
+          return next;
+        });
+      }
     }
-  }, [tracks, selectedIds]);
+  }, [tracks, selectedIds, selectionMode]);
 
   const selectAllMatching = useCallback(() => {
     // Store visible track IDs but mark mode as all_matching
