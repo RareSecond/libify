@@ -31,15 +31,23 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
     useLibraryControllerGetPlaylistTracks(playlistId);
 
   const handlePlayFromBeginning = async () => {
-    if (!data?.tracks?.length) return;
+    if (!data?.tracks?.length || !data.spotifyId) return;
     const uris = data.tracks.map((t) => `spotify:track:${t.spotifyId}`);
-    await playTrackList(uris, { shuffle: false });
+    await playTrackList(uris, {
+      contextId: data.spotifyId,
+      contextType: "playlist",
+      shuffle: false,
+    });
   };
 
   const handlePlayShuffled = async () => {
-    if (!data?.tracks?.length) return;
+    if (!data?.tracks?.length || !data.spotifyId) return;
     const uris = data.tracks.map((t) => `spotify:track:${t.spotifyId}`);
-    await playTrackList(uris, { shuffle: true });
+    await playTrackList(uris, {
+      contextId: data.spotifyId,
+      contextType: "playlist",
+      shuffle: true,
+    });
   };
 
   if (error) {
