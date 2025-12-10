@@ -15,8 +15,10 @@
     "prettier:fix": "npm run prettier:fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "cq": "npm run typecheck && npm run lint && npm run prettier:check && npm run test",
-    "cq:local": "npm run typecheck && npm run lint && npm run prettier:fix",
-    "cq:fix": "jd-kit run cq-fix"
+    "cq:local": "concurrently -n 'typecheck,lint,prettier' -c 'yellow,blue,green' 'npm run typecheck' 'npm run lint' 'npm run prettier'",
+    "cq:fix": "jd-kit run cq-fix",
+    "lint:check": "npm run lint:check --workspaces --if-present",
+    "prettier": "npm run prettier --workspaces --if-present"
   },
   "author": "",
   "license": "ISC",

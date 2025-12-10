@@ -60,4 +60,3 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     </OnboardingContext.Provider>
   );
 }
-
