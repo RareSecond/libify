@@ -1,29 +1,7 @@
-import {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { ReactNode, useCallback, useMemo, useState } from "react";
 
+import { OnboardingContext } from "@/contexts/OnboardingContextDef";
 import { TrackDto } from "@/data/api";
-
-interface OnboardingContextType {
-  // Actions
-  advance: (rating: number) => void;
-  // State
-  currentIndex: number;
-  exitOnboarding: () => void;
-  isOnboarding: boolean;
-  ratings: number[];
-
-  startOnboarding: (tracks: TrackDto[]) => void;
-  totalTracks: number;
-  tracks: TrackDto[];
-}
-
-const OnboardingContext = createContext<null | OnboardingContextType>(null);
 
 interface OnboardingProviderProps {
   children: ReactNode;
@@ -83,6 +61,3 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   );
 }
 
-export function useOnboarding() {
-  return useContext(OnboardingContext);
-}

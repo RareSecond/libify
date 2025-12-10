@@ -10,7 +10,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { Music, Play, TrendingUp, User } from "lucide-react";
 
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
 export interface TopItem {
   count: number;

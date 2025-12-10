@@ -7,16 +7,14 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { AppShellLayout } from "../components/AppShell";
 import { MediaPlayer } from "../components/MediaPlayer";
+import { AuthContext, AuthContextType } from "../contexts/AuthContext";
 import { OnboardingProvider } from "../contexts/OnboardingContext";
 import { SpotifyPlayerProvider } from "../contexts/SpotifyPlayerContext";
-import {
-  AuthControllerGetProfileQueryResult,
-  useAuthControllerGetProfile,
-} from "../data/api";
+import { useAuthControllerGetProfile } from "../data/api";
 import { identifyUser, trackPageView } from "../lib/posthog";
 
 // Route path constants
@@ -35,13 +33,6 @@ const AUTH_QUERY_CONFIG = {
 
 const queryClient = new QueryClient();
 
-// Auth context to share auth state with child routes
-interface AuthContextType {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  profile: AuthControllerGetProfileQueryResult | null;
-}
-
 // Reusable full-screen loading spinner
 function FullScreenLoader() {
   return (
@@ -50,14 +41,6 @@ function FullScreenLoader() {
     </Center>
   );
 }
-
-const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  isLoading: true,
-  profile: null,
-});
-
-export const useAuth = () => useContext(AuthContext);
 
 // Custom dark theme with orange as primary color
 const theme = createTheme({

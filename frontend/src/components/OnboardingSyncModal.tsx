@@ -6,12 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 import { SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
-import { useOnboarding } from "@/contexts/OnboardingContext";
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import {
   useLibraryControllerGetTracks,
   useLibraryControllerSyncRecentlyPlayed,
 } from "@/data/api";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { PartialSyncProgress } from "@/hooks/useSyncProgress";
 import { trackEvent } from "@/lib/posthog";
 

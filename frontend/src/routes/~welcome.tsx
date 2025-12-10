@@ -16,9 +16,8 @@ import { DashboardMockup } from "@/components/welcome/DashboardMockup";
 import { FloatingAlbums } from "@/components/welcome/FloatingAlbums";
 import { HeroSection } from "@/components/welcome/HeroSection";
 import { PainPointsGrid } from "@/components/welcome/PainPointsGrid";
+import { useAuth } from "@/hooks/useAuth";
 import { trackSignupStarted } from "@/lib/posthog";
-
-import { useAuth } from "./~__root";
 
 export const Route = createFileRoute("/welcome")({ component: WelcomePage });
 

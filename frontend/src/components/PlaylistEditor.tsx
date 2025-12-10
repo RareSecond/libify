@@ -112,6 +112,7 @@ export function PlaylistEditor({
         name: playlist.name,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form.setValues should only run when playlist changes
   }, [playlist]);
   const handleSubmit = async (values: FormValues) => {
     const errors = validatePlaylistRules(values.criteria.rules);

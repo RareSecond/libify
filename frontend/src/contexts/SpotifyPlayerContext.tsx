@@ -1,14 +1,11 @@
 /* eslint-disable max-lines */
-import {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  SpotifyPlayerContext,
+  SpotifyPlayerContextType,
+  TrackWithId,
+} from "@/contexts/SpotifyPlayerContextDef";
 import {
   useAuthControllerGetProfile,
   usePlaybackControllerPlay,
@@ -28,41 +25,6 @@ import {
   SpotifyPlayerState,
   SpotifyTrack,
 } from "@/types/spotify";
-
-interface SpotifyPlayerContextType {
-  currentContext: null | PlayContext;
-  currentTrack: null | SpotifyTrack;
-  currentTrackIndex: number;
-  currentTrackList: string[];
-  deviceId: null | string;
-  duration: number;
-  isPlaying: boolean;
-  isReady: boolean;
-  isShuffled: boolean;
-  nextTrack: () => Promise<void>;
-  originalTrackList: string[];
-  pause: () => Promise<void>;
-  play: (uri?: string) => Promise<void>;
-  player: null | SpotifyPlayer;
-  playTrackList: (
-    tracks: string[] | TrackWithId[],
-    context?: PlayContext,
-  ) => Promise<void>;
-  position: number;
-  previousTrack: () => Promise<void>;
-  resume: () => Promise<void>;
-  seek: (position: number) => Promise<void>;
-  setVolume: (volume: number) => Promise<void>;
-  toggleShuffle: () => Promise<void>;
-  volume: number;
-}
-interface TrackWithId {
-  spotifyUri: string;
-  trackId?: string;
-}
-const SpotifyPlayerContext = createContext<null | SpotifyPlayerContextType>(
-  null,
-);
 interface SpotifyPlayerProviderProps {
   children: ReactNode;
 }
@@ -315,6 +277,7 @@ export function SpotifyPlayerProvider({
 
       // Don't disconnect the player - let it survive for hot-reload
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Player should only initialize once per user, not on callback/volume changes
   }, [user]);
   useEffect(() => {
     if (!isPlaying) return;
@@ -360,6 +323,7 @@ export function SpotifyPlayerProvider({
         }, 100);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getAccessToken is stable, avoid re-running on function reference changes
   }, [
     isPlaying,
     currentTrackList,
@@ -524,13 +488,4 @@ export function SpotifyPlayerProvider({
       {children}
     </SpotifyPlayerContext.Provider>
   );
-}
-export function useSpotifyPlayer() {
-  const context = useContext(SpotifyPlayerContext);
-  if (!context) {
-    throw new Error(
-      "useSpotifyPlayer must be used within a SpotifyPlayerProvider",
-    );
-  }
-  return context;
 }

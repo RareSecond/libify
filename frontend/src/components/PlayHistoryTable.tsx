@@ -15,13 +15,13 @@ import { notifications } from "@mantine/notifications";
 import { RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
 
-import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import {
   PlayHistoryItemDto,
   useLibraryControllerAddTrackToLibrary,
   useLibraryControllerGetPlayHistory,
 } from "../data/api";
 import { usePlayHistorySync } from "../hooks/usePlayHistorySync";
+import { useSpotifyPlayer } from "../hooks/useSpotifyPlayer";
 import { trackAddedToLibraryFromHistory } from "../lib/posthog";
 import { PlayHistoryTableRow } from "./PlayHistoryTableRow";
 
