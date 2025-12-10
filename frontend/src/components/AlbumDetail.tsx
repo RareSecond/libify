@@ -19,10 +19,8 @@ import { useTrackView } from "@/hooks/useTrackView";
 import { trackAlbumViewed } from "@/lib/posthog";
 
 import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
-import { useColumnVisibility } from "../hooks/useColumnVisibility";
 import { formatDurationDetailed } from "../utils/format";
-import { ColumnVisibilityMenu } from "./ColumnVisibilityMenu";
-import { TracksTable } from "./TracksTable";
+import { TracksTableWithControls } from "./TracksTableWithControls";
 
 interface AlbumDetailProps {
   album: string;
@@ -32,8 +30,6 @@ interface AlbumDetailProps {
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
-  const { columnVisibility, setColumnVisibility, toggleColumnVisibility } =
-    useColumnVisibility();
 
   // Use the album-specific endpoint
   const { data, error, isLoading, refetch } =
@@ -199,25 +195,21 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
         </Group>
       </Paper>
 
-      <Paper className="p-4" radius="md" shadow="xs">
-        <Group className="mb-2" justify="space-between">
-          <Text className="text-sm text-gray-600">Album Tracks</Text>
-          <ColumnVisibilityMenu
-            columnVisibility={columnVisibility}
-            onToggle={toggleColumnVisibility}
-          />
-        </Group>
-
-        <TracksTable
-          columnVisibility={columnVisibility}
-          contextId={albumId}
-          contextType="album"
-          isLoading={false}
-          onColumnVisibilityChange={setColumnVisibility}
-          onRefetch={refetch}
-          tracks={tracks}
-        />
-      </Paper>
+      <TracksTableWithControls
+        contextId={albumId}
+        contextType="album"
+        data={{
+          page: 1,
+          pageSize: tracks.length,
+          total: tracks.length,
+          totalPages: 1,
+          tracks,
+        }}
+        hidePageSize
+        hideSearch
+        onRefetch={refetch}
+        showSelection
+      />
     </Stack>
   );
 }

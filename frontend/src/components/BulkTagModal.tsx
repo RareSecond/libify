@@ -1,4 +1,5 @@
 import {
+  Badge,
   Button,
   Group,
   Modal,
@@ -6,10 +7,16 @@ import {
   Select,
   Stack,
   Text,
+  TextInput,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import { useLibraryControllerGetTags } from "@/data/api";
+import {
+  useLibraryControllerCreateTag,
+  useLibraryControllerGetTags,
+} from "@/data/api";
 
 interface BulkTagModalProps {
   onClose: () => void;
@@ -27,8 +34,12 @@ export function BulkTagModal({
   const [tagId, setTagId] = useState<null | string>(null);
   const [action, setAction] = useState<"add" | "remove">("add");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
 
-  const { data: tags = [] } = useLibraryControllerGetTags();
+  const { data: tags = [], refetch: refetchTags } =
+    useLibraryControllerGetTags();
+  const createTagMutation = useLibraryControllerCreateTag();
 
   const handleConfirm = async () => {
     if (!tagId) return;
@@ -44,10 +55,49 @@ export function BulkTagModal({
   const handleClose = () => {
     setTagId(null);
     setAction("add");
+    setNewTagName("");
     onClose();
   };
 
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return;
+
+    // Check if tag already exists
+    const existingTag = tags.find(
+      (t) => t.name.toLowerCase() === newTagName.trim().toLowerCase(),
+    );
+    if (existingTag) {
+      setTagId(existingTag.id);
+      setNewTagName("");
+      return;
+    }
+
+    setIsCreatingTag(true);
+    try {
+      const response = await createTagMutation.mutateAsync({
+        data: { color: "#339af0", name: newTagName.trim() },
+      });
+      await refetchTags();
+      setTagId(response.id);
+      setNewTagName("");
+      notifications.show({
+        color: "green",
+        message: `Tag "${newTagName.trim()}" created`,
+        title: "Tag created",
+      });
+    } catch {
+      notifications.show({
+        color: "red",
+        message: "Please try again",
+        title: "Failed to create tag",
+      });
+    } finally {
+      setIsCreatingTag(false);
+    }
+  };
+
   const tagOptions = tags.map((tag) => ({ label: tag.name, value: tag.id }));
+  const selectedTag = tags.find((t) => t.id === tagId);
 
   return (
     <Modal
@@ -65,14 +115,57 @@ export function BulkTagModal({
           value={action}
         />
 
-        <Select
-          data={tagOptions}
-          label="Select tag"
-          onChange={setTagId}
-          placeholder="Choose a tag"
-          searchable
-          value={tagId}
-        />
+        <Stack gap="xs">
+          <Select
+            data={tagOptions}
+            label="Select existing tag"
+            onChange={setTagId}
+            placeholder="Choose a tag"
+            searchable
+            value={tagId}
+          />
+
+          {action === "add" && (
+            <>
+              <Text className="text-center text-gray-500" size="xs">
+                or
+              </Text>
+              <Group gap="xs">
+                <TextInput
+                  className="flex-1"
+                  disabled={isCreatingTag}
+                  onChange={(e) => setNewTagName(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateTag();
+                    }
+                  }}
+                  placeholder="Create new tag..."
+                  value={newTagName}
+                />
+                <Button
+                  disabled={!newTagName.trim()}
+                  leftSection={<Plus size={16} />}
+                  loading={isCreatingTag}
+                  onClick={handleCreateTag}
+                  variant="light"
+                >
+                  Create
+                </Button>
+              </Group>
+            </>
+          )}
+
+          {selectedTag && (
+            <Group gap="xs">
+              <Text size="xs">Selected:</Text>
+              <Badge color={selectedTag.color || "gray"} size="sm">
+                {selectedTag.name}
+              </Badge>
+            </Group>
+          )}
+        </Stack>
 
         <Text className="text-gray-500" size="xs">
           {action === "add"

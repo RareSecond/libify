@@ -44,9 +44,17 @@ export function useTrackSelection({
   }, []);
 
   const selectAllOnPage = useCallback(() => {
-    setSelectedIds(new Set(tracks.map((t) => t.id)));
-    setSelectionMode("page");
-  }, [tracks]);
+    // If all on page are already selected, deselect all
+    const allSelected =
+      tracks.length > 0 && tracks.every((t) => selectedIds.has(t.id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+      setSelectionMode("none");
+    } else {
+      setSelectedIds(new Set(tracks.map((t) => t.id)));
+      setSelectionMode("page");
+    }
+  }, [tracks, selectedIds]);
 
   const selectAllMatching = useCallback(() => {
     // Store visible track IDs but mark mode as all_matching
