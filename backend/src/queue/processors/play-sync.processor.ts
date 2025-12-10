@@ -12,7 +12,11 @@ export interface PlaySyncJobData {
   userId?: string;
 }
 
-@Processor("play-sync")
+@Processor("play-sync", {
+  // Share the Redis connection with the Queue instead of creating a duplicate
+  // This reduces the number of Redis connections per worker
+  sharedConnection: true,
+})
 export class PlaySyncProcessor extends WorkerHost {
   private readonly logger = new Logger(PlaySyncProcessor.name);
 

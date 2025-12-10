@@ -14,6 +14,7 @@ import { LibraryModule } from "./library/library.module";
 import { PlaybackModule } from "./playback/playback.module";
 import { PlaylistsModule } from "./playlists/playlists.module";
 import { QueueModule } from "./queue/queue.module";
+import { RedisModule } from "./redis/redis.module";
 
 @Module({
   controllers: [AppController],
@@ -25,6 +26,7 @@ import { QueueModule } from "./queue/queue.module";
         .concat(authValidationSchema)
         .concat(redisValidationSchema),
     }),
+    RedisModule, // Shared Redis connection for reduced connection count
     DatabaseModule,
     EncryptionModule,
     AuthModule,

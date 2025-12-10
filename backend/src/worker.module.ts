@@ -9,6 +9,7 @@ import { DatabaseModule } from "./database/database.module";
 import { LibraryModule } from "./library/library.module";
 import { PlaylistsModule } from "./playlists/playlists.module";
 import { QueueModule } from "./queue/queue.module";
+import { RedisModule } from "./redis/redis.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { QueueModule } from "./queue/queue.module";
         .concat(authValidationSchema)
         .concat(redisValidationSchema),
     }),
+    RedisModule, // Shared Redis connection for reduced connection count
     DatabaseModule,
     EncryptionModule,
     LibraryModule,
