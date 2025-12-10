@@ -133,7 +133,13 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Body() bulkRatingDto: BulkRatingRequestDto,
   ): Promise<BulkOperationResponseDto> {
-    return this.trackService.bulkRateTracks(req.user.id, bulkRatingDto);
+    const result = await this.trackService.bulkRateTracks(
+      req.user.id,
+      bulkRatingDto,
+    );
+    return plainToInstance(BulkOperationResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Bulk add or remove tag from tracks" })
@@ -149,10 +155,16 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Body() bulkTagDto: BulkTagRequestDto,
   ): Promise<BulkOperationResponseDto> {
-    if (bulkTagDto.action === "add") {
-      return this.trackService.bulkAddTagToTracks(req.user.id, bulkTagDto);
-    }
-    return this.trackService.bulkRemoveTagFromTracks(req.user.id, bulkTagDto);
+    const result =
+      bulkTagDto.action === "add"
+        ? await this.trackService.bulkAddTagToTracks(req.user.id, bulkTagDto)
+        : await this.trackService.bulkRemoveTagFromTracks(
+            req.user.id,
+            bulkTagDto,
+          );
+    return plainToInstance(BulkOperationResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Create a new tag" })

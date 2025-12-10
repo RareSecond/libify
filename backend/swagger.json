@@ -2468,6 +2468,14 @@
       "BulkRatingRequestDto": {
         "type": "object",
         "properties": {
+          "excludeTrackIds": {
+            "description": "Track IDs to exclude when using filter (for 'select all except' functionality)",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "filter": {
             "description": "Filter criteria for tracks to rate (alternative to trackIds)",
             "allOf": [
@@ -2528,6 +2536,14 @@
               "add",
               "remove"
             ]
+          },
+          "excludeTrackIds": {
+            "description": "Track IDs to exclude when using filter (for 'select all except' functionality)",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
           "filter": {
             "description": "Filter criteria for tracks to tag (alternative to trackIds)",

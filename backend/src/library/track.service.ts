@@ -154,7 +154,7 @@ export class TrackService {
     }
 
     const result = await query.executeTakeFirst();
-    const affectedCount = Number(result.numUpdatedRows);
+    const affectedCount = Number(result?.numUpdatedRows ?? 0);
 
     // Get unique album/artist IDs from affected tracks for aggregation
     if (affectedCount > 0) {
@@ -226,7 +226,7 @@ export class TrackService {
       .where("userTrackId", "in", trackIds)
       .executeTakeFirst();
 
-    const affectedCount = Number(result.numDeletedRows);
+    const affectedCount = Number(result?.numDeletedRows ?? 0);
 
     return {
       affectedCount,
@@ -3072,7 +3072,11 @@ export class TrackService {
    */
   private async resolveTrackIds(
     userId: string,
-    request: { filter?: BulkOperationFilterDto; trackIds?: string[] },
+    request: {
+      excludeTrackIds?: string[];
+      filter?: BulkOperationFilterDto;
+      trackIds?: string[];
+    },
   ): Promise<string[]> {
     if (request.trackIds && request.trackIds.length > 0) {
       // Verify all track IDs belong to the user
@@ -3084,7 +3088,15 @@ export class TrackService {
     }
 
     if (request.filter) {
-      return this.getTrackIdsByFilter(userId, request.filter);
+      const trackIds = await this.getTrackIdsByFilter(userId, request.filter);
+
+      // Apply exclusions if provided (for "select all except" functionality)
+      if (request.excludeTrackIds && request.excludeTrackIds.length > 0) {
+        const excludeSet = new Set(request.excludeTrackIds);
+        return trackIds.filter((id) => !excludeSet.has(id));
+      }
+
+      return trackIds;
     }
 
     throw new BadRequestException("Either trackIds or filter must be provided");

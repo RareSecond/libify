@@ -91,6 +91,16 @@ export class BulkOperationResponseDto {
 
 export class BulkRatingRequestDto {
   @ApiPropertyOptional({
+    description:
+      "Track IDs to exclude when using filter (for 'select all except' functionality)",
+    type: [String],
+  })
+  @IsArray()
+  @IsOptional()
+  @IsUUID("4", { each: true })
+  excludeTrackIds?: string[];
+
+  @ApiPropertyOptional({
     description: "Filter criteria for tracks to rate (alternative to trackIds)",
     type: BulkOperationFilterDto,
   })
@@ -138,6 +148,16 @@ export class BulkTagRequestDto {
   @ApiProperty({ description: "Action to perform", enum: ["add", "remove"] })
   @IsEnum(["add", "remove"])
   action: "add" | "remove";
+
+  @ApiPropertyOptional({
+    description:
+      "Track IDs to exclude when using filter (for 'select all except' functionality)",
+    type: [String],
+  })
+  @IsArray()
+  @IsOptional()
+  @IsUUID("4", { each: true })
+  excludeTrackIds?: string[];
 
   @ApiPropertyOptional({
     description: "Filter criteria for tracks to tag (alternative to trackIds)",
