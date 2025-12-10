@@ -8,10 +8,10 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 
-import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
 import { useColumnSizing } from "../hooks/useColumnSizing";
+import { useSpotifyPlayer } from "../hooks/useSpotifyPlayer";
 import { useTracksTableColumns } from "../hooks/useTracksTableColumns";
 import { TracksTableBody } from "./TracksTableBody";
 import { TracksTableHeader } from "./TracksTableHeader";

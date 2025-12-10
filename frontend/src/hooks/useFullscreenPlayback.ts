@@ -1,6 +1,5 @@
 import { useCallback } from "react";
 
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import {
   usePlaybackControllerNext,
   usePlaybackControllerPause,
@@ -8,6 +7,7 @@ import {
   usePlaybackControllerResume,
 } from "@/data/api";
 import { useCurrentPlayback } from "@/hooks/useCurrentPlayback";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
 interface OnboardingContext {
   currentIndex: number;

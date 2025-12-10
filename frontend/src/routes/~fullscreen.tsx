@@ -12,11 +12,11 @@ import { FullscreenHeader } from "@/components/fullscreen/FullscreenHeader";
 import { FullscreenLoadingState } from "@/components/fullscreen/FullscreenLoadingState";
 import { OnboardingProgress } from "@/components/fullscreen/OnboardingProgress";
 import { SEED_PLAYLISTS } from "@/constants/seedPlaylists";
-import { useOnboarding } from "@/contexts/OnboardingContext";
 import { usePlaylistsControllerCreate } from "@/data/api";
 import { useFullscreenKeyboard } from "@/hooks/useFullscreenKeyboard";
 import { useFullscreenPlayback } from "@/hooks/useFullscreenPlayback";
 import { useLibraryTrack } from "@/hooks/useLibraryTrack";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { useTrackRatingMutation } from "@/hooks/useTrackRatingMutation";
 import { trackEvent } from "@/lib/posthog";
 

@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Play, Shuffle, Tag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { trackLibraryFiltered, trackLibrarySearched } from "@/lib/posthog";
 
 import {

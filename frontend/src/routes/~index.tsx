@@ -18,8 +18,8 @@ import { TopThisWeekCard } from "@/components/dashboard/TopThisWeekCard";
 import { WeeklyActivityCard } from "@/components/dashboard/WeeklyActivityCard";
 import { LibrarySync } from "@/components/LibrarySync";
 import { PageTitle } from "@/components/PageTitle";
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { useLibraryControllerGetDashboardStats } from "@/data/api";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { trackDashboardViewed } from "@/lib/posthog";
 
 export const Route = createFileRoute("/")({ component: HomePage });

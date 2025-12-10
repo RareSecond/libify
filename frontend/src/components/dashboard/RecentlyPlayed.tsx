@@ -12,8 +12,8 @@ import {
 import { notifications } from "@mantine/notifications";
 import { Clock, Music, Play } from "lucide-react";
 
-import { useSpotifyPlayer } from "../../contexts/SpotifyPlayerContext";
 import { useLibraryControllerGetPlayHistory } from "../../data/api";
+import { useSpotifyPlayer } from "../../hooks/useSpotifyPlayer";
 import { formatDate } from "../../utils/format";
 
 export function RecentlyPlayed() {

@@ -31,13 +31,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import { useSpotifyPlayer } from "../contexts/SpotifyPlayerContext";
 import {
   getLibraryControllerGetTracksQueryKey,
   usePlaybackControllerTransferPlayback,
 } from "../data/api";
 import { useCurrentPlayback } from "../hooks/useCurrentPlayback";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
+import { useSpotifyPlayer } from "../hooks/useSpotifyPlayer";
 import { formatTime } from "../utils/format";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { RatingSelector } from "./RatingSelector";

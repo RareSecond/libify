@@ -1,5 +1,5 @@
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { usePlaybackControllerGetCurrentPlayback } from "@/data/api";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
 /**
  * Hook to poll current playback state from Spotify API

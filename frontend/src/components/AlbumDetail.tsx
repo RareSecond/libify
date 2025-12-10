@@ -14,7 +14,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Music, Play, Shuffle, Star } from "lucide-react";
 import { useCallback } from "react";
 
-import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { useTrackView } from "@/hooks/useTrackView";
 import { trackAlbumViewed } from "@/lib/posthog";
 
