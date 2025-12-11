@@ -1929,6 +1929,7 @@ export class TrackService {
         lastPlayedAt: track.lastPlayedAt,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        sources: [],
         spotifyId: track.spotifyId,
         tags: track.tags,
         title: track.title,

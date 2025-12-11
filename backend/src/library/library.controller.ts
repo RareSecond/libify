@@ -351,16 +351,17 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Query() query: GetPlaylistsQueryDto,
   ): Promise<PaginatedPlaylistsDto> {
-    return this.trackService.getUserPlaylists(req.user.id, {
+    const result = await this.trackService.getUserPlaylists(req.user.id, {
       page: query.page || 1,
       pageSize: query.pageSize || 24,
       search: query.search,
       sortBy: query.sortBy || "name",
       sortOrder: query.sortOrder || "asc",
     });
+    return plainToInstance(PaginatedPlaylistsDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
-
-  // Tag management endpoints
 
   @ApiOperation({ summary: "Get tracks from a specific playlist" })
   @ApiQuery({
@@ -387,7 +388,15 @@ export class LibraryController {
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query("pageSize", new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
   ): Promise<PlaylistTracksResponseDto> {
-    return this.trackService.getPlaylistTracks(req.user.id, id, page, pageSize);
+    const result = await this.trackService.getPlaylistTracks(
+      req.user.id,
+      id,
+      page,
+      pageSize,
+    );
+    return plainToInstance(PlaylistTracksResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get random unrated tracks for onboarding" })

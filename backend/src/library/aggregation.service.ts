@@ -165,6 +165,7 @@ export class AggregationService {
       )
       UPDATE "UserPlaylist" up
       SET
+        "totalTracks" = ps."trackCount",
         "totalDuration" = ps."totalDuration",
         "totalPlayCount" = ps."totalPlayCount",
         "avgRating" = ps."avgRating",

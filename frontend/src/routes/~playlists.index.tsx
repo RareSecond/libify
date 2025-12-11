@@ -5,8 +5,8 @@ import { PageTitle } from "../components/PageTitle";
 import { PlaylistsOverview } from "../components/PlaylistsOverview";
 
 const playlistsSearchSchema = z.object({
-  page: z.number().optional().default(1),
-  pageSize: z.number().optional().default(24),
+  page: z.coerce.number().min(1).optional().default(1),
+  pageSize: z.coerce.number().min(1).max(200).optional().default(24),
   search: z.string().optional().default(""),
   sortBy: z
     .enum(["name", "trackCount", "totalPlayCount", "avgRating", "lastPlayed"])
