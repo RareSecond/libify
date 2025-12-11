@@ -2595,6 +2595,10 @@
               ]
             }
           },
+          "spotifyPlaylistId": {
+            "type": "string",
+            "description": "Filter by Spotify playlist ID"
+          },
           "tagIds": {
             "description": "Filter by tag IDs",
             "type": "array",

@@ -2254,6 +2254,18 @@ export class TrackService {
         .where("ts.sourceType", "in", filter.sourceTypes);
     }
 
+    // Apply Spotify playlist filter (tracks from a specific Spotify library playlist)
+    if (filter.spotifyPlaylistId) {
+      query = query
+        .innerJoin(
+          "TrackSource as tsPlaylist",
+          "ut.id",
+          "tsPlaylist.userTrackId",
+        )
+        .where("tsPlaylist.sourceType", "=", "PLAYLIST")
+        .where("tsPlaylist.sourceId", "=", filter.spotifyPlaylistId);
+    }
+
     // TODO: Add smart playlist support when needed
     // For now, playlistId is not supported
 

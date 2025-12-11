@@ -17,7 +17,7 @@ interface BulkSelectionWrapperProps {
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
   currentFilters: Omit<
     BulkOperationFilterDto,
-    "albumId" | "artistId" | "playlistId"
+    "albumId" | "artistId" | "playlistId" | "spotifyPlaylistId"
   >;
   enabled: boolean;
   onRefetch?: () => void;
@@ -57,10 +57,9 @@ export function BulkSelectionWrapper({
       filters.albumId = contextId;
     } else if (contextType === "artist" && contextId) {
       filters.artistId = contextId;
-    } else if (
-      (contextType === "playlist" || contextType === "smart_playlist") &&
-      contextId
-    ) {
+    } else if (contextType === "playlist" && contextId) {
+      filters.spotifyPlaylistId = contextId;
+    } else if (contextType === "smart_playlist" && contextId) {
       filters.playlistId = contextId;
     }
     return filters;
