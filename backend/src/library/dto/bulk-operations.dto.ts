@@ -66,6 +66,11 @@ export class BulkOperationFilterDto {
   @IsOptional()
   sourceTypes?: SourceType[];
 
+  @ApiPropertyOptional({ description: "Filter by Spotify playlist ID" })
+  @IsOptional()
+  @IsString()
+  spotifyPlaylistId?: string;
+
   @ApiPropertyOptional({ description: "Filter by tag IDs", type: [String] })
   @IsArray()
   @IsOptional()

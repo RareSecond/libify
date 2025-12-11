@@ -135,6 +135,53 @@ export class AggregationService {
     this.logger.debug(`Completed bulk artist stats update for user ${userId}`);
   }
 
+  /**
+   * Bulk update all playlist stats for a user using a single query
+   * Calculates stats from tracks that have playlist as their source via TrackSource
+   */
+  async bulkUpdateAllPlaylistStats(userId: string): Promise<void> {
+    const db = this.kyselyService.database;
+
+    this.logger.log(`Bulk updating playlist stats for user ${userId}`);
+
+    await sql`
+      WITH playlist_stats AS (
+        SELECT
+          up.id as "playlistId",
+          COUNT(DISTINCT ut.id)::int as "trackCount",
+          COALESCE(SUM(st.duration), 0)::int as "totalDuration",
+          COALESCE(SUM(ut."totalPlayCount"), 0)::int as "totalPlayCount",
+          COUNT(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::int as "ratedTrackCount",
+          ROUND(AVG(ut.rating) FILTER (WHERE ut.rating IS NOT NULL)::numeric, 1) as "avgRating",
+          MIN(ts."createdAt") as "firstAddedAt",
+          MAX(ut."lastPlayedAt") as "lastPlayedAt"
+        FROM "UserPlaylist" up
+        INNER JOIN "TrackSource" ts ON ts."sourceId" = up."spotifyId" AND ts."sourceType" = 'PLAYLIST'
+        INNER JOIN "UserTrack" ut ON ut.id = ts."userTrackId"
+        INNER JOIN "SpotifyTrack" st ON ut."spotifyTrackId" = st.id
+        WHERE up."userId" = ${userId}
+          AND ut."addedToLibrary" = true
+        GROUP BY up.id
+      )
+      UPDATE "UserPlaylist" up
+      SET
+        "totalTracks" = ps."trackCount",
+        "totalDuration" = ps."totalDuration",
+        "totalPlayCount" = ps."totalPlayCount",
+        "avgRating" = ps."avgRating",
+        "ratedTrackCount" = ps."ratedTrackCount",
+        "firstAddedAt" = ps."firstAddedAt",
+        "lastPlayedAt" = ps."lastPlayedAt",
+        "updatedAt" = NOW()
+      FROM playlist_stats ps
+      WHERE up.id = ps."playlistId"
+    `.execute(db);
+
+    this.logger.debug(
+      `Completed bulk playlist stats update for user ${userId}`,
+    );
+  }
+
   async createOrUpdateAlbumEntities(
     savedAlbum: SpotifySavedAlbum,
     artistMap: Map<
@@ -489,10 +536,11 @@ export class AggregationService {
     this.logger.log(`Updating all stats for user ${userId} using bulk method`);
 
     // Use bulk CTE-based updates instead of N+1 queries
-    // This reduces 700 queries to just 2 queries (10-100x faster)
+    // This reduces 700+ queries to just 3 queries (10-100x faster)
     await Promise.all([
       this.bulkUpdateAllAlbumStats(userId),
       this.bulkUpdateAllArtistStats(userId),
+      this.bulkUpdateAllPlaylistStats(userId),
     ]);
 
     this.logger.log(`Completed updating all stats for user ${userId}`);

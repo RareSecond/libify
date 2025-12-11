@@ -121,6 +121,7 @@ export class QueueService {
           trackUris = await this.getPlaylistTracks(
             userId,
             context.contextId,
+            context.shuffle,
             0,
             limit,
           );
@@ -257,15 +258,52 @@ export class QueueService {
   private async getPlaylistTracks(
     userId: string,
     playlistId: string,
-    _skip = 0,
-    _limit = 200,
+    shuffle?: boolean,
+    skip = 0,
+    limit = 200,
   ): Promise<string[]> {
-    // This would integrate with your playlist system
-    // For now, return empty array
-    this.logger.warn(
-      `Playlist tracks not yet implemented for playlist ${playlistId}`,
-    );
-    return [];
+    const db = this.kysely.database;
+
+    // If shuffling, use RANDOM() to get truly random tracks from playlist
+    if (shuffle) {
+      const tracks = await db
+        .selectFrom("TrackSource")
+        .innerJoin("UserTrack", "UserTrack.id", "TrackSource.userTrackId")
+        .innerJoin(
+          "SpotifyTrack",
+          "SpotifyTrack.id",
+          "UserTrack.spotifyTrackId",
+        )
+        .where("UserTrack.userId", "=", userId)
+        .where("TrackSource.sourceType", "=", "PLAYLIST")
+        .where("TrackSource.sourceId", "=", playlistId)
+        .select("SpotifyTrack.spotifyId")
+        .orderBy(sql`RANDOM()`)
+        .limit(limit)
+        .execute();
+
+      return tracks
+        .filter((t) => t.spotifyId)
+        .map((t) => `spotify:track:${t.spotifyId}`);
+    }
+
+    // Non-shuffle: order by createdAt to preserve playlist order
+    const tracks = await db
+      .selectFrom("TrackSource")
+      .innerJoin("UserTrack", "UserTrack.id", "TrackSource.userTrackId")
+      .innerJoin("SpotifyTrack", "SpotifyTrack.id", "UserTrack.spotifyTrackId")
+      .where("UserTrack.userId", "=", userId)
+      .where("TrackSource.sourceType", "=", "PLAYLIST")
+      .where("TrackSource.sourceId", "=", playlistId)
+      .select("SpotifyTrack.spotifyId")
+      .orderBy("TrackSource.createdAt", "asc")
+      .offset(skip)
+      .limit(limit)
+      .execute();
+
+    return tracks
+      .filter((t) => t.spotifyId)
+      .map((t) => `spotify:track:${t.spotifyId}`);
   }
 
   private async getSmartPlaylistTracks(
@@ -277,24 +315,16 @@ export class QueueService {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
   ): Promise<string[]> {
-    try {
-      // Use PlaylistsService which has full criteria evaluation logic
-      const allTracks = await this.playlistsService.getTracksForPlay(
-        userId,
-        smartPlaylistId,
-        shuffle || false,
-        sortBy,
-        sortOrder,
-      );
+    // Use PlaylistsService which has full criteria evaluation logic
+    const allTracks = await this.playlistsService.getTracksForPlay(
+      userId,
+      smartPlaylistId,
+      shuffle || false,
+      sortBy,
+      sortOrder,
+    );
 
-      // Apply skip and limit to match pagination
-      return allTracks.slice(skip, skip + limit);
-    } catch (error) {
-      this.logger.error(
-        `Failed to get smart playlist tracks for ${smartPlaylistId}`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      return [];
-    }
+    // Apply skip and limit to match pagination
+    return allTracks.slice(skip, skip + limit);
   }
 }

@@ -17,6 +17,7 @@ export interface SpotifyPaginatedResponse<T> {
 export interface SpotifyPlaylist {
   description: string;
   id: string;
+  images?: { height: null | number; url: string; width: null | number }[];
   name: string;
   owner: { display_name?: string; id: string };
   snapshot_id: string;

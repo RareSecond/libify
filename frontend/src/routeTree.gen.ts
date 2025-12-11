@@ -13,15 +13,18 @@
 import { Route as rootRoute } from "./routes/~__root";
 import { Route as WelcomeImport } from "./routes/~welcome";
 import { Route as TracksImport } from "./routes/~tracks";
+import { Route as SmartPlaylistsImport } from "./routes/~smart-playlists";
 import { Route as PlaylistsImport } from "./routes/~playlists";
 import { Route as PlayHistoryImport } from "./routes/~play-history";
 import { Route as FullscreenImport } from "./routes/~fullscreen";
 import { Route as ArtistsImport } from "./routes/~artists";
 import { Route as AlbumsImport } from "./routes/~albums";
 import { Route as IndexImport } from "./routes/~index";
+import { Route as SmartPlaylistsIndexImport } from "./routes/~smart-playlists.index";
 import { Route as PlaylistsIndexImport } from "./routes/~playlists.index";
 import { Route as ArtistsIndexImport } from "./routes/~artists.index";
 import { Route as AlbumsIndexImport } from "./routes/~albums.index";
+import { Route as SmartPlaylistsIdImport } from "./routes/~smart-playlists.$id";
 import { Route as PlaylistsIdImport } from "./routes/~playlists.$id";
 import { Route as AuthSuccessImport } from "./routes/~auth/~success";
 import { Route as AuthErrorImport } from "./routes/~auth/~error";
@@ -39,6 +42,12 @@ const WelcomeRoute = WelcomeImport.update({
 const TracksRoute = TracksImport.update({
   id: "/tracks",
   path: "/tracks",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const SmartPlaylistsRoute = SmartPlaylistsImport.update({
+  id: "/smart-playlists",
+  path: "/smart-playlists",
   getParentRoute: () => rootRoute,
 } as any);
 
@@ -78,6 +87,12 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
+const SmartPlaylistsIndexRoute = SmartPlaylistsIndexImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => SmartPlaylistsRoute,
+} as any);
+
 const PlaylistsIndexRoute = PlaylistsIndexImport.update({
   id: "/",
   path: "/",
@@ -94,6 +109,12 @@ const AlbumsIndexRoute = AlbumsIndexImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AlbumsRoute,
+} as any);
+
+const SmartPlaylistsIdRoute = SmartPlaylistsIdImport.update({
+  id: "/$id",
+  path: "/$id",
+  getParentRoute: () => SmartPlaylistsRoute,
 } as any);
 
 const PlaylistsIdRoute = PlaylistsIdImport.update({
@@ -172,6 +193,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PlaylistsImport;
       parentRoute: typeof rootRoute;
     };
+    "/smart-playlists": {
+      id: "/smart-playlists";
+      path: "/smart-playlists";
+      fullPath: "/smart-playlists";
+      preLoaderRoute: typeof SmartPlaylistsImport;
+      parentRoute: typeof rootRoute;
+    };
     "/tracks": {
       id: "/tracks";
       path: "/tracks";
@@ -214,6 +242,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PlaylistsIdImport;
       parentRoute: typeof PlaylistsImport;
     };
+    "/smart-playlists/$id": {
+      id: "/smart-playlists/$id";
+      path: "/$id";
+      fullPath: "/smart-playlists/$id";
+      preLoaderRoute: typeof SmartPlaylistsIdImport;
+      parentRoute: typeof SmartPlaylistsImport;
+    };
     "/albums/": {
       id: "/albums/";
       path: "/";
@@ -234,6 +269,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/playlists/";
       preLoaderRoute: typeof PlaylistsIndexImport;
       parentRoute: typeof PlaylistsImport;
+    };
+    "/smart-playlists/": {
+      id: "/smart-playlists/";
+      path: "/";
+      fullPath: "/smart-playlists/";
+      preLoaderRoute: typeof SmartPlaylistsIndexImport;
+      parentRoute: typeof SmartPlaylistsImport;
     };
     "/albums/$artist/$album": {
       id: "/albums/$artist/$album";
@@ -287,6 +329,20 @@ const PlaylistsRouteWithChildren = PlaylistsRoute._addFileChildren(
   PlaylistsRouteChildren,
 );
 
+interface SmartPlaylistsRouteChildren {
+  SmartPlaylistsIdRoute: typeof SmartPlaylistsIdRoute;
+  SmartPlaylistsIndexRoute: typeof SmartPlaylistsIndexRoute;
+}
+
+const SmartPlaylistsRouteChildren: SmartPlaylistsRouteChildren = {
+  SmartPlaylistsIdRoute: SmartPlaylistsIdRoute,
+  SmartPlaylistsIndexRoute: SmartPlaylistsIndexRoute,
+};
+
+const SmartPlaylistsRouteWithChildren = SmartPlaylistsRoute._addFileChildren(
+  SmartPlaylistsRouteChildren,
+);
+
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/albums": typeof AlbumsRouteWithChildren;
@@ -294,15 +350,18 @@ export interface FileRoutesByFullPath {
   "/fullscreen": typeof FullscreenRoute;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
+  "/smart-playlists": typeof SmartPlaylistsRouteWithChildren;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
   "/artists/$artist": typeof ArtistsArtistRoute;
   "/auth/error": typeof AuthErrorRoute;
   "/auth/success": typeof AuthSuccessRoute;
   "/playlists/$id": typeof PlaylistsIdRoute;
+  "/smart-playlists/$id": typeof SmartPlaylistsIdRoute;
   "/albums/": typeof AlbumsIndexRoute;
   "/artists/": typeof ArtistsIndexRoute;
   "/playlists/": typeof PlaylistsIndexRoute;
+  "/smart-playlists/": typeof SmartPlaylistsIndexRoute;
   "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
 }
 
@@ -316,9 +375,11 @@ export interface FileRoutesByTo {
   "/auth/error": typeof AuthErrorRoute;
   "/auth/success": typeof AuthSuccessRoute;
   "/playlists/$id": typeof PlaylistsIdRoute;
+  "/smart-playlists/$id": typeof SmartPlaylistsIdRoute;
   "/albums": typeof AlbumsIndexRoute;
   "/artists": typeof ArtistsIndexRoute;
   "/playlists": typeof PlaylistsIndexRoute;
+  "/smart-playlists": typeof SmartPlaylistsIndexRoute;
   "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
 }
 
@@ -330,15 +391,18 @@ export interface FileRoutesById {
   "/fullscreen": typeof FullscreenRoute;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
+  "/smart-playlists": typeof SmartPlaylistsRouteWithChildren;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
   "/artists/$artist": typeof ArtistsArtistRoute;
   "/auth/error": typeof AuthErrorRoute;
   "/auth/success": typeof AuthSuccessRoute;
   "/playlists/$id": typeof PlaylistsIdRoute;
+  "/smart-playlists/$id": typeof SmartPlaylistsIdRoute;
   "/albums/": typeof AlbumsIndexRoute;
   "/artists/": typeof ArtistsIndexRoute;
   "/playlists/": typeof PlaylistsIndexRoute;
+  "/smart-playlists/": typeof SmartPlaylistsIndexRoute;
   "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
 }
 
@@ -351,15 +415,18 @@ export interface FileRouteTypes {
     | "/fullscreen"
     | "/play-history"
     | "/playlists"
+    | "/smart-playlists"
     | "/tracks"
     | "/welcome"
     | "/artists/$artist"
     | "/auth/error"
     | "/auth/success"
     | "/playlists/$id"
+    | "/smart-playlists/$id"
     | "/albums/"
     | "/artists/"
     | "/playlists/"
+    | "/smart-playlists/"
     | "/albums/$artist/$album";
   fileRoutesByTo: FileRoutesByTo;
   to:
@@ -372,9 +439,11 @@ export interface FileRouteTypes {
     | "/auth/error"
     | "/auth/success"
     | "/playlists/$id"
+    | "/smart-playlists/$id"
     | "/albums"
     | "/artists"
     | "/playlists"
+    | "/smart-playlists"
     | "/albums/$artist/$album";
   id:
     | "__root__"
@@ -384,15 +453,18 @@ export interface FileRouteTypes {
     | "/fullscreen"
     | "/play-history"
     | "/playlists"
+    | "/smart-playlists"
     | "/tracks"
     | "/welcome"
     | "/artists/$artist"
     | "/auth/error"
     | "/auth/success"
     | "/playlists/$id"
+    | "/smart-playlists/$id"
     | "/albums/"
     | "/artists/"
     | "/playlists/"
+    | "/smart-playlists/"
     | "/albums/$artist/$album";
   fileRoutesById: FileRoutesById;
 }
@@ -404,6 +476,7 @@ export interface RootRouteChildren {
   FullscreenRoute: typeof FullscreenRoute;
   PlayHistoryRoute: typeof PlayHistoryRoute;
   PlaylistsRoute: typeof PlaylistsRouteWithChildren;
+  SmartPlaylistsRoute: typeof SmartPlaylistsRouteWithChildren;
   TracksRoute: typeof TracksRoute;
   WelcomeRoute: typeof WelcomeRoute;
   AuthErrorRoute: typeof AuthErrorRoute;
@@ -417,6 +490,7 @@ const rootRouteChildren: RootRouteChildren = {
   FullscreenRoute: FullscreenRoute,
   PlayHistoryRoute: PlayHistoryRoute,
   PlaylistsRoute: PlaylistsRouteWithChildren,
+  SmartPlaylistsRoute: SmartPlaylistsRouteWithChildren,
   TracksRoute: TracksRoute,
   WelcomeRoute: WelcomeRoute,
   AuthErrorRoute: AuthErrorRoute,
@@ -439,6 +513,7 @@ export const routeTree = rootRoute
         "/fullscreen",
         "/play-history",
         "/playlists",
+        "/smart-playlists",
         "/tracks",
         "/welcome",
         "/auth/error",
@@ -475,6 +550,13 @@ export const routeTree = rootRoute
         "/playlists/"
       ]
     },
+    "/smart-playlists": {
+      "filePath": "~smart-playlists.tsx",
+      "children": [
+        "/smart-playlists/$id",
+        "/smart-playlists/"
+      ]
+    },
     "/tracks": {
       "filePath": "~tracks.tsx"
     },
@@ -495,6 +577,10 @@ export const routeTree = rootRoute
       "filePath": "~playlists.$id.tsx",
       "parent": "/playlists"
     },
+    "/smart-playlists/$id": {
+      "filePath": "~smart-playlists.$id.tsx",
+      "parent": "/smart-playlists"
+    },
     "/albums/": {
       "filePath": "~albums.index.tsx",
       "parent": "/albums"
@@ -506,6 +592,10 @@ export const routeTree = rootRoute
     "/playlists/": {
       "filePath": "~playlists.index.tsx",
       "parent": "/playlists"
+    },
+    "/smart-playlists/": {
+      "filePath": "~smart-playlists.index.tsx",
+      "parent": "/smart-playlists"
     },
     "/albums/$artist/$album": {
       "filePath": "~albums.$artist.$album.tsx",

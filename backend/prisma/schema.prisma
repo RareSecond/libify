@@ -248,22 +248,29 @@ model UserAlbum {
   @@index([userId, totalPlayCount])
 }
 
-// User-specific playlist data for tracking sync status
+// User-specific playlist data for tracking sync status and aggregated stats
 model UserPlaylist {
-  id            String   @id @default(uuid())
-  userId        String
-  spotifyId     String // Spotify playlist ID
-  name          String
-  description   String?
-  snapshotId    String // Spotify snapshot ID for change detection
-  totalTracks   Int
-  ownerId       String // Spotify user ID of playlist owner
-  ownerName     String?
-  collaborative Boolean  @default(false)
-  public        Boolean  @default(false)
-  lastSyncedAt  DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id @default(uuid())
+  userId          String
+  spotifyId       String // Spotify playlist ID
+  name            String
+  description     String?
+  snapshotId      String // Spotify snapshot ID for change detection
+  totalTracks     Int
+  ownerId         String // Spotify user ID of playlist owner
+  ownerName       String?
+  collaborative   Boolean   @default(false)
+  public          Boolean   @default(false)
+  imageUrl        String? // Playlist cover image
+  totalDuration   Int       @default(0) // Total duration in milliseconds
+  totalPlayCount  Int       @default(0) // Sum of play counts
+  avgRating       Float? // Average rating of rated tracks
+  ratedTrackCount Int       @default(0) // Count of rated tracks
+  lastPlayedAt    DateTime? // When any track was last played
+  firstAddedAt    DateTime  @default(now()) // When first track was added
+  lastSyncedAt    DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -271,6 +278,10 @@ model UserPlaylist {
   @@unique([userId, spotifyId])
   @@index([userId])
   @@index([snapshotId])
+  @@index([userId, avgRating])
+  @@index([userId, lastPlayedAt])
+  @@index([userId, totalPlayCount])
+  @@index([userId, totalTracks])
 }
 
 // Track source tracking - where did this track come from?

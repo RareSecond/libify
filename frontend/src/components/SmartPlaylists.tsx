@@ -189,7 +189,7 @@ export function SmartPlaylists() {
                       e.stopPropagation();
                     }}
                     params={{ id: playlist.id }}
-                    to="/playlists/$id"
+                    to="/smart-playlists/$id"
                   >
                     <Button size="xs" variant="light">
                       View Tracks

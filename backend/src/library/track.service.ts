@@ -24,6 +24,8 @@ import {
   PaginatedPlayHistoryDto,
   PlayHistoryItemDto,
 } from "./dto/play-history.dto";
+import { PlaylistTracksResponseDto } from "./dto/playlist-tracks.dto";
+import { PaginatedPlaylistsDto, PlaylistDto } from "./dto/playlist.dto";
 import {
   GetTracksQueryDto,
   PaginatedTracksDto,
@@ -544,6 +546,11 @@ export class TrackService {
       .select("st.spotifyId")
       .where("ut.userId", "=", userId);
 
+    // Apply addedToLibrary filter if present (always true for smart playlists)
+    if (where.addedToLibrary === true) {
+      query = query.where("ut.addedToLibrary", "=", true);
+    }
+
     // Apply all filters inline with full type safety
 
     // Handle OR conditions (e.g., search across title/artist/album)
@@ -996,7 +1003,7 @@ export class TrackService {
               gte?: number;
               lt?: number;
               lte?: number;
-              not?: number;
+              not?: null | number;
             };
             if (ratingFilter.gte !== undefined) {
               query = query.where("ut.rating", ">=", ratingFilter.gte);
@@ -1013,7 +1020,10 @@ export class TrackService {
             if (ratingFilter.equals !== undefined) {
               query = query.where("ut.rating", "=", ratingFilter.equals);
             }
-            if (ratingFilter.not !== undefined) {
+            if ("not" in ratingFilter && ratingFilter.not === null) {
+              // "not: null" means rating IS NOT NULL (has a rating)
+              query = query.where("ut.rating", "is not", null);
+            } else if (ratingFilter.not !== undefined) {
               query = query.where("ut.rating", "!=", ratingFilter.not);
             }
           }
@@ -1807,6 +1817,140 @@ export class TrackService {
     );
   }
 
+  async getPlaylistTracks(
+    userId: string,
+    playlistId: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<PlaylistTracksResponseDto> {
+    const db = this.kyselyService.database;
+
+    // Get playlist metadata
+    const playlist = await this.databaseService.userPlaylist.findFirst({
+      where: { id: playlistId, userId },
+    });
+
+    if (!playlist) {
+      throw new NotFoundException("Playlist not found");
+    }
+
+    // Get total count for pagination
+    const countResult = await db
+      .selectFrom("TrackSource as ts")
+      .innerJoin("UserTrack as ut", "ut.id", "ts.userTrackId")
+      .select(sql<number>`count(*)`.as("count"))
+      .where("ts.sourceType", "=", "PLAYLIST")
+      .where("ts.sourceId", "=", playlist.spotifyId)
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .executeTakeFirst();
+
+    const total = Number(countResult?.count || 0);
+    const totalPages = Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
+
+    // Get tracks from TrackSource where sourceType is PLAYLIST and sourceId matches
+    const tracks = await db
+      .selectFrom("TrackSource as ts")
+      .innerJoin("UserTrack as ut", "ut.id", "ts.userTrackId")
+      .innerJoin("SpotifyTrack as st", "st.id", "ut.spotifyTrackId")
+      .innerJoin("SpotifyAlbum as sa", "sa.id", "st.albumId")
+      .innerJoin("SpotifyArtist as sar", "sar.id", "st.artistId")
+      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
+      .leftJoin("Tag as t", "tt.tagId", "t.id")
+      .select([
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "st.albumId",
+        "st.artistId",
+        "sa.name as albumName",
+        "sa.imageUrl as albumImageUrl",
+        "sar.name as artistName",
+        "sar.genres as artistGenres",
+        // Aggregate tags into array
+        sql<Array<{ color: null | string; id: string; name: string }>>`
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', t.id,
+                'name', t.name,
+                'color', t.color
+              )
+            ) FILTER (WHERE t.id IS NOT NULL),
+            '[]'::json
+          )`.as("tags"),
+      ])
+      .where("ts.sourceType", "=", "PLAYLIST")
+      .where("ts.sourceId", "=", playlist.spotifyId)
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .groupBy([
+        "ut.id",
+        "ut.addedAt",
+        "ut.lastPlayedAt",
+        "ut.totalPlayCount",
+        "ut.rating",
+        "ut.ratedAt",
+        "st.spotifyId",
+        "st.title",
+        "st.duration",
+        "st.albumId",
+        "st.artistId",
+        "sa.name",
+        "sa.imageUrl",
+        "sar.name",
+        "sar.genres",
+        "ts.createdAt",
+      ])
+      .orderBy("ts.createdAt", "asc")
+      .offset(offset)
+      .limit(pageSize)
+      .execute();
+
+    // Transform to DTOs
+    const trackDtos = tracks.map((track) => {
+      const dto = {
+        addedAt: track.addedAt,
+        album: track.albumName,
+        albumArt: track.albumImageUrl,
+        albumId: track.albumId,
+        artist: track.artistName,
+        artistGenres: track.artistGenres,
+        artistId: track.artistId,
+        duration: track.duration,
+        id: track.id,
+        lastPlayedAt: track.lastPlayedAt,
+        ratedAt: track.ratedAt,
+        rating: track.rating,
+        sources: [],
+        spotifyId: track.spotifyId,
+        tags: track.tags,
+        title: track.title,
+        totalPlayCount: track.totalPlayCount,
+      };
+      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+    });
+
+    return {
+      description: playlist.description,
+      imageUrl: playlist.imageUrl,
+      name: playlist.name,
+      page,
+      pageSize,
+      spotifyId: playlist.spotifyId,
+      total,
+      totalPages,
+      tracks: trackDtos,
+    };
+  }
+
   /**
    * Get random unrated tracks for onboarding
    * Returns full TrackDto objects (not just URIs)
@@ -2109,6 +2253,18 @@ export class TrackService {
       query = query
         .innerJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
         .where("ts.sourceType", "in", filter.sourceTypes);
+    }
+
+    // Apply Spotify playlist filter (tracks from a specific Spotify library playlist)
+    if (filter.spotifyPlaylistId) {
+      query = query
+        .innerJoin(
+          "TrackSource as tsPlaylist",
+          "ut.id",
+          "tsPlaylist.userTrackId",
+        )
+        .where("tsPlaylist.sourceType", "=", "PLAYLIST")
+        .where("tsPlaylist.sourceId", "=", filter.spotifyPlaylistId);
     }
 
     // TODO: Add smart playlist support when needed
@@ -2616,6 +2772,101 @@ export class TrackService {
 
     // Return unique genres sorted alphabetically
     return [...new Set(allGenres)].sort();
+  }
+
+  async getUserPlaylists(
+    userId: string,
+    options: {
+      page: number;
+      pageSize: number;
+      search?: string;
+      sortBy:
+        | "avgRating"
+        | "lastPlayed"
+        | "name"
+        | "totalPlayCount"
+        | "trackCount";
+      sortOrder: "asc" | "desc";
+    },
+  ): Promise<PaginatedPlaylistsDto> {
+    // Build where clause
+    const where: Prisma.UserPlaylistWhereInput = { userId };
+
+    // Add search filter
+    if (options.search) {
+      where.name = { contains: options.search, mode: "insensitive" };
+    }
+
+    // Build orderBy clause
+    let orderBy: Prisma.UserPlaylistOrderByWithRelationInput = {};
+    switch (options.sortBy) {
+      case "avgRating":
+        orderBy = { avgRating: options.sortOrder };
+        break;
+      case "lastPlayed":
+        orderBy = { lastPlayedAt: options.sortOrder };
+        break;
+      case "name":
+        orderBy = { name: options.sortOrder };
+        break;
+      case "totalPlayCount":
+        orderBy = { totalPlayCount: options.sortOrder };
+        break;
+      case "trackCount":
+        orderBy = { totalTracks: options.sortOrder };
+        break;
+    }
+
+    // Calculate pagination
+    const skip = (options.page - 1) * options.pageSize;
+
+    // Execute queries
+    const [userPlaylists, total] = await Promise.all([
+      this.databaseService.userPlaylist.findMany({
+        orderBy,
+        skip,
+        take: options.pageSize,
+        where,
+      }),
+      this.databaseService.userPlaylist.count({ where }),
+    ]);
+
+    // Transform to DTOs
+    const playlistDtos = userPlaylists.map((playlist) => {
+      return plainToInstance(
+        PlaylistDto,
+        {
+          avgRating: playlist.avgRating,
+          collaborative: playlist.collaborative,
+          description: playlist.description,
+          id: playlist.id,
+          imageUrl: playlist.imageUrl,
+          lastPlayed: playlist.lastPlayedAt,
+          name: playlist.name,
+          ownerName: playlist.ownerName,
+          public: playlist.public,
+          spotifyId: playlist.spotifyId,
+          totalDuration: playlist.totalDuration,
+          totalPlayCount: playlist.totalPlayCount,
+          trackCount: playlist.totalTracks,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
+
+    const totalPages = Math.ceil(total / options.pageSize);
+
+    return plainToInstance(
+      PaginatedPlaylistsDto,
+      {
+        page: options.page,
+        pageSize: options.pageSize,
+        playlists: playlistDtos,
+        total,
+        totalPages,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   async getUserTracks(

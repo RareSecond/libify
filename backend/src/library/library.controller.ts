@@ -44,11 +44,14 @@ import {
 import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
 import { GetAlbumsQueryDto } from "./dto/get-albums-query.dto";
 import { GetArtistsQueryDto } from "./dto/get-artists-query.dto";
+import { GetPlaylistsQueryDto } from "./dto/get-playlists-query.dto";
 import {
   GetPlayHistoryQueryDto,
   PaginatedPlayHistoryDto,
 } from "./dto/play-history.dto";
 import { PlaySyncResultDto } from "./dto/play-sync-result.dto";
+import { PlaylistTracksResponseDto } from "./dto/playlist-tracks.dto";
+import { PaginatedPlaylistsDto } from "./dto/playlist.dto";
 import { UpdateRatingDto } from "./dto/rating.dto";
 import { SyncOptionsDto } from "./dto/sync-options.dto";
 import {
@@ -323,8 +326,6 @@ export class LibraryController {
     return this.trackService.getUserGenres(req.user.id);
   }
 
-  // Tag management endpoints
-
   @ApiOperation({ summary: "Get user play history" })
   @ApiResponse({
     description: "Paginated list of play history",
@@ -337,6 +338,65 @@ export class LibraryController {
     @Query() query: GetPlayHistoryQueryDto,
   ): Promise<PaginatedPlayHistoryDto> {
     return this.trackService.getPlayHistory(req.user.id, query);
+  }
+
+  @ApiOperation({ summary: "Get all Spotify playlists in user library" })
+  @ApiResponse({
+    description: "Paginated list of playlists",
+    status: 200,
+    type: PaginatedPlaylistsDto,
+  })
+  @Get("playlists")
+  async getPlaylists(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: GetPlaylistsQueryDto,
+  ): Promise<PaginatedPlaylistsDto> {
+    const result = await this.trackService.getUserPlaylists(req.user.id, {
+      page: query.page || 1,
+      pageSize: query.pageSize || 24,
+      search: query.search,
+      sortBy: query.sortBy || "name",
+      sortOrder: query.sortOrder || "asc",
+    });
+    return plainToInstance(PaginatedPlaylistsDto, result, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  @ApiOperation({ summary: "Get tracks from a specific playlist" })
+  @ApiQuery({
+    description: "Page number",
+    name: "page",
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    description: "Number of tracks per page",
+    name: "pageSize",
+    required: false,
+    type: Number,
+  })
+  @ApiResponse({
+    description: "List of tracks from the playlist",
+    status: 200,
+    type: PlaylistTracksResponseDto,
+  })
+  @Get("playlists/:id/tracks")
+  async getPlaylistTracks(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("pageSize", new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
+  ): Promise<PlaylistTracksResponseDto> {
+    const result = await this.trackService.getPlaylistTracks(
+      req.user.id,
+      id,
+      page,
+      pageSize,
+    );
+    return plainToInstance(PlaylistTracksResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get random unrated tracks for onboarding" })
