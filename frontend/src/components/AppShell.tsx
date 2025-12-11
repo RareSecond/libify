@@ -3,11 +3,11 @@ import { useDisclosure } from "@mantine/hooks";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Disc,
+  Filter,
   History,
   Home,
   Library,
   ListMusic,
-  Sparkles,
   User,
 } from "lucide-react";
 import { ReactNode, useEffect } from "react";
@@ -28,7 +28,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
     { icon: Disc, label: "Albums", to: "/albums" },
     { icon: User, label: "Artists", to: "/artists" },
     { icon: ListMusic, label: "Playlists", to: "/playlists" },
-    { icon: Sparkles, label: "Smart Playlists", to: "/smart-playlists" },
+    { icon: Filter, label: "Smart Playlists", to: "/smart-playlists" },
     { icon: History, label: "Play History", to: "/play-history" },
   ];
 
