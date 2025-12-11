@@ -19,6 +19,7 @@ import {
 } from "../data/api";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~artists.index";
+import { safeEncodeParam } from "../utils/url";
 import { ArtistCard } from "./cards/ArtistCard";
 import { GenreFilter } from "./filters/GenreFilter";
 
@@ -174,7 +175,7 @@ export function ArtistsOverview() {
           <Grid.Col key={artist.name} span={{ base: 12, lg: 3, md: 4, sm: 6 }}>
             <Link
               className="no-underline"
-              params={{ artist: artist.name }}
+              params={{ artist: safeEncodeParam(artist.name) }}
               to="/artists/$artist"
             >
               <ArtistCard artist={artist} />

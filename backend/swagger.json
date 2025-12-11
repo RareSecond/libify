@@ -640,14 +640,15 @@
         ]
       }
     },
-    "/library/albums/{artist}/{album}/tracks": {
+    "/library/albums/tracks": {
       "get": {
         "operationId": "LibraryController_getAlbumTracks",
         "parameters": [
           {
             "name": "artist",
             "required": true,
-            "in": "path",
+            "in": "query",
+            "description": "Artist name",
             "schema": {
               "type": "string"
             }
@@ -655,7 +656,8 @@
           {
             "name": "album",
             "required": true,
-            "in": "path",
+            "in": "query",
+            "description": "Album name",
             "schema": {
               "type": "string"
             }
@@ -787,14 +789,15 @@
         ]
       }
     },
-    "/library/artists/{artist}/tracks": {
+    "/library/artists/tracks": {
       "get": {
         "operationId": "LibraryController_getArtistTracks",
         "parameters": [
           {
             "name": "artist",
             "required": true,
-            "in": "path",
+            "in": "query",
+            "description": "Artist name",
             "schema": {
               "type": "string"
             }
