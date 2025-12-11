@@ -33,7 +33,7 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
 
   // Use the album-specific endpoint
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetAlbumTracks(artist, album);
+    useLibraryControllerGetAlbumTracks({ album, artist });
 
   // Track album view once data is loaded
   const albumIdentity = `${artist}/${album}`;

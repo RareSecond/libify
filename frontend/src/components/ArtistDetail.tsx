@@ -26,7 +26,7 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetArtistTracks(artist);
+    useLibraryControllerGetArtistTracks({ artist });
 
   // Track artist view once data is loaded
   const trackCount = data?.tracks?.length ?? 0;

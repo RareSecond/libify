@@ -43,8 +43,7 @@ export function useSpotifyAPI() {
             }
 
             const queryOptions = getLibraryControllerGetAlbumTracksQueryOptions(
-              artist,
-              album,
+              { album, artist },
             );
             const data = await queryClient.fetchQuery(queryOptions);
 
@@ -60,9 +59,9 @@ export function useSpotifyAPI() {
         case "artist": {
           if (currentContext.contextId) {
             const queryOptions =
-              getLibraryControllerGetArtistTracksQueryOptions(
-                currentContext.contextId,
-              );
+              getLibraryControllerGetArtistTracksQueryOptions({
+                artist: currentContext.contextId,
+              });
             const data = await queryClient.fetchQuery(queryOptions);
 
             allTracks = Array.isArray(data)

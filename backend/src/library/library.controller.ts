@@ -230,22 +230,30 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: "Get tracks from a specific album" })
+  @ApiQuery({
+    description: "Artist name",
+    name: "artist",
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    description: "Album name",
+    name: "album",
+    required: true,
+    type: String,
+  })
   @ApiResponse({
     description: "List of tracks from the album",
     status: 200,
     type: AlbumTracksResponseDto,
   })
-  @Get("albums/:artist/:album/tracks")
+  @Get("albums/tracks")
   async getAlbumTracks(
     @Req() req: AuthenticatedRequest,
-    @Param("artist") artist: string,
-    @Param("album") album: string,
+    @Query("artist") artist: string,
+    @Query("album") album: string,
   ): Promise<AlbumTracksResponseDto> {
-    return this.trackService.getAlbumTracks(
-      req.user.id,
-      decodeURIComponent(artist),
-      decodeURIComponent(album),
-    );
+    return this.trackService.getAlbumTracks(req.user.id, artist, album);
   }
 
   @ApiOperation({ summary: "Get all artists in user library" })
@@ -283,20 +291,23 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: "Get tracks from a specific artist" })
+  @ApiQuery({
+    description: "Artist name",
+    name: "artist",
+    required: true,
+    type: String,
+  })
   @ApiResponse({
     description: "List of tracks from the artist",
     status: 200,
     type: ArtistTracksResponseDto,
   })
-  @Get("artists/:artist/tracks")
+  @Get("artists/tracks")
   async getArtistTracks(
     @Req() req: AuthenticatedRequest,
-    @Param("artist") artist: string,
+    @Query("artist") artist: string,
   ): Promise<ArtistTracksResponseDto> {
-    return this.trackService.getArtistTracks(
-      req.user.id,
-      decodeURIComponent(artist),
-    );
+    return this.trackService.getArtistTracks(req.user.id, artist);
   }
 
   @ApiOperation({ summary: "Get dashboard statistics" })

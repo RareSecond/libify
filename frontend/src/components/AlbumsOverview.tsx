@@ -18,6 +18,7 @@ import {
 } from "../data/api";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~albums.index";
+import { safeEncodeParam } from "../utils/url";
 import { AlbumCard } from "./cards/AlbumCard";
 import { GenreFilter } from "./filters/GenreFilter";
 import { CardSkeletonGrid } from "./skeletons/CardSkeleton";
@@ -184,7 +185,10 @@ export function AlbumsOverview() {
               >
                 <Link
                   className="no-underline"
-                  params={{ album: album.name, artist: album.artist }}
+                  params={{
+                    album: safeEncodeParam(album.name),
+                    artist: safeEncodeParam(album.artist),
+                  }}
                   to="/albums/$artist/$album"
                 >
                   <AlbumCard album={album} />
