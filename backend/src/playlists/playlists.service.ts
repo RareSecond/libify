@@ -323,8 +323,11 @@ export class PlaylistsService {
       return {};
     }
 
-    // For NOT_CONTAINS and NOT_EQUALS, we need to use NOT at the parent level
-    // because Prisma doesn't support mode: "insensitive" inside a nested `not` block
+    // For NOT_CONTAINS and NOT_EQUALS, we use NOT at the top level.
+    // Note: Prisma v6.3.1+ supports mode: "insensitive" inside nested `not` blocks
+    // for PostgreSQL and MongoDB. However, using top-level NOT will also match
+    // records where the relation is NULL. For our use case this is acceptable
+    // since all tracks have required artist/album relations.
     if (rule.operator === PlaylistRuleOperator.NOT_CONTAINS) {
       return {
         NOT: {
@@ -438,8 +441,11 @@ export class PlaylistsService {
 
     const [parent, child] = field.split(".");
 
-    // For NOT_CONTAINS and NOT_EQUALS, use NOT at the top level
-    // because Prisma doesn't support mode: "insensitive" inside a nested `not` block
+    // For NOT_CONTAINS and NOT_EQUALS, we use NOT at the top level.
+    // Note: Prisma v6.3.1+ supports mode: "insensitive" inside nested `not` blocks
+    // for PostgreSQL and MongoDB. However, using top-level NOT will also match
+    // records where the relation is NULL. For our use case this is acceptable
+    // since spotifyTrack is a required relation on UserTrack.
     if (rule.operator === PlaylistRuleOperator.NOT_CONTAINS) {
       if (child) {
         return {
