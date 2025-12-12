@@ -318,6 +318,32 @@ export class PlaylistsService {
     field: string,
     rule: PlaylistRuleDto,
   ): Prisma.UserTrackWhereInput {
+    // For NOT_CONTAINS and NOT_EQUALS, we need to use NOT at the parent level
+    // because Prisma doesn't support mode: "insensitive" inside a nested `not` block
+    if (rule.operator === PlaylistRuleOperator.NOT_CONTAINS) {
+      return {
+        NOT: {
+          [parent]: {
+            [relation]: {
+              [field]: { contains: rule.value, mode: "insensitive" },
+            },
+          },
+        },
+      };
+    }
+
+    if (rule.operator === PlaylistRuleOperator.NOT_EQUALS) {
+      return {
+        NOT: {
+          [parent]: {
+            [relation]: {
+              [field]: { equals: rule.value, mode: "insensitive" },
+            },
+          },
+        },
+      };
+    }
+
     let fieldCondition: Record<string, unknown>;
 
     switch (rule.operator) {
@@ -328,13 +354,7 @@ export class PlaylistsService {
         fieldCondition = { endsWith: rule.value, mode: "insensitive" };
         break;
       case PlaylistRuleOperator.EQUALS:
-        fieldCondition = { equals: rule.value };
-        break;
-      case PlaylistRuleOperator.NOT_CONTAINS:
-        fieldCondition = { not: { contains: rule.value, mode: "insensitive" } };
-        break;
-      case PlaylistRuleOperator.NOT_EQUALS:
-        fieldCondition = { not: rule.value };
+        fieldCondition = { equals: rule.value, mode: "insensitive" };
         break;
       case PlaylistRuleOperator.STARTS_WITH:
         fieldCondition = { mode: "insensitive", startsWith: rule.value };
@@ -407,6 +427,35 @@ export class PlaylistsService {
     rule: PlaylistRuleDto,
   ): Prisma.SpotifyTrackWhereInput | Prisma.UserTrackWhereInput {
     const [parent, child] = field.split(".");
+
+    // For NOT_CONTAINS and NOT_EQUALS, use NOT at the top level
+    // because Prisma doesn't support mode: "insensitive" inside a nested `not` block
+    if (rule.operator === PlaylistRuleOperator.NOT_CONTAINS) {
+      if (child) {
+        return {
+          NOT: {
+            [parent]: {
+              [child]: { contains: rule.value, mode: "insensitive" },
+            },
+          },
+        };
+      }
+      return {
+        NOT: { [parent]: { contains: rule.value, mode: "insensitive" } },
+      };
+    }
+
+    if (rule.operator === PlaylistRuleOperator.NOT_EQUALS) {
+      if (child) {
+        return {
+          NOT: {
+            [parent]: { [child]: { equals: rule.value, mode: "insensitive" } },
+          },
+        };
+      }
+      return { NOT: { [parent]: { equals: rule.value, mode: "insensitive" } } };
+    }
+
     const condition: Record<string, unknown> = {};
 
     switch (rule.operator) {
@@ -423,15 +472,10 @@ export class PlaylistsService {
         };
         break;
       case PlaylistRuleOperator.EQUALS:
-        condition[child || parent] = rule.value;
-        break;
-      case PlaylistRuleOperator.NOT_CONTAINS:
         condition[child || parent] = {
-          not: { contains: rule.value, mode: "insensitive" },
+          equals: rule.value,
+          mode: "insensitive",
         };
-        break;
-      case PlaylistRuleOperator.NOT_EQUALS:
-        condition[child || parent] = { not: rule.value };
         break;
       case PlaylistRuleOperator.STARTS_WITH:
         condition[child || parent] = {
