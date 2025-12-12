@@ -312,21 +312,60 @@ export class PlaylistsService {
     }
   }
 
+  private buildRelationStringCondition(
+    parent: string,
+    relation: string,
+    field: string,
+    rule: PlaylistRuleDto,
+  ): Prisma.UserTrackWhereInput {
+    let fieldCondition: Record<string, unknown>;
+
+    switch (rule.operator) {
+      case PlaylistRuleOperator.CONTAINS:
+        fieldCondition = { contains: rule.value, mode: "insensitive" };
+        break;
+      case PlaylistRuleOperator.ENDS_WITH:
+        fieldCondition = { endsWith: rule.value, mode: "insensitive" };
+        break;
+      case PlaylistRuleOperator.EQUALS:
+        fieldCondition = { equals: rule.value };
+        break;
+      case PlaylistRuleOperator.NOT_CONTAINS:
+        fieldCondition = { not: { contains: rule.value, mode: "insensitive" } };
+        break;
+      case PlaylistRuleOperator.NOT_EQUALS:
+        fieldCondition = { not: rule.value };
+        break;
+      case PlaylistRuleOperator.STARTS_WITH:
+        fieldCondition = { mode: "insensitive", startsWith: rule.value };
+        break;
+      default:
+        return {};
+    }
+
+    // Build nested structure: { spotifyTrack: { artist: { name: { contains: ... } } } }
+    return { [parent]: { [relation]: { [field]: fieldCondition } } };
+  }
+
   private buildRuleCondition(
     rule: PlaylistRuleDto,
   ): Prisma.UserTrackWhereInput {
     switch (rule.field) {
       case PlaylistRuleField.ALBUM:
-        return this.buildStringCondition(
-          "spotifyTrack.album",
+        return this.buildRelationStringCondition(
+          "spotifyTrack",
+          "album",
+          "name",
           rule,
-        ) as Prisma.UserTrackWhereInput;
+        );
 
       case PlaylistRuleField.ARTIST:
-        return this.buildStringCondition(
-          "spotifyTrack.artist",
+        return this.buildRelationStringCondition(
+          "spotifyTrack",
+          "artist",
+          "name",
           rule,
-        ) as Prisma.UserTrackWhereInput;
+        );
 
       case PlaylistRuleField.DATE_ADDED:
         return this.buildDateCondition("addedAt", rule);
@@ -388,7 +427,7 @@ export class PlaylistsService {
         break;
       case PlaylistRuleOperator.NOT_CONTAINS:
         condition[child || parent] = {
-          NOT: { contains: rule.value, mode: "insensitive" },
+          not: { contains: rule.value, mode: "insensitive" },
         };
         break;
       case PlaylistRuleOperator.NOT_EQUALS:
