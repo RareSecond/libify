@@ -1,9 +1,10 @@
 import { Button, Center, Group, Loader, Stack, Text } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
+import { getNextSortState } from "@/hooks/useTrackTableSort";
 import { useTrackView } from "@/hooks/useTrackView";
 import { trackPlaylistViewed } from "@/lib/posthog";
 
@@ -13,6 +14,7 @@ import {
   usePlaylistsControllerFindOne,
   usePlaylistsControllerGetTracks,
 } from "../data/api";
+import { Route } from "../routes/~smart-playlists.$id";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
 interface PlaylistTracksProps {
@@ -20,14 +22,14 @@ interface PlaylistTracksProps {
 }
 
 export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const {
+    page = 1,
+    pageSize = 20,
+    sortBy,
+    sortOrder = "desc",
+  } = Route.useSearch();
   const { playTrackList } = useSpotifyPlayer();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [sortBy, setSortBy] = useState<
-    PlaylistsControllerGetTracksSortBy | undefined
-  >();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data: playlist, isLoading: playlistLoading } =
     usePlaylistsControllerFindOne(playlistId);
@@ -35,7 +37,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
     usePlaylistsControllerGetTracks<PaginatedTracksDto>(playlistId, {
       page,
       pageSize,
-      sortBy,
+      sortBy: sortBy as PlaylistsControllerGetTracksSortBy | undefined,
       sortOrder,
     });
 
@@ -123,22 +125,23 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
         error={error}
         hideSearch
         isLoading={isLoading}
-        onPageChange={(newPage) => setPage(newPage)}
-        onPageSizeChange={(newPageSize) => {
-          setPage(1);
-          setPageSize(newPageSize);
-        }}
+        onPageChange={(newPage) =>
+          navigate({ search: (prev) => ({ ...prev, page: newPage }) })
+        }
+        onPageSizeChange={(newPageSize) =>
+          navigate({
+            search: (prev) => ({ ...prev, page: 1, pageSize: newPageSize }),
+          })
+        }
         onRefetch={refetch}
-        onSortChange={(columnId) => {
-          // If clicking the same column, toggle sort order
-          if (columnId === sortBy) {
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-          } else {
-            // If clicking a new column, set to desc by default
-            setSortBy(columnId as PlaylistsControllerGetTracksSortBy);
-            setSortOrder("desc");
-          }
-        }}
+        onSortChange={(columnId) =>
+          navigate({
+            search: (prev) => ({
+              ...prev,
+              ...getNextSortState(columnId, sortBy, sortOrder),
+            }),
+          })
+        }
         page={page}
         pageSize={pageSize}
         showSelection

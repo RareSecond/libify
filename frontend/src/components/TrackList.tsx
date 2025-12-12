@@ -4,6 +4,7 @@ import { Play, Shuffle, Tag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
+import { getNextSortState } from "@/hooks/useTrackTableSort";
 import { trackLibraryFiltered, trackLibrarySearched } from "@/lib/posthog";
 
 import {
@@ -207,18 +208,9 @@ export function TrackList() {
           }}
           onRefetch={refetch}
           onSearchChange={setLocalSearch}
-          onSortChange={(columnId) => {
-            // If clicking the same column, toggle sort order
-            if (columnId === sortBy) {
-              updateSearch({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
-            } else {
-              // If clicking a new column, set to desc by default
-              updateSearch({
-                sortBy: columnId as typeof sortBy,
-                sortOrder: "desc",
-              });
-            }
-          }}
+          onSortChange={(columnId) =>
+            updateSearch(getNextSortState(columnId, sortBy, sortOrder))
+          }
           page={page}
           pageSize={pageSize}
           search={localSearch}

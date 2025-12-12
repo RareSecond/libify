@@ -12,9 +12,9 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, ListMusic, Play, Shuffle, Star } from "lucide-react";
-import { useState } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
+import { getNextSortState } from "@/hooks/useTrackTableSort";
 
 import {
   LibraryControllerGetPlaylistTracksSortBy,
@@ -31,18 +31,19 @@ interface PlaylistDetailProps {
 
 export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { page = 1, pageSize = 20 } = Route.useSearch();
+  const {
+    page = 1,
+    pageSize = 20,
+    sortBy,
+    sortOrder = "desc",
+  } = Route.useSearch();
   const { playTrackList } = useSpotifyPlayer();
-  const [sortBy, setSortBy] = useState<
-    LibraryControllerGetPlaylistTracksSortBy | undefined
-  >();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data, error, isLoading, refetch } =
     useLibraryControllerGetPlaylistTracks(playlistId, {
       page,
       pageSize,
-      sortBy,
+      sortBy: sortBy as LibraryControllerGetPlaylistTracksSortBy | undefined,
       sortOrder,
     });
 
@@ -213,14 +214,14 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         onRefetch={refetch}
-        onSortChange={(columnId) => {
-          if (columnId === sortBy) {
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-          } else {
-            setSortBy(columnId as LibraryControllerGetPlaylistTracksSortBy);
-            setSortOrder("desc");
-          }
-        }}
+        onSortChange={(columnId) =>
+          navigate({
+            search: (prev) => ({
+              ...prev,
+              ...getNextSortState(columnId, sortBy, sortOrder),
+            }),
+          })
+        }
         page={page}
         pageSize={pageSize}
         showSelection

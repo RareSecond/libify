@@ -9,9 +9,10 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
+import { getNextSortState } from "@/hooks/useTrackTableSort";
 import { useTrackView } from "@/hooks/useTrackView";
 import { trackArtistViewed } from "@/lib/posthog";
 
@@ -20,6 +21,7 @@ import {
   TrackDto,
   useLibraryControllerGetArtistTracks,
 } from "../data/api";
+import { Route } from "../routes/~artists.$artist";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
 interface ArtistDetailProps {
@@ -27,15 +29,16 @@ interface ArtistDetailProps {
 }
 
 export function ArtistDetail({ artist }: ArtistDetailProps) {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { sortBy, sortOrder = "desc" } = Route.useSearch();
   const { playTrackList } = useSpotifyPlayer();
-  const [sortBy, setSortBy] = useState<
-    LibraryControllerGetArtistTracksSortBy | undefined
-  >();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetArtistTracks({ artist, sortBy, sortOrder });
+    useLibraryControllerGetArtistTracks({
+      artist,
+      sortBy: sortBy as LibraryControllerGetArtistTracksSortBy | undefined,
+      sortOrder,
+    });
 
   const tracks: TrackDto[] = data?.tracks || [];
 
@@ -147,14 +150,14 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
         hidePageSize
         hideSearch
         onRefetch={refetch}
-        onSortChange={(columnId) => {
-          if (columnId === sortBy) {
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-          } else {
-            setSortBy(columnId as LibraryControllerGetArtistTracksSortBy);
-            setSortOrder("desc");
-          }
-        }}
+        onSortChange={(columnId) =>
+          navigate({
+            search: (prev) => ({
+              ...prev,
+              ...getNextSortState(columnId, sortBy, sortOrder),
+            }),
+          })
+        }
         showSelection
         sortBy={sortBy}
         sortOrder={sortOrder}
