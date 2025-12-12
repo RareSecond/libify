@@ -318,6 +318,11 @@ export class PlaylistsService {
     field: string,
     rule: PlaylistRuleDto,
   ): Prisma.UserTrackWhereInput {
+    // Guard: string operators require a value
+    if (rule.value === undefined || rule.value === null) {
+      return {};
+    }
+
     // For NOT_CONTAINS and NOT_EQUALS, we need to use NOT at the parent level
     // because Prisma doesn't support mode: "insensitive" inside a nested `not` block
     if (rule.operator === PlaylistRuleOperator.NOT_CONTAINS) {
@@ -426,6 +431,11 @@ export class PlaylistsService {
     field: string,
     rule: PlaylistRuleDto,
   ): Prisma.SpotifyTrackWhereInput | Prisma.UserTrackWhereInput {
+    // Guard: string operators require a value
+    if (rule.value === undefined || rule.value === null) {
+      return {};
+    }
+
     const [parent, child] = field.split(".");
 
     // For NOT_CONTAINS and NOT_EQUALS, use NOT at the top level
