@@ -10,6 +10,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Music, Play, Shuffle, Star } from "lucide-react";
 import { useCallback } from "react";
@@ -39,12 +40,15 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const { playTrackList } = useSpotifyPlayer();
 
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetAlbumTracks({
-      album,
-      artist,
-      sortBy: sortBy as LibraryControllerGetAlbumTracksSortBy | undefined,
-      sortOrder,
-    });
+    useLibraryControllerGetAlbumTracks(
+      {
+        album,
+        artist,
+        sortBy: sortBy as LibraryControllerGetAlbumTracksSortBy | undefined,
+        sortOrder,
+      },
+      { query: { placeholderData: keepPreviousData } },
+    );
 
   const tracks: TrackDto[] = data?.tracks || [];
 

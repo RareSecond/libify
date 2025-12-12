@@ -7,6 +7,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
 import { useCallback } from "react";
@@ -34,11 +35,14 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
   const { playTrackList } = useSpotifyPlayer();
 
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetArtistTracks({
-      artist,
-      sortBy: sortBy as LibraryControllerGetArtistTracksSortBy | undefined,
-      sortOrder,
-    });
+    useLibraryControllerGetArtistTracks(
+      {
+        artist,
+        sortBy: sortBy as LibraryControllerGetArtistTracksSortBy | undefined,
+        sortOrder,
+      },
+      { query: { placeholderData: keepPreviousData } },
+    );
 
   const tracks: TrackDto[] = data?.tracks || [];
 

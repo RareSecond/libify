@@ -1,4 +1,5 @@
 import { Button, Center, Group, Loader, Stack, Text } from "@mantine/core";
+import { keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
 import { useCallback } from "react";
@@ -34,12 +35,16 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
   const { data: playlist, isLoading: playlistLoading } =
     usePlaylistsControllerFindOne(playlistId);
   const { data, error, isLoading, refetch } =
-    usePlaylistsControllerGetTracks<PaginatedTracksDto>(playlistId, {
-      page,
-      pageSize,
-      sortBy: sortBy as PlaylistsControllerGetTracksSortBy | undefined,
-      sortOrder,
-    });
+    usePlaylistsControllerGetTracks<PaginatedTracksDto>(
+      playlistId,
+      {
+        page,
+        pageSize,
+        sortBy: sortBy as PlaylistsControllerGetTracksSortBy | undefined,
+        sortOrder,
+      },
+      { query: { placeholderData: keepPreviousData } },
+    );
 
   // Track playlist view once data is loaded
   const trackCount = data?.total || data?.tracks?.length || 0;
