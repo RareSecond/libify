@@ -10,12 +10,18 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { keepPreviousData } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, ListMusic, Play, Shuffle, Star } from "lucide-react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
+import { getNextSortState } from "@/hooks/useTrackTableSort";
 
-import { useLibraryControllerGetPlaylistTracks } from "../data/api";
+import {
+  LibraryControllerGetPlaylistTracksSortBy,
+  TrackDto,
+  useLibraryControllerGetPlaylistTracks,
+} from "../data/api";
 import { Route } from "../routes/~playlists.$id";
 import { formatDurationDetailed } from "../utils/format";
 import { TracksTableWithControls } from "./TracksTableWithControls";
@@ -26,11 +32,27 @@ interface PlaylistDetailProps {
 
 export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { page = 1, pageSize = 20 } = Route.useSearch();
+  const {
+    page = 1,
+    pageSize = 20,
+    sortBy,
+    sortOrder = "desc",
+  } = Route.useSearch();
   const { playTrackList } = useSpotifyPlayer();
 
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetPlaylistTracks(playlistId, { page, pageSize });
+    useLibraryControllerGetPlaylistTracks(
+      playlistId,
+      {
+        page,
+        pageSize,
+        sortBy: sortBy as LibraryControllerGetPlaylistTracksSortBy | undefined,
+        sortOrder,
+      },
+      { query: { placeholderData: keepPreviousData } },
+    );
+
+  const tracks: TrackDto[] = data?.tracks || [];
 
   const handlePlayFromBeginning = async () => {
     if (!data?.tracks?.length || !data.spotifyId) return;
@@ -153,7 +175,7 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
                 <Clock className="opacity-50" size={16} />
                 <Text className="font-medium">
                   {formatDurationDetailed(
-                    data?.tracks?.reduce((sum, t) => sum + t.duration, 0) || 0,
+                    tracks.reduce((sum, t) => sum + t.duration, 0),
                   )}
                 </Text>
               </Group>
@@ -161,23 +183,19 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
               <Group gap="xs">
                 <Play className="opacity-50" size={16} />
                 <Text className="font-medium">
-                  {data?.tracks?.reduce(
-                    (sum, t) => sum + t.totalPlayCount,
-                    0,
-                  ) || 0}{" "}
-                  plays
+                  {tracks.reduce((sum, t) => sum + t.totalPlayCount, 0)} plays
                 </Text>
               </Group>
 
-              {data?.tracks && data.tracks.some((t) => t.rating) && (
+              {tracks.some((t) => t.rating) && (
                 <Group gap="xs">
                   <Star className="opacity-50" size={16} />
                   <Text className="font-medium">
                     {(
-                      data.tracks
+                      tracks
                         .filter((t) => t.rating)
                         .reduce((sum, t) => sum + (t.rating || 0), 0) /
-                      data.tracks.filter((t) => t.rating).length
+                      tracks.filter((t) => t.rating).length
                     ).toFixed(1)}
                   </Text>
                 </Group>
@@ -195,15 +213,25 @@ export function PlaylistDetail({ playlistId }: PlaylistDetailProps) {
           pageSize: data?.pageSize || 20,
           total: data?.total || 0,
           totalPages: data?.totalPages || 1,
-          tracks: data?.tracks || [],
+          tracks,
         }}
         hideSearch
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         onRefetch={refetch}
+        onSortChange={(columnId) =>
+          navigate({
+            search: (prev) => ({
+              ...prev,
+              ...getNextSortState(columnId, sortBy, sortOrder),
+            }),
+          })
+        }
         page={page}
         pageSize={pageSize}
         showSelection
+        sortBy={sortBy}
+        sortOrder={sortOrder}
       />
     </Stack>
   );

@@ -1,10 +1,57 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Expose, Type } from "class-transformer";
+import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 import { TrackDto } from "./track.dto";
 
 export class AlbumTracksResponseDto {
   @ApiProperty({ isArray: true, type: TrackDto })
+  @Expose()
   @Type(() => TrackDto)
   tracks: TrackDto[];
+}
+
+const SORT_BY_VALUES = [
+  "title",
+  "artist",
+  "album",
+  "addedAt",
+  "lastPlayedAt",
+  "totalPlayCount",
+  "rating",
+  "duration",
+] as const;
+
+export class GetAlbumTracksQueryDto {
+  @ApiProperty({ description: "Album name" })
+  @IsNotEmpty()
+  @IsString()
+  album: string;
+
+  @ApiProperty({ description: "Artist name" })
+  @IsNotEmpty()
+  @IsString()
+  artist: string;
+
+  @ApiPropertyOptional({ description: "Sort field", enum: SORT_BY_VALUES })
+  @IsIn(SORT_BY_VALUES)
+  @IsOptional()
+  sortBy?:
+    | "addedAt"
+    | "album"
+    | "artist"
+    | "duration"
+    | "lastPlayedAt"
+    | "rating"
+    | "title"
+    | "totalPlayCount";
+
+  @ApiPropertyOptional({
+    default: "desc",
+    description: "Sort order",
+    enum: ["asc", "desc"],
+  })
+  @IsIn(["asc", "desc"])
+  @IsOptional()
+  sortOrder?: "asc" | "desc";
 }

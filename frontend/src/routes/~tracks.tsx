@@ -9,8 +9,8 @@ import { isRatingReminderDismissed } from "../lib/ratingReminder";
 
 const tracksSearchSchema = z.object({
   genres: z.array(z.string()).optional().default([]),
-  page: z.number().min(1).optional().catch(1),
-  pageSize: z.number().min(1).max(100).optional().catch(20),
+  page: z.coerce.number().min(1).optional().catch(1),
+  pageSize: z.coerce.number().min(1).max(100).optional().catch(20),
   search: z.string().optional(),
   showRatingReminder: z.boolean().optional(),
   sortBy: z

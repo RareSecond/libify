@@ -32,9 +32,15 @@ import { Request } from "express";
 
 import { AuthService } from "../auth/auth.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
-import { AlbumTracksResponseDto } from "./dto/album-tracks.dto";
+import {
+  AlbumTracksResponseDto,
+  GetAlbumTracksQueryDto,
+} from "./dto/album-tracks.dto";
 import { PaginatedAlbumsDto } from "./dto/album.dto";
-import { ArtistTracksResponseDto } from "./dto/artist-tracks.dto";
+import {
+  ArtistTracksResponseDto,
+  GetArtistTracksQueryDto,
+} from "./dto/artist-tracks.dto";
 import { PaginatedArtistsDto } from "./dto/artist.dto";
 import {
   BulkOperationResponseDto,
@@ -50,7 +56,10 @@ import {
   PaginatedPlayHistoryDto,
 } from "./dto/play-history.dto";
 import { PlaySyncResultDto } from "./dto/play-sync-result.dto";
-import { PlaylistTracksResponseDto } from "./dto/playlist-tracks.dto";
+import {
+  GetPlaylistTracksQueryDto,
+  PlaylistTracksResponseDto,
+} from "./dto/playlist-tracks.dto";
 import { PaginatedPlaylistsDto } from "./dto/playlist.dto";
 import { UpdateRatingDto } from "./dto/rating.dto";
 import { SyncOptionsDto } from "./dto/sync-options.dto";
@@ -230,18 +239,6 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: "Get tracks from a specific album" })
-  @ApiQuery({
-    description: "Artist name",
-    name: "artist",
-    required: true,
-    type: String,
-  })
-  @ApiQuery({
-    description: "Album name",
-    name: "album",
-    required: true,
-    type: String,
-  })
   @ApiResponse({
     description: "List of tracks from the album",
     status: 200,
@@ -250,10 +247,18 @@ export class LibraryController {
   @Get("albums/tracks")
   async getAlbumTracks(
     @Req() req: AuthenticatedRequest,
-    @Query("artist") artist: string,
-    @Query("album") album: string,
+    @Query() query: GetAlbumTracksQueryDto,
   ): Promise<AlbumTracksResponseDto> {
-    return this.trackService.getAlbumTracks(req.user.id, artist, album);
+    const result = await this.trackService.getAlbumTracks(
+      req.user.id,
+      query.artist,
+      query.album,
+      query.sortBy,
+      query.sortOrder,
+    );
+    return plainToInstance(AlbumTracksResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get all artists in user library" })
@@ -291,12 +296,6 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: "Get tracks from a specific artist" })
-  @ApiQuery({
-    description: "Artist name",
-    name: "artist",
-    required: true,
-    type: String,
-  })
   @ApiResponse({
     description: "List of tracks from the artist",
     status: 200,
@@ -305,9 +304,17 @@ export class LibraryController {
   @Get("artists/tracks")
   async getArtistTracks(
     @Req() req: AuthenticatedRequest,
-    @Query("artist") artist: string,
+    @Query() query: GetArtistTracksQueryDto,
   ): Promise<ArtistTracksResponseDto> {
-    return this.trackService.getArtistTracks(req.user.id, artist);
+    const result = await this.trackService.getArtistTracks(
+      req.user.id,
+      query.artist,
+      query.sortBy,
+      query.sortOrder,
+    );
+    return plainToInstance(ArtistTracksResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get dashboard statistics" })
@@ -375,18 +382,6 @@ export class LibraryController {
   }
 
   @ApiOperation({ summary: "Get tracks from a specific playlist" })
-  @ApiQuery({
-    description: "Page number",
-    name: "page",
-    required: false,
-    type: Number,
-  })
-  @ApiQuery({
-    description: "Number of tracks per page",
-    name: "pageSize",
-    required: false,
-    type: Number,
-  })
   @ApiResponse({
     description: "List of tracks from the playlist",
     status: 200,
@@ -396,14 +391,15 @@ export class LibraryController {
   async getPlaylistTracks(
     @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
-    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query("pageSize", new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
+    @Query() query: GetPlaylistTracksQueryDto,
   ): Promise<PlaylistTracksResponseDto> {
     const result = await this.trackService.getPlaylistTracks(
       req.user.id,
       id,
-      page,
-      pageSize,
+      query.page || 1,
+      query.pageSize || 20,
+      query.sortBy,
+      query.sortOrder,
     );
     return plainToInstance(PlaylistTracksResponseDto, result, {
       excludeExtraneousValues: true,
