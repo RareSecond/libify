@@ -91,7 +91,7 @@ function FullscreenPage() {
       title: "Onboarding complete!",
     });
     onboarding?.exitOnboarding();
-    navigate({ to: "/playlists" });
+    navigate({ to: "/smart-playlists" });
     isCompletingRef.current = false;
   }, [createPlaylistMutation, navigate, onboarding]);
 
