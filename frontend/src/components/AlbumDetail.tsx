@@ -12,13 +12,17 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Music, Play, Shuffle, Star } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { useTrackView } from "@/hooks/useTrackView";
 import { trackAlbumViewed } from "@/lib/posthog";
 
-import { TrackDto, useLibraryControllerGetAlbumTracks } from "../data/api";
+import {
+  LibraryControllerGetAlbumTracksSortBy,
+  TrackDto,
+  useLibraryControllerGetAlbumTracks,
+} from "../data/api";
 import { formatDurationDetailed } from "../utils/format";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
@@ -30,14 +34,18 @@ interface AlbumDetailProps {
 export function AlbumDetail({ album, artist }: AlbumDetailProps) {
   const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
+  const [sortBy, setSortBy] = useState<
+    LibraryControllerGetAlbumTracksSortBy | undefined
+  >();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Use the album-specific endpoint
   const { data, error, isLoading, refetch } =
-    useLibraryControllerGetAlbumTracks({ album, artist });
+    useLibraryControllerGetAlbumTracks({ album, artist, sortBy, sortOrder });
 
-  // Track album view once data is loaded
+  const tracks: TrackDto[] = data?.tracks || [];
+
   const albumIdentity = `${artist}/${album}`;
-  const trackCount = data?.tracks?.length ?? 0;
+  const trackCount = tracks.length;
   useTrackView(
     albumIdentity,
     isLoading,
@@ -45,7 +53,6 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
     useCallback(() => trackAlbumViewed(album, trackCount), [album, trackCount]),
   );
 
-  // Get albumId from first track for playback context
   const albumId = data?.tracks?.[0]?.albumId;
 
   const handlePlayFromBeginning = async () => {
@@ -84,8 +91,6 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
     );
   }
 
-  // data contains an object with tracks property
-  const tracks: TrackDto[] = data?.tracks || [];
   const albumArt = tracks[0]?.albumArt;
   const totalDuration = tracks.reduce(
     (sum: number, track: TrackDto) => sum + track.duration,
@@ -208,7 +213,17 @@ export function AlbumDetail({ album, artist }: AlbumDetailProps) {
         hidePageSize
         hideSearch
         onRefetch={refetch}
+        onSortChange={(columnId) => {
+          if (columnId === sortBy) {
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+          } else {
+            setSortBy(columnId as LibraryControllerGetAlbumTracksSortBy);
+            setSortOrder("desc");
+          }
+        }}
         showSelection
+        sortBy={sortBy}
+        sortOrder={sortOrder}
       />
     </Stack>
   );

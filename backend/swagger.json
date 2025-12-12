@@ -645,6 +645,15 @@
         "operationId": "LibraryController_getAlbumTracks",
         "parameters": [
           {
+            "name": "album",
+            "required": true,
+            "in": "query",
+            "description": "Album name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "artist",
             "required": true,
             "in": "query",
@@ -654,12 +663,36 @@
             }
           },
           {
-            "name": "album",
-            "required": true,
+            "name": "sortBy",
+            "required": false,
             "in": "query",
-            "description": "Album name",
+            "description": "Sort field",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "title",
+                "artist",
+                "album",
+                "addedAt",
+                "lastPlayedAt",
+                "totalPlayCount",
+                "rating",
+                "duration"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           }
         ],
@@ -800,6 +833,39 @@
             "description": "Artist name",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "artist",
+                "album",
+                "addedAt",
+                "lastPlayedAt",
+                "totalPlayCount",
+                "rating",
+                "duration"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           }
         ],
@@ -1070,6 +1136,8 @@
             "in": "query",
             "description": "Page number",
             "schema": {
+              "minimum": 1,
+              "default": 1,
               "type": "number"
             }
           },
@@ -1079,7 +1147,43 @@
             "in": "query",
             "description": "Number of tracks per page",
             "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
               "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "artist",
+                "album",
+                "addedAt",
+                "lastPlayedAt",
+                "totalPlayCount",
+                "rating",
+                "duration"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           }
         ],

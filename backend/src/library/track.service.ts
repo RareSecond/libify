@@ -1299,11 +1299,13 @@ export class TrackService {
     userId: string,
     artist: string,
     album: string,
+    sortBy?: string,
+    sortOrder?: "asc" | "desc",
   ): Promise<{ tracks: TrackDto[] }> {
     const db = this.kyselyService.database;
 
     // Single optimized query with all joins
-    const tracks = await db
+    let query = db
       .selectFrom("UserTrack as ut")
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
@@ -1382,9 +1384,46 @@ export class TrackService {
         "sa.imageUrl",
         "sar.name",
         "sar.genres",
-      ])
-      .orderBy("st.title", "asc")
-      .execute();
+      ]);
+
+    // Apply sorting
+    const order = sortOrder || "asc";
+    switch (sortBy) {
+      case "addedAt":
+        query = query.orderBy("ut.addedAt", order);
+        break;
+      case "album":
+        query = query.orderBy("sa.name", order);
+        break;
+      case "artist":
+        query = query.orderBy("sar.name", order);
+        break;
+      case "duration":
+        query = query.orderBy("st.duration", order);
+        break;
+      case "lastPlayedAt":
+        query = query.orderBy(
+          sql`ut."lastPlayedAt" ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
+        );
+        break;
+      case "rating":
+        query = query.orderBy(
+          sql`ut.rating ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
+        );
+        break;
+      case "title":
+        query = query.orderBy("st.title", order);
+        break;
+      case "totalPlayCount":
+        query = query.orderBy("ut.totalPlayCount", order);
+        break;
+      default:
+        // Default sort by title
+        query = query.orderBy("st.title", "asc");
+    }
+    query = query.orderBy("ut.id", "asc"); // Stable sort tiebreaker
+
+    const tracks = await query.execute();
 
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {
@@ -1416,10 +1455,12 @@ export class TrackService {
   async getArtistTracks(
     userId: string,
     artist: string,
+    sortBy?: string,
+    sortOrder?: "asc" | "desc",
   ): Promise<{ tracks: TrackDto[] }> {
     const db = this.kyselyService.database;
 
-    const tracks = await db
+    let query = db
       .selectFrom("UserTrack as ut")
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
@@ -1495,10 +1536,46 @@ export class TrackService {
         "sa.imageUrl",
         "sar.name",
         "sar.genres",
-      ])
-      .orderBy("sa.name", "asc")
-      .orderBy("st.title", "asc")
-      .execute();
+      ]);
+
+    // Apply sorting
+    const order = sortOrder || "asc";
+    switch (sortBy) {
+      case "addedAt":
+        query = query.orderBy("ut.addedAt", order);
+        break;
+      case "album":
+        query = query.orderBy("sa.name", order);
+        break;
+      case "artist":
+        query = query.orderBy("sar.name", order);
+        break;
+      case "duration":
+        query = query.orderBy("st.duration", order);
+        break;
+      case "lastPlayedAt":
+        query = query.orderBy(
+          sql`ut."lastPlayedAt" ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
+        );
+        break;
+      case "rating":
+        query = query.orderBy(
+          sql`ut.rating ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
+        );
+        break;
+      case "title":
+        query = query.orderBy("st.title", order);
+        break;
+      case "totalPlayCount":
+        query = query.orderBy("ut.totalPlayCount", order);
+        break;
+      default:
+        // Default sort by album then title
+        query = query.orderBy("sa.name", "asc").orderBy("st.title", "asc");
+    }
+    query = query.orderBy("ut.id", "asc"); // Stable sort tiebreaker
+
+    const tracks = await query.execute();
 
     const trackDtos = tracks.map((track) => {
       const dto = {
@@ -1822,6 +1899,8 @@ export class TrackService {
     playlistId: string,
     page = 1,
     pageSize = 20,
+    sortBy?: string,
+    sortOrder?: "asc" | "desc",
   ): Promise<PlaylistTracksResponseDto> {
     const db = this.kyselyService.database;
 
@@ -1850,7 +1929,7 @@ export class TrackService {
     const offset = (page - 1) * pageSize;
 
     // Get tracks from TrackSource where sourceType is PLAYLIST and sourceId matches
-    const tracks = await db
+    let query = db
       .selectFrom("TrackSource as ts")
       .innerJoin("UserTrack as ut", "ut.id", "ts.userTrackId")
       .innerJoin("SpotifyTrack as st", "st.id", "ut.spotifyTrackId")
@@ -1908,11 +1987,46 @@ export class TrackService {
         "sar.name",
         "sar.genres",
         "ts.createdAt",
-      ])
-      .orderBy("ts.createdAt", "asc")
-      .offset(offset)
-      .limit(pageSize)
-      .execute();
+      ]);
+
+    // Apply sorting
+    const order = sortOrder || "asc";
+    switch (sortBy) {
+      case "addedAt":
+        query = query.orderBy("ut.addedAt", order);
+        break;
+      case "album":
+        query = query.orderBy("sa.name", order);
+        break;
+      case "artist":
+        query = query.orderBy("sar.name", order);
+        break;
+      case "duration":
+        query = query.orderBy("st.duration", order);
+        break;
+      case "lastPlayedAt":
+        query = query.orderBy(
+          sql`ut."lastPlayedAt" ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
+        );
+        break;
+      case "rating":
+        query = query.orderBy(
+          sql`ut.rating ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
+        );
+        break;
+      case "title":
+        query = query.orderBy("st.title", order);
+        break;
+      case "totalPlayCount":
+        query = query.orderBy("ut.totalPlayCount", order);
+        break;
+      default:
+        // Default sort by playlist order (createdAt in TrackSource)
+        query = query.orderBy("ts.createdAt", "asc");
+    }
+    query = query.orderBy("ut.id", "asc"); // Stable sort tiebreaker
+
+    const tracks = await query.offset(offset).limit(pageSize).execute();
 
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {

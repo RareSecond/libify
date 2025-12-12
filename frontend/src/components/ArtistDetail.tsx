@@ -9,13 +9,17 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Play, Shuffle } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { useTrackView } from "@/hooks/useTrackView";
 import { trackArtistViewed } from "@/lib/posthog";
 
-import { useLibraryControllerGetArtistTracks } from "../data/api";
+import {
+  LibraryControllerGetArtistTracksSortBy,
+  TrackDto,
+  useLibraryControllerGetArtistTracks,
+} from "../data/api";
 import { TracksTableWithControls } from "./TracksTableWithControls";
 
 interface ArtistDetailProps {
@@ -25,11 +29,17 @@ interface ArtistDetailProps {
 export function ArtistDetail({ artist }: ArtistDetailProps) {
   const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
-  const { data, error, isLoading, refetch } =
-    useLibraryControllerGetArtistTracks({ artist });
+  const [sortBy, setSortBy] = useState<
+    LibraryControllerGetArtistTracksSortBy | undefined
+  >();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Track artist view once data is loaded
-  const trackCount = data?.tracks?.length ?? 0;
+  const { data, error, isLoading, refetch } =
+    useLibraryControllerGetArtistTracks({ artist, sortBy, sortOrder });
+
+  const tracks: TrackDto[] = data?.tracks || [];
+
+  const trackCount = tracks.length;
   useTrackView(
     artist,
     isLoading,
@@ -40,7 +50,6 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
     ),
   );
 
-  // Get artistId from first track for playback context
   const artistId = data?.tracks?.[0]?.artistId;
 
   const handlePlayFromBeginning = async () => {
@@ -78,8 +87,6 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
       </Center>
     );
   }
-
-  const tracks = data?.tracks || [];
 
   if (tracks.length === 0) {
     return (
@@ -140,7 +147,17 @@ export function ArtistDetail({ artist }: ArtistDetailProps) {
         hidePageSize
         hideSearch
         onRefetch={refetch}
+        onSortChange={(columnId) => {
+          if (columnId === sortBy) {
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+          } else {
+            setSortBy(columnId as LibraryControllerGetArtistTracksSortBy);
+            setSortOrder("desc");
+          }
+        }}
         showSelection
+        sortBy={sortBy}
+        sortOrder={sortOrder}
       />
     </Stack>
   );
