@@ -1,8 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Expose, Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsIn, IsInt, IsOptional, Max, Min } from "class-validator";
 
 import { TrackDto } from "./track.dto";
+
+const SORT_BY_VALUES = [
+  "title",
+  "artist",
+  "album",
+  "addedAt",
+  "lastPlayedAt",
+  "totalPlayCount",
+  "rating",
+  "duration",
+] as const;
 
 export class GetPlaylistTracksQueryDto {
   @ApiPropertyOptional({ default: 1, description: "Page number", minimum: 1 })
@@ -25,21 +36,9 @@ export class GetPlaylistTracksQueryDto {
   @Type(() => Number)
   pageSize?: number = 20;
 
-  @ApiPropertyOptional({
-    description: "Sort field",
-    enum: [
-      "title",
-      "artist",
-      "album",
-      "addedAt",
-      "lastPlayedAt",
-      "totalPlayCount",
-      "rating",
-      "duration",
-    ],
-  })
+  @ApiPropertyOptional({ description: "Sort field", enum: SORT_BY_VALUES })
+  @IsIn(SORT_BY_VALUES)
   @IsOptional()
-  @IsString()
   sortBy?:
     | "addedAt"
     | "album"
@@ -55,8 +54,8 @@ export class GetPlaylistTracksQueryDto {
     description: "Sort order",
     enum: ["asc", "desc"],
   })
+  @IsIn(["asc", "desc"])
   @IsOptional()
-  @IsString()
   sortOrder?: "asc" | "desc";
 }
 

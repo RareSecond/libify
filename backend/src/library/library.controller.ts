@@ -249,13 +249,16 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Query() query: GetAlbumTracksQueryDto,
   ): Promise<AlbumTracksResponseDto> {
-    return this.trackService.getAlbumTracks(
+    const result = await this.trackService.getAlbumTracks(
       req.user.id,
       query.artist,
       query.album,
       query.sortBy,
       query.sortOrder,
     );
+    return plainToInstance(AlbumTracksResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get all artists in user library" })
@@ -303,12 +306,15 @@ export class LibraryController {
     @Req() req: AuthenticatedRequest,
     @Query() query: GetArtistTracksQueryDto,
   ): Promise<ArtistTracksResponseDto> {
-    return this.trackService.getArtistTracks(
+    const result = await this.trackService.getArtistTracks(
       req.user.id,
       query.artist,
       query.sortBy,
       query.sortOrder,
     );
+    return plainToInstance(ArtistTracksResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get dashboard statistics" })

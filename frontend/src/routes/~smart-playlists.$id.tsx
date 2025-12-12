@@ -5,8 +5,8 @@ import { PageTitle } from "../components/PageTitle";
 import { PlaylistTracks } from "../components/PlaylistTracks";
 
 const smartPlaylistSearchSchema = z.object({
-  page: z.number().min(1).optional().catch(1),
-  pageSize: z.number().min(1).max(100).optional().catch(20),
+  page: z.coerce.number().min(1).optional().catch(1),
+  pageSize: z.coerce.number().min(1).max(100).optional().catch(20),
   sortBy: z
     .enum([
       "title",
