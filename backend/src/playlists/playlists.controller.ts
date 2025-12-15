@@ -31,6 +31,7 @@ import {
   CreateSmartPlaylistDto,
   SmartPlaylistDto,
   SmartPlaylistWithTracksDto,
+  SyncToSpotifyResponseDto,
   UpdateSmartPlaylistDto,
 } from "./dto/smart-playlist.dto";
 import { PlaylistsService } from "./playlists.service";
@@ -181,6 +182,20 @@ export class PlaylistsController {
     @Param("id") id: string,
   ): Promise<void> {
     await this.playlistsService.remove(req.user.id, id);
+  }
+
+  @ApiOperation({
+    description:
+      "Syncs the smart playlist to Spotify. Creates a new Spotify playlist if one doesn't exist, or updates the existing one. The Spotify playlist name will be prefixed with [Codex.fm].",
+    summary: "Sync smart playlist to Spotify",
+  })
+  @ApiResponse({ status: 200, type: SyncToSpotifyResponseDto })
+  @Post(":id/sync")
+  async syncToSpotify(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ): Promise<SyncToSpotifyResponseDto> {
+    return this.playlistsService.syncToSpotify(req.user.id, id);
   }
 
   @ApiOperation({ summary: "Update a smart playlist" })

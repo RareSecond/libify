@@ -2562,6 +2562,53 @@
           "playlists"
         ]
       }
+    },
+    "/playlists/{id}/sync": {
+      "post": {
+        "description": "Syncs the smart playlist to Spotify. Creates a new Spotify playlist if one doesn't exist, or updates the existing one. The Spotify playlist name will be prefixed with [Codex.fm].",
+        "operationId": "PlaylistsController_syncToSpotify",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncToSpotifyResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncToSpotifyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sync smart playlist to Spotify",
+        "tags": [
+          "playlists"
+        ]
+      }
     }
   },
   "info": {
@@ -4490,12 +4537,21 @@
           "isActive": {
             "type": "boolean"
           },
+          "lastSyncedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
           "lastUpdated": {
             "format": "date-time",
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "spotifyPlaylistId": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -4526,12 +4582,21 @@
           "isActive": {
             "type": "boolean"
           },
+          "lastSyncedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
           "lastUpdated": {
             "format": "date-time",
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "spotifyPlaylistId": {
+            "type": "string",
+            "nullable": true
           },
           "trackCount": {
             "type": "number"
@@ -4544,6 +4609,23 @@
           "isActive",
           "lastUpdated",
           "name",
+          "trackCount"
+        ]
+      },
+      "SyncToSpotifyResponseDto": {
+        "type": "object",
+        "properties": {
+          "spotifyPlaylistId": {
+            "type": "string",
+            "description": "The Spotify playlist ID"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks synced to the playlist"
+          }
+        },
+        "required": [
+          "spotifyPlaylistId",
           "trackCount"
         ]
       },
