@@ -111,4 +111,11 @@ export default [
       ],
     },
   },
+  // Disable max-lines for specific large files
+  {
+    files: ["src/components/MediaPlayer.tsx"],
+    rules: {
+      "max-lines": "off",
+    },
+  },
 ];

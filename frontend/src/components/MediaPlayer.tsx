@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import {
   ActionIcon,
   Box,
@@ -39,6 +38,7 @@ import { useCurrentPlayback } from "../hooks/useCurrentPlayback";
 import { useLibraryTrack } from "../hooks/useLibraryTrack";
 import { useSpotifyPlayer } from "../hooks/useSpotifyPlayer";
 import { formatTime } from "../utils/format";
+import { ClickableArtistList } from "./ClickableArtistList";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { RatingSelector } from "./RatingSelector";
 import { TrackSources } from "./TrackSources";
@@ -256,11 +256,11 @@ export function MediaPlayer() {
 
               {/* Artist name, rating, and tags */}
               <Group gap="xs" wrap="nowrap">
-                <Text className="text-dark-1" lineClamp={1} size="sm">
-                  {trackToDisplay.artists
-                    .map((artist) => artist.name)
-                    .join(", ")}
-                </Text>
+                <ClickableArtistList
+                  artists={trackToDisplay.artists}
+                  className="text-dark-1"
+                  size="sm"
+                />
                 {hasWebPlayerTrack && libraryTrack && (
                   <>
                     <Text className="text-dark-2" size="sm">
@@ -456,9 +456,11 @@ export function MediaPlayer() {
               >
                 {trackToDisplay.name}
               </Text>
-              <Text className="text-dark-1" lineClamp={1} size="xs">
-                {trackToDisplay.artists.map((artist) => artist.name).join(", ")}
-              </Text>
+              <ClickableArtistList
+                artists={trackToDisplay.artists}
+                className="text-dark-1"
+                size="xs"
+              />
             </Stack>
           </Group>
 

@@ -1,4 +1,5 @@
 import { Button, Group, Image, Stack, Text, Title } from "@mantine/core";
+import { useNavigate } from "@tanstack/react-router";
 
 import { InlineTagEditor } from "@/components/InlineTagEditor";
 import { RatingSelector } from "@/components/RatingSelector";
@@ -19,6 +20,8 @@ export function FullscreenTrackView({
   onNext,
   onPrevious,
 }: FullscreenTrackViewProps) {
+  const navigate = useNavigate();
+
   return (
     <>
       {/* Album Art - flex to fill remaining space */}
@@ -35,11 +38,30 @@ export function FullscreenTrackView({
         <Title className="text-xl md:text-3xl font-bold text-center" order={1}>
           {libraryTrack.title}
         </Title>
-        <Text className="text-dark-1 text-base md:text-xl text-center">
+        <Text
+          className="text-dark-1 text-base md:text-xl text-center cursor-pointer hover:underline hover:text-orange-5"
+          onClick={() =>
+            navigate({
+              params: { artist: libraryTrack.artist },
+              to: "/artists/$artist",
+            })
+          }
+        >
           {libraryTrack.artist}
         </Text>
         {libraryTrack.album && (
-          <Text className="text-dark-2 text-sm md:text-lg text-center">
+          <Text
+            className="text-dark-2 text-sm md:text-lg text-center cursor-pointer hover:underline hover:text-orange-5"
+            onClick={() =>
+              navigate({
+                params: {
+                  album: libraryTrack.album!,
+                  artist: libraryTrack.artist,
+                },
+                to: "/albums/$artist/$album",
+              })
+            }
+          >
             {libraryTrack.album}
           </Text>
         )}

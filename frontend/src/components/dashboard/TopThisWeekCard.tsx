@@ -8,6 +8,7 @@ import {
   Text,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { useNavigate } from "@tanstack/react-router";
 import { Music, Play, TrendingUp, User } from "lucide-react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
@@ -30,6 +31,7 @@ export function TopThisWeekCard({
   topArtists,
   topTracks,
 }: TopThisWeekCardProps) {
+  const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
 
   const handlePlayTrack = async (item: TopItem) => {
@@ -149,7 +151,17 @@ export function TopThisWeekCard({
                       {item.name}
                     </Text>
                     {item.info && (
-                      <Text className="text-dark-3 text-xs" lineClamp={1}>
+                      <Text
+                        className="text-dark-3 text-xs cursor-pointer hover:underline hover:text-orange-5"
+                        lineClamp={1}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate({
+                            params: { artist: item.info! },
+                            to: "/artists/$artist",
+                          });
+                        }}
+                      >
                         {item.info}
                       </Text>
                     )}
@@ -174,9 +186,15 @@ export function TopThisWeekCard({
             <Stack gap="xs">
               {topArtists.slice(0, 3).map((item, index) => (
                 <Group
-                  className="p-2 rounded-md"
+                  className="p-2 rounded-md hover:bg-dark-6 transition-all duration-200 cursor-pointer group"
                   gap="sm"
                   key={`artist-${item.name}-${index}`}
+                  onClick={() =>
+                    navigate({
+                      params: { artist: item.name },
+                      to: "/artists/$artist",
+                    })
+                  }
                   wrap="nowrap"
                 >
                   <Text className="text-dark-3 w-4 text-xs">{index + 1}</Text>
@@ -194,7 +212,10 @@ export function TopThisWeekCard({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <Text className="text-dark-0 text-sm" lineClamp={1}>
+                    <Text
+                      className="text-dark-0 text-sm group-hover:text-orange-5 transition-colors"
+                      lineClamp={1}
+                    >
                       {item.name}
                     </Text>
                   </div>

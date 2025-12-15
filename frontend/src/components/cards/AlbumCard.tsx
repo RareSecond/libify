@@ -9,6 +9,7 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
+import { useNavigate } from "@tanstack/react-router";
 import { Music, Play, Shuffle, Star } from "lucide-react";
 import { useState } from "react";
 
@@ -20,6 +21,7 @@ interface AlbumCardProps {
 }
 
 export function AlbumCard({ album }: AlbumCardProps) {
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -102,7 +104,19 @@ export function AlbumCard({ album }: AlbumCardProps) {
           >
             {album.name}
           </Text>
-          <Text className="text-dark-1" lineClamp={1} size="sm">
+          <Text
+            className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
+            lineClamp={1}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate({
+                params: { artist: album.artist },
+                to: "/artists/$artist",
+              });
+            }}
+            size="sm"
+          >
             {album.artist}
           </Text>
         </div>

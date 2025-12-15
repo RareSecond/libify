@@ -3,6 +3,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Music, Volume2 } from "lucide-react";
 import { useMemo } from "react";
 
+import {
+  ClickableAlbumCell,
+  ClickableArtistCell,
+} from "../components/ClickableTableCells";
 import { InlineTagEditor } from "../components/InlineTagEditor";
 import { RatingSelector } from "../components/RatingSelector";
 import { TrackSources } from "../components/TrackSources";
@@ -114,7 +118,7 @@ export function useTracksTableColumns({
           const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
           return (
             <Text
-              className={`font-medium ${isCurrentTrack && isPlaying ? "text-blue-600" : ""}`}
+              className={`font-medium ${isCurrentTrack && isPlaying ? "text-orange-5" : ""}`}
               lineClamp={1}
               size="sm"
             >
@@ -129,9 +133,7 @@ export function useTracksTableColumns({
       {
         accessorKey: "artist",
         cell: ({ getValue }) => (
-          <Text lineClamp={1} size="sm">
-            {getValue() as string}
-          </Text>
+          <ClickableArtistCell artist={getValue() as string} />
         ),
         header: "Artist",
         id: "artist",
@@ -139,10 +141,11 @@ export function useTracksTableColumns({
       },
       {
         accessorKey: "album",
-        cell: ({ getValue }) => (
-          <Text className="text-gray-600" lineClamp={1} size="sm">
-            {(getValue() as string) || "-"}
-          </Text>
+        cell: ({ getValue, row }) => (
+          <ClickableAlbumCell
+            album={getValue() as string}
+            artist={row.original.artist}
+          />
         ),
         header: "Album",
         id: "album",
