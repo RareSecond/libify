@@ -118,7 +118,7 @@ export function useTracksTableColumns({
           const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
           return (
             <Text
-              className={`font-medium ${isCurrentTrack && isPlaying ? "text-blue-600" : ""}`}
+              className={`font-medium ${isCurrentTrack && isPlaying ? "text-orange-5" : ""}`}
               lineClamp={1}
               size="sm"
             >
