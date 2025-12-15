@@ -33,8 +33,10 @@ export type SmartPlaylist = {
   description: null | string;
   id: string;
   isActive: Generated<boolean>;
+  lastSyncedAt: null | Timestamp;
   lastUpdated: Generated<Timestamp>;
   name: string;
+  spotifyPlaylistId: null | string;
   updatedAt: Timestamp;
   userId: string;
 };

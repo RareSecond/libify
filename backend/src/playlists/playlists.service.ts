@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
+import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { SpotifyService } from "../library/spotify.service";
 import { TrackService } from "../library/track.service";
 import { PlaylistCriteriaDto } from "./dto/playlist-criteria.dto";
 import {
@@ -14,11 +20,15 @@ import {
   UpdateSmartPlaylistDto,
 } from "./dto/smart-playlist.dto";
 
+const SPOTIFY_PLAYLIST_PREFIX = "[Codex.fm]";
+
 @Injectable()
 export class PlaylistsService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly trackService: TrackService,
+    private readonly spotifyService: SpotifyService,
+    private readonly authService: AuthService,
   ) {}
 
   async create(userId: string, createDto: CreateSmartPlaylistDto) {
@@ -190,6 +200,104 @@ export class PlaylistsService {
   async remove(userId: string, playlistId: string) {
     await this.findOne(userId, playlistId); // Check ownership
     await this.prisma.smartPlaylist.delete({ where: { id: playlistId } });
+  }
+
+  async syncToSpotify(
+    userId: string,
+    playlistId: string,
+  ): Promise<{ spotifyPlaylistId: string; trackCount: number }> {
+    // Get user and verify they have Spotify connected
+    const user = await this.prisma.user.findUnique({
+      select: { id: true, spotifyId: true },
+      where: { id: userId },
+    });
+
+    if (!user?.spotifyId) {
+      throw new UnauthorizedException("Spotify account not connected");
+    }
+
+    // Get valid access token (handles refresh if needed)
+    const accessToken = await this.authService.getSpotifyAccessToken(userId);
+    if (!accessToken) {
+      throw new UnauthorizedException("Unable to get Spotify access token");
+    }
+
+    // Get the playlist
+    const playlist = await this.findOne(userId, playlistId);
+
+    // Get all track URIs for this playlist (no limit for sync)
+    const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
+    const where = this.buildWhereClause(userId, criteria);
+    const orderBy = this.buildOrderBy(criteria);
+
+    // Get tracks - no 500 limit for sync, but respect playlist's own limit
+    const maxTracks = criteria.limit || 10000;
+    const tracks = await this.prisma.userTrack.findMany({
+      include: { spotifyTrack: true },
+      orderBy,
+      take: maxTracks,
+      where,
+    });
+
+    const trackUris = tracks.map(
+      (track) => `spotify:track:${track.spotifyTrack.spotifyId}`,
+    );
+
+    const spotifyPlaylistName = `${SPOTIFY_PLAYLIST_PREFIX} ${playlist.name}`;
+    const description =
+      playlist.description || `Smart playlist synced from Codex.fm`;
+
+    let spotifyPlaylistId = playlist.spotifyPlaylistId;
+
+    if (spotifyPlaylistId) {
+      // Update existing playlist
+      await this.spotifyService.updatePlaylistDetails(
+        accessToken,
+        spotifyPlaylistId,
+        spotifyPlaylistName,
+        description,
+      );
+
+      // Replace tracks
+      await this.spotifyService.replacePlaylistTracks(
+        accessToken,
+        spotifyPlaylistId,
+        trackUris,
+      );
+    } else {
+      // Create new playlist
+      const result = await this.spotifyService.createPlaylist(
+        accessToken,
+        user.spotifyId,
+        spotifyPlaylistName,
+        description,
+      );
+
+      spotifyPlaylistId = result.id;
+
+      // Add tracks to the new playlist
+      if (trackUris.length > 0) {
+        await this.spotifyService.replacePlaylistTracks(
+          accessToken,
+          spotifyPlaylistId,
+          trackUris,
+        );
+      }
+
+      // Save the Spotify playlist ID to our database
+      await this.prisma.smartPlaylist.update({
+        data: { spotifyPlaylistId },
+        where: { id: playlistId },
+      });
+    }
+
+    // Update lastSyncedAt
+    await this.prisma.smartPlaylist.update({
+      data: { lastSyncedAt: new Date() },
+      where: { id: playlistId },
+    });
+
+    return { spotifyPlaylistId, trackCount: trackUris.length };
   }
 
   async update(

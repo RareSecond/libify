@@ -62,6 +62,70 @@ export class SpotifyService {
     return track.linked_from?.id || track.id;
   }
 
+  /**
+   * Adds tracks to a playlist. Handles batching for large track lists.
+   * Spotify API allows max 100 tracks per request.
+   */
+  async addTracksToPlaylist(
+    accessToken: string,
+    playlistId: string,
+    trackUris: string[],
+  ): Promise<void> {
+    const batchSize = 100;
+    for (let i = 0; i < trackUris.length; i += batchSize) {
+      const batch = trackUris.slice(i, i + batchSize);
+      try {
+        await this.spotifyApi.post(
+          `/playlists/${playlistId}/tracks`,
+          { uris: batch },
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+
+        // Add a small delay to avoid rate limiting
+        if (i + batchSize < trackUris.length) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to add tracks to playlist ${playlistId} at batch ${i / batchSize}`,
+          error,
+        );
+        throw error;
+      }
+    }
+
+    this.logger.log(
+      `Added ${trackUris.length} tracks to playlist ${playlistId}`,
+    );
+  }
+
+  /**
+   * Creates a new playlist on Spotify
+   */
+  async createPlaylist(
+    accessToken: string,
+    userId: string,
+    name: string,
+    description?: string,
+    isPublic = false,
+  ): Promise<{ id: string; snapshot_id: string }> {
+    try {
+      const response = await this.spotifyApi.post(
+        `/users/${userId}/playlists`,
+        { description: description || "", name, public: isPublic },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      this.logger.log(
+        `Created playlist "${name}" with ID: ${response.data.id}`,
+      );
+      return { id: response.data.id, snapshot_id: response.data.snapshot_id };
+    } catch (error) {
+      this.logger.error(`Failed to create playlist "${name}"`, error);
+      throw error;
+    }
+  }
+
   async getAllUserPlaylists(accessToken: string): Promise<SpotifyPlaylist[]> {
     const allPlaylists: SpotifyPlaylist[] = [];
     let offset = 0;
@@ -193,6 +257,23 @@ export class SpotifyService {
         return null;
       }
       this.logger.error("Failed to get current playback state", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets the current user's Spotify profile
+   */
+  async getCurrentUserProfile(
+    accessToken: string,
+  ): Promise<{ display_name?: string; email: string; id: string }> {
+    try {
+      const response = await this.spotifyApi.get("/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return response.data;
+    } catch (error) {
+      this.logger.error("Failed to get current user profile", error);
       throw error;
     }
   }
@@ -547,6 +628,43 @@ export class SpotifyService {
     }
   }
 
+  /**
+   * Replaces all tracks in a playlist with new tracks.
+   * Spotify API allows max 100 tracks per request for replace.
+   */
+  async replacePlaylistTracks(
+    accessToken: string,
+    playlistId: string,
+    trackUris: string[],
+  ): Promise<{ snapshot_id: string }> {
+    try {
+      // First, replace with first 100 tracks (or empty if we have more than 100)
+      const firstBatch = trackUris.slice(0, 100);
+      const response = await this.spotifyApi.put(
+        `/playlists/${playlistId}/tracks`,
+        { uris: firstBatch },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      // If there are more than 100 tracks, add the rest in batches
+      if (trackUris.length > 100) {
+        const remaining = trackUris.slice(100);
+        await this.addTracksToPlaylist(accessToken, playlistId, remaining);
+      }
+
+      this.logger.log(
+        `Replaced tracks in playlist ${playlistId} with ${trackUris.length} tracks`,
+      );
+      return { snapshot_id: response.data.snapshot_id };
+    } catch (error) {
+      this.logger.error(
+        `Failed to replace tracks in playlist ${playlistId}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   async resumePlayback(accessToken: string): Promise<void> {
     try {
       await this.spotifyApi.put(
@@ -673,6 +791,29 @@ export class SpotifyService {
       );
     } catch (error) {
       this.logger.error("Failed to transfer playback", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates playlist details (name, description)
+   */
+  async updatePlaylistDetails(
+    accessToken: string,
+    playlistId: string,
+    name: string,
+    description?: string,
+  ): Promise<void> {
+    try {
+      await this.spotifyApi.put(
+        `/playlists/${playlistId}`,
+        { description: description || "", name },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      this.logger.log(`Updated playlist details for ${playlistId}`);
+    } catch (error) {
+      this.logger.error(`Failed to update playlist ${playlistId}`, error);
       throw error;
     }
   }
