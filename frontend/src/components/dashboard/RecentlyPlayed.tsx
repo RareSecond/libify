@@ -10,6 +10,7 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { useNavigate } from "@tanstack/react-router";
 import { Clock, Music, Play } from "lucide-react";
 
 import { useLibraryControllerGetPlayHistory } from "../../data/api";
@@ -17,6 +18,7 @@ import { useSpotifyPlayer } from "../../hooks/useSpotifyPlayer";
 import { formatDate } from "../../utils/format";
 
 export function RecentlyPlayed() {
+  const navigate = useNavigate();
   const { playTrackList } = useSpotifyPlayer();
   const { data, isLoading } = useLibraryControllerGetPlayHistory({
     page: 1,
@@ -137,7 +139,18 @@ export function RecentlyPlayed() {
                     >
                       {item.trackTitle}
                     </Text>
-                    <Text className="text-dark-1" lineClamp={1} size="xs">
+                    <Text
+                      className="text-dark-1 cursor-pointer hover:underline hover:text-orange-5"
+                      lineClamp={1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({
+                          params: { artist: item.trackArtist },
+                          to: "/artists/$artist",
+                        });
+                      }}
+                      size="xs"
+                    >
                       {item.trackArtist}
                     </Text>
                   </div>

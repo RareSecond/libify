@@ -1,4 +1,5 @@
 import { Badge, Button, Group, Image, Stack, Text, Title } from "@mantine/core";
+import { useNavigate } from "@tanstack/react-router";
 
 interface FullscreenSpotifyTrackViewProps {
   currentTrackIndex: number;
@@ -19,8 +20,8 @@ export function FullscreenSpotifyTrackView({
   onPrevious,
   track,
 }: FullscreenSpotifyTrackViewProps) {
+  const navigate = useNavigate();
   const albumArt = track.album.images[0]?.url;
-  const artistNames = track.artists.map((a) => a.name).join(", ");
 
   return (
     <>
@@ -39,9 +40,37 @@ export function FullscreenSpotifyTrackView({
           {track.name}
         </Title>
         <Text className="text-dark-1 text-base md:text-xl text-center">
-          {artistNames}
+          {track.artists.map((artist, index) => (
+            <span key={artist.name}>
+              <Text
+                className="cursor-pointer hover:underline hover:text-orange-5"
+                component="span"
+                inherit
+                onClick={() =>
+                  navigate({
+                    params: { artist: artist.name },
+                    to: "/artists/$artist",
+                  })
+                }
+              >
+                {artist.name}
+              </Text>
+              {index < track.artists.length - 1 && ", "}
+            </span>
+          ))}
         </Text>
-        <Text className="text-dark-2 text-sm md:text-lg text-center">
+        <Text
+          className="text-dark-2 text-sm md:text-lg text-center cursor-pointer hover:underline hover:text-orange-5"
+          onClick={() =>
+            navigate({
+              params: {
+                album: track.album.name,
+                artist: track.artists[0]?.name ?? "",
+              },
+              to: "/albums/$artist/$album",
+            })
+          }
+        >
           {track.album.name}
         </Text>
       </Stack>
