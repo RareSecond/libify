@@ -1,3 +1,4 @@
+import { Container } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageTitle } from "../components/PageTitle";
@@ -9,9 +10,9 @@ export const Route = createFileRoute("/smart-playlists/")({
 
 function SmartPlaylistsIndexPage() {
   return (
-    <div className="max-w-7xl mx-auto p-4">
+    <Container className="py-8" fluid>
       <PageTitle title="Smart Playlists" />
       <SmartPlaylists />
-    </div>
+    </Container>
   );
 }
