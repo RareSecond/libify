@@ -15,11 +15,13 @@ export interface SpotifyPaginatedResponse<T> {
 }
 
 export interface SpotifyPlaylist {
+  collaborative: boolean;
   description: string;
   id: string;
   images?: { height: null | number; url: string; width: null | number }[];
   name: string;
   owner: { display_name?: string; id: string };
+  public: boolean;
   snapshot_id: string;
   tracks: { href: string; total: number };
 }
