@@ -897,23 +897,27 @@ export class LibrarySyncService {
 
     await this.databaseService.userPlaylist.upsert({
       create: {
+        collaborative: playlist.collaborative,
         description: playlist.description,
         imageUrl,
         lastSyncedAt: new Date(),
         name: playlist.name,
         ownerId: playlist.owner.id,
         ownerName: playlist.owner.display_name || null,
+        public: playlist.public,
         snapshotId: playlist.snapshot_id,
         spotifyId: playlist.id,
         totalTracks: playlist.tracks.total,
         userId,
       },
       update: {
+        collaborative: playlist.collaborative,
         description: playlist.description,
         imageUrl,
         lastSyncedAt: new Date(),
         name: playlist.name,
         ownerName: playlist.owner.display_name || null,
+        public: playlist.public,
         snapshotId: playlist.snapshot_id,
         totalTracks: playlist.tracks.total,
       },
