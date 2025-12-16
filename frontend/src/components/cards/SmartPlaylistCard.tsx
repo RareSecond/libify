@@ -225,7 +225,8 @@ function formatRuleValue(rule: PlaylistRuleDto): string {
     "hasNoTags",
   ];
   if (operatorsWithNoValue.includes(rule.operator)) return "";
-  if (rule.daysValue) return `${rule.daysValue} days`;
+  if (rule.daysValue !== undefined && rule.daysValue !== null)
+    return `${rule.daysValue} days`;
   if (rule.numberValue !== undefined) return String(rule.numberValue);
   return rule.value || "";
 }
