@@ -200,9 +200,22 @@ export class LibrarySyncService {
         `Found ${storedPlaylists.size} stored playlists for user ${userId}`,
       );
 
-      // Fetch all user playlists
-      const playlists =
+      // Get Spotify playlist IDs that are controlled by this app (smart playlists synced to Spotify)
+      const appControlledPlaylistIds =
+        await this.getAppControlledPlaylistIds(userId);
+      this.logger.log(
+        `Found ${appControlledPlaylistIds.size} app-controlled playlists to exclude`,
+      );
+
+      // Fetch all user playlists and filter out app-controlled ones
+      const allPlaylists =
         await this.spotifyService.getAllUserPlaylists(accessToken);
+      const playlists = allPlaylists.filter(
+        (playlist) => !appControlledPlaylistIds.has(playlist.id),
+      );
+      this.logger.log(
+        `Filtered ${allPlaylists.length - playlists.length} app-controlled playlists`,
+      );
       result.totalPlaylists = playlists.length;
       let processedPlaylists = 0;
       let skippedPlaylists = 0;
@@ -923,6 +936,25 @@ export class LibrarySyncService {
       },
       where: { userId_spotifyId: { spotifyId: playlist.id, userId } },
     });
+  }
+
+  /**
+   * Get Spotify playlist IDs that are controlled by this app (smart playlists synced to Spotify)
+   * These should be excluded from library import to avoid duplicating app-managed playlists
+   */
+  private async getAppControlledPlaylistIds(
+    userId: string,
+  ): Promise<Set<string>> {
+    const smartPlaylists = await this.databaseService.smartPlaylist.findMany({
+      select: { spotifyPlaylistId: true },
+      where: { spotifyPlaylistId: { not: null }, userId },
+    });
+
+    return new Set(
+      smartPlaylists
+        .map((sp) => sp.spotifyPlaylistId)
+        .filter((id): id is string => id !== null),
+    );
   }
 
   /**
