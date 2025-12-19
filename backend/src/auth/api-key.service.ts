@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 import { DatabaseService } from "../database/database.service";
 
@@ -53,9 +53,16 @@ export class ApiKeyService {
       return null;
     }
 
-    // Verify the signature
+    // Verify the signature using timing-safe comparison
     const expectedSignature = this.signUserId(userId);
-    if (providedSignature !== expectedSignature) {
+    const providedBuffer = Buffer.from(providedSignature, "utf8");
+    const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+
+    if (providedBuffer.length !== expectedBuffer.length) {
+      return null;
+    }
+
+    if (!timingSafeEqual(providedBuffer, expectedBuffer)) {
       return null;
     }
 
