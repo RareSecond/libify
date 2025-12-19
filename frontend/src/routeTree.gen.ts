@@ -14,6 +14,7 @@ import { Route as rootRoute } from "./routes/~__root";
 import { Route as WelcomeImport } from "./routes/~welcome";
 import { Route as TracksImport } from "./routes/~tracks";
 import { Route as SmartPlaylistsImport } from "./routes/~smart-playlists";
+import { Route as SettingsImport } from "./routes/~settings";
 import { Route as PlaylistsImport } from "./routes/~playlists";
 import { Route as PlayHistoryImport } from "./routes/~play-history";
 import { Route as FullscreenImport } from "./routes/~fullscreen";
@@ -48,6 +49,12 @@ const TracksRoute = TracksImport.update({
 const SmartPlaylistsRoute = SmartPlaylistsImport.update({
   id: "/smart-playlists",
   path: "/smart-playlists",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const SettingsRoute = SettingsImport.update({
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => rootRoute,
 } as any);
 
@@ -191,6 +198,13 @@ declare module "@tanstack/react-router" {
       path: "/playlists";
       fullPath: "/playlists";
       preLoaderRoute: typeof PlaylistsImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/settings": {
+      id: "/settings";
+      path: "/settings";
+      fullPath: "/settings";
+      preLoaderRoute: typeof SettingsImport;
       parentRoute: typeof rootRoute;
     };
     "/smart-playlists": {
@@ -350,6 +364,7 @@ export interface FileRoutesByFullPath {
   "/fullscreen": typeof FullscreenRoute;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
+  "/settings": typeof SettingsRoute;
   "/smart-playlists": typeof SmartPlaylistsRouteWithChildren;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
@@ -369,6 +384,7 @@ export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/fullscreen": typeof FullscreenRoute;
   "/play-history": typeof PlayHistoryRoute;
+  "/settings": typeof SettingsRoute;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
   "/artists/$artist": typeof ArtistsArtistRoute;
@@ -391,6 +407,7 @@ export interface FileRoutesById {
   "/fullscreen": typeof FullscreenRoute;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
+  "/settings": typeof SettingsRoute;
   "/smart-playlists": typeof SmartPlaylistsRouteWithChildren;
   "/tracks": typeof TracksRoute;
   "/welcome": typeof WelcomeRoute;
@@ -415,6 +432,7 @@ export interface FileRouteTypes {
     | "/fullscreen"
     | "/play-history"
     | "/playlists"
+    | "/settings"
     | "/smart-playlists"
     | "/tracks"
     | "/welcome"
@@ -433,6 +451,7 @@ export interface FileRouteTypes {
     | "/"
     | "/fullscreen"
     | "/play-history"
+    | "/settings"
     | "/tracks"
     | "/welcome"
     | "/artists/$artist"
@@ -453,6 +472,7 @@ export interface FileRouteTypes {
     | "/fullscreen"
     | "/play-history"
     | "/playlists"
+    | "/settings"
     | "/smart-playlists"
     | "/tracks"
     | "/welcome"
@@ -476,6 +496,7 @@ export interface RootRouteChildren {
   FullscreenRoute: typeof FullscreenRoute;
   PlayHistoryRoute: typeof PlayHistoryRoute;
   PlaylistsRoute: typeof PlaylistsRouteWithChildren;
+  SettingsRoute: typeof SettingsRoute;
   SmartPlaylistsRoute: typeof SmartPlaylistsRouteWithChildren;
   TracksRoute: typeof TracksRoute;
   WelcomeRoute: typeof WelcomeRoute;
@@ -490,6 +511,7 @@ const rootRouteChildren: RootRouteChildren = {
   FullscreenRoute: FullscreenRoute,
   PlayHistoryRoute: PlayHistoryRoute,
   PlaylistsRoute: PlaylistsRouteWithChildren,
+  SettingsRoute: SettingsRoute,
   SmartPlaylistsRoute: SmartPlaylistsRouteWithChildren,
   TracksRoute: TracksRoute,
   WelcomeRoute: WelcomeRoute,
@@ -513,6 +535,7 @@ export const routeTree = rootRoute
         "/fullscreen",
         "/play-history",
         "/playlists",
+        "/settings",
         "/smart-playlists",
         "/tracks",
         "/welcome",
@@ -549,6 +572,9 @@ export const routeTree = rootRoute
         "/playlists/$id",
         "/playlists/"
       ]
+    },
+    "/settings": {
+      "filePath": "~settings.tsx"
     },
     "/smart-playlists": {
       "filePath": "~smart-playlists.tsx",

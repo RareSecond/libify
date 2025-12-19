@@ -14,7 +14,9 @@ import { User } from "@prisma/client";
 import { plainToInstance } from "class-transformer";
 import { Request, Response } from "express";
 
+import { ApiKeyService } from "./api-key.service";
 import { AuthService } from "./auth.service";
+import { ApiKeyDto } from "./dto/api-key.dto";
 import { TokenDto } from "./dto/token.dto";
 import { UpdateOnboardingDto } from "./dto/update-onboarding.dto";
 import { UserDto } from "./dto/user.dto";
@@ -36,7 +38,10 @@ export class AuthController {
       process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
   };
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private apiKeyService: ApiKeyService,
+  ) {}
 
   @ApiResponse({
     description: "Spotify access token",
@@ -52,6 +57,22 @@ export class AuthController {
     return plainToInstance(
       TokenDto,
       { accessToken },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @ApiResponse({
+    description: "API key for external clients (desktop app, CLI)",
+    status: 200,
+    type: ApiKeyDto,
+  })
+  @Get("api-key")
+  @UseGuards(AuthGuard("jwt"))
+  getApiKey(@Req() req: AuthenticatedRequest): ApiKeyDto {
+    const apiKey = this.apiKeyService.generateApiKey(req.user.id);
+    return plainToInstance(
+      ApiKeyDto,
+      { apiKey },
       { excludeExtraneousValues: true },
     );
   }

@@ -19,7 +19,7 @@ import { User } from "@prisma/client";
 import { plainToInstance } from "class-transformer";
 import { Request } from "express";
 
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { CompositeAuthGuard } from "../auth/composite-auth.guard";
 import { CurrentPlaybackStateDto } from "./dto/current-playback.dto";
 import { PlayContextDto } from "./dto/play-context.dto";
 import {
@@ -36,7 +36,7 @@ interface AuthenticatedRequest extends Request {
 @ApiBearerAuth()
 @ApiTags("playback")
 @Controller("playback")
-@UseGuards(JwtAuthGuard)
+@UseGuards(CompositeAuthGuard)
 export class PlaybackController {
   private readonly logger = new Logger(PlaybackController.name);
 

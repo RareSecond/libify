@@ -7,7 +7,8 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { Calendar, ChevronDown, LogOut, User } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { Calendar, ChevronDown, LogOut, Settings, User } from "lucide-react";
 
 import {
   useAuthControllerGetProfile,
@@ -16,6 +17,7 @@ import {
 import { resetUser } from "@/lib/posthog";
 
 export function HeaderUserMenu() {
+  const navigate = useNavigate();
   const { data, isLoading } = useAuthControllerGetProfile();
   const logoutMutation = useAuthControllerLogout();
 
@@ -100,6 +102,14 @@ export function HeaderUserMenu() {
         </Menu.Item>
 
         <Menu.Divider className="border-dark-5" />
+
+        <Menu.Item
+          className="text-dark-1 hover:bg-dark-6"
+          leftSection={<Settings size={14} />}
+          onClick={() => navigate({ to: "/settings" })}
+        >
+          Settings
+        </Menu.Item>
 
         <Menu.Item
           className="text-red-400 hover:bg-red-900/20"
