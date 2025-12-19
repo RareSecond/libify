@@ -43,6 +43,27 @@
         ]
       }
     },
+    "/auth/api-key": {
+      "get": {
+        "operationId": "AuthController_getApiKey",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API key for external clients (desktop app, CLI)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/auth/profile": {
       "get": {
         "operationId": "AuthController_getProfile",
@@ -2637,6 +2658,18 @@
         },
         "required": [
           "accessToken"
+        ]
+      },
+      "ApiKeyDto": {
+        "type": "object",
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "description": "The API key for external clients"
+          }
+        },
+        "required": [
+          "apiKey"
         ]
       },
       "UserDto": {

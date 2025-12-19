@@ -31,7 +31,7 @@ import { plainToInstance } from "class-transformer";
 import { Request } from "express";
 
 import { AuthService } from "../auth/auth.service";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { CompositeAuthGuard } from "../auth/composite-auth.guard";
 import {
   AlbumTracksResponseDto,
   GetAlbumTracksQueryDto,
@@ -93,7 +93,7 @@ interface AuthenticatedRequest extends Request {
 @ApiBearerAuth()
 @ApiTags("library")
 @Controller("library")
-@UseGuards(JwtAuthGuard)
+@UseGuards(CompositeAuthGuard)
 export class LibraryController {
   private readonly logger = new Logger(LibraryController.name);
 

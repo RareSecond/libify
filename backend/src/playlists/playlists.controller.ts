@@ -24,7 +24,7 @@ import {
 import { User } from "@prisma/client";
 import { Request } from "express";
 
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { CompositeAuthGuard } from "../auth/composite-auth.guard";
 import { PaginatedTracksDto } from "../library/dto/track.dto";
 import { PlaylistCriteriaDto } from "./dto/playlist-criteria.dto";
 import {
@@ -43,7 +43,7 @@ interface AuthenticatedRequest extends Request {
 @ApiBearerAuth()
 @ApiTags("playlists")
 @Controller("playlists")
-@UseGuards(JwtAuthGuard)
+@UseGuards(CompositeAuthGuard)
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
