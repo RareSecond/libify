@@ -89,6 +89,27 @@ export class PlaylistsService {
     };
   }
 
+  /**
+   * Get track IDs matching a playlist's criteria (for sync purposes)
+   */
+  async getTrackIdsForSync(
+    userId: string,
+    criteria: PlaylistCriteriaDto,
+  ): Promise<string[]> {
+    const where = this.buildWhereClause(userId, criteria);
+    const orderBy = this.buildOrderBy(criteria);
+
+    const maxTracks = criteria.limit || 10000;
+    const tracks = await this.prisma.userTrack.findMany({
+      orderBy,
+      select: { spotifyTrack: { select: { spotifyId: true } } },
+      take: maxTracks,
+      where,
+    });
+
+    return tracks.map((t) => t.spotifyTrack.spotifyId);
+  }
+
   async getTracks(
     userId: string,
     playlistId: string,

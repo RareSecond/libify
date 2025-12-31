@@ -95,10 +95,8 @@ export class PlaylistSyncProcessor extends WorkerHost {
           const criteria = playlist.criteria as unknown as PlaylistCriteriaDto;
 
           // Get current matching tracks
-          const currentTrackIds = await this.getCurrentTrackIds(
-            userId,
-            criteria,
-          );
+          const currentTrackIds =
+            await this.playlistsService.getTrackIdsForSync(userId, criteria);
 
           // Calculate hash of current track IDs
           const currentHash = this.hashTrackIds(currentTrackIds);
@@ -156,27 +154,6 @@ export class PlaylistSyncProcessor extends WorkerHost {
   }
 
   /**
-   * Get the current track IDs matching a playlist's criteria
-   */
-  private async getCurrentTrackIds(
-    userId: string,
-    criteria: PlaylistCriteriaDto,
-  ): Promise<string[]> {
-    const where = this.playlistsService["buildWhereClause"](userId, criteria);
-    const orderBy = this.playlistsService["buildOrderBy"](criteria);
-
-    const maxTracks = criteria.limit || 10000;
-    const tracks = await this.databaseService.userTrack.findMany({
-      orderBy,
-      select: { spotifyTrack: { select: { spotifyId: true } } },
-      take: maxTracks,
-      where,
-    });
-
-    return tracks.map((t) => t.spotifyTrack.spotifyId);
-  }
-
-  /**
    * Calculate a hash of track IDs for change detection
    */
   private hashTrackIds(trackIds: string[]): string {
@@ -200,6 +177,14 @@ export class PlaylistSyncProcessor extends WorkerHost {
     trackIds: string[],
     newHash: string,
   ): Promise<void> {
+    const { spotifyPlaylistId } = playlist;
+    if (!spotifyPlaylistId) {
+      this.logger.error(
+        `Playlist "${playlist.name}" (${playlist.id}) has no spotifyPlaylistId, skipping sync`,
+      );
+      return;
+    }
+
     const trackUris = trackIds.map((id) => `spotify:track:${id}`);
     const spotifyPlaylistName = `${SPOTIFY_PLAYLIST_PREFIX} ${playlist.name}`;
     const description =
@@ -208,7 +193,7 @@ export class PlaylistSyncProcessor extends WorkerHost {
     // Update playlist details
     await this.spotifyService.updatePlaylistDetails(
       accessToken,
-      playlist.spotifyPlaylistId!,
+      spotifyPlaylistId,
       spotifyPlaylistName,
       description,
     );
@@ -216,7 +201,7 @@ export class PlaylistSyncProcessor extends WorkerHost {
     // Replace tracks
     await this.spotifyService.replacePlaylistTracks(
       accessToken,
-      playlist.spotifyPlaylistId!,
+      spotifyPlaylistId,
       trackUris,
     );
 
