@@ -4,9 +4,9 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { createHash } from "crypto";
 
 import { AuthService } from "../auth/auth.service";
+import { hashTrackIds } from "../common/utils/playlist-hash.util";
 import { DatabaseService } from "../database/database.service";
 import { SpotifyService } from "../library/spotify.service";
 import { TrackService } from "../library/track.service";
@@ -267,7 +267,7 @@ export class PlaylistsService {
 
     // Calculate hash of track IDs for change detection
     const trackIds = tracks.map((t) => t.spotifyTrack.spotifyId);
-    const trackIdsHash = this.hashTrackIds(trackIds);
+    const trackIdsHash = hashTrackIds(trackIds);
 
     const spotifyPlaylistName = `${SPOTIFY_PLAYLIST_PREFIX} ${playlist.name}`;
     const description =
@@ -695,15 +695,6 @@ export class PlaylistsService {
     const where = this.buildWhereClause(userId, criteria);
     const count = await this.prisma.userTrack.count({ where });
     return criteria.limit ? Math.min(count, criteria.limit) : count;
-  }
-
-  /**
-   * Calculate a hash of track IDs for change detection
-   */
-  private hashTrackIds(trackIds: string[]): string {
-    // Sort to ensure consistent hash regardless of query order
-    const sortedIds = [...trackIds].sort();
-    return createHash("sha256").update(sortedIds.join("|")).digest("hex");
   }
 
   /**

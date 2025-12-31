@@ -1,9 +1,9 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { Job } from "bullmq";
-import { createHash } from "crypto";
 
 import { AuthService } from "../../auth/auth.service";
+import { hashTrackIds } from "../../common/utils/playlist-hash.util";
 import { DatabaseService } from "../../database/database.service";
 import { PlaylistSyncService } from "../../library/playlist-sync.service";
 import { SpotifyService } from "../../library/spotify.service";
@@ -99,7 +99,7 @@ export class PlaylistSyncProcessor extends WorkerHost {
             await this.playlistsService.getTrackIdsForSync(userId, criteria);
 
           // Calculate hash of current track IDs
-          const currentHash = this.hashTrackIds(currentTrackIds);
+          const currentHash = hashTrackIds(currentTrackIds);
 
           // Check if tracks have changed since last sync
           if (currentHash === playlist.trackIdsHash) {
@@ -151,15 +151,6 @@ export class PlaylistSyncProcessor extends WorkerHost {
 
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Calculate a hash of track IDs for change detection
-   */
-  private hashTrackIds(trackIds: string[]): string {
-    // Sort to ensure consistent hash regardless of query order
-    const sortedIds = [...trackIds].sort();
-    return createHash("sha256").update(sortedIds.join("|")).digest("hex");
   }
 
   /**
