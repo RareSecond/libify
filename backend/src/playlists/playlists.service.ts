@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { createHash } from "crypto";
 
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
@@ -243,6 +244,10 @@ export class PlaylistsService {
       (track) => `spotify:track:${track.spotifyTrack.spotifyId}`,
     );
 
+    // Calculate hash of track IDs for change detection
+    const trackIds = tracks.map((t) => t.spotifyTrack.spotifyId);
+    const trackIdsHash = this.hashTrackIds(trackIds);
+
     const spotifyPlaylistName = `${SPOTIFY_PLAYLIST_PREFIX} ${playlist.name}`;
     const description =
       playlist.description || `Smart playlist synced from Codex.fm`;
@@ -291,9 +296,9 @@ export class PlaylistsService {
       });
     }
 
-    // Update lastSyncedAt
+    // Update lastSyncedAt and trackIdsHash
     await this.prisma.smartPlaylist.update({
-      data: { lastSyncedAt: new Date() },
+      data: { lastSyncedAt: new Date(), trackIdsHash },
       where: { id: playlistId },
     });
 
@@ -307,8 +312,15 @@ export class PlaylistsService {
   ) {
     const existing = await this.findOne(userId, playlistId);
 
+    // Get the raw playlist to access autoSync
+    const rawPlaylist = await this.prisma.smartPlaylist.findUnique({
+      select: { autoSync: true },
+      where: { id: playlistId },
+    });
+
     return this.prisma.smartPlaylist.update({
       data: {
+        autoSync: updateDto.autoSync ?? rawPlaylist?.autoSync ?? true,
         criteria: updateDto.criteria
           ? (updateDto.criteria as unknown as Prisma.JsonObject)
           : (existing.criteria as unknown as Prisma.JsonObject),
@@ -662,6 +674,15 @@ export class PlaylistsService {
     const where = this.buildWhereClause(userId, criteria);
     const count = await this.prisma.userTrack.count({ where });
     return criteria.limit ? Math.min(count, criteria.limit) : count;
+  }
+
+  /**
+   * Calculate a hash of track IDs for change detection
+   */
+  private hashTrackIds(trackIds: string[]): string {
+    // Sort to ensure consistent hash regardless of query order
+    const sortedIds = [...trackIds].sort();
+    return createHash("sha256").update(sortedIds.join("|")).digest("hex");
   }
 
   /**

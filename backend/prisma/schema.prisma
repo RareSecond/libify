@@ -189,6 +189,8 @@ model SmartPlaylist {
   isActive          Boolean   @default(true)
   spotifyPlaylistId String? // Spotify playlist ID when synced
   lastSyncedAt      DateTime? // When last synced to Spotify
+  trackIdsHash      String? // Hash of synced track IDs for change detection
+  autoSync          Boolean   @default(true) // Enable automatic sync to Spotify
   lastUpdated       DateTime  @default(now())
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

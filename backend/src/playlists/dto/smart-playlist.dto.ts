@@ -31,6 +31,12 @@ export class CreateSmartPlaylistDto {
 }
 
 export class SmartPlaylistDto {
+  @ApiProperty({
+    default: true,
+    description: "Enable automatic sync to Spotify",
+  })
+  autoSync: boolean;
+
   @ApiProperty()
   createdAt: Date;
 
@@ -73,6 +79,14 @@ export class SyncToSpotifyResponseDto {
 }
 
 export class UpdateSmartPlaylistDto {
+  @ApiProperty({
+    description: "Enable automatic sync to Spotify",
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  autoSync?: boolean;
+
   @ApiProperty({ required: false, type: PlaylistCriteriaDto })
   @IsOptional()
   @Type(() => PlaylistCriteriaDto)

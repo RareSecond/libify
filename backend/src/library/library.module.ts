@@ -7,6 +7,7 @@ import { AggregationService } from "./aggregation.service";
 import { LibrarySyncService } from "./library-sync.service";
 import { LibraryController } from "./library.controller";
 import { PlaySyncService } from "./play-sync.service";
+import { PlaylistSyncService } from "./playlist-sync.service";
 import { SpotifyService } from "./spotify.service";
 import { SyncProgressGateway } from "./sync-progress.gateway";
 import { TagService } from "./tag.service";
@@ -19,6 +20,7 @@ import { TrackService } from "./track.service";
     LibrarySyncService,
     AggregationService,
     PlaySyncService,
+    PlaylistSyncService,
     TrackService,
   ],
   imports: [
@@ -26,6 +28,7 @@ import { TrackService } from "./track.service";
     AuthModule,
     BullModule.registerQueue({ name: "sync" }),
     BullModule.registerQueue({ name: "play-sync" }),
+    BullModule.registerQueue({ name: "playlist-sync" }),
   ],
   providers: [
     SpotifyService,
@@ -35,6 +38,7 @@ import { TrackService } from "./track.service";
     AggregationService,
     SyncProgressGateway,
     PlaySyncService,
+    PlaylistSyncService,
   ],
 })
 export class LibraryModule {}

@@ -6,6 +6,7 @@ import { AuthService } from "../../auth/auth.service";
 import { SyncOptionsDto } from "../../library/dto/sync-options.dto";
 import { SyncProgressDto } from "../../library/dto/sync-progress-base.dto";
 import { LibrarySyncService } from "../../library/library-sync.service";
+import { PlaylistSyncService } from "../../library/playlist-sync.service";
 
 export interface SyncJobData {
   options?: SyncOptionsDto;
@@ -105,6 +106,7 @@ export class SyncProcessor extends WorkerHost {
   constructor(
     private librarySyncService: LibrarySyncService,
     private authService: AuthService,
+    private playlistSyncService: PlaylistSyncService,
   ) {
     super();
   }
@@ -161,6 +163,20 @@ export class SyncProcessor extends WorkerHost {
 
       // Ensure final progress is sent
       await throttledUpdater.flush();
+
+      // Trigger playlist sync after library sync completes
+      // This ensures smart playlists are updated with any new tracks
+      try {
+        await this.playlistSyncService.enqueueSyncForUser(userId);
+        this.logger.log(
+          `Enqueued playlist sync for user ${userId} after library sync`,
+        );
+      } catch (error) {
+        // Log but don't fail the sync job if playlist sync enqueue fails
+        this.logger.warn(
+          `Failed to enqueue playlist sync for user ${userId}: ${error.message}`,
+        );
+      }
 
       return result;
     } catch (error) {

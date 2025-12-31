@@ -28,6 +28,7 @@ export type PlayHistory = {
   userTrackId: string;
 };
 export type SmartPlaylist = {
+  autoSync: Generated<boolean>;
   createdAt: Generated<Timestamp>;
   criteria: unknown;
   description: null | string;
@@ -37,6 +38,7 @@ export type SmartPlaylist = {
   lastUpdated: Generated<Timestamp>;
   name: string;
   spotifyPlaylistId: null | string;
+  trackIdsHash: null | string;
   updatedAt: Timestamp;
   userId: string;
 };

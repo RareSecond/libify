@@ -5,8 +5,10 @@ import Redis from "ioredis";
 import { AuthModule } from "../auth/auth.module";
 import { DatabaseModule } from "../database/database.module";
 import { LibraryModule } from "../library/library.module";
+import { PlaylistsModule } from "../playlists/playlists.module";
 import { REDIS_CLIENT, RedisModule } from "../redis/redis.module";
 import { PlaySyncProcessor } from "./processors/play-sync.processor";
+import { PlaylistSyncProcessor } from "./processors/playlist-sync.processor";
 import { SyncProcessor } from "./processors/sync.processor";
 
 @Module({
@@ -65,10 +67,29 @@ import { SyncProcessor } from "./processors/sync.processor";
       },
       name: "play-sync",
     }),
+    BullModule.registerQueue({
+      defaultJobOptions: {
+        attempts: 3, // Retry up to 3 times
+        backoff: {
+          delay: 60000, // 1 minute
+          type: "exponential",
+        },
+        removeOnComplete: {
+          age: 3600, // Keep completed jobs for 1 hour
+          count: 50,
+        },
+        removeOnFail: {
+          age: 86400, // Keep failed jobs for 24 hours
+          count: 100,
+        },
+      },
+      name: "playlist-sync",
+    }),
     DatabaseModule,
     forwardRef(() => AuthModule),
     forwardRef(() => LibraryModule),
+    forwardRef(() => PlaylistsModule),
   ],
-  providers: [SyncProcessor, PlaySyncProcessor],
+  providers: [SyncProcessor, PlaySyncProcessor, PlaylistSyncProcessor],
 })
 export class QueueModule {}
