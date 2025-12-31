@@ -6,6 +6,7 @@ import {
 import { Prisma } from "@prisma/client";
 
 import { AuthService } from "../auth/auth.service";
+import { hashTrackIds } from "../common/utils/playlist-hash.util";
 import { DatabaseService } from "../database/database.service";
 import { SpotifyService } from "../library/spotify.service";
 import { TrackService } from "../library/track.service";
@@ -86,6 +87,27 @@ export class PlaylistsService {
       criteria: playlist.criteria as unknown as PlaylistCriteriaDto,
       trackCount,
     };
+  }
+
+  /**
+   * Get track IDs matching a playlist's criteria (for sync purposes)
+   */
+  async getTrackIdsForSync(
+    userId: string,
+    criteria: PlaylistCriteriaDto,
+  ): Promise<string[]> {
+    const where = this.buildWhereClause(userId, criteria);
+    const orderBy = this.buildOrderBy(criteria);
+
+    const maxTracks = criteria.limit || 10000;
+    const tracks = await this.prisma.userTrack.findMany({
+      orderBy,
+      select: { spotifyTrack: { select: { spotifyId: true } } },
+      take: maxTracks,
+      where,
+    });
+
+    return tracks.map((t) => t.spotifyTrack.spotifyId);
   }
 
   async getTracks(
@@ -243,6 +265,10 @@ export class PlaylistsService {
       (track) => `spotify:track:${track.spotifyTrack.spotifyId}`,
     );
 
+    // Calculate hash of track IDs for change detection
+    const trackIds = tracks.map((t) => t.spotifyTrack.spotifyId);
+    const trackIdsHash = hashTrackIds(trackIds);
+
     const spotifyPlaylistName = `${SPOTIFY_PLAYLIST_PREFIX} ${playlist.name}`;
     const description =
       playlist.description || `Smart playlist synced from Codex.fm`;
@@ -291,9 +317,9 @@ export class PlaylistsService {
       });
     }
 
-    // Update lastSyncedAt
+    // Update lastSyncedAt and trackIdsHash
     await this.prisma.smartPlaylist.update({
-      data: { lastSyncedAt: new Date() },
+      data: { lastSyncedAt: new Date(), trackIdsHash },
       where: { id: playlistId },
     });
 
@@ -307,8 +333,15 @@ export class PlaylistsService {
   ) {
     const existing = await this.findOne(userId, playlistId);
 
+    // Get the raw playlist to access autoSync
+    const rawPlaylist = await this.prisma.smartPlaylist.findUnique({
+      select: { autoSync: true },
+      where: { id: playlistId },
+    });
+
     return this.prisma.smartPlaylist.update({
       data: {
+        autoSync: updateDto.autoSync ?? rawPlaylist?.autoSync ?? true,
         criteria: updateDto.criteria
           ? (updateDto.criteria as unknown as Prisma.JsonObject)
           : (existing.criteria as unknown as Prisma.JsonObject),

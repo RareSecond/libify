@@ -6,6 +6,7 @@ import { AuthService } from "../../auth/auth.service";
 import { DatabaseService } from "../../database/database.service";
 import { AggregationService } from "../../library/aggregation.service";
 import { PlaySyncService } from "../../library/play-sync.service";
+import { PlaylistSyncService } from "../../library/playlist-sync.service";
 import { SpotifyService } from "../../library/spotify.service";
 
 export interface PlaySyncJobData {
@@ -26,6 +27,7 @@ export class PlaySyncProcessor extends WorkerHost {
     private authService: AuthService,
     private aggregationService: AggregationService,
     private playSyncService: PlaySyncService,
+    private playlistSyncService: PlaylistSyncService,
   ) {
     super();
   }
@@ -249,6 +251,22 @@ export class PlaySyncProcessor extends WorkerHost {
       this.logger.log(
         `Play sync completed for user ${userId}: ${newPlaysCount} new plays imported, ${skippedNotInLibrary} skipped (not in library), ${skippedDuplicate} skipped (duplicates)`,
       );
+
+      // Trigger playlist sync if new plays were recorded
+      // This ensures smart playlists with play count or last played rules are updated
+      if (newPlaysCount > 0) {
+        try {
+          await this.playlistSyncService.enqueueSyncForUser(userId);
+          this.logger.log(
+            `Enqueued playlist sync for user ${userId} after play sync`,
+          );
+        } catch (error) {
+          // Log but don't fail the play sync job if playlist sync enqueue fails
+          this.logger.warn(
+            `Failed to enqueue playlist sync for user ${userId}: ${error.message}`,
+          );
+        }
+      }
 
       return { newPlaysCount };
     } catch (error) {

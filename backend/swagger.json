@@ -4554,6 +4554,11 @@
       "SmartPlaylistDto": {
         "type": "object",
         "properties": {
+          "autoSync": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable automatic sync to Spotify"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -4588,6 +4593,7 @@
           }
         },
         "required": [
+          "autoSync",
           "createdAt",
           "criteria",
           "id",
@@ -4599,6 +4605,11 @@
       "SmartPlaylistWithTracksDto": {
         "type": "object",
         "properties": {
+          "autoSync": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable automatic sync to Spotify"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -4636,6 +4647,7 @@
           }
         },
         "required": [
+          "autoSync",
           "createdAt",
           "criteria",
           "id",
@@ -4665,6 +4677,10 @@
       "UpdateSmartPlaylistDto": {
         "type": "object",
         "properties": {
+          "autoSync": {
+            "type": "boolean",
+            "description": "Enable automatic sync to Spotify"
+          },
           "criteria": {
             "$ref": "#/components/schemas/PlaylistCriteriaDto"
           },
