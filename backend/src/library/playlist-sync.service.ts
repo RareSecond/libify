@@ -104,6 +104,23 @@ export class PlaylistSyncService implements OnModuleInit {
       return;
     }
 
+    const jobId = `playlist-sync-user-${userId}`;
+
+    // Remove existing completed/failed job to allow new sync
+    const existingJob = await this.playlistSyncQueue.getJob(jobId);
+    if (existingJob) {
+      const state = await existingJob.getState();
+      if (state === "completed" || state === "failed") {
+        await existingJob.remove();
+        this.logger.debug(`Removed previous ${state} job ${jobId}`);
+      } else if (state === "active" || state === "waiting") {
+        this.logger.debug(
+          `Job ${jobId} already ${state}, skipping duplicate enqueue`,
+        );
+        return;
+      }
+    }
+
     await this.playlistSyncQueue.add(
       "sync-user-playlists",
       { userId },
@@ -113,8 +130,7 @@ export class PlaylistSyncService implements OnModuleInit {
           delay: 60000, // 1 minute
           type: "exponential",
         },
-        // Deterministic jobId ensures only one job per user exists in queue
-        jobId: `playlist-sync-user-${userId}`,
+        jobId,
         removeOnComplete: { age: 3600, count: 50 },
         removeOnFail: { age: 86400 },
       },

@@ -4,6 +4,7 @@ import {
   Group,
   Loader,
   Stack,
+  Switch,
   Text,
   Tooltip,
 } from "@mantine/core";
@@ -25,6 +26,7 @@ import {
   usePlaylistsControllerFindOne,
   usePlaylistsControllerGetTracks,
   usePlaylistsControllerSyncToSpotify,
+  usePlaylistsControllerUpdate,
 } from "../data/api";
 import { Route } from "../routes/~smart-playlists.$id";
 import { TracksTableWithControls } from "./TracksTableWithControls";
@@ -60,6 +62,7 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
     );
 
   const syncMutation = usePlaylistsControllerSyncToSpotify();
+  const updateMutation = usePlaylistsControllerUpdate();
 
   // Track playlist view once data is loaded
   const trackCount = data?.total || data?.tracks?.length || 0;
@@ -109,6 +112,31 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
       });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleAutoSyncToggle = async (checked: boolean) => {
+    try {
+      await updateMutation.mutateAsync({
+        data: { autoSync: checked },
+        id: playlistId,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getPlaylistsControllerFindOneQueryKey(playlistId),
+      });
+      notifications.show({
+        color: "green",
+        message: checked
+          ? "Playlist will sync automatically every day"
+          : "Automatic sync disabled",
+        title: checked ? "Auto-sync enabled" : "Auto-sync disabled",
+      });
+    } catch {
+      notifications.show({
+        color: "red",
+        message: "Failed to update auto-sync setting",
+        title: "Update failed",
+      });
     }
   };
 
@@ -186,6 +214,18 @@ export function PlaylistTracks({ playlistId }: PlaylistTracksProps) {
               {playlist?.spotifyPlaylistId ? "Resync" : "Sync to Spotify"}
             </Button>
           </Tooltip>
+          {playlist?.spotifyPlaylistId && (
+            <Tooltip label="When enabled, this playlist will automatically sync to Spotify daily">
+              <Switch
+                checked={playlist?.autoSync ?? true}
+                disabled={updateMutation.isPending}
+                label="Auto-sync"
+                onChange={(event) =>
+                  handleAutoSyncToggle(event.currentTarget.checked)
+                }
+              />
+            </Tooltip>
+          )}
         </Group>
       </Group>
 

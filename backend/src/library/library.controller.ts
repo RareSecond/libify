@@ -82,6 +82,7 @@ import {
 } from "./dto/track.dto";
 import { LibrarySyncService } from "./library-sync.service";
 import { PlaySyncService } from "./play-sync.service";
+import { PlaylistSyncService } from "./playlist-sync.service";
 import { SpotifyService } from "./spotify.service";
 import { TagService } from "./tag.service";
 import { TrackService } from "./track.service";
@@ -104,6 +105,7 @@ export class LibraryController {
     private spotifyService: SpotifyService,
     private tagService: TagService,
     private playSyncService: PlaySyncService,
+    private playlistSyncService: PlaylistSyncService,
     @InjectQueue("sync") private syncQueue: Queue,
     @InjectQueue("play-sync") private playSyncQueue: Queue,
   ) {}
@@ -118,6 +120,10 @@ export class LibraryController {
     @Body() addTagDto: AddTagToTrackDto,
   ): Promise<{ message: string }> {
     await this.tagService.addTagToTrack(req.user.id, trackId, addTagDto.tagId);
+    // Trigger playlist sync for tag-based smart playlists
+    this.playlistSyncService.enqueueSyncForUser(req.user.id).catch((err) => {
+      this.logger.warn(`Failed to enqueue playlist sync: ${err.message}`);
+    });
     return { message: "Tag added to track" };
   }
 
@@ -149,6 +155,10 @@ export class LibraryController {
       req.user.id,
       bulkRatingDto,
     );
+    // Trigger playlist sync for rating-based smart playlists
+    this.playlistSyncService.enqueueSyncForUser(req.user.id).catch((err) => {
+      this.logger.warn(`Failed to enqueue playlist sync: ${err.message}`);
+    });
     return plainToInstance(BulkOperationResponseDto, result, {
       excludeExtraneousValues: true,
     });
@@ -174,6 +184,10 @@ export class LibraryController {
             req.user.id,
             bulkTagDto,
           );
+    // Trigger playlist sync for tag-based smart playlists
+    this.playlistSyncService.enqueueSyncForUser(req.user.id).catch((err) => {
+      this.logger.warn(`Failed to enqueue playlist sync: ${err.message}`);
+    });
     return plainToInstance(BulkOperationResponseDto, result, {
       excludeExtraneousValues: true,
     });
@@ -676,6 +690,10 @@ export class LibraryController {
     @Param("tagId") tagId: string,
   ): Promise<{ message: string }> {
     await this.tagService.removeTagFromTrack(req.user.id, trackId, tagId);
+    // Trigger playlist sync for tag-based smart playlists
+    this.playlistSyncService.enqueueSyncForUser(req.user.id).catch((err) => {
+      this.logger.warn(`Failed to enqueue playlist sync: ${err.message}`);
+    });
     return { message: "Tag removed from track" };
   }
 
@@ -898,6 +916,10 @@ export class LibraryController {
       trackId,
       updateRatingDto.rating,
     );
+    // Trigger playlist sync for rating-based smart playlists
+    this.playlistSyncService.enqueueSyncForUser(req.user.id).catch((err) => {
+      this.logger.warn(`Failed to enqueue playlist sync: ${err.message}`);
+    });
     return { message: "Rating updated", rating };
   }
 }

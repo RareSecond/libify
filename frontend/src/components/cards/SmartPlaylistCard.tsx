@@ -11,59 +11,20 @@ import {
 } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import {
-  Calendar,
-  Clock,
-  Disc,
   Edit,
   ExternalLink,
   Filter,
-  Hash,
   ListMusic,
-  Mic2,
   Music,
   Play,
-  Star,
-  Tag,
+  RefreshCw,
   Trash,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
 
-import { PlaylistRuleDto, SmartPlaylistWithTracksDto } from "../../data/api";
-
-const FIELD_CONFIG: Record<
-  string,
-  { color: string; icon: typeof Music; label: string }
-> = {
-  album: { color: "violet", icon: Disc, label: "Album" },
-  artist: { color: "cyan", icon: Mic2, label: "Artist" },
-  dateAdded: { color: "teal", icon: Calendar, label: "Date Added" },
-  duration: { color: "indigo", icon: Clock, label: "Duration" },
-  lastPlayed: { color: "grape", icon: Play, label: "Last Played" },
-  playCount: { color: "pink", icon: Hash, label: "Play Count" },
-  rating: { color: "yellow", icon: Star, label: "Rating" },
-  tag: { color: "lime", icon: Tag, label: "Tag" },
-  title: { color: "blue", icon: Music, label: "Title" },
-};
-
-const OPERATOR_LABELS: Record<string, string> = {
-  contains: "contains",
-  endsWith: "ends with",
-  equals: "is",
-  greaterThan: ">",
-  hasAnyTag: "has any tag",
-  hasNoTags: "has no tags",
-  hasTag: "has tag",
-  inLast: "in last",
-  isNotNull: "exists",
-  isNull: "is empty",
-  lessThan: "<",
-  notContains: "doesn't contain",
-  notEquals: "is not",
-  notHasTag: "doesn't have tag",
-  notInLast: "not in last",
-  startsWith: "starts with",
-};
+import { SmartPlaylistWithTracksDto } from "../../data/api";
+import { PlaylistRuleBadge } from "./PlaylistRuleBadge";
 
 interface SmartPlaylistCardProps {
   onDelete: () => void;
@@ -159,7 +120,7 @@ export function SmartPlaylistCard({
           </Group>
           <Group gap="xs">
             {playlist.criteria.rules.slice(0, 2).map((rule, index) => (
-              <RuleBadge key={index} rule={rule} />
+              <PlaylistRuleBadge key={index} rule={rule} />
             ))}
             {playlist.criteria.rules.length > 2 && (
               <Badge color="dark" size="md" variant="light">
@@ -184,14 +145,22 @@ export function SmartPlaylistCard({
               </Group>
             </Tooltip>
             {isSynced && (
-              <Tooltip label="Synced to Spotify">
+              <Tooltip
+                label={`Synced to Spotify (auto-sync ${playlist.autoSync ? "enabled" : "disabled"})`}
+              >
                 <Badge
                   color="green"
-                  leftSection={<ExternalLink size={10} />}
+                  leftSection={
+                    playlist.autoSync ? (
+                      <RefreshCw size={10} />
+                    ) : (
+                      <ExternalLink size={10} />
+                    )
+                  }
                   size="sm"
                   variant="light"
                 >
-                  Synced
+                  {playlist.autoSync ? "Auto-sync" : "Synced"}
                 </Badge>
               </Tooltip>
             )}
@@ -214,42 +183,5 @@ export function SmartPlaylistCard({
         </Group>
       </Stack>
     </Card>
-  );
-}
-
-function formatRuleValue(rule: PlaylistRuleDto): string {
-  const operatorsWithNoValue = [
-    "isNull",
-    "isNotNull",
-    "hasAnyTag",
-    "hasNoTags",
-  ];
-  if (operatorsWithNoValue.includes(rule.operator)) return "";
-  if (rule.daysValue !== undefined && rule.daysValue !== null)
-    return `${rule.daysValue} days`;
-  if (rule.numberValue !== undefined) return String(rule.numberValue);
-  return rule.value || "";
-}
-
-function RuleBadge({ rule }: { rule: PlaylistRuleDto }) {
-  const config = FIELD_CONFIG[rule.field] || {
-    color: "gray",
-    icon: Filter,
-    label: rule.field,
-  };
-  const Icon = config.icon;
-  const operatorLabel = OPERATOR_LABELS[rule.operator] || rule.operator;
-  const value = formatRuleValue(rule);
-
-  return (
-    <Badge
-      className="font-normal"
-      color={config.color}
-      leftSection={<Icon size={12} />}
-      size="md"
-      variant="light"
-    >
-      {config.label} {operatorLabel} {value}
-    </Badge>
   );
 }
