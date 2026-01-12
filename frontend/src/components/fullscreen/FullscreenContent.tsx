@@ -60,6 +60,7 @@ export function FullscreenContent({
         <Loader color="orange" size="xl" />
       ) : libraryTrack ? (
         <FullscreenTrackView
+          isOnboarding={isOnboarding}
           libraryTrack={libraryTrack}
           onLibraryTrackUpdate={onLibraryTrackUpdate}
           onRating={onRating}
