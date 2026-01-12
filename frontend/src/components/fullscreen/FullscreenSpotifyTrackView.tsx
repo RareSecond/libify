@@ -1,10 +1,7 @@
-import { Badge, Button, Group, Image, Stack, Text, Title } from "@mantine/core";
+import { Badge, Image, Stack, Text, Title } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 
 interface FullscreenSpotifyTrackViewProps {
-  currentTrackIndex: number;
-  onNext: () => void;
-  onPrevious: () => void;
   track: SpotifyTrack;
 }
 
@@ -15,9 +12,6 @@ interface SpotifyTrack {
 }
 
 export function FullscreenSpotifyTrackView({
-  currentTrackIndex,
-  onNext,
-  onPrevious,
   track,
 }: FullscreenSpotifyTrackViewProps) {
   const navigate = useNavigate();
@@ -81,22 +75,6 @@ export function FullscreenSpotifyTrackView({
           Not in your library
         </Badge>
       </Stack>
-
-      {/* Controls */}
-      <Group className="mt-3" gap="md" justify="center">
-        <Button
-          color="gray"
-          disabled={currentTrackIndex === 0}
-          onClick={onPrevious}
-          size="sm"
-          variant="light"
-        >
-          Previous (P)
-        </Button>
-        <Button color="orange" onClick={onNext} size="sm">
-          Next (N)
-        </Button>
-      </Group>
     </>
   );
 }

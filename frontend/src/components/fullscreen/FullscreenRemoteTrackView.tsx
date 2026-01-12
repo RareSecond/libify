@@ -1,8 +1,6 @@
 import { FullscreenSpotifyTrackView } from "./FullscreenSpotifyTrackView";
 
 interface FullscreenRemoteTrackViewProps {
-  onNext: () => void;
-  onPrevious: () => void;
   remoteTrack: RemoteTrack;
 }
 
@@ -13,15 +11,10 @@ interface RemoteTrack {
 }
 
 export function FullscreenRemoteTrackView({
-  onNext,
-  onPrevious,
   remoteTrack,
 }: FullscreenRemoteTrackViewProps) {
   return (
     <FullscreenSpotifyTrackView
-      currentTrackIndex={0}
-      onNext={onNext}
-      onPrevious={onPrevious}
       track={{
         album: {
           images: remoteTrack.album.images.map((url) => ({ url })),

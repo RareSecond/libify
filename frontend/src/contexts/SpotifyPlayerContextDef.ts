@@ -22,6 +22,7 @@ export interface SpotifyPlayerContextType {
     tracks: string[] | TrackWithId[],
     context?: PlayContext,
   ) => Promise<void>;
+  playUris: (uris: string[]) => Promise<void>;
   position: number;
   previousTrack: () => Promise<void>;
   resume: () => Promise<void>;

@@ -1,4 +1,4 @@
-import { Button, Group, Image, Stack, Text, Title } from "@mantine/core";
+import { Image, Stack, Text, Title } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 
 import { InlineTagEditor } from "@/components/InlineTagEditor";
@@ -6,19 +6,15 @@ import { RatingSelector } from "@/components/RatingSelector";
 import { TrackDto } from "@/data/api";
 
 interface FullscreenTrackViewProps {
-  currentTrackIndex?: number;
   libraryTrack: TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
-  onNext: () => void;
-  onPrevious: () => void;
+  onRating?: (rating: number) => void;
 }
 
 export function FullscreenTrackView({
-  currentTrackIndex = -1,
   libraryTrack,
   onLibraryTrackUpdate,
-  onNext,
-  onPrevious,
+  onRating,
 }: FullscreenTrackViewProps) {
   const navigate = useNavigate();
 
@@ -70,6 +66,7 @@ export function FullscreenTrackView({
       {/* Rating Stars */}
       <Stack align="center" className="mt-2" gap="xs">
         <RatingSelector
+          onRatingChange={onRating}
           rating={libraryTrack.rating ?? null}
           size="xl"
           trackId={libraryTrack.id}
@@ -87,22 +84,6 @@ export function FullscreenTrackView({
           trackTags={libraryTrack.tags}
         />
       </Stack>
-
-      {/* Controls */}
-      <Group className="mt-3" gap="md" justify="center">
-        <Button
-          color="gray"
-          disabled={currentTrackIndex === 0}
-          onClick={onPrevious}
-          size="sm"
-          variant="light"
-        >
-          Previous (P)
-        </Button>
-        <Button color="orange" onClick={onNext} size="sm">
-          Next (N)
-        </Button>
-      </Group>
     </>
   );
 }
