@@ -5,7 +5,7 @@ import { Clock, Library } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
-import { SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
+import { QUICK_SYNC_TRACK_LIMIT, SYNC_JOB_STORAGE_KEY } from "@/constants/sync";
 import {
   useLibraryControllerGetTracks,
   useLibraryControllerSyncRecentlyPlayed,
@@ -38,7 +38,9 @@ export function OnboardingSyncModal({
     percentage: 0,
   });
   const [jobId, setJobId] = useState<null | string>(null);
-  const [syncedTrackCount, setSyncedTrackCount] = useState(50);
+  const [syncedTrackCount, setSyncedTrackCount] = useState(
+    QUICK_SYNC_TRACK_LIMIT,
+  );
   const completionTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
@@ -90,7 +92,7 @@ export function OnboardingSyncModal({
         }
 
         trackEvent("onboarding_sync_completed", {
-          trackCount: data?.result?.totalTracks || 50,
+          trackCount: data?.result?.totalTracks || QUICK_SYNC_TRACK_LIMIT,
         });
 
         // Clear any existing timeout before creating a new one
@@ -145,7 +147,9 @@ export function OnboardingSyncModal({
 
   const handleStartSync = async () => {
     setPhase("syncing");
-    trackEvent("onboarding_sync_started", { trackCount: 50 });
+    trackEvent("onboarding_sync_started", {
+      trackCount: QUICK_SYNC_TRACK_LIMIT,
+    });
 
     try {
       const response = await quickSyncMutation.mutateAsync();
@@ -240,8 +244,8 @@ export function OnboardingSyncModal({
       {phase === "initial" && (
         <div className="space-y-4">
           <Text className="text-sm text-gray-400 mb-4">
-            We'll sync 50 of your most recent saved tracks so you can start
-            exploring. You can always do a full import later.
+            We'll sync {QUICK_SYNC_TRACK_LIMIT} of your most recent saved tracks
+            so you can start exploring. You can always do a full import later.
           </Text>
 
           {/* Sync card */}

@@ -16,6 +16,9 @@ import {
   SpotifyTrackData,
 } from "./spotify.service";
 
+// Number of tracks to sync during quick sync (onboarding)
+export const QUICK_SYNC_TRACK_LIMIT = 50;
+
 export interface SyncResult {
   errors: string[];
   newAlbums: number;
@@ -448,7 +451,7 @@ export class LibrarySyncService {
       this.logger.log(`Starting quick sync for user ${userId}`);
       this.syncArtistCache.clear();
 
-      // Quick sync: Only sync 50 most recent liked tracks (for fast onboarding)
+      // Quick sync: Only sync most recent liked tracks (for fast onboarding)
       if (onProgress) {
         await onProgress({
           current: 0,
@@ -456,13 +459,13 @@ export class LibrarySyncService {
           message: "Fetching your recent saved tracks...",
           percentage: 0,
           phase: "tracks",
-          total: 100,
+          total: QUICK_SYNC_TRACK_LIMIT,
         });
       }
 
       const likedTracksPage = await this.spotifyService.getUserLibraryTracks(
         accessToken,
-        50, // Limit to first 50 tracks (most recent)
+        QUICK_SYNC_TRACK_LIMIT,
         0,
       );
 
@@ -473,7 +476,7 @@ export class LibrarySyncService {
           message: `Processing ${likedTracksPage.items.length} tracks...`,
           percentage: 25,
           phase: "tracks",
-          total: 100,
+          total: QUICK_SYNC_TRACK_LIMIT,
         });
       }
 
