@@ -22,6 +22,20 @@
         ]
       }
     },
+    "/auth/account": {
+      "delete": {
+        "operationId": "AuthController_deleteAccount",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Account deleted successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/auth/token": {
       "get": {
         "operationId": "AuthController_getAccessToken",
