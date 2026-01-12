@@ -6,6 +6,7 @@ import { AuthService } from "../../auth/auth.service";
 import { SyncOptionsDto } from "../../library/dto/sync-options.dto";
 import { SyncProgressDto } from "../../library/dto/sync-progress-base.dto";
 import { LibrarySyncService } from "../../library/library-sync.service";
+import { PlaySyncService } from "../../library/play-sync.service";
 import { PlaylistSyncService } from "../../library/playlist-sync.service";
 
 export interface SyncJobData {
@@ -107,6 +108,7 @@ export class SyncProcessor extends WorkerHost {
     private librarySyncService: LibrarySyncService,
     private authService: AuthService,
     private playlistSyncService: PlaylistSyncService,
+    private playSyncService: PlaySyncService,
   ) {
     super();
   }
@@ -176,6 +178,21 @@ export class SyncProcessor extends WorkerHost {
         this.logger.warn(
           `Failed to enqueue playlist sync for user ${userId}: ${error.message}`,
         );
+      }
+
+      // Trigger play history sync for new users (quick sync / onboarding)
+      // This ensures they have play history data when they visit the Play History page
+      if (syncType === "quick") {
+        try {
+          await this.playSyncService.enqueueSyncForUser(userId);
+          this.logger.log(
+            `Enqueued play history sync for user ${userId} after onboarding`,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to enqueue play history sync for user ${userId}: ${error.message}`,
+          );
+        }
       }
 
       return result;
