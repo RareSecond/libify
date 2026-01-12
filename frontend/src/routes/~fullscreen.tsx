@@ -82,13 +82,8 @@ function FullscreenPage() {
       playlistCount: SEED_PLAYLISTS.length,
     });
     trackEvent("onboarding_completed", { path: "rating" });
-    notifications.show({
-      color: "green",
-      message: "Check out your new smart playlists!",
-      title: "Onboarding complete!",
-    });
     onboarding?.exitOnboarding();
-    navigate({ to: "/smart-playlists" });
+    navigate({ search: { welcome: true }, to: "/smart-playlists" });
     isCompletingRef.current = false;
   }, [createPlaylistMutation, navigate, onboarding]);
 

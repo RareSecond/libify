@@ -1,4 +1,4 @@
-import { Badge, Image, Stack, Text, Title } from "@mantine/core";
+import { Badge, Stack, Text, Title } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 
 interface FullscreenSpotifyTrackViewProps {
@@ -21,7 +21,7 @@ export function FullscreenSpotifyTrackView({
     <>
       {/* Album Art - flex to fill remaining space */}
       <div className="flex-1 flex items-center justify-center w-full min-h-0">
-        <Image
+        <img
           alt={track.album.name}
           className="max-w-full max-h-full object-contain border-4 border-dark-5 shadow-2xl rounded-lg"
           src={albumArt}
