@@ -16,6 +16,14 @@ export class AuthService {
     private encryptionService: EncryptionService,
   ) {}
 
+  async deleteUser(userId: string): Promise<void> {
+    this.logger.log(`Deleting user ${userId}`);
+
+    await this.prisma.user.delete({ where: { id: userId } });
+
+    this.logger.log(`User ${userId} deleted successfully`);
+  }
+
   async getSpotifyAccessToken(userId: string): Promise<null | string> {
     const user = await this.prisma.user.findUnique({
       select: {

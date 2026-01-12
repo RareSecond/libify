@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Put,
   Req,
@@ -42,6 +45,19 @@ export class AuthController {
     private authService: AuthService,
     private apiKeyService: ApiKeyService,
   ) {}
+
+  @ApiResponse({ description: "Account deleted successfully", status: 204 })
+  @Delete("account")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AuthGuard("jwt"))
+  async deleteAccount(
+    @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.authService.deleteUser(req.user.id);
+    res.clearCookie("jwt", this.cookieOptions);
+    res.status(HttpStatus.NO_CONTENT).send();
+  }
 
   @ApiResponse({
     description: "Spotify access token",
