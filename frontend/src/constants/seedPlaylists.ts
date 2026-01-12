@@ -43,16 +43,17 @@ export const SEED_PLAYLISTS: CreateSmartPlaylistDto[] = [
   {
     criteria: {
       logic: PlaylistCriteriaDtoLogic.and,
-      orderBy: "rating",
+      orderBy: "dateAdded",
       orderDirection: PlaylistCriteriaDtoOrderDirection.desc,
       rules: [
         {
-          field: PlaylistRuleDtoField.rating,
-          operator: PlaylistRuleDtoOperator.isNotNull,
+          daysValue: 14,
+          field: PlaylistRuleDtoField.dateAdded,
+          operator: PlaylistRuleDtoOperator.inLast,
         },
       ],
     },
-    description: "Every track you've rated, sorted by rating",
-    name: "All Rated Tracks",
+    description: "Tracks added to your library in the past 2 weeks",
+    name: "Recently Added",
   },
 ];

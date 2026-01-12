@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -354,6 +353,26 @@ export function SpotifyPlayerProvider({
       await player.resume();
     }
   };
+
+  const playUris = async (uris: string[]) => {
+    if (!player || !deviceId || uris.length === 0) return;
+    const response = await fetch(
+      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+      {
+        body: JSON.stringify({ uris }),
+        headers: {
+          "Authorization": `Bearer ${await getAccessToken()}`,
+          "Content-Type": "application/json",
+        },
+        method: "PUT",
+      },
+    );
+    if (response.ok) {
+      setCurrentTrackList(uris);
+      setCurrentTrackIndex(0);
+      setCurrentContext(null);
+    }
+  };
   const playTrackList = async (
     tracks: string[] | TrackWithId[],
     context?: PlayContext,
@@ -475,6 +494,7 @@ export function SpotifyPlayerProvider({
     play,
     player,
     playTrackList,
+    playUris,
     position,
     previousTrack,
     resume,

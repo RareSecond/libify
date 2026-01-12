@@ -1,4 +1,4 @@
-import { Button, Group, Image, Stack, Text, Title } from "@mantine/core";
+import { Image, Stack, Text, Title } from "@mantine/core";
 import { useNavigate } from "@tanstack/react-router";
 
 import { InlineTagEditor } from "@/components/InlineTagEditor";
@@ -6,19 +6,17 @@ import { RatingSelector } from "@/components/RatingSelector";
 import { TrackDto } from "@/data/api";
 
 interface FullscreenTrackViewProps {
-  currentTrackIndex?: number;
+  isOnboarding?: boolean;
   libraryTrack: TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
-  onNext: () => void;
-  onPrevious: () => void;
+  onRating?: (rating: number) => void;
 }
 
 export function FullscreenTrackView({
-  currentTrackIndex = -1,
+  isOnboarding,
   libraryTrack,
   onLibraryTrackUpdate,
-  onNext,
-  onPrevious,
+  onRating,
 }: FullscreenTrackViewProps) {
   const navigate = useNavigate();
 
@@ -68,41 +66,42 @@ export function FullscreenTrackView({
       </Stack>
 
       {/* Rating Stars */}
-      <Stack align="center" className="mt-2" gap="xs">
+      <Stack
+        align="center"
+        className={`mt-3 ${isOnboarding ? "bg-dark-6 rounded-xl px-6 py-4 border-2 border-orange-5/50 shadow-lg shadow-orange-5/10" : ""}`}
+        gap="xs"
+      >
+        {isOnboarding && (
+          <Text className="text-orange-4 font-medium text-sm md:text-base mb-1">
+            How do you feel about this track?
+          </Text>
+        )}
         <RatingSelector
+          onRatingChange={onRating}
           rating={libraryTrack.rating ?? null}
           size="xl"
           trackId={libraryTrack.id}
         />
+        {isOnboarding && (
+          <Text className="text-dark-2 text-xs md:text-sm mt-1">
+            Click a star to rate and continue
+          </Text>
+        )}
       </Stack>
 
-      {/* Tags */}
-      <Stack align="center" className="mt-1" gap="xs">
-        <Text className="text-dark-1 font-semibold uppercase tracking-wide text-xs md:text-sm">
-          Tags
-        </Text>
-        <InlineTagEditor
-          onTagsChange={onLibraryTrackUpdate}
-          trackId={libraryTrack.id}
-          trackTags={libraryTrack.tags}
-        />
-      </Stack>
-
-      {/* Controls */}
-      <Group className="mt-3" gap="md" justify="center">
-        <Button
-          color="gray"
-          disabled={currentTrackIndex === 0}
-          onClick={onPrevious}
-          size="sm"
-          variant="light"
-        >
-          Previous (P)
-        </Button>
-        <Button color="orange" onClick={onNext} size="sm">
-          Next (N)
-        </Button>
-      </Group>
+      {/* Tags - hidden during onboarding to keep focus on rating */}
+      {!isOnboarding && (
+        <Stack align="center" className="mt-1" gap="xs">
+          <Text className="text-dark-1 font-semibold uppercase tracking-wide text-xs md:text-sm">
+            Tags
+          </Text>
+          <InlineTagEditor
+            onTagsChange={onLibraryTrackUpdate}
+            trackId={libraryTrack.id}
+            trackTags={libraryTrack.tags}
+          />
+        </Stack>
+      )}
     </>
   );
 }

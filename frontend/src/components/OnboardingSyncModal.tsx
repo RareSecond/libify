@@ -31,7 +31,7 @@ export function OnboardingSyncModal({
 }: OnboardingSyncModalProps) {
   const navigate = useNavigate();
   const onboarding = useOnboarding();
-  const { play } = useSpotifyPlayer();
+  const { playUris } = useSpotifyPlayer();
   const [phase, setPhase] = useState<ModalPhase>("initial");
   const [progress, setProgress] = useState<PartialSyncProgress>({
     message: "Starting sync...",
@@ -180,9 +180,12 @@ export function OnboardingSyncModal({
       // Start onboarding with the tracks
       onboarding?.startOnboarding(tracks);
 
-      // Play the first track
-      if (tracks[0]?.spotifyId) {
-        await play(`spotify:track:${tracks[0].spotifyId}`);
+      // Queue all tracks in Spotify so next/previous works natively
+      const uris = tracks
+        .filter((t) => t.spotifyId)
+        .map((t) => `spotify:track:${t.spotifyId}`);
+      if (uris.length > 0) {
+        await playUris(uris);
       }
 
       // Navigate to fullscreen

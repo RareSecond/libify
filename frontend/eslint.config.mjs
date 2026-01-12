@@ -112,8 +112,12 @@ export default [
     },
   },
   // Disable max-lines for specific large files
+  // TODO: Split SpotifyPlayerContext.tsx in a separate PR
   {
-    files: ["src/components/MediaPlayer.tsx"],
+    files: [
+      "src/components/MediaPlayer.tsx",
+      "src/contexts/SpotifyPlayerContext.tsx",
+    ],
     rules: {
       "max-lines": "off",
     },

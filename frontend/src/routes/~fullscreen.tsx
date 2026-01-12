@@ -39,16 +39,13 @@ function FullscreenPage() {
     isRemotePlayback,
     remoteDevice,
     remoteTrack,
-  } = useFullscreenPlayback({ isOnboarding, onboarding });
+  } = useFullscreenPlayback();
 
   const createPlaylistMutation = usePlaylistsControllerCreate();
 
-  const spotifyId = isOnboarding
-    ? onboarding?.tracks[onboarding.currentIndex]?.spotifyId || ""
-    : currentTrack?.linked_from?.id ||
-      currentTrack?.id ||
-      remoteTrack?.id ||
-      "";
+  // Use Spotify's current track for spotifyId - Spotify manages the queue
+  const spotifyId =
+    currentTrack?.linked_from?.id || currentTrack?.id || remoteTrack?.id || "";
 
   const { isLoading, libraryTrack, refetchLibraryTrack } = useLibraryTrack({
     spotifyId,
@@ -129,23 +126,26 @@ function FullscreenPage() {
               trackEvent(
                 isOnboarding ? "onboarding_track_rated" : "track_rated",
                 isOnboarding
-                  ? { rating, trackIndex: (onboarding?.currentIndex ?? 0) + 1 }
+                  ? { rating, trackIndex: currentTrackIndex + 1 }
                   : { rating, source: "fullscreen_mode" },
               );
               await new Promise((r) => setTimeout(r, 500));
               if (isOnboarding) {
+                // Use currentTrackIndex from Spotify player
                 const isLast =
-                  (onboarding?.currentIndex ?? 0) >=
-                  (onboarding?.totalTracks ?? 0) - 1;
-                await handleNext();
+                  currentTrackIndex >= (onboarding?.totalTracks ?? 0) - 1;
                 onboarding?.advance(rating);
                 if (isLast) {
                   trackEvent("onboarding_rating_completed", {
-                    ratings: onboarding?.ratings ?? [],
+                    ratings: [...(onboarding?.ratings ?? []), rating],
                   });
                   await completeOnboarding();
+                } else {
+                  await handleNext();
                 }
-              } else await handleNext();
+              } else {
+                await handleNext();
+              }
             } finally {
               isAdvancingRef.current = false;
             }
@@ -157,6 +157,7 @@ function FullscreenPage() {
       libraryTrack,
       isOnboarding,
       onboarding,
+      currentTrackIndex,
       updateRatingMutation,
       handleNext,
       completeOnboarding,
@@ -197,22 +198,18 @@ function FullscreenPage() {
       />
       {isOnboarding && (
         <OnboardingProgress
-          currentIndex={onboarding?.currentIndex ?? 0}
+          currentIndex={currentTrackIndex}
           totalTracks={onboarding?.totalTracks ?? 1}
         />
       )}
       <FullscreenContent
         currentTrack={currentTrack}
-        currentTrackIndex={
-          isOnboarding ? (onboarding?.currentIndex ?? 0) : currentTrackIndex
-        }
         isLoading={isLoading}
         isOnboarding={isOnboarding}
         isRemotePlayback={!!isRemotePlayback}
         libraryTrack={libraryTrack}
         onLibraryTrackUpdate={handleLibraryTrackUpdate}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
+        onRating={handleRating}
         remoteDevice={remoteDevice}
         remoteTrack={remoteTrack}
       />

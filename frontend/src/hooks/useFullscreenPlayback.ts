@@ -9,27 +9,13 @@ import {
 import { useCurrentPlayback } from "@/hooks/useCurrentPlayback";
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
-interface OnboardingContext {
-  currentIndex: number;
-  tracks: { spotifyId?: string }[];
-}
-
-interface UseFullscreenPlaybackProps {
-  isOnboarding: boolean;
-  onboarding: null | OnboardingContext;
-}
-
-export function useFullscreenPlayback({
-  isOnboarding,
-  onboarding,
-}: UseFullscreenPlaybackProps) {
+export function useFullscreenPlayback() {
   const {
     currentTrack,
     currentTrackIndex,
     isPlaying,
     nextTrack,
     pause,
-    play,
     previousTrack,
     resume,
   } = useSpotifyPlayer();
@@ -45,47 +31,24 @@ export function useFullscreenPlayback({
   const remoteDevice = currentPlayback?.device;
 
   const handleNext = useCallback(async () => {
-    if (isOnboarding) {
-      const next = onboarding?.tracks[(onboarding?.currentIndex ?? 0) + 1];
-      if (next?.spotifyId) await play(`spotify:track:${next.spotifyId}`);
-    } else if (isRemotePlayback) {
+    if (isRemotePlayback) {
       remoteNext(undefined, {
         onSuccess: () => setTimeout(() => refetchPlayback(), 500),
       });
     } else {
       await nextTrack();
     }
-  }, [
-    isOnboarding,
-    onboarding,
-    play,
-    isRemotePlayback,
-    nextTrack,
-    refetchPlayback,
-    remoteNext,
-  ]);
+  }, [isRemotePlayback, nextTrack, refetchPlayback, remoteNext]);
 
   const handlePrevious = useCallback(async () => {
-    if (isOnboarding) {
-      const prev =
-        onboarding?.tracks[Math.max(0, (onboarding?.currentIndex ?? 0) - 1)];
-      if (prev?.spotifyId) await play(`spotify:track:${prev.spotifyId}`);
-    } else if (isRemotePlayback) {
+    if (isRemotePlayback) {
       remotePrevious(undefined, {
         onSuccess: () => setTimeout(() => refetchPlayback(), 500),
       });
     } else {
       await previousTrack();
     }
-  }, [
-    isOnboarding,
-    onboarding,
-    play,
-    isRemotePlayback,
-    previousTrack,
-    refetchPlayback,
-    remotePrevious,
-  ]);
+  }, [isRemotePlayback, previousTrack, refetchPlayback, remotePrevious]);
 
   const handlePlayPause = useCallback(() => {
     if (isRemotePlayback) {

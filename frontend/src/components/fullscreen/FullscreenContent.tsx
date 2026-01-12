@@ -11,14 +11,12 @@ const SHORTCUTS_TEXT =
 
 interface FullscreenContentProps {
   currentTrack?: null | SpotifyTrack;
-  currentTrackIndex: number;
   isLoading: boolean;
   isOnboarding: boolean;
   isRemotePlayback: boolean;
   libraryTrack?: null | TrackDto;
   onLibraryTrackUpdate: () => Promise<void>;
-  onNext: () => void;
-  onPrevious: () => void;
+  onRating?: (rating: number) => void;
   remoteDevice?: null | { name: string };
   remoteTrack?: null | RemoteTrack;
 }
@@ -39,14 +37,12 @@ interface SpotifyTrack {
 
 export function FullscreenContent({
   currentTrack,
-  currentTrackIndex,
   isLoading,
   isOnboarding,
   isRemotePlayback,
   libraryTrack,
   onLibraryTrackUpdate,
-  onNext,
-  onPrevious,
+  onRating,
   remoteDevice,
   remoteTrack,
 }: FullscreenContentProps) {
@@ -64,25 +60,15 @@ export function FullscreenContent({
         <Loader color="orange" size="xl" />
       ) : libraryTrack ? (
         <FullscreenTrackView
-          currentTrackIndex={currentTrackIndex}
+          isOnboarding={isOnboarding}
           libraryTrack={libraryTrack}
           onLibraryTrackUpdate={onLibraryTrackUpdate}
-          onNext={onNext}
-          onPrevious={onPrevious}
+          onRating={onRating}
         />
       ) : currentTrack ? (
-        <FullscreenSpotifyTrackView
-          currentTrackIndex={currentTrackIndex}
-          onNext={onNext}
-          onPrevious={onPrevious}
-          track={currentTrack}
-        />
+        <FullscreenSpotifyTrackView track={currentTrack} />
       ) : isRemotePlayback && remoteTrack ? (
-        <FullscreenRemoteTrackView
-          onNext={onNext}
-          onPrevious={onPrevious}
-          remoteTrack={remoteTrack}
-        />
+        <FullscreenRemoteTrackView remoteTrack={remoteTrack} />
       ) : null}
     </div>
   );
