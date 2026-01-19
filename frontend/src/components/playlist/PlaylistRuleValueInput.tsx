@@ -82,15 +82,15 @@ export function PlaylistRuleValueInput({
     );
   }
 
-  // Tempo (BPM)
+  // Tempo (BPM) - allows one decimal place to match backend float handling
   if (field === PlaylistRuleDtoField.tempo) {
     return (
       <NumberInput
-        decimalScale={0}
+        decimalScale={1}
         max={300}
         min={0}
-        placeholder="BPM (e.g. 120)"
-        step={5}
+        placeholder="BPM (e.g. 120.5)"
+        step={0.1}
         {...inputProps.numberValue}
       />
     );

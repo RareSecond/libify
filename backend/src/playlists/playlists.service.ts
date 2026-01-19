@@ -386,9 +386,15 @@ export class PlaylistsService {
     rule: PlaylistRuleDto,
   ): Record<string, unknown> {
     // Parse float value from either numberValue or string value
-    const getValue = () => {
-      if (rule.numberValue !== undefined) return rule.numberValue;
-      if (rule.value !== undefined) return parseFloat(rule.value);
+    // Returns undefined for NaN or non-finite values
+    const getValue = (): number | undefined => {
+      if (rule.numberValue !== undefined && Number.isFinite(rule.numberValue)) {
+        return rule.numberValue;
+      }
+      if (rule.value !== undefined) {
+        const parsed = parseFloat(rule.value);
+        return Number.isFinite(parsed) ? parsed : undefined;
+      }
       return undefined;
     };
 
