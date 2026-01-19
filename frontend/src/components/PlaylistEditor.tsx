@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import {
   Box,
   Button,
@@ -27,7 +26,12 @@ import {
   usePlaylistsControllerUpdate,
 } from "../data/api";
 import { trackPlaylistCreated } from "../lib/posthog";
-import { defaultRule, operatorsByField } from "../utils/playlistConstants";
+import {
+  defaultRule,
+  logicOptions,
+  operatorsByField,
+  orderByOptions,
+} from "../utils/playlistConstants";
 import { validatePlaylistRules } from "../utils/playlistValidation";
 import { PlaylistRuleRow } from "./playlist/PlaylistRuleRow";
 
@@ -49,25 +53,7 @@ interface PlaylistEditorProps {
   onSave: () => void;
   playlist?: null | SmartPlaylistWithTracksDto;
 }
-const logicOptions = [
-  {
-    label: "Match all of the following rules",
-    value: PlaylistCriteriaDtoLogic.and,
-  },
-  {
-    label: "Match any of the following rules",
-    value: PlaylistCriteriaDtoLogic.or,
-  },
-];
-const orderByOptions = [
-  { label: "Title", value: "title" },
-  { label: "Artist", value: "artist" },
-  { label: "Album", value: "album" },
-  { label: "Date Added", value: "addedAt" },
-  { label: "Last Played", value: "lastPlayed" },
-  { label: "Play Count", value: "playCount" },
-  { label: "Rating", value: "rating" },
-];
+
 const orderDirectionOptions = [
   { label: "Ascending", value: "asc" },
   { label: "Descending", value: "desc" },

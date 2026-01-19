@@ -58,6 +58,44 @@ export function PlaylistRuleValueInput({
     );
   }
 
+  // Audio feature fields (0-1 scale)
+  const audioFeatureFields = [
+    PlaylistRuleDtoField.energy,
+    PlaylistRuleDtoField.danceability,
+    PlaylistRuleDtoField.valence,
+    PlaylistRuleDtoField.acousticness,
+    PlaylistRuleDtoField.instrumentalness,
+    PlaylistRuleDtoField.speechiness,
+    PlaylistRuleDtoField.liveness,
+  ] as string[];
+
+  if (audioFeatureFields.includes(field as string)) {
+    return (
+      <NumberInput
+        decimalScale={2}
+        max={1}
+        min={0}
+        placeholder="0.0 - 1.0"
+        step={0.1}
+        {...inputProps.numberValue}
+      />
+    );
+  }
+
+  // Tempo (BPM)
+  if (field === PlaylistRuleDtoField.tempo) {
+    return (
+      <NumberInput
+        decimalScale={0}
+        max={300}
+        min={0}
+        placeholder="BPM (e.g. 120)"
+        step={5}
+        {...inputProps.numberValue}
+      />
+    );
+  }
+
   if (
     [
       PlaylistRuleDtoField.duration as string,

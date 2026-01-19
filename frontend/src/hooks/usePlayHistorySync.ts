@@ -16,7 +16,6 @@ export function usePlayHistorySync(onSuccess: () => void) {
           });
         },
         onSuccess: (data: PlaySyncResultDto) => {
-          // Only treat as completed and trigger refetch when status is "completed"
           if (data.status === "completed") {
             notifications.show({
               color:
@@ -27,20 +26,17 @@ export function usePlayHistorySync(onSuccess: () => void) {
                   ? `${data.newPlaysCount} new plays imported`
                   : "Sync completed",
             });
-            // Trigger refetch only on successful completion
             onSuccess();
           } else if (
             data.status === "processing" ||
             data.status === "unknown"
           ) {
-            // Sync is still in progress or status unknown - inform user without refetching
             notifications.show({
               color: "blue",
               message: data.message,
               title: "Sync in progress",
             });
           } else {
-            // Unexpected status - show informational notification
             notifications.show({
               color: "yellow",
               message: data.message,

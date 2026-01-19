@@ -94,6 +94,21 @@ model SpotifyTrack {
   previewUrl  String? // 30-second preview URL
   lastUpdated DateTime @default(now()) // When we last synced with Spotify
 
+  // Audio features from Spotify Audio Features API
+  tempo            Float? // BPM (beats per minute)
+  danceability     Float? // 0.0-1.0, how suitable for dancing
+  energy           Float? // 0.0-1.0, perceptual intensity/activity
+  valence          Float? // 0.0-1.0, musical positiveness (happy vs sad)
+  acousticness     Float? // 0.0-1.0, confidence track is acoustic
+  instrumentalness Float? // 0.0-1.0, predicts if track has no vocals
+  speechiness      Float? // 0.0-1.0, presence of spoken words
+  liveness         Float? // 0.0-1.0, probability of live recording
+  loudness         Float? // dB, typically -60 to 0
+  key              Int? // 0-11 (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+  mode             Int? // 0 = minor, 1 = major
+  timeSignature    Int? // estimated time signature (3, 4, 5, etc.)
+  audioFeaturesUpdatedAt DateTime? // When audio features were last fetched
+
   // Relations
   artist     SpotifyArtist @relation(fields: [artistId], references: [id])
   album      SpotifyAlbum  @relation(fields: [albumId], references: [id])
@@ -104,6 +119,10 @@ model SpotifyTrack {
   @@index([artistId])
   @@index([albumId])
   @@index([title])
+  @@index([tempo])
+  @@index([energy])
+  @@index([danceability])
+  @@index([valence])
 }
 
 // User-specific track data (when added, play count, etc.)

@@ -31,6 +31,16 @@ export interface SpotifyPlaylistTrack {
   track: SpotifyTrackData;
 }
 
+export interface SpotifyRecentlyPlayedResponse {
+  cursors?: {
+    after: string; // Unix timestamp in ms - oldest item
+    before: string; // Unix timestamp in ms - newest item
+  };
+  items: Array<{ played_at: string; track: SpotifyTrackData }>;
+  limit: number;
+  next: null | string;
+}
+
 export interface SpotifyTrackData {
   added_at?: string;
   album: { id: string; images: Array<{ url: string }>; name: string };
@@ -368,19 +378,19 @@ export class SpotifyService {
   async getRecentlyPlayed(
     accessToken: string,
     limit = 50,
-    after?: number,
-  ): Promise<Array<{ played_at: string; track: SpotifyTrackData }>> {
+    before?: number,
+  ): Promise<SpotifyRecentlyPlayedResponse> {
     try {
-      const params: { after?: number; limit: number } = { limit };
-      if (after !== undefined) {
-        params.after = after;
+      const params: { before?: number; limit: number } = { limit };
+      if (before !== undefined) {
+        params.before = before;
       }
 
       const response = await this.spotifyApi.get("/me/player/recently-played", {
         headers: { Authorization: `Bearer ${accessToken}` },
         params,
       });
-      return response.data.items;
+      return response.data;
     } catch (error) {
       this.logger.error("Failed to fetch recently played tracks", error);
       throw error;

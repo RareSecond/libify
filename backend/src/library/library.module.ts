@@ -8,6 +8,7 @@ import { LibrarySyncService } from "./library-sync.service";
 import { LibraryController } from "./library.controller";
 import { PlaySyncService } from "./play-sync.service";
 import { PlaylistSyncService } from "./playlist-sync.service";
+import { ReccoBeatsService } from "./reccobeats.service";
 import { SpotifyService } from "./spotify.service";
 import { SyncProgressGateway } from "./sync-progress.gateway";
 import { TagService } from "./tag.service";
@@ -32,6 +33,7 @@ import { TrackService } from "./track.service";
   ],
   providers: [
     SpotifyService,
+    ReccoBeatsService,
     LibrarySyncService,
     TrackService,
     TagService,

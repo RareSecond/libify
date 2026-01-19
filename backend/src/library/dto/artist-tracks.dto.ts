@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Expose, Type } from "class-transformer";
 import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
+import { TRACK_SORT_FIELDS, TrackSortField } from "./track-sort.constants";
 import { TrackDto } from "./track.dto";
 
 export class ArtistTracksResponseDto {
@@ -11,35 +12,16 @@ export class ArtistTracksResponseDto {
   tracks: TrackDto[];
 }
 
-const SORT_BY_VALUES = [
-  "title",
-  "artist",
-  "album",
-  "addedAt",
-  "lastPlayedAt",
-  "totalPlayCount",
-  "rating",
-  "duration",
-] as const;
-
 export class GetArtistTracksQueryDto {
   @ApiProperty({ description: "Artist name" })
   @IsNotEmpty()
   @IsString()
   artist: string;
 
-  @ApiPropertyOptional({ description: "Sort field", enum: SORT_BY_VALUES })
-  @IsIn(SORT_BY_VALUES)
+  @ApiPropertyOptional({ description: "Sort field", enum: TRACK_SORT_FIELDS })
+  @IsIn(TRACK_SORT_FIELDS)
   @IsOptional()
-  sortBy?:
-    | "addedAt"
-    | "album"
-    | "artist"
-    | "duration"
-    | "lastPlayedAt"
-    | "rating"
-    | "title"
-    | "totalPlayCount";
+  sortBy?: TrackSortField;
 
   @ApiPropertyOptional({
     default: "desc",

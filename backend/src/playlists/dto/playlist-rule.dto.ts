@@ -2,15 +2,23 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
 
 export enum PlaylistRuleField {
+  ACOUSTICNESS = "acousticness",
   ALBUM = "album",
   ARTIST = "artist",
+  DANCEABILITY = "danceability",
   DATE_ADDED = "dateAdded",
   DURATION = "duration",
+  ENERGY = "energy",
+  INSTRUMENTALNESS = "instrumentalness",
   LAST_PLAYED = "lastPlayed",
+  LIVENESS = "liveness",
   PLAY_COUNT = "playCount",
   RATING = "rating",
+  SPEECHINESS = "speechiness",
   TAG = "tag",
+  TEMPO = "tempo",
   TITLE = "title",
+  VALENCE = "valence",
 }
 
 export enum PlaylistRuleOperator {

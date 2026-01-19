@@ -86,10 +86,11 @@ export class PlaySyncProcessor extends WorkerHost {
 
       // Fetch recently played tracks from Spotify (latest 50, no time filter)
       // Note: Not using afterTimestamp to always get the full 50 tracks for debugging
-      const recentlyPlayed = await this.spotifyService.getRecentlyPlayed(
+      const response = await this.spotifyService.getRecentlyPlayed(
         accessToken,
         50,
       );
+      const recentlyPlayed = response.items;
 
       this.logger.log(
         `Spotify returned ${recentlyPlayed?.length || 0} recently played tracks`,

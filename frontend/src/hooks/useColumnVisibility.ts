@@ -4,17 +4,25 @@ import { useCallback, useEffect, useState } from "react";
 const STORAGE_KEY = "tracks-table-column-visibility";
 
 const DEFAULT_VISIBILITY: VisibilityState = {
+  acousticness: false,
   addedAt: true,
   album: true,
   albumArt: true,
   artist: true,
+  danceability: false,
   duration: true,
+  energy: false,
+  instrumentalness: false,
   lastPlayedAt: true,
+  liveness: false,
   rating: true,
   sources: true,
+  speechiness: false,
   tags: true,
+  tempo: false,
   title: true,
   totalPlayCount: true,
+  valence: false,
 };
 
 export function useColumnVisibility() {

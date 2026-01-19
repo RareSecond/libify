@@ -4,6 +4,7 @@ import { Expose, Transform, Type } from "class-transformer";
 import {
   IsArray,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -13,6 +14,7 @@ import {
 } from "class-validator";
 
 import { TagDto } from "./tag.dto";
+import { TRACK_SORT_FIELDS, TrackSortField } from "./track-sort.constants";
 import { TrackSourceDto } from "./track-source.dto";
 
 export class GetTracksQueryDto {
@@ -80,30 +82,10 @@ export class GetTracksQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({
-    description: "Sort field",
-    enum: [
-      "title",
-      "artist",
-      "album",
-      "addedAt",
-      "lastPlayedAt",
-      "totalPlayCount",
-      "rating",
-      "duration",
-    ],
-  })
+  @ApiPropertyOptional({ description: "Sort field", enum: TRACK_SORT_FIELDS })
+  @IsIn(TRACK_SORT_FIELDS)
   @IsOptional()
-  @IsString()
-  sortBy?:
-    | "addedAt"
-    | "album"
-    | "artist"
-    | "duration"
-    | "lastPlayedAt"
-    | "rating"
-    | "title"
-    | "totalPlayCount";
+  sortBy?: TrackSortField;
 
   @ApiPropertyOptional({
     default: "desc",
@@ -195,6 +177,10 @@ export class PaginatedTracksDto {
 }
 
 export class TrackDto {
+  @ApiPropertyOptional({ description: "0.0-1.0, confidence track is acoustic" })
+  @Expose()
+  acousticness?: number;
+
   @ApiProperty()
   @Expose()
   addedAt: Date;
@@ -227,17 +213,39 @@ export class TrackDto {
   @Expose()
   artistId: string;
 
+  @ApiPropertyOptional({ description: "0.0-1.0, how suitable for dancing" })
+  @Expose()
+  danceability?: number;
+
   @ApiProperty({ description: "Duration in milliseconds" })
   @Expose()
   duration: number;
+
+  @ApiPropertyOptional({
+    description: "0.0-1.0, perceptual intensity/activity",
+  })
+  @Expose()
+  energy?: number;
 
   @ApiProperty()
   @Expose()
   id: string;
 
+  @ApiPropertyOptional({
+    description: "0.0-1.0, predicts if track has no vocals",
+  })
+  @Expose()
+  instrumentalness?: number;
+
   @ApiPropertyOptional()
   @Expose()
   lastPlayedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: "0.0-1.0, probability of live recording",
+  })
+  @Expose()
+  liveness?: number;
 
   @ApiPropertyOptional()
   @Expose()
@@ -252,6 +260,10 @@ export class TrackDto {
   @Type(() => TrackSourceDto)
   sources: TrackSourceDto[];
 
+  @ApiPropertyOptional({ description: "0.0-1.0, presence of spoken words" })
+  @Expose()
+  speechiness?: number;
+
   @ApiProperty()
   @Expose()
   spotifyId: string;
@@ -261,6 +273,10 @@ export class TrackDto {
   @Type(() => TagDto)
   tags: TagDto[];
 
+  @ApiPropertyOptional({ description: "Tempo in BPM" })
+  @Expose()
+  tempo?: number;
+
   @ApiProperty()
   @Expose()
   title: string;
@@ -268,4 +284,10 @@ export class TrackDto {
   @ApiProperty()
   @Expose()
   totalPlayCount: number;
+
+  @ApiPropertyOptional({
+    description: "0.0-1.0, musical positiveness (happy vs sad)",
+  })
+  @Expose()
+  valence?: number;
 }

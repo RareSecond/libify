@@ -127,6 +127,15 @@ export function TracksTable({
     "rating",
     "tags",
     "sources",
+    // Audio features (hidden by default)
+    "tempo",
+    "energy",
+    "danceability",
+    "valence",
+    "acousticness",
+    "instrumentalness",
+    "speechiness",
+    "liveness",
   ];
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);

@@ -6,6 +6,7 @@ import { PageTitle } from "../components/PageTitle";
 import { RatingReminderBanner } from "../components/RatingReminderBanner";
 import { TrackList } from "../components/TrackList";
 import { isRatingReminderDismissed } from "../lib/ratingReminder";
+import { sortOrderSchema, trackSortBySchema } from "../utils/trackSortSchema";
 
 const tracksSearchSchema = z.object({
   genres: z.array(z.string()).optional().default([]),
@@ -13,20 +14,8 @@ const tracksSearchSchema = z.object({
   pageSize: z.coerce.number().min(1).max(100).optional().catch(20),
   search: z.string().optional(),
   showRatingReminder: z.boolean().optional(),
-  sortBy: z
-    .enum([
-      "title",
-      "artist",
-      "album",
-      "addedAt",
-      "lastPlayedAt",
-      "totalPlayCount",
-      "rating",
-      "duration",
-    ])
-    .optional()
-    .catch("addedAt"),
-  sortOrder: z.enum(["asc", "desc"]).optional().catch("desc"),
+  sortBy: trackSortBySchema.optional().catch("addedAt"),
+  sortOrder: sortOrderSchema.optional().catch("desc"),
 });
 
 export const Route = createFileRoute("/tracks")({

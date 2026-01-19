@@ -63,19 +63,32 @@ export type SpotifyArtist = {
   spotifyId: string;
 };
 export type SpotifyTrack = {
+  acousticness: null | number;
   albumId: string;
   artistId: string;
+  audioFeaturesUpdatedAt: null | Timestamp;
+  danceability: null | number;
   discNumber: null | number;
   duration: number;
+  energy: null | number;
   explicit: Generated<boolean>;
   id: string;
+  instrumentalness: null | number;
   isrc: null | string;
+  key: null | number;
   lastUpdated: Generated<Timestamp>;
+  liveness: null | number;
+  loudness: null | number;
+  mode: null | number;
   popularity: null | number;
   previewUrl: null | string;
+  speechiness: null | number;
   spotifyId: string;
+  tempo: null | number;
+  timeSignature: null | number;
   title: string;
   trackNumber: null | number;
+  valence: null | number;
 };
 export type Tag = {
   color: null | string;
