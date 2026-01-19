@@ -712,7 +712,15 @@
                 "lastPlayedAt",
                 "totalPlayCount",
                 "rating",
-                "duration"
+                "duration",
+                "tempo",
+                "energy",
+                "danceability",
+                "valence",
+                "acousticness",
+                "instrumentalness",
+                "speechiness",
+                "liveness"
               ]
             }
           },
@@ -885,7 +893,15 @@
                 "lastPlayedAt",
                 "totalPlayCount",
                 "rating",
-                "duration"
+                "duration",
+                "tempo",
+                "energy",
+                "danceability",
+                "valence",
+                "acousticness",
+                "instrumentalness",
+                "speechiness",
+                "liveness"
               ]
             }
           },
@@ -1203,7 +1219,15 @@
                 "lastPlayedAt",
                 "totalPlayCount",
                 "rating",
-                "duration"
+                "duration",
+                "tempo",
+                "energy",
+                "danceability",
+                "valence",
+                "acousticness",
+                "instrumentalness",
+                "speechiness",
+                "liveness"
               ]
             }
           },
@@ -1494,7 +1518,15 @@
                 "lastPlayedAt",
                 "totalPlayCount",
                 "rating",
-                "duration"
+                "duration",
+                "tempo",
+                "energy",
+                "danceability",
+                "valence",
+                "acousticness",
+                "instrumentalness",
+                "speechiness",
+                "liveness"
               ]
             }
           },
@@ -1652,7 +1684,15 @@
                 "lastPlayedAt",
                 "totalPlayCount",
                 "rating",
-                "duration"
+                "duration",
+                "tempo",
+                "energy",
+                "danceability",
+                "valence",
+                "acousticness",
+                "instrumentalness",
+                "speechiness",
+                "liveness"
               ]
             }
           },
@@ -3119,6 +3159,10 @@
       "TrackDto": {
         "type": "object",
         "properties": {
+          "acousticness": {
+            "type": "number",
+            "description": "0.0-1.0, confidence track is acoustic"
+          },
           "addedAt": {
             "format": "date-time",
             "type": "string"
@@ -3148,16 +3192,32 @@
             "type": "string",
             "description": "Internal artist ID for playback context"
           },
+          "danceability": {
+            "type": "number",
+            "description": "0.0-1.0, how suitable for dancing"
+          },
           "duration": {
             "type": "number",
             "description": "Duration in milliseconds"
           },
+          "energy": {
+            "type": "number",
+            "description": "0.0-1.0, perceptual intensity/activity"
+          },
           "id": {
             "type": "string"
+          },
+          "instrumentalness": {
+            "type": "number",
+            "description": "0.0-1.0, predicts if track has no vocals"
           },
           "lastPlayedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "liveness": {
+            "type": "number",
+            "description": "0.0-1.0, probability of live recording"
           },
           "ratedAt": {
             "format": "date-time",
@@ -3174,6 +3234,10 @@
               "$ref": "#/components/schemas/TrackSourceDto"
             }
           },
+          "speechiness": {
+            "type": "number",
+            "description": "0.0-1.0, presence of spoken words"
+          },
           "spotifyId": {
             "type": "string"
           },
@@ -3183,11 +3247,19 @@
               "$ref": "#/components/schemas/TagDto"
             }
           },
+          "tempo": {
+            "type": "number",
+            "description": "Tempo in BPM"
+          },
           "title": {
             "type": "string"
           },
           "totalPlayCount": {
             "type": "number"
+          },
+          "valence": {
+            "type": "number",
+            "description": "0.0-1.0, musical positiveness (happy vs sad)"
           }
         },
         "required": [
@@ -4461,15 +4533,23 @@
           },
           "field": {
             "enum": [
+              "acousticness",
               "album",
               "artist",
+              "danceability",
               "dateAdded",
               "duration",
+              "energy",
+              "instrumentalness",
               "lastPlayed",
+              "liveness",
               "playCount",
               "rating",
+              "speechiness",
               "tag",
-              "title"
+              "tempo",
+              "title",
+              "valence"
             ],
             "type": "string"
           },

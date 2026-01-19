@@ -149,6 +149,7 @@ export class PlaylistsService {
     ]);
 
     const formattedTracks = tracks.map((track) => ({
+      acousticness: track.spotifyTrack.acousticness ?? undefined,
       addedAt: track.addedAt,
       album: track.spotifyTrack.album.name,
       albumArt: track.spotifyTrack.album.imageUrl || null,
@@ -156,9 +157,13 @@ export class PlaylistsService {
       artist: track.spotifyTrack.artist.name,
       artistGenres: track.spotifyTrack.artist.genres || [],
       artistId: track.spotifyTrack.artistId,
+      danceability: track.spotifyTrack.danceability ?? undefined,
       duration: track.spotifyTrack.duration,
+      energy: track.spotifyTrack.energy ?? undefined,
       id: track.id,
+      instrumentalness: track.spotifyTrack.instrumentalness ?? undefined,
       lastPlayedAt: track.lastPlayedAt || null,
+      liveness: track.spotifyTrack.liveness ?? undefined,
       ratedAt: track.ratedAt || null,
       rating: track.rating || null,
       sources: track.sources.map((s) => ({
@@ -168,14 +173,17 @@ export class PlaylistsService {
         sourceName: s.sourceName,
         sourceType: s.sourceType,
       })),
+      speechiness: track.spotifyTrack.speechiness ?? undefined,
       spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((tt) => ({
         color: tt.tag.color,
         id: tt.tag.id,
         name: tt.tag.name,
       })),
+      tempo: track.spotifyTrack.tempo ?? undefined,
       title: track.spotifyTrack.title,
       totalPlayCount: track.totalPlayCount,
+      valence: track.spotifyTrack.valence ?? undefined,
     }));
 
     const totalToReturn = criteria.limit
@@ -373,6 +381,49 @@ export class PlaylistsService {
     return {};
   }
 
+  private buildFloatCondition(
+    field: string,
+    rule: PlaylistRuleDto,
+  ): Record<string, unknown> {
+    // Parse float value from either numberValue or string value
+    // Returns undefined for NaN or non-finite values
+    const getValue = (): number | undefined => {
+      if (rule.numberValue !== undefined && Number.isFinite(rule.numberValue)) {
+        return rule.numberValue;
+      }
+      if (rule.value !== undefined) {
+        const parsed = parseFloat(rule.value);
+        return Number.isFinite(parsed) ? parsed : undefined;
+      }
+      return undefined;
+    };
+
+    switch (rule.operator) {
+      case PlaylistRuleOperator.EQUALS: {
+        const value = getValue();
+        return value !== undefined ? { [field]: value } : {};
+      }
+      case PlaylistRuleOperator.GREATER_THAN: {
+        const value = getValue();
+        return value !== undefined ? { [field]: { gt: value } } : {};
+      }
+      case PlaylistRuleOperator.IS_NOT_NULL:
+        return { [field]: { not: null } };
+      case PlaylistRuleOperator.IS_NULL:
+        return { [field]: null };
+      case PlaylistRuleOperator.LESS_THAN: {
+        const value = getValue();
+        return value !== undefined ? { [field]: { lt: value } } : {};
+      }
+      case PlaylistRuleOperator.NOT_EQUALS: {
+        const value = getValue();
+        return value !== undefined ? { [field]: { not: value } } : {};
+      }
+      default:
+        return {};
+    }
+  }
+
   private buildNumberCondition(
     field: string,
     rule: PlaylistRuleDto,
@@ -425,7 +476,14 @@ export class PlaylistsService {
       id: "asc",
     };
 
+    // For nullable fields, use nulls: 'last' to push NULL values to the end
+    const nullsLast = { nulls: "last" as const, sort: direction };
+
     switch (normalizedField) {
+      // Audio features - nullable, use NULLS LAST
+      case "acousticness":
+        return [{ spotifyTrack: { acousticness: nullsLast } }, secondarySort];
+      // Non-nullable fields - direct ordering
       case "addedAt":
         return [{ addedAt: direction }, secondarySort];
       case "album":
@@ -438,16 +496,34 @@ export class PlaylistsService {
           { spotifyTrack: { artist: { name: direction } } },
           secondarySort,
         ];
+      case "danceability":
+        return [{ spotifyTrack: { danceability: nullsLast } }, secondarySort];
       case "duration":
         return [{ spotifyTrack: { duration: direction } }, secondarySort];
+      case "energy":
+        return [{ spotifyTrack: { energy: nullsLast } }, secondarySort];
+      case "instrumentalness":
+        return [
+          { spotifyTrack: { instrumentalness: nullsLast } },
+          secondarySort,
+        ];
+      // Other nullable fields
       case "lastPlayedAt":
-        return [{ lastPlayedAt: direction }, secondarySort];
+        return [{ lastPlayedAt: nullsLast }, secondarySort];
+      case "liveness":
+        return [{ spotifyTrack: { liveness: nullsLast } }, secondarySort];
       case "rating":
-        return [{ rating: direction }, secondarySort];
+        return [{ rating: nullsLast }, secondarySort];
+      case "speechiness":
+        return [{ spotifyTrack: { speechiness: nullsLast } }, secondarySort];
+      case "tempo":
+        return [{ spotifyTrack: { tempo: nullsLast } }, secondarySort];
       case "title":
         return [{ spotifyTrack: { title: direction } }, secondarySort];
       case "totalPlayCount":
         return [{ totalPlayCount: direction }, secondarySort];
+      case "valence":
+        return [{ spotifyTrack: { valence: nullsLast } }, secondarySort];
       default:
         return [{ addedAt: "desc" }, secondarySort];
     }
@@ -520,6 +596,10 @@ export class PlaylistsService {
     rule: PlaylistRuleDto,
   ): Prisma.UserTrackWhereInput {
     switch (rule.field) {
+      // Audio feature fields (stored on SpotifyTrack)
+      case PlaylistRuleField.ACOUSTICNESS:
+        return { spotifyTrack: this.buildFloatCondition("acousticness", rule) };
+
       case PlaylistRuleField.ALBUM:
         return this.buildRelationStringCondition(
           "spotifyTrack",
@@ -536,14 +616,28 @@ export class PlaylistsService {
           rule,
         );
 
+      case PlaylistRuleField.DANCEABILITY:
+        return { spotifyTrack: this.buildFloatCondition("danceability", rule) };
+
       case PlaylistRuleField.DATE_ADDED:
         return this.buildDateCondition("addedAt", rule);
 
       case PlaylistRuleField.DURATION:
         return { spotifyTrack: this.buildNumberCondition("duration", rule) };
 
+      case PlaylistRuleField.ENERGY:
+        return { spotifyTrack: this.buildFloatCondition("energy", rule) };
+
+      case PlaylistRuleField.INSTRUMENTALNESS:
+        return {
+          spotifyTrack: this.buildFloatCondition("instrumentalness", rule),
+        };
+
       case PlaylistRuleField.LAST_PLAYED:
         return this.buildDateCondition("lastPlayedAt", rule);
+
+      case PlaylistRuleField.LIVENESS:
+        return { spotifyTrack: this.buildFloatCondition("liveness", rule) };
 
       case PlaylistRuleField.PLAY_COUNT:
         return this.buildNumberCondition(
@@ -557,14 +651,23 @@ export class PlaylistsService {
           rule,
         ) as Prisma.UserTrackWhereInput;
 
+      case PlaylistRuleField.SPEECHINESS:
+        return { spotifyTrack: this.buildFloatCondition("speechiness", rule) };
+
       case PlaylistRuleField.TAG:
         return this.buildTagCondition(rule);
+
+      case PlaylistRuleField.TEMPO:
+        return { spotifyTrack: this.buildFloatCondition("tempo", rule) };
 
       case PlaylistRuleField.TITLE:
         return this.buildStringCondition(
           "spotifyTrack.title",
           rule,
         ) as Prisma.UserTrackWhereInput;
+
+      case PlaylistRuleField.VALENCE:
+        return { spotifyTrack: this.buildFloatCondition("valence", rule) };
 
       default:
         return {};

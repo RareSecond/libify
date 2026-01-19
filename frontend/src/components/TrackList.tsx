@@ -13,6 +13,7 @@ import {
 } from "../data/api";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { Route } from "../routes/~tracks";
+import { TrackSortField } from "../utils/trackSortSchema";
 import { GenreFilter } from "./filters/GenreFilter";
 import { TagManager } from "./TagManager";
 import { TracksTableWithControls } from "./TracksTableWithControls";
@@ -50,15 +51,7 @@ export function TrackList() {
     page,
     pageSize,
     search: debouncedSearch || undefined,
-    sortBy: sortBy as
-      | "addedAt"
-      | "album"
-      | "artist"
-      | "duration"
-      | "lastPlayedAt"
-      | "rating"
-      | "title"
-      | "totalPlayCount",
+    sortBy,
     sortOrder,
   });
 
@@ -94,15 +87,7 @@ export function TrackList() {
       page?: number;
       pageSize?: number;
       search?: string;
-      sortBy?:
-        | "addedAt"
-        | "album"
-        | "artist"
-        | "duration"
-        | "lastPlayedAt"
-        | "rating"
-        | "title"
-        | "totalPlayCount";
+      sortBy?: TrackSortField;
       sortOrder?: "asc" | "desc";
     }>,
   ) => {

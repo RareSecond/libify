@@ -11,6 +11,7 @@ import { InlineTagEditor } from "../components/InlineTagEditor";
 import { RatingSelector } from "../components/RatingSelector";
 import { TrackSources } from "../components/TrackSources";
 import { TrackDto } from "../data/api";
+import { getAudioFeatureColumns } from "../utils/audioFeatureColumns";
 import { formatTime } from "../utils/format";
 
 const formatDate = (date: null | string | undefined) => {
@@ -46,7 +47,6 @@ export function useTracksTableColumns({
   return useMemo<ColumnDef<TrackDto>[]>(() => {
     const columns: ColumnDef<TrackDto>[] = [];
 
-    // Optionally add selection column
     if (
       showSelection &&
       onToggleTrack &&
@@ -230,6 +230,7 @@ export function useTracksTableColumns({
         id: "sources",
         size: 200,
       },
+      ...getAudioFeatureColumns(),
     );
 
     return columns;

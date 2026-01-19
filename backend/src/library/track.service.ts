@@ -1325,6 +1325,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -1380,6 +1388,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -1388,7 +1404,14 @@ export class TrackService {
 
     // Apply sorting
     const order = sortOrder || "asc";
+    const nullsOrder = sql.raw(
+      order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST",
+    );
     switch (sortBy) {
+      // Audio features (stored on SpotifyTrack, may be null)
+      case "acousticness":
+        query = query.orderBy(sql`st.acousticness ${nullsOrder}`);
+        break;
       case "addedAt":
         query = query.orderBy("ut.addedAt", order);
         break;
@@ -1398,24 +1421,41 @@ export class TrackService {
       case "artist":
         query = query.orderBy("sar.name", order);
         break;
+      case "danceability":
+        query = query.orderBy(sql`st.danceability ${nullsOrder}`);
+        break;
       case "duration":
         query = query.orderBy("st.duration", order);
         break;
+      case "energy":
+        query = query.orderBy(sql`st.energy ${nullsOrder}`);
+        break;
+      case "instrumentalness":
+        query = query.orderBy(sql`st.instrumentalness ${nullsOrder}`);
+        break;
       case "lastPlayedAt":
-        query = query.orderBy(
-          sql`ut."lastPlayedAt" ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
-        );
+        query = query.orderBy(sql`ut."lastPlayedAt" ${nullsOrder}`);
+        break;
+      case "liveness":
+        query = query.orderBy(sql`st.liveness ${nullsOrder}`);
         break;
       case "rating":
-        query = query.orderBy(
-          sql`ut.rating ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
-        );
+        query = query.orderBy(sql`ut.rating ${nullsOrder}`);
+        break;
+      case "speechiness":
+        query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
+        break;
+      case "tempo":
+        query = query.orderBy(sql`st.tempo ${nullsOrder}`);
         break;
       case "title":
         query = query.orderBy("st.title", order);
         break;
       case "totalPlayCount":
         query = query.orderBy("ut.totalPlayCount", order);
+        break;
+      case "valence":
+        query = query.orderBy(sql`st.valence ${nullsOrder}`);
         break;
       default:
         // Default sort by title
@@ -1428,6 +1468,7 @@ export class TrackService {
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {
       const dto = {
+        acousticness: track.acousticness,
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
@@ -1435,16 +1476,23 @@ export class TrackService {
         artist: track.artistName,
         artistGenres: track.artistGenres,
         artistId: track.artistId,
+        danceability: track.danceability,
         duration: track.duration,
+        energy: track.energy,
         id: track.id,
+        instrumentalness: track.instrumentalness,
         lastPlayedAt: track.lastPlayedAt,
+        liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
         sources: track.sources,
+        speechiness: track.speechiness,
         spotifyId: track.spotifyId,
         tags: track.tags,
+        tempo: track.tempo,
         title: track.title,
         totalPlayCount: track.totalPlayCount,
+        valence: track.valence,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
@@ -1480,6 +1528,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -1532,6 +1588,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -1540,7 +1604,14 @@ export class TrackService {
 
     // Apply sorting
     const order = sortOrder || "asc";
+    const nullsOrder = sql.raw(
+      order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST",
+    );
     switch (sortBy) {
+      // Audio features (stored on SpotifyTrack, may be null)
+      case "acousticness":
+        query = query.orderBy(sql`st.acousticness ${nullsOrder}`);
+        break;
       case "addedAt":
         query = query.orderBy("ut.addedAt", order);
         break;
@@ -1550,24 +1621,41 @@ export class TrackService {
       case "artist":
         query = query.orderBy("sar.name", order);
         break;
+      case "danceability":
+        query = query.orderBy(sql`st.danceability ${nullsOrder}`);
+        break;
       case "duration":
         query = query.orderBy("st.duration", order);
         break;
+      case "energy":
+        query = query.orderBy(sql`st.energy ${nullsOrder}`);
+        break;
+      case "instrumentalness":
+        query = query.orderBy(sql`st.instrumentalness ${nullsOrder}`);
+        break;
       case "lastPlayedAt":
-        query = query.orderBy(
-          sql`ut."lastPlayedAt" ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
-        );
+        query = query.orderBy(sql`ut."lastPlayedAt" ${nullsOrder}`);
+        break;
+      case "liveness":
+        query = query.orderBy(sql`st.liveness ${nullsOrder}`);
         break;
       case "rating":
-        query = query.orderBy(
-          sql`ut.rating ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
-        );
+        query = query.orderBy(sql`ut.rating ${nullsOrder}`);
+        break;
+      case "speechiness":
+        query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
+        break;
+      case "tempo":
+        query = query.orderBy(sql`st.tempo ${nullsOrder}`);
         break;
       case "title":
         query = query.orderBy("st.title", order);
         break;
       case "totalPlayCount":
         query = query.orderBy("ut.totalPlayCount", order);
+        break;
+      case "valence":
+        query = query.orderBy(sql`st.valence ${nullsOrder}`);
         break;
       default:
         // Default sort by album then title
@@ -1579,6 +1667,7 @@ export class TrackService {
 
     const trackDtos = tracks.map((track) => {
       const dto = {
+        acousticness: track.acousticness,
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
@@ -1586,16 +1675,23 @@ export class TrackService {
         artist: track.artistName,
         artistGenres: track.artistGenres,
         artistId: track.artistId,
+        danceability: track.danceability,
         duration: track.duration,
+        energy: track.energy,
         id: track.id,
+        instrumentalness: track.instrumentalness,
         lastPlayedAt: track.lastPlayedAt,
+        liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
         sources: track.sources,
+        speechiness: track.speechiness,
         spotifyId: track.spotifyId,
         tags: track.tags,
+        tempo: track.tempo,
         title: track.title,
         totalPlayCount: track.totalPlayCount,
+        valence: track.valence,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
@@ -1949,6 +2045,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -1982,6 +2086,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -1991,7 +2103,14 @@ export class TrackService {
 
     // Apply sorting
     const order = sortOrder || "asc";
+    const nullsOrder = sql.raw(
+      order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST",
+    );
     switch (sortBy) {
+      // Audio features (stored on SpotifyTrack, may be null)
+      case "acousticness":
+        query = query.orderBy(sql`st.acousticness ${nullsOrder}`);
+        break;
       case "addedAt":
         query = query.orderBy("ut.addedAt", order);
         break;
@@ -2001,24 +2120,41 @@ export class TrackService {
       case "artist":
         query = query.orderBy("sar.name", order);
         break;
+      case "danceability":
+        query = query.orderBy(sql`st.danceability ${nullsOrder}`);
+        break;
       case "duration":
         query = query.orderBy("st.duration", order);
         break;
+      case "energy":
+        query = query.orderBy(sql`st.energy ${nullsOrder}`);
+        break;
+      case "instrumentalness":
+        query = query.orderBy(sql`st.instrumentalness ${nullsOrder}`);
+        break;
       case "lastPlayedAt":
-        query = query.orderBy(
-          sql`ut."lastPlayedAt" ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
-        );
+        query = query.orderBy(sql`ut."lastPlayedAt" ${nullsOrder}`);
+        break;
+      case "liveness":
+        query = query.orderBy(sql`st.liveness ${nullsOrder}`);
         break;
       case "rating":
-        query = query.orderBy(
-          sql`ut.rating ${sql.raw(order === "desc" ? "DESC NULLS LAST" : "ASC NULLS LAST")}`,
-        );
+        query = query.orderBy(sql`ut.rating ${nullsOrder}`);
+        break;
+      case "speechiness":
+        query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
+        break;
+      case "tempo":
+        query = query.orderBy(sql`st.tempo ${nullsOrder}`);
         break;
       case "title":
         query = query.orderBy("st.title", order);
         break;
       case "totalPlayCount":
         query = query.orderBy("ut.totalPlayCount", order);
+        break;
+      case "valence":
+        query = query.orderBy(sql`st.valence ${nullsOrder}`);
         break;
       default:
         // Default sort by playlist order (createdAt in TrackSource)
@@ -2031,6 +2167,7 @@ export class TrackService {
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {
       const dto = {
+        acousticness: track.acousticness,
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
@@ -2038,16 +2175,23 @@ export class TrackService {
         artist: track.artistName,
         artistGenres: track.artistGenres,
         artistId: track.artistId,
+        danceability: track.danceability,
         duration: track.duration,
+        energy: track.energy,
         id: track.id,
+        instrumentalness: track.instrumentalness,
         lastPlayedAt: track.lastPlayedAt,
+        liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
         sources: [],
+        speechiness: track.speechiness,
         spotifyId: track.spotifyId,
         tags: track.tags,
+        tempo: track.tempo,
         title: track.title,
         totalPlayCount: track.totalPlayCount,
+        valence: track.valence,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
@@ -2099,6 +2243,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -2148,6 +2300,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -2160,6 +2320,7 @@ export class TrackService {
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {
       const dto = {
+        acousticness: track.acousticness,
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
@@ -2167,16 +2328,23 @@ export class TrackService {
         artist: track.artistName,
         artistGenres: track.artistGenres,
         artistId: track.artistId,
+        danceability: track.danceability,
         duration: track.duration,
+        energy: track.energy,
         id: track.id,
+        instrumentalness: track.instrumentalness,
         lastPlayedAt: track.lastPlayedAt,
+        liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
         sources: track.sources,
+        speechiness: track.speechiness,
         spotifyId: track.spotifyId,
         tags: track.tags,
+        tempo: track.tempo,
         title: track.title,
         totalPlayCount: track.totalPlayCount,
+        valence: track.valence,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
@@ -2208,6 +2376,7 @@ export class TrackService {
     }
 
     const dto = {
+      acousticness: track.spotifyTrack.acousticness,
       addedAt: track.addedAt,
       album: track.spotifyTrack.album?.name || null,
       albumArt: track.spotifyTrack.album?.imageUrl || null,
@@ -2215,9 +2384,13 @@ export class TrackService {
       artist: track.spotifyTrack.artist.name,
       artistGenres: track.spotifyTrack.artist.genres,
       artistId: track.spotifyTrack.artistId,
+      danceability: track.spotifyTrack.danceability,
       duration: track.spotifyTrack.duration,
+      energy: track.spotifyTrack.energy,
       id: track.id,
+      instrumentalness: track.spotifyTrack.instrumentalness,
       lastPlayedAt: track.lastPlayedAt,
+      liveness: track.spotifyTrack.liveness,
       ratedAt: track.ratedAt,
       rating: track.rating,
       sources: track.sources.map((s) => ({
@@ -2227,14 +2400,17 @@ export class TrackService {
         sourceName: s.sourceName,
         sourceType: s.sourceType,
       })),
+      speechiness: track.spotifyTrack.speechiness,
       spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((t) => ({
         color: t.tag.color,
         id: t.tag.id,
         name: t.tag.name,
       })),
+      tempo: track.spotifyTrack.tempo,
       title: track.spotifyTrack.title,
       totalPlayCount: track.totalPlayCount,
+      valence: track.spotifyTrack.valence,
     };
 
     return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
@@ -2260,6 +2436,7 @@ export class TrackService {
     }
 
     const dto = {
+      acousticness: track.spotifyTrack.acousticness,
       addedAt: track.addedAt,
       album: track.spotifyTrack.album?.name || null,
       albumArt: track.spotifyTrack.album?.imageUrl || null,
@@ -2267,9 +2444,13 @@ export class TrackService {
       artist: track.spotifyTrack.artist.name,
       artistGenres: track.spotifyTrack.artist.genres,
       artistId: track.spotifyTrack.artistId,
+      danceability: track.spotifyTrack.danceability,
       duration: track.spotifyTrack.duration,
+      energy: track.spotifyTrack.energy,
       id: track.id,
+      instrumentalness: track.spotifyTrack.instrumentalness,
       lastPlayedAt: track.lastPlayedAt,
+      liveness: track.spotifyTrack.liveness,
       ratedAt: track.ratedAt,
       rating: track.rating,
       sources: track.sources.map((s) => ({
@@ -2279,14 +2460,17 @@ export class TrackService {
         sourceName: s.sourceName,
         sourceType: s.sourceType,
       })),
+      speechiness: track.spotifyTrack.speechiness,
       spotifyId: track.spotifyTrack.spotifyId,
       tags: track.tags.map((t) => ({
         color: t.tag.color,
         id: t.tag.id,
         name: t.tag.name,
       })),
+      tempo: track.spotifyTrack.tempo,
       title: track.spotifyTrack.title,
       totalPlayCount: track.totalPlayCount,
+      valence: track.spotifyTrack.valence,
     };
 
     return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
@@ -2469,7 +2653,18 @@ export class TrackService {
       `Building orderBy for sortBy="${sortBy}", sortOrder="${sortOrder}", skip=${skip}`,
     );
 
+    // For nullable fields, use nulls: 'last' to push NULL values to the end
+    const nullsLast = { nulls: "last" as const, sort: sortOrder };
+
     switch (sortBy) {
+      // Audio features (stored on SpotifyTrack, nullable)
+      case "acousticness":
+        orderBy = [
+          { spotifyTrack: { acousticness: nullsLast } },
+          { id: "asc" },
+        ];
+        break;
+      // Non-nullable fields
       case "addedAt":
         orderBy = [
           { addedAt: sortOrder },
@@ -2493,14 +2688,39 @@ export class TrackService {
           { id: "asc" },
         ];
         break;
+      case "danceability":
+        orderBy = [
+          { spotifyTrack: { danceability: nullsLast } },
+          { id: "asc" },
+        ];
+        break;
       case "duration":
         orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: "asc" }];
         break;
+      case "energy":
+        orderBy = [{ spotifyTrack: { energy: nullsLast } }, { id: "asc" }];
+        break;
+      case "instrumentalness":
+        orderBy = [
+          { spotifyTrack: { instrumentalness: nullsLast } },
+          { id: "asc" },
+        ];
+        break;
+      // Other nullable fields
       case "lastPlayedAt":
-        orderBy = [{ lastPlayedAt: sortOrder }, { id: "asc" }];
+        orderBy = [{ lastPlayedAt: nullsLast }, { id: "asc" }];
+        break;
+      case "liveness":
+        orderBy = [{ spotifyTrack: { liveness: nullsLast } }, { id: "asc" }];
         break;
       case "rating":
-        orderBy = [{ rating: sortOrder }, { addedAt: "desc" }, { id: "asc" }];
+        orderBy = [{ rating: nullsLast }, { addedAt: "desc" }, { id: "asc" }];
+        break;
+      case "speechiness":
+        orderBy = [{ spotifyTrack: { speechiness: nullsLast } }, { id: "asc" }];
+        break;
+      case "tempo":
+        orderBy = [{ spotifyTrack: { tempo: nullsLast } }, { id: "asc" }];
         break;
       case "title":
         orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: "asc" }];
@@ -2512,23 +2732,12 @@ export class TrackService {
           { id: "asc" },
         ];
         break;
+      case "valence":
+        orderBy = [{ spotifyTrack: { valence: nullsLast } }, { id: "asc" }];
+        break;
     }
 
     this.logger.log(`Final orderBy:`, JSON.stringify(orderBy, null, 2));
-
-    // For rating and lastPlayedAt, use Kysely to ensure NULLS LAST behavior
-    // matches getUserTracksWithKysely (Prisma doesn't support NULLS LAST)
-    if (sortBy === "rating" || sortBy === "lastPlayedAt") {
-      return this.fetchTracksForPlayWithKysely(
-        userId,
-        where,
-        sortBy,
-        sortOrder,
-        500,
-        shouldShuffle,
-        skip,
-      );
-    }
 
     // Get tracks up to 500 max for Spotify API compatibility
     const trackUris = await this.fetchTracksForPlay(
@@ -3062,7 +3271,19 @@ export class TrackService {
     // Build orderBy clause with multi-level sort for deterministic ordering
     // MUST match the orderBy in getTracksForPlay() to ensure consistency
     let orderBy: Prisma.UserTrackOrderByWithRelationInput[] = [];
+
+    // For nullable fields, use nulls: 'last' to push NULL values to the end
+    const nullsLast = { nulls: "last" as const, sort: sortOrder };
+
     switch (sortBy) {
+      // Audio features (stored on SpotifyTrack, nullable)
+      case "acousticness":
+        orderBy = [
+          { spotifyTrack: { acousticness: nullsLast } },
+          { id: "asc" },
+        ];
+        break;
+      // Non-nullable fields
       case "addedAt":
         orderBy = [
           { addedAt: sortOrder },
@@ -3086,15 +3307,39 @@ export class TrackService {
           { id: "asc" },
         ];
         break;
+      case "danceability":
+        orderBy = [
+          { spotifyTrack: { danceability: nullsLast } },
+          { id: "asc" },
+        ];
+        break;
       case "duration":
         orderBy = [{ spotifyTrack: { duration: sortOrder } }, { id: "asc" }];
         break;
+      case "energy":
+        orderBy = [{ spotifyTrack: { energy: nullsLast } }, { id: "asc" }];
+        break;
+      case "instrumentalness":
+        orderBy = [
+          { spotifyTrack: { instrumentalness: nullsLast } },
+          { id: "asc" },
+        ];
+        break;
+      // Other nullable fields
       case "lastPlayedAt":
-        orderBy = [{ lastPlayedAt: sortOrder }, { id: "asc" }];
+        orderBy = [{ lastPlayedAt: nullsLast }, { id: "asc" }];
+        break;
+      case "liveness":
+        orderBy = [{ spotifyTrack: { liveness: nullsLast } }, { id: "asc" }];
         break;
       case "rating":
-        // NULLS LAST behavior will be applied below
-        orderBy = [{ rating: sortOrder }, { addedAt: "desc" }, { id: "asc" }];
+        orderBy = [{ rating: nullsLast }, { addedAt: "desc" }, { id: "asc" }];
+        break;
+      case "speechiness":
+        orderBy = [{ spotifyTrack: { speechiness: nullsLast } }, { id: "asc" }];
+        break;
+      case "tempo":
+        orderBy = [{ spotifyTrack: { tempo: nullsLast } }, { id: "asc" }];
         break;
       case "title":
         orderBy = [{ spotifyTrack: { title: sortOrder } }, { id: "asc" }];
@@ -3106,33 +3351,15 @@ export class TrackService {
           { id: "asc" },
         ];
         break;
+      case "valence":
+        orderBy = [{ spotifyTrack: { valence: nullsLast } }, { id: "asc" }];
+        break;
     }
 
     // Calculate pagination
     const skip = (page - 1) * pageSize;
 
-    // For rating and lastPlayedAt, we need NULLS LAST behavior
-    // Prisma doesn't support this, so use Kysely for these sorts
-    if (sortBy === "rating" || sortBy === "lastPlayedAt") {
-      return this.getUserTracksWithKysely(
-        userId,
-        {
-          genres,
-          minRating,
-          page,
-          pageSize,
-          search,
-          sortBy,
-          sortOrder,
-          sourceTypes,
-          tagIds,
-          unratedOnly,
-        },
-        skip,
-      );
-    }
-
-    // Execute queries with Prisma for other sort fields
+    // Execute queries with Prisma
     const [tracks, total] = await Promise.all([
       this.databaseService.userTrack.findMany({
         include: {
@@ -3153,6 +3380,7 @@ export class TrackService {
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {
       const dto = {
+        acousticness: track.spotifyTrack.acousticness,
         addedAt: track.addedAt,
         album: track.spotifyTrack.album.name,
         albumArt: track.spotifyTrack.album.imageUrl || null,
@@ -3160,9 +3388,13 @@ export class TrackService {
         artist: track.spotifyTrack.artist.name,
         artistGenres: track.spotifyTrack.artist.genres,
         artistId: track.spotifyTrack.artistId,
+        danceability: track.spotifyTrack.danceability,
         duration: track.spotifyTrack.duration,
+        energy: track.spotifyTrack.energy,
         id: track.id,
+        instrumentalness: track.spotifyTrack.instrumentalness,
         lastPlayedAt: track.lastPlayedAt,
+        liveness: track.spotifyTrack.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
         sources: track.sources.map((s) => ({
@@ -3172,14 +3404,17 @@ export class TrackService {
           sourceName: s.sourceName,
           sourceType: s.sourceType,
         })),
+        speechiness: track.spotifyTrack.speechiness,
         spotifyId: track.spotifyTrack.spotifyId,
         tags: track.tags.map((t) => ({
           color: t.tag.color,
           id: t.tag.id,
           name: t.tag.name,
         })),
+        tempo: track.spotifyTrack.tempo,
         title: track.spotifyTrack.title,
         totalPlayCount: track.totalPlayCount,
+        valence: track.spotifyTrack.valence,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
@@ -3330,6 +3565,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
@@ -3379,6 +3622,14 @@ export class TrackService {
         "st.duration",
         "st.albumId",
         "st.artistId",
+        "st.tempo",
+        "st.energy",
+        "st.danceability",
+        "st.valence",
+        "st.acousticness",
+        "st.instrumentalness",
+        "st.speechiness",
+        "st.liveness",
         "sa.name",
         "sa.imageUrl",
         "sar.name",
@@ -3408,6 +3659,7 @@ export class TrackService {
     // Transform to DTOs
     const trackDtos = tracks.map((track) => {
       const dto = {
+        acousticness: track.acousticness,
         addedAt: track.addedAt,
         album: track.albumName,
         albumArt: track.albumImageUrl,
@@ -3415,16 +3667,23 @@ export class TrackService {
         artist: track.artistName,
         artistGenres: track.artistGenres,
         artistId: track.artistId,
+        danceability: track.danceability,
         duration: track.duration,
+        energy: track.energy,
         id: track.id,
+        instrumentalness: track.instrumentalness,
         lastPlayedAt: track.lastPlayedAt,
+        liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
         sources: track.sources,
+        speechiness: track.speechiness,
         spotifyId: track.spotifyId,
         tags: track.tags,
+        tempo: track.tempo,
         title: track.title,
         totalPlayCount: track.totalPlayCount,
+        valence: track.valence,
       };
       return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
     });
