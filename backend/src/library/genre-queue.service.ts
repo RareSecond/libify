@@ -21,9 +21,7 @@ export class GenreQueueService {
       "backfill",
       { all: true },
       {
-        // Only allow one backfill job at a time
-        jobId: "backfill",
-        // Remove completed jobs so the same jobId can be reused
+        jobId: `backfill-${Date.now()}`,
         removeOnComplete: true,
         removeOnFail: { age: 86400, count: 10 },
       },

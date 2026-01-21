@@ -1,191 +1,4 @@
 import type { ColumnType } from "kysely";
-export type Generated<T> =
-  T extends ColumnType<infer S, infer I, infer U>
-    ? ColumnType<S, I | undefined, U>
-    : ColumnType<T, T | undefined, T>;
-export type Timestamp = ColumnType<Date, Date | string, Date | string>;
-
-import type { SourceType } from "./enums";
-
-export type Genre = {
-  id: string;
-  name: string;
-  displayName: string;
-  createdAt: Generated<Timestamp>;
-};
-export type PlayHistory = {
-  id: string;
-  userTrackId: string;
-  playedAt: Timestamp;
-  duration: number | null;
-};
-export type SmartPlaylist = {
-  id: string;
-  name: string;
-  description: string | null;
-  userId: string;
-  criteria: unknown;
-  isActive: Generated<boolean>;
-  spotifyPlaylistId: string | null;
-  lastSyncedAt: Timestamp | null;
-  trackIdsHash: string | null;
-  autoSync: Generated<boolean>;
-  lastUpdated: Generated<Timestamp>;
-  createdAt: Generated<Timestamp>;
-  updatedAt: Timestamp;
-};
-export type SpotifyAlbum = {
-  id: string;
-  spotifyId: string;
-  name: string;
-  artistId: string;
-  imageUrl: string | null;
-  releaseDate: Timestamp | null;
-  totalTracks: number | null;
-  albumType: string | null;
-  lastUpdated: Generated<Timestamp>;
-};
-export type SpotifyArtist = {
-  id: string;
-  spotifyId: string;
-  name: string;
-  imageUrl: string | null;
-  popularity: number | null;
-  lastUpdated: Generated<Timestamp>;
-};
-export type SpotifyTrack = {
-  id: string;
-  spotifyId: string;
-  isrc: string | null;
-  title: string;
-  artistId: string;
-  albumId: string;
-  trackNumber: number | null;
-  discNumber: number | null;
-  duration: number;
-  explicit: Generated<boolean>;
-  popularity: number | null;
-  previewUrl: string | null;
-  lastUpdated: Generated<Timestamp>;
-  tempo: number | null;
-  danceability: number | null;
-  energy: number | null;
-  valence: number | null;
-  acousticness: number | null;
-  instrumentalness: number | null;
-  speechiness: number | null;
-  liveness: number | null;
-  loudness: number | null;
-  key: number | null;
-  mode: number | null;
-  timeSignature: number | null;
-  audioFeaturesUpdatedAt: Timestamp | null;
-  genresUpdatedAt: Timestamp | null;
-};
-export type Tag = {
-  id: string;
-  name: string;
-  color: string | null;
-  userId: string;
-  createdAt: Generated<Timestamp>;
-};
-export type TrackGenre = {
-  trackId: string;
-  genreId: string;
-  weight: number;
-  createdAt: Generated<Timestamp>;
-};
-export type TrackSource = {
-  id: string;
-  userTrackId: string;
-  sourceType: SourceType;
-  sourceName: string | null;
-  sourceId: string | null;
-  createdAt: Generated<Timestamp>;
-};
-export type TrackTag = {
-  userTrackId: string;
-  tagId: string;
-  createdAt: Generated<Timestamp>;
-};
-export type User = {
-  id: string;
-  email: string;
-  name: string | null;
-  provider: string;
-  providerId: string;
-  spotifyId: string | null;
-  spotifyAccessToken: string | null;
-  spotifyRefreshToken: string | null;
-  tokenExpiresAt: Timestamp | null;
-  lastPlaySyncedAt: Timestamp | null;
-  hasCompletedOnboarding: Generated<boolean>;
-  isWhitelisted: Generated<boolean>;
-  isAdmin: Generated<boolean>;
-  createdAt: Generated<Timestamp>;
-  updatedAt: Timestamp;
-};
-export type UserAlbum = {
-  id: string;
-  userId: string;
-  albumId: string;
-  trackCount: Generated<number>;
-  totalDuration: Generated<number>;
-  totalPlayCount: Generated<number>;
-  avgRating: number | null;
-  ratedTrackCount: Generated<number>;
-  lastPlayedAt: Timestamp | null;
-  firstAddedAt: Generated<Timestamp>;
-  updatedAt: Timestamp;
-};
-export type UserArtist = {
-  id: string;
-  userId: string;
-  artistId: string;
-  trackCount: Generated<number>;
-  albumCount: Generated<number>;
-  totalDuration: Generated<number>;
-  totalPlayCount: Generated<number>;
-  avgRating: number | null;
-  ratedTrackCount: Generated<number>;
-  lastPlayedAt: Timestamp | null;
-  firstAddedAt: Generated<Timestamp>;
-  updatedAt: Timestamp;
-};
-export type UserPlaylist = {
-  id: string;
-  userId: string;
-  spotifyId: string;
-  name: string;
-  description: string | null;
-  snapshotId: string;
-  totalTracks: number;
-  ownerId: string;
-  ownerName: string | null;
-  collaborative: Generated<boolean>;
-  public: Generated<boolean>;
-  imageUrl: string | null;
-  totalDuration: Generated<number>;
-  totalPlayCount: Generated<number>;
-  avgRating: number | null;
-  ratedTrackCount: Generated<number>;
-  lastPlayedAt: Timestamp | null;
-  firstAddedAt: Generated<Timestamp>;
-  lastSyncedAt: Generated<Timestamp>;
-  createdAt: Generated<Timestamp>;
-  updatedAt: Timestamp;
-};
-export type UserTrack = {
-  id: string;
-  userId: string;
-  spotifyTrackId: string;
-  addedAt: Generated<Timestamp>;
-  addedToLibrary: Generated<boolean>;
-  lastPlayedAt: Timestamp | null;
-  totalPlayCount: Generated<number>;
-  rating: number | null;
-  ratedAt: Timestamp | null;
-};
 export type DB = {
   Genre: Genre;
   PlayHistory: PlayHistory;
@@ -202,4 +15,191 @@ export type DB = {
   UserArtist: UserArtist;
   UserPlaylist: UserPlaylist;
   UserTrack: UserTrack;
+};
+export type Generated<T> =
+  T extends ColumnType<infer S, infer I, infer U>
+    ? ColumnType<S, I | undefined, U>
+    : ColumnType<T, T | undefined, T>;
+
+import type { SourceType } from "./enums";
+
+export type Genre = {
+  createdAt: Generated<Timestamp>;
+  displayName: string;
+  id: string;
+  name: string;
+};
+export type PlayHistory = {
+  duration: null | number;
+  id: string;
+  playedAt: Timestamp;
+  userTrackId: string;
+};
+export type SmartPlaylist = {
+  autoSync: Generated<boolean>;
+  createdAt: Generated<Timestamp>;
+  criteria: unknown;
+  description: null | string;
+  id: string;
+  isActive: Generated<boolean>;
+  lastSyncedAt: null | Timestamp;
+  lastUpdated: Generated<Timestamp>;
+  name: string;
+  spotifyPlaylistId: null | string;
+  trackIdsHash: null | string;
+  updatedAt: Timestamp;
+  userId: string;
+};
+export type SpotifyAlbum = {
+  albumType: null | string;
+  artistId: string;
+  id: string;
+  imageUrl: null | string;
+  lastUpdated: Generated<Timestamp>;
+  name: string;
+  releaseDate: null | Timestamp;
+  spotifyId: string;
+  totalTracks: null | number;
+};
+export type SpotifyArtist = {
+  id: string;
+  imageUrl: null | string;
+  lastUpdated: Generated<Timestamp>;
+  name: string;
+  popularity: null | number;
+  spotifyId: string;
+};
+export type SpotifyTrack = {
+  acousticness: null | number;
+  albumId: string;
+  artistId: string;
+  audioFeaturesUpdatedAt: null | Timestamp;
+  danceability: null | number;
+  discNumber: null | number;
+  duration: number;
+  energy: null | number;
+  explicit: Generated<boolean>;
+  genresUpdatedAt: null | Timestamp;
+  id: string;
+  instrumentalness: null | number;
+  isrc: null | string;
+  key: null | number;
+  lastUpdated: Generated<Timestamp>;
+  liveness: null | number;
+  loudness: null | number;
+  mode: null | number;
+  popularity: null | number;
+  previewUrl: null | string;
+  speechiness: null | number;
+  spotifyId: string;
+  tempo: null | number;
+  timeSignature: null | number;
+  title: string;
+  trackNumber: null | number;
+  valence: null | number;
+};
+export type Tag = {
+  color: null | string;
+  createdAt: Generated<Timestamp>;
+  id: string;
+  name: string;
+  userId: string;
+};
+export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+export type TrackGenre = {
+  createdAt: Generated<Timestamp>;
+  genreId: string;
+  trackId: string;
+  weight: number;
+};
+export type TrackSource = {
+  createdAt: Generated<Timestamp>;
+  id: string;
+  sourceId: null | string;
+  sourceName: null | string;
+  sourceType: SourceType;
+  userTrackId: string;
+};
+export type TrackTag = {
+  createdAt: Generated<Timestamp>;
+  tagId: string;
+  userTrackId: string;
+};
+export type User = {
+  createdAt: Generated<Timestamp>;
+  email: string;
+  hasCompletedOnboarding: Generated<boolean>;
+  id: string;
+  isAdmin: Generated<boolean>;
+  isWhitelisted: Generated<boolean>;
+  lastPlaySyncedAt: null | Timestamp;
+  name: null | string;
+  provider: string;
+  providerId: string;
+  spotifyAccessToken: null | string;
+  spotifyId: null | string;
+  spotifyRefreshToken: null | string;
+  tokenExpiresAt: null | Timestamp;
+  updatedAt: Timestamp;
+};
+export type UserAlbum = {
+  albumId: string;
+  avgRating: null | number;
+  firstAddedAt: Generated<Timestamp>;
+  id: string;
+  lastPlayedAt: null | Timestamp;
+  ratedTrackCount: Generated<number>;
+  totalDuration: Generated<number>;
+  totalPlayCount: Generated<number>;
+  trackCount: Generated<number>;
+  updatedAt: Timestamp;
+  userId: string;
+};
+export type UserArtist = {
+  albumCount: Generated<number>;
+  artistId: string;
+  avgRating: null | number;
+  firstAddedAt: Generated<Timestamp>;
+  id: string;
+  lastPlayedAt: null | Timestamp;
+  ratedTrackCount: Generated<number>;
+  totalDuration: Generated<number>;
+  totalPlayCount: Generated<number>;
+  trackCount: Generated<number>;
+  updatedAt: Timestamp;
+  userId: string;
+};
+export type UserPlaylist = {
+  avgRating: null | number;
+  collaborative: Generated<boolean>;
+  createdAt: Generated<Timestamp>;
+  description: null | string;
+  firstAddedAt: Generated<Timestamp>;
+  id: string;
+  imageUrl: null | string;
+  lastPlayedAt: null | Timestamp;
+  lastSyncedAt: Generated<Timestamp>;
+  name: string;
+  ownerId: string;
+  ownerName: null | string;
+  public: Generated<boolean>;
+  ratedTrackCount: Generated<number>;
+  snapshotId: string;
+  spotifyId: string;
+  totalDuration: Generated<number>;
+  totalPlayCount: Generated<number>;
+  totalTracks: number;
+  updatedAt: Timestamp;
+  userId: string;
+};
+export type UserTrack = {
+  addedAt: Generated<Timestamp>;
+  addedToLibrary: Generated<boolean>;
+  id: string;
+  lastPlayedAt: null | Timestamp;
+  ratedAt: null | Timestamp;
+  rating: null | number;
+  spotifyTrackId: string;
+  totalPlayCount: Generated<number>;
+  userId: string;
 };
