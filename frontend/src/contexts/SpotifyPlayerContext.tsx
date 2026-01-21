@@ -399,6 +399,7 @@ export function SpotifyPlayerProvider({
           | "SMART_PLAYLIST"
           | "TRACK",
         deviceId: deviceId || undefined,
+        genres: context?.genres,
         pageNumber: context?.pageNumber,
         pageSize: context?.pageSize,
         search: context?.search,

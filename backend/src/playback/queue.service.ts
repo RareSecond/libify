@@ -12,6 +12,7 @@ export interface PlayContext {
   contextId?: string;
   contextType: ContextType;
   deviceId?: string;
+  genres?: string[];
   pageNumber?: number;
   pageSize?: number;
   search?: string;
@@ -92,6 +93,7 @@ export class QueueService {
       case ContextType.LIBRARY:
         // Get user tracks - fetch from offset to build queue starting at clicked track
         trackUris = await this.trackService.getTracksForPlay(userId, {
+          genres: context.genres,
           pageSize: limit,
           search: context.search,
           shouldShuffle: context.shuffle,

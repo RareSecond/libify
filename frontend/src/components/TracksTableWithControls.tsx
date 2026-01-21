@@ -182,6 +182,7 @@ export function TracksTableWithControls({
             columnVisibility={columnVisibility}
             contextId={contextId}
             contextType={contextType}
+            genres={currentFilters.genres}
             isAllOnPageSelected={selection.isAllOnPageSelected}
             isLoading={isLoading}
             isSomeOnPageSelected={selection.isSomeOnPageSelected}

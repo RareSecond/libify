@@ -107,6 +107,7 @@ export function TrackList() {
     // Backend will build the queue based on context
     await playTrackList(["placeholder"], {
       contextType: "library",
+      genres: genres.length > 0 ? genres : undefined,
       search: debouncedSearch || undefined,
       shuffle: false,
       sortBy,
@@ -118,6 +119,7 @@ export function TrackList() {
     // Backend will build the shuffled queue based on context
     await playTrackList(["placeholder"], {
       contextType: "library",
+      genres: genres.length > 0 ? genres : undefined,
       search: debouncedSearch || undefined,
       shuffle: true,
       // Note: sortBy/sortOrder ignored when shuffle is true
