@@ -1,3 +1,6 @@
+-- AlterTable: Remove artist-level genres (replaced by track-level genres)
+ALTER TABLE "SpotifyArtist" DROP COLUMN IF EXISTS "genres";
+
 -- AlterTable
 ALTER TABLE "SpotifyTrack" ADD COLUMN     "genresUpdatedAt" TIMESTAMP(3);
 
