@@ -8,7 +8,9 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
+import { AxiosError } from "axios";
 import {
+  AlertTriangle,
   Database,
   type LucideIcon,
   Music,
@@ -36,7 +38,44 @@ export function AdminBackfillSection() {
     allBackfillsMutation.isPending;
 
   // If there's a 403 error, user is not an admin - don't show the section
-  if (error) return null;
+  if (error && isAxiosError(error) && error.response?.status === 403) {
+    return null;
+  }
+
+  // Show error state for non-403 errors
+  if (error) {
+    return (
+      <Card
+        className="bg-gradient-to-br from-dark-7 to-dark-8 border-dark-5"
+        padding="lg"
+        radius="md"
+        shadow="md"
+        withBorder
+      >
+        <Stack gap="md">
+          <Group gap="xs">
+            <Shield className="text-orange-5" size={20} />
+            <Text className="text-dark-0 font-semibold" size="lg">
+              Admin: Data Backfill
+            </Text>
+          </Group>
+          <Alert color="red" icon={<AlertTriangle size={18} />} variant="light">
+            <Text size="sm">
+              Failed to load backfill status. Please try again.
+            </Text>
+          </Alert>
+          <Button
+            color="orange"
+            leftSection={<RefreshCw size={14} />}
+            onClick={() => refetch()}
+            variant="light"
+          >
+            Retry
+          </Button>
+        </Stack>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -132,6 +171,12 @@ export function AdminBackfillSection() {
         </Button>
       </Stack>
     </Card>
+  );
+}
+
+function isAxiosError(error: unknown): error is AxiosError {
+  return (
+    error instanceof AxiosError || (error as AxiosError)?.isAxiosError === true
   );
 }
 

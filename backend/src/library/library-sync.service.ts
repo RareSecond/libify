@@ -45,6 +45,7 @@ interface WeightedSyncCounts {
 
 @Injectable()
 export class LibrarySyncService {
+  private audioFeaturesBackfillInProgress = false;
   private readonly logger = new Logger(LibrarySyncService.name);
   private syncArtistCache = new Map<
     string,
@@ -191,6 +192,13 @@ export class LibrarySyncService {
   }
 
   /**
+   * Check if an audio features backfill is currently in progress.
+   */
+  isAudioFeaturesBackfillInProgress(): boolean {
+    return this.audioFeaturesBackfillInProgress;
+  }
+
+  /**
    * Syncs all audio features for a user's library in batches.
    * Useful for initial sync or backfilling.
    */
@@ -257,6 +265,9 @@ export class LibrarySyncService {
       return { totalProcessed: 0, totalUpdated: 0 };
     }
 
+    // Mark backfill as in progress
+    this.audioFeaturesBackfillInProgress = true;
+
     this.logger.log(
       `Starting global audio features backfill for ${totalCount} tracks`,
     );
@@ -265,26 +276,31 @@ export class LibrarySyncService {
     let totalUpdated = 0;
     const batchSize = 500;
 
-    while (totalProcessed < totalCount) {
-      const result = await this.syncAudioFeaturesGlobal(batchSize);
+    try {
+      while (totalProcessed < totalCount) {
+        const result = await this.syncAudioFeaturesGlobal(batchSize);
 
-      if (result.tracksProcessed === 0) {
-        break;
+        if (result.tracksProcessed === 0) {
+          break;
+        }
+
+        totalProcessed += result.tracksProcessed;
+        totalUpdated += result.tracksUpdated;
+
+        if (onProgress) {
+          onProgress(totalProcessed, totalCount);
+        }
+
+        this.logger.log(
+          `Global audio features progress: ${totalProcessed}/${totalCount} (${totalUpdated} updated)`,
+        );
       }
 
-      totalProcessed += result.tracksProcessed;
-      totalUpdated += result.tracksUpdated;
-
-      if (onProgress) {
-        onProgress(totalProcessed, totalCount);
-      }
-
-      this.logger.log(
-        `Global audio features progress: ${totalProcessed}/${totalCount} (${totalUpdated} updated)`,
-      );
+      return { totalProcessed, totalUpdated };
+    } finally {
+      // Always mark backfill as complete, even on error
+      this.audioFeaturesBackfillInProgress = false;
     }
-
-    return { totalProcessed, totalUpdated };
   }
 
   /**

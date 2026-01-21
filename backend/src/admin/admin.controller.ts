@@ -94,8 +94,20 @@ export class AdminController {
     status: 200,
     type: BackfillTriggerResponseDto,
   })
+  @ApiResponse({
+    description: "Audio features backfill already in progress",
+    status: 409,
+  })
   @Post("backfill/all")
   async triggerAllBackfills(): Promise<BackfillTriggerResponseDto> {
+    // Check if audio features backfill is already in progress
+    if (this.librarySyncService.isAudioFeaturesBackfillInProgress()) {
+      throw new HttpException(
+        "Audio features backfill is already in progress. Please wait for it to complete.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
     try {
       this.logger.log("Admin triggered all backfills");
 
@@ -131,6 +143,9 @@ export class AdminController {
         { excludeExtraneousValues: true },
       );
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error("Failed to start backfills", error);
       throw new HttpException(
         "Failed to start backfills",
@@ -145,8 +160,20 @@ export class AdminController {
     status: 200,
     type: BackfillTriggerResponseDto,
   })
+  @ApiResponse({
+    description: "Audio features backfill already in progress",
+    status: 409,
+  })
   @Post("backfill/audio-features")
   async triggerAudioFeaturesBackfill(): Promise<BackfillTriggerResponseDto> {
+    // Check if audio features backfill is already in progress
+    if (this.librarySyncService.isAudioFeaturesBackfillInProgress()) {
+      throw new HttpException(
+        "Audio features backfill is already in progress. Please wait for it to complete.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
     try {
       this.logger.log("Admin triggered global audio features backfill");
 
@@ -177,6 +204,9 @@ export class AdminController {
         { excludeExtraneousValues: true },
       );
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error("Failed to start audio features backfill", error);
       throw new HttpException(
         "Failed to start audio features backfill",
