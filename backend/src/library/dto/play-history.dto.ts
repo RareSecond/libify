@@ -91,6 +91,18 @@ export class PlayHistoryItemDto {
   @Expose()
   playedAt: Date;
 
+  @ApiPropertyOptional({ description: "User rating (0.5-5)", nullable: true })
+  @Expose()
+  rating?: number;
+
+  @ApiProperty({
+    description: "Tags associated with this track",
+    type: () => [PlayHistoryTagDto],
+  })
+  @Expose()
+  @Type(() => PlayHistoryTagDto)
+  tags: PlayHistoryTagDto[];
+
   @ApiProperty({
     description: "Whether the track is explicitly in the user's library",
   })
@@ -125,4 +137,18 @@ export class PlayHistoryItemDto {
   @ApiProperty()
   @Expose()
   trackTitle: string;
+}
+
+export class PlayHistoryTagDto {
+  @ApiPropertyOptional()
+  @Expose()
+  color?: string;
+
+  @ApiProperty()
+  @Expose()
+  id: string;
+
+  @ApiProperty()
+  @Expose()
+  name: string;
 }

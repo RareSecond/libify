@@ -3603,6 +3603,24 @@
           "totalTracks"
         ]
       },
+      "PlayHistoryTagDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
       "PlayHistoryItemDto": {
         "type": "object",
         "properties": {
@@ -3617,6 +3635,18 @@
           "playedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "description": "User rating (0.5-5)",
+            "nullable": true
+          },
+          "tags": {
+            "description": "Tags associated with this track",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayHistoryTagDto"
+            }
           },
           "trackAddedToLibrary": {
             "type": "boolean",
@@ -3648,6 +3678,7 @@
         "required": [
           "id",
           "playedAt",
+          "tags",
           "trackAddedToLibrary",
           "trackArtist",
           "trackDuration",

@@ -12,13 +12,16 @@ import { useNavigate } from "@tanstack/react-router";
 import { Music, PlusSquare } from "lucide-react";
 
 import { PlayHistoryItemDto } from "../data/api";
+import { InlineTagEditor } from "./InlineTagEditor";
 import { formatDate } from "./PlayHistoryTable.helpers";
+import { RatingSelector } from "./RatingSelector";
 
 interface PlayHistoryTableRowProps {
   isAddingToLibrary: boolean;
   item: PlayHistoryItemDto;
   onAddToLibrary: (trackId: string, trackTitle: string) => void;
   onPlay: (trackTitle: string, spotifyId: string, trackId: string) => void;
+  onRefresh: () => void;
 }
 
 export function PlayHistoryTableRow({
@@ -26,6 +29,7 @@ export function PlayHistoryTableRow({
   item,
   onAddToLibrary,
   onPlay,
+  onRefresh,
 }: PlayHistoryTableRowProps) {
   const navigate = useNavigate();
 
@@ -105,6 +109,33 @@ export function PlayHistoryTableRow({
             </Text>
           </Box>
         </Group>
+      </Table.Td>
+      <Table.Td onClick={(e) => e.stopPropagation()}>
+        {item.trackAddedToLibrary ? (
+          <RatingSelector
+            onRatingChange={onRefresh}
+            rating={item.rating ?? null}
+            size="sm"
+            trackId={item.trackId}
+          />
+        ) : (
+          <Text className="text-dark-3" size="xs">
+            —
+          </Text>
+        )}
+      </Table.Td>
+      <Table.Td onClick={(e) => e.stopPropagation()}>
+        {item.trackAddedToLibrary ? (
+          <InlineTagEditor
+            onTagsChange={onRefresh}
+            trackId={item.trackId}
+            trackTags={item.tags ?? []}
+          />
+        ) : (
+          <Text className="text-dark-3" size="xs">
+            —
+          </Text>
+        )}
       </Table.Td>
       <Table.Td className="whitespace-nowrap">
         <Text className="text-dark-2" size="xs">

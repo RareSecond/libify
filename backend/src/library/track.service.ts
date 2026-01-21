@@ -1959,6 +1959,7 @@ export class TrackService {
         "ph.duration",
         "ut.id as trackId",
         "ut.addedToLibrary as trackAddedToLibrary",
+        "ut.rating",
         "st.title as trackTitle",
         "st.duration as trackDuration",
         "st.spotifyId as trackSpotifyId",
@@ -1971,12 +1972,37 @@ export class TrackService {
       .offset(skip)
       .execute();
 
+    // Fetch tags for all tracks in this page
+    const trackIds = [...new Set(plays.map((p) => p.trackId))];
+    const tagsResult =
+      trackIds.length > 0
+        ? await db
+            .selectFrom("TrackTag as tt")
+            .innerJoin("Tag as t", "tt.tagId", "t.id")
+            .select(["tt.userTrackId", "t.id", "t.name", "t.color"])
+            .where("tt.userTrackId", "in", trackIds)
+            .execute()
+        : [];
+
+    // Group tags by track ID
+    const tagsByTrackId = new Map<
+      string,
+      Array<{ color: null | string; id: string; name: string }>
+    >();
+    for (const tag of tagsResult) {
+      const trackTags = tagsByTrackId.get(tag.userTrackId) || [];
+      trackTags.push({ color: tag.color, id: tag.id, name: tag.name });
+      tagsByTrackId.set(tag.userTrackId, trackTags);
+    }
+
     // Transform to DTOs
     const items = plays.map((play) => {
       const dto = {
         duration: play.duration,
         id: play.id,
         playedAt: play.playedAt,
+        rating: play.rating,
+        tags: tagsByTrackId.get(play.trackId) || [],
         trackAddedToLibrary: play.trackAddedToLibrary,
         trackAlbum: play.trackAlbum,
         trackAlbumArt: play.trackAlbumArt,
