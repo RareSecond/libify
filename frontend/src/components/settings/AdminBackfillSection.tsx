@@ -127,9 +127,9 @@ export function AdminBackfillSection() {
 
         <Alert color="orange" variant="light">
           <Text size="xs">
-            <strong>Note:</strong> Genre backfill is rate-limited to 5
-            requests/second. Audio features use the ReccoBeats API in batches of
-            40 tracks.
+            <strong>Note:</strong> Genre backfill automatically handles rate
+            limiting from Last.fm. Audio features use the ReccoBeats API in
+            batches of 40 tracks.
           </Text>
         </Alert>
 

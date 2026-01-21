@@ -23,10 +23,13 @@ interface LastFmTrackTopTagsResponse {
 export class LastFmService {
   private readonly api: AxiosInstance;
   private readonly apiKey: string;
+  private readonly backoffMultiplier = 2;
+
+  private readonly initialBackoffMs = 1000;
   private readonly logger = new Logger(LastFmService.name);
-  private readonly minRequestInterval = 200; // 200ms between requests (5 req/sec)
-  // Chained promise to serialize rate limiting - concurrent callers wait in sequence
-  private rateLimitChain: Promise<void> = Promise.resolve();
+  private readonly maxBackoffMs = 60000;
+  // Retry configuration for 429 handling
+  private readonly maxRetries = 5;
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>("LASTFM_API_KEY") || "";
@@ -46,18 +49,20 @@ export class LastFmService {
       return [];
     }
 
-    await this.rateLimit();
-
     try {
-      const response = await this.api.get<LastFmArtistTopTagsResponse>("", {
-        params: {
-          api_key: this.apiKey,
-          artist,
-          autocorrect: 1,
-          format: "json",
-          method: "artist.getTopTags",
-        },
-      });
+      const response = await this.executeWithRetry(
+        () =>
+          this.api.get<LastFmArtistTopTagsResponse>("", {
+            params: {
+              api_key: this.apiKey,
+              artist,
+              autocorrect: 1,
+              format: "json",
+              method: "artist.getTopTags",
+            },
+          }),
+        `artist "${artist}"`,
+      );
 
       // Handle Last.fm error responses
       if (response.data.error) {
@@ -81,9 +86,12 @@ export class LastFmService {
         if (error.response?.status === 404) {
           return [];
         }
-        this.logger.debug(
-          `Last.fm request failed for artist "${artist}": ${error.message}`,
-        );
+        // Don't log 429 errors here - they're handled by executeWithRetry
+        if (error.response?.status !== 429) {
+          this.logger.debug(
+            `Last.fm request failed for artist "${artist}": ${error.message}`,
+          );
+        }
       }
       return [];
     }
@@ -99,19 +107,21 @@ export class LastFmService {
       return [];
     }
 
-    await this.rateLimit();
-
     try {
-      const response = await this.api.get<LastFmTrackTopTagsResponse>("", {
-        params: {
-          api_key: this.apiKey,
-          artist,
-          autocorrect: 1,
-          format: "json",
-          method: "track.getTopTags",
-          track,
-        },
-      });
+      const response = await this.executeWithRetry(
+        () =>
+          this.api.get<LastFmTrackTopTagsResponse>("", {
+            params: {
+              api_key: this.apiKey,
+              artist,
+              autocorrect: 1,
+              format: "json",
+              method: "track.getTopTags",
+              track,
+            },
+          }),
+        `track "${track}" by "${artist}"`,
+      );
 
       // Handle Last.fm error responses
       if (response.data.error) {
@@ -136,9 +146,12 @@ export class LastFmService {
         if (error.response?.status === 404) {
           return [];
         }
-        this.logger.debug(
-          `Last.fm request failed for track "${track}" by "${artist}": ${error.message}`,
-        );
+        // Don't log 429 errors here - they're handled by executeWithRetry
+        if (error.response?.status !== 429) {
+          this.logger.debug(
+            `Last.fm request failed for track "${track}" by "${artist}": ${error.message}`,
+          );
+        }
       }
       return [];
     }
@@ -152,17 +165,73 @@ export class LastFmService {
   }
 
   /**
-   * Ensures rate limiting by serializing requests through a chained promise.
-   * Concurrent callers wait in sequence rather than sleeping in parallel.
+   * Execute a request with retry logic for 429 rate limit responses.
+   * Uses Retry-After header when available, falls back to exponential backoff.
    */
-  private rateLimit(): Promise<void> {
-    // Chain this request after any pending requests
-    this.rateLimitChain = this.rateLimitChain.then(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(resolve, this.minRequestInterval);
-        }),
-    );
-    return this.rateLimitChain;
+  private async executeWithRetry<T>(
+    fn: () => Promise<T>,
+    context: string,
+  ): Promise<T> {
+    let lastError: Error | null = null;
+    let backoffMs = this.initialBackoffMs;
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (!axios.isAxiosError(error) || error.response?.status !== 429) {
+          throw error;
+        }
+
+        lastError = error;
+
+        if (attempt === this.maxRetries) {
+          this.logger.warn(
+            `Rate limit: ${context} - exhausted all ${this.maxRetries} retries`,
+          );
+          throw error;
+        }
+
+        // Parse Retry-After header
+        const retryAfter = error.response.headers["retry-after"];
+        let waitMs = backoffMs;
+
+        if (retryAfter) {
+          const retryAfterSeconds = parseInt(retryAfter, 10);
+          if (!isNaN(retryAfterSeconds)) {
+            // Header is in seconds
+            waitMs = retryAfterSeconds * 1000;
+          } else {
+            // Try parsing as HTTP date
+            const retryDate = new Date(retryAfter).getTime();
+            if (!isNaN(retryDate)) {
+              waitMs = Math.max(0, retryDate - Date.now());
+            }
+          }
+        }
+
+        // Cap wait time at max backoff
+        waitMs = Math.min(waitMs, this.maxBackoffMs);
+
+        this.logger.debug(
+          `Rate limit: ${context} - attempt ${attempt}/${this.maxRetries}, waiting ${waitMs}ms`,
+        );
+
+        await this.sleep(waitMs);
+
+        // Increase backoff for next attempt (exponential)
+        backoffMs = Math.min(
+          backoffMs * this.backoffMultiplier,
+          this.maxBackoffMs,
+        );
+      }
+    }
+
+    // Should never reach here, but TypeScript needs this
+    throw lastError || new Error("Unexpected retry failure");
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
