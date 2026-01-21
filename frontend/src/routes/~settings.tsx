@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageTitle } from "@/components/PageTitle";
+import { AdminBackfillSection } from "@/components/settings/AdminBackfillSection";
 import { ApiKeySection } from "@/components/settings/ApiKeySection";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 
@@ -12,6 +13,7 @@ function SettingsPage() {
       <PageTitle title="Settings" />
       <div className="mt-6 space-y-6">
         <ApiKeySection />
+        <AdminBackfillSection />
         <DeleteAccountSection />
       </div>
     </div>

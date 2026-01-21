@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import * as Joi from "joi";
 
+import { AdminModule } from "./admin/admin.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
@@ -35,6 +36,7 @@ import { RedisModule } from "./redis/redis.module";
     PlaybackModule,
     PlaylistsModule,
     QueueModule,
+    AdminModule,
   ],
   providers: [AppService],
 })

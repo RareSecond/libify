@@ -112,6 +112,24 @@ export class GenreEnrichmentService {
   }
 
   /**
+   * Get count of tracks missing genres (for admin status)
+   */
+  async getGenreBackfillStatus(): Promise<{
+    completed: number;
+    pending: number;
+    total: number;
+  }> {
+    const [pending, total] = await Promise.all([
+      this.databaseService.spotifyTrack.count({
+        where: { genresUpdatedAt: null },
+      }),
+      this.databaseService.spotifyTrack.count(),
+    ]);
+
+    return { completed: total - pending, pending, total };
+  }
+
+  /**
    * Get track IDs that haven't been enriched yet
    */
   async getUnenrichedTrackIds(limit = 1000): Promise<string[]> {
