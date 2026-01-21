@@ -29,7 +29,10 @@ export function RatingSelector({
     e.stopPropagation();
     if (updateRatingMutation.isPending) return;
 
-    updateRatingMutation.mutate({ data: { rating: newRating }, trackId });
+    await updateRatingMutation.mutateAsync({
+      data: { rating: newRating },
+      trackId,
+    });
     onRatingChange?.(newRating);
   };
 

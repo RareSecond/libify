@@ -150,6 +150,8 @@ export function PlayHistoryTable() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th className="w-full">Track</Table.Th>
+              <Table.Th className="whitespace-nowrap">Rating</Table.Th>
+              <Table.Th className="whitespace-nowrap">Tags</Table.Th>
               <Table.Th className="whitespace-nowrap">Played At</Table.Th>
               <Table.Th />
             </Table.Tr>
@@ -157,7 +159,7 @@ export function PlayHistoryTable() {
           <Table.Tbody>
             {items.length === 0 ? (
               <Table.Tr>
-                <Table.Td className="text-center" colSpan={3}>
+                <Table.Td className="text-center" colSpan={5}>
                   <Text className="text-dark-1">No play history found</Text>
                 </Table.Td>
               </Table.Tr>
@@ -169,6 +171,7 @@ export function PlayHistoryTable() {
                   key={item.id}
                   onAddToLibrary={handleAddToLibrary}
                   onPlay={handlePlayTrack}
+                  onRefresh={refetch}
                 />
               ))
             )}
