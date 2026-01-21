@@ -3,6 +3,7 @@ import { Logger } from "@nestjs/common";
 import { Job } from "bullmq";
 
 import { GenreEnrichmentService } from "../../library/genre-enrichment.service";
+import { GenreQueueService } from "../../library/genre-queue.service";
 
 export interface GenreEnrichmentJobData {
   all?: boolean; // Backfill all unenriched tracks
@@ -14,7 +15,10 @@ export interface GenreEnrichmentJobData {
 export class GenreEnrichmentProcessor extends WorkerHost {
   private readonly logger = new Logger(GenreEnrichmentProcessor.name);
 
-  constructor(private genreEnrichmentService: GenreEnrichmentService) {
+  constructor(
+    private genreEnrichmentService: GenreEnrichmentService,
+    private genreQueueService: GenreQueueService,
+  ) {
     super();
   }
 
@@ -88,7 +92,7 @@ export class GenreEnrichmentProcessor extends WorkerHost {
           this.logger.log(
             "More tracks to enrich, scheduling continuation job...",
           );
-          // The queue service will handle re-enqueueing
+          await this.genreQueueService.enqueueBackfill();
         }
       }
 

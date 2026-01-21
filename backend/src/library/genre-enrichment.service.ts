@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DatabaseService } from "../database/database.service";
-import { KyselyService } from "../database/kysely/kysely.service";
 import { LastFmService, LastFmTag } from "./lastfm.service";
 
 interface EnrichmentResult {
@@ -17,7 +16,6 @@ export class GenreEnrichmentService {
   constructor(
     private readonly lastFmService: LastFmService,
     private readonly databaseService: DatabaseService,
-    private readonly kyselyService: KyselyService,
   ) {}
 
   /**
@@ -132,16 +130,13 @@ export class GenreEnrichmentService {
     userId: string,
     limit = 1000,
   ): Promise<string[]> {
-    const tracks = await this.kyselyService.database
-      .selectFrom("UserTrack as ut")
-      .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
-      .select("st.id")
-      .where("ut.userId", "=", userId)
-      .where("st.genresUpdatedAt", "is", null)
-      .limit(limit)
-      .execute();
+    const userTracks = await this.databaseService.userTrack.findMany({
+      select: { spotifyTrack: { select: { id: true } } },
+      take: limit,
+      where: { spotifyTrack: { genresUpdatedAt: null }, userId },
+    });
 
-    return tracks.map((t) => t.id);
+    return userTracks.map((ut) => ut.spotifyTrack.id);
   }
 
   /**

@@ -71,7 +71,8 @@ export class LastFmService {
 
       const tags = response.data.toptags?.tag || [];
       return tags.map((tag) => ({
-        count: tag.count,
+        // Coerce to number - Last.fm API sometimes returns count as string
+        count: Number(tag.count) || 0,
         name: tag.name.toLowerCase(),
       }));
     } catch (error) {
@@ -124,7 +125,8 @@ export class LastFmService {
 
       const tags = response.data.toptags?.tag || [];
       return tags.map((tag) => ({
-        count: tag.count,
+        // Coerce to number - Last.fm API sometimes returns count as string
+        count: Number(tag.count) || 0,
         name: tag.name.toLowerCase(),
       }));
     } catch (error) {

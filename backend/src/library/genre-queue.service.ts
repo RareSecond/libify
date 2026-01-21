@@ -23,6 +23,9 @@ export class GenreQueueService {
       {
         // Only allow one backfill job at a time
         jobId: "backfill",
+        // Remove completed jobs so the same jobId can be reused
+        removeOnComplete: true,
+        removeOnFail: { age: 86400, count: 10 },
       },
     );
     this.logger.log("Enqueued genre backfill job");
@@ -35,7 +38,12 @@ export class GenreQueueService {
     await this.genreEnrichmentQueue.add(
       "enrich-track",
       { trackIds: [trackId] },
-      { jobId: `track-${trackId}` },
+      {
+        jobId: `track-${trackId}`,
+        // Remove completed jobs so the same jobId can be reused
+        removeOnComplete: true,
+        removeOnFail: { age: 86400, count: 100 },
+      },
     );
     this.logger.debug(`Enqueued track ${trackId} for genre enrichment`);
   }
@@ -60,6 +68,9 @@ export class GenreQueueService {
       {
         // Dedupe by user ID - only one enrichment job per user at a time
         jobId: `user-${userId}`,
+        // Remove completed jobs so the same jobId can be reused
+        removeOnComplete: true,
+        removeOnFail: { age: 86400, count: 100 },
       },
     );
     this.logger.log(
