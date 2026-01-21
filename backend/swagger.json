@@ -2684,6 +2684,150 @@
           "playlists"
         ]
       }
+    },
+    "/admin/backfill/status": {
+      "get": {
+        "operationId": "AdminController_getBackfillStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Backfill status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CombinedBackfillStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get backfill status for audio features and genres",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/backfill/all": {
+      "post": {
+        "operationId": "AdminController_triggerAllBackfills",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Both backfill jobs started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Audio features backfill already in progress"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trigger both audio features and genre backfill",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/backfill/audio-features": {
+      "post": {
+        "operationId": "AdminController_triggerAudioFeaturesBackfill",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Audio features backfill started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Audio features backfill already in progress"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trigger audio features backfill for all tracks",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/backfill/genres": {
+      "post": {
+        "operationId": "AdminController_triggerGenreBackfill",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Genre backfill job enqueued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trigger genre backfill for all tracks",
+        "tags": [
+          "admin"
+        ]
+      }
     }
   },
   "info": {
@@ -2743,6 +2887,9 @@
           "id": {
             "type": "number"
           },
+          "isAdmin": {
+            "type": "boolean"
+          },
           "name": {
             "type": "string"
           },
@@ -2759,6 +2906,7 @@
           "email",
           "hasCompletedOnboarding",
           "id",
+          "isAdmin",
           "provider",
           "updatedAt"
         ]
@@ -4831,6 +4979,74 @@
             "type": "string"
           }
         }
+      },
+      "BackfillStatusDto": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "number",
+            "description": "Number of tracks already processed"
+          },
+          "pending": {
+            "type": "number",
+            "description": "Number of tracks pending processing"
+          },
+          "percentComplete": {
+            "type": "number",
+            "description": "Percentage complete"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of tracks"
+          }
+        },
+        "required": [
+          "completed",
+          "pending",
+          "percentComplete",
+          "total"
+        ]
+      },
+      "CombinedBackfillStatusDto": {
+        "type": "object",
+        "properties": {
+          "audioFeatures": {
+            "description": "Audio features backfill status",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackfillStatusDto"
+              }
+            ]
+          },
+          "genres": {
+            "description": "Genre backfill status",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackfillStatusDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "audioFeatures",
+          "genres"
+        ]
+      },
+      "BackfillTriggerResponseDto": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "Job ID if applicable"
+          },
+          "message": {
+            "type": "string",
+            "description": "Response message"
+          }
+        },
+        "required": [
+          "message"
+        ]
       }
     }
   }

@@ -45,6 +45,7 @@ interface WeightedSyncCounts {
 
 @Injectable()
 export class LibrarySyncService {
+  private audioFeaturesBackfillInProgress = false;
   private readonly logger = new Logger(LibrarySyncService.name);
   private syncArtistCache = new Map<
     string,
@@ -124,6 +125,24 @@ export class LibrarySyncService {
     }
   }
 
+  /**
+   * Get count of tracks missing audio features (for admin status)
+   */
+  async getAudioFeaturesBackfillStatus(): Promise<{
+    completed: number;
+    pending: number;
+    total: number;
+  }> {
+    const [pending, total] = await Promise.all([
+      this.databaseService.spotifyTrack.count({
+        where: { audioFeaturesUpdatedAt: null },
+      }),
+      this.databaseService.spotifyTrack.count(),
+    ]);
+
+    return { completed: total - pending, pending, total };
+  }
+
   async getSyncStatus(
     userId: string,
   ): Promise<{
@@ -170,6 +189,13 @@ export class LibrarySyncService {
         },
       ]),
     );
+  }
+
+  /**
+   * Check if an audio features backfill is currently in progress.
+   */
+  isAudioFeaturesBackfillInProgress(): boolean {
+    return this.audioFeaturesBackfillInProgress;
   }
 
   /**
@@ -220,6 +246,61 @@ export class LibrarySyncService {
     }
 
     return { totalProcessed, totalUpdated };
+  }
+
+  /**
+   * Syncs audio features for ALL tracks in the database (not user-scoped).
+   * Used for admin backfill operations.
+   */
+  async syncAllAudioFeaturesGlobal(
+    onProgress?: (processed: number, total: number) => void,
+  ): Promise<{ totalProcessed: number; totalUpdated: number }> {
+    // Count total tracks needing audio features (no user filter)
+    const totalCount = await this.databaseService.spotifyTrack.count({
+      where: { audioFeaturesUpdatedAt: null },
+    });
+
+    if (totalCount === 0) {
+      this.logger.log("All tracks already have audio features");
+      return { totalProcessed: 0, totalUpdated: 0 };
+    }
+
+    // Mark backfill as in progress
+    this.audioFeaturesBackfillInProgress = true;
+
+    this.logger.log(
+      `Starting global audio features backfill for ${totalCount} tracks`,
+    );
+
+    let totalProcessed = 0;
+    let totalUpdated = 0;
+    const batchSize = 500;
+
+    try {
+      while (totalProcessed < totalCount) {
+        const result = await this.syncAudioFeaturesGlobal(batchSize);
+
+        if (result.tracksProcessed === 0) {
+          break;
+        }
+
+        totalProcessed += result.tracksProcessed;
+        totalUpdated += result.tracksUpdated;
+
+        if (onProgress) {
+          onProgress(totalProcessed, totalCount);
+        }
+
+        this.logger.log(
+          `Global audio features progress: ${totalProcessed}/${totalCount} (${totalUpdated} updated)`,
+        );
+      }
+
+      return { totalProcessed, totalUpdated };
+    } finally {
+      // Always mark backfill as complete, even on error
+      this.audioFeaturesBackfillInProgress = false;
+    }
   }
 
   /**
@@ -298,6 +379,73 @@ export class LibrarySyncService {
 
     this.logger.log(
       `Audio features sync complete: ${tracksUpdated}/${tracksWithoutFeatures.length} tracks updated`,
+    );
+
+    return { tracksProcessed: tracksWithoutFeatures.length, tracksUpdated };
+  }
+
+  /**
+   * Syncs audio features for tracks globally (not user-scoped).
+   */
+  async syncAudioFeaturesGlobal(
+    limit?: number,
+  ): Promise<{ tracksProcessed: number; tracksUpdated: number }> {
+    // Find tracks without audio features (no user filter)
+    const tracksWithoutFeatures =
+      await this.databaseService.spotifyTrack.findMany({
+        select: { id: true, spotifyId: true },
+        take: limit,
+        where: { audioFeaturesUpdatedAt: null },
+      });
+
+    if (tracksWithoutFeatures.length === 0) {
+      this.logger.log("No tracks need audio features");
+      return { tracksProcessed: 0, tracksUpdated: 0 };
+    }
+
+    this.logger.log(
+      `Fetching audio features for ${tracksWithoutFeatures.length} tracks (global)`,
+    );
+
+    const spotifyTrackIds = tracksWithoutFeatures.map((t) => t.spotifyId);
+    const audioFeaturesMap =
+      await this.reccoBeatsService.getAudioFeatures(spotifyTrackIds);
+
+    let tracksUpdated = 0;
+    const now = new Date();
+
+    for (const track of tracksWithoutFeatures) {
+      const features = audioFeaturesMap.get(track.spotifyId);
+
+      if (features) {
+        await this.databaseService.spotifyTrack.update({
+          data: {
+            acousticness: features.acousticness,
+            audioFeaturesUpdatedAt: now,
+            danceability: features.danceability,
+            energy: features.energy,
+            instrumentalness: features.instrumentalness,
+            key: features.key,
+            liveness: features.liveness,
+            loudness: features.loudness,
+            mode: features.mode,
+            speechiness: features.speechiness,
+            tempo: features.tempo,
+            valence: features.valence,
+          },
+          where: { id: track.id },
+        });
+        tracksUpdated++;
+      } else {
+        await this.databaseService.spotifyTrack.update({
+          data: { audioFeaturesUpdatedAt: now },
+          where: { id: track.id },
+        });
+      }
+    }
+
+    this.logger.log(
+      `Global audio features sync complete: ${tracksUpdated}/${tracksWithoutFeatures.length} tracks updated`,
     );
 
     return { tracksProcessed: tracksWithoutFeatures.length, tracksUpdated };

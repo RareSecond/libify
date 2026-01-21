@@ -27,6 +27,7 @@ model User {
   lastPlaySyncedAt       DateTime? // Timestamp of the most recent play synced from Spotify
   hasCompletedOnboarding Boolean   @default(false) // First-time user onboarding completion
   isWhitelisted          Boolean   @default(true) // Beta access whitelist
+  isAdmin                Boolean   @default(false) // Admin access for backfill and management operations
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 

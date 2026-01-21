@@ -25,6 +25,10 @@ export class UserDto {
   id: number;
 
   @Expose()
+  @IsBoolean()
+  isAdmin: boolean;
+
+  @Expose()
   @IsOptional()
   @IsString()
   name?: string;

@@ -130,6 +130,7 @@ export type User = {
   email: string;
   hasCompletedOnboarding: Generated<boolean>;
   id: string;
+  isAdmin: Generated<boolean>;
   isWhitelisted: Generated<boolean>;
   lastPlaySyncedAt: null | Timestamp;
   name: null | string;

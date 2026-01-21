@@ -1,0 +1,249 @@
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import { plainToInstance } from "class-transformer";
+
+import { AdminGuard } from "../auth/admin.guard";
+import { CompositeAuthGuard } from "../auth/composite-auth.guard";
+import { GenreEnrichmentService } from "../library/genre-enrichment.service";
+import { GenreQueueService } from "../library/genre-queue.service";
+import { LibrarySyncService } from "../library/library-sync.service";
+import {
+  BackfillStatusDto,
+  BackfillTriggerResponseDto,
+  CombinedBackfillStatusDto,
+} from "./dto/backfill-status.dto";
+
+@ApiBearerAuth()
+@ApiTags("admin")
+@Controller("admin")
+@UseGuards(CompositeAuthGuard, AdminGuard)
+export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
+
+  constructor(
+    private readonly librarySyncService: LibrarySyncService,
+    private readonly genreEnrichmentService: GenreEnrichmentService,
+    private readonly genreQueueService: GenreQueueService,
+  ) {}
+
+  @ApiOperation({
+    summary: "Get backfill status for audio features and genres",
+  })
+  @ApiResponse({
+    description: "Backfill status retrieved",
+    status: 200,
+    type: CombinedBackfillStatusDto,
+  })
+  @Get("backfill/status")
+  async getBackfillStatus(): Promise<CombinedBackfillStatusDto> {
+    const [audioFeaturesStatus, genresStatus] = await Promise.all([
+      this.librarySyncService.getAudioFeaturesBackfillStatus(),
+      this.genreEnrichmentService.getGenreBackfillStatus(),
+    ]);
+
+    const audioFeatures = plainToInstance(
+      BackfillStatusDto,
+      {
+        ...audioFeaturesStatus,
+        percentComplete:
+          audioFeaturesStatus.total > 0
+            ? Math.round(
+                (audioFeaturesStatus.completed / audioFeaturesStatus.total) *
+                  100,
+              )
+            : 100,
+      },
+      { excludeExtraneousValues: true },
+    );
+
+    const genres = plainToInstance(
+      BackfillStatusDto,
+      {
+        ...genresStatus,
+        percentComplete:
+          genresStatus.total > 0
+            ? Math.round((genresStatus.completed / genresStatus.total) * 100)
+            : 100,
+      },
+      { excludeExtraneousValues: true },
+    );
+
+    return plainToInstance(
+      CombinedBackfillStatusDto,
+      { audioFeatures, genres },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @ApiOperation({ summary: "Trigger both audio features and genre backfill" })
+  @ApiResponse({
+    description: "Both backfill jobs started",
+    status: 200,
+    type: BackfillTriggerResponseDto,
+  })
+  @ApiResponse({
+    description: "Audio features backfill already in progress",
+    status: 409,
+  })
+  @Post("backfill/all")
+  async triggerAllBackfills(): Promise<BackfillTriggerResponseDto> {
+    // Check if audio features backfill is already in progress
+    if (this.librarySyncService.isAudioFeaturesBackfillInProgress()) {
+      throw new HttpException(
+        "Audio features backfill is already in progress. Please wait for it to complete.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    try {
+      this.logger.log("Admin triggered all backfills");
+
+      // Start audio features backfill (runs in background)
+      this.librarySyncService
+        .syncAllAudioFeaturesGlobal((processed, total) => {
+          this.logger.log(
+            `Audio features backfill progress: ${processed}/${total}`,
+          );
+        })
+        .then((result) => {
+          this.logger.log(
+            `Audio features backfill completed: ${result.totalProcessed} processed, ${result.totalUpdated} updated`,
+          );
+        })
+        .catch((error) => {
+          this.logger.error("Audio features backfill failed", error);
+        });
+
+      // Enqueue genre backfill job
+      await this.genreQueueService.enqueueBackfill();
+
+      const [audioStatus, genreStatus] = await Promise.all([
+        this.librarySyncService.getAudioFeaturesBackfillStatus(),
+        this.genreEnrichmentService.getGenreBackfillStatus(),
+      ]);
+
+      return plainToInstance(
+        BackfillTriggerResponseDto,
+        {
+          message: `Backfills started: ${audioStatus.pending} tracks for audio features, ${genreStatus.pending} tracks for genres`,
+        },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error("Failed to start backfills", error);
+      throw new HttpException(
+        "Failed to start backfills",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @ApiOperation({ summary: "Trigger audio features backfill for all tracks" })
+  @ApiResponse({
+    description: "Audio features backfill started",
+    status: 200,
+    type: BackfillTriggerResponseDto,
+  })
+  @ApiResponse({
+    description: "Audio features backfill already in progress",
+    status: 409,
+  })
+  @Post("backfill/audio-features")
+  async triggerAudioFeaturesBackfill(): Promise<BackfillTriggerResponseDto> {
+    // Check if audio features backfill is already in progress
+    if (this.librarySyncService.isAudioFeaturesBackfillInProgress()) {
+      throw new HttpException(
+        "Audio features backfill is already in progress. Please wait for it to complete.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    try {
+      this.logger.log("Admin triggered global audio features backfill");
+
+      // Run in background - don't await completion
+      this.librarySyncService
+        .syncAllAudioFeaturesGlobal((processed, total) => {
+          this.logger.log(
+            `Audio features backfill progress: ${processed}/${total}`,
+          );
+        })
+        .then((result) => {
+          this.logger.log(
+            `Audio features backfill completed: ${result.totalProcessed} processed, ${result.totalUpdated} updated`,
+          );
+        })
+        .catch((error) => {
+          this.logger.error("Audio features backfill failed", error);
+        });
+
+      const status =
+        await this.librarySyncService.getAudioFeaturesBackfillStatus();
+
+      return plainToInstance(
+        BackfillTriggerResponseDto,
+        {
+          message: `Audio features backfill started for ${status.pending} tracks`,
+        },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error("Failed to start audio features backfill", error);
+      throw new HttpException(
+        "Failed to start audio features backfill",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @ApiOperation({ summary: "Trigger genre backfill for all tracks" })
+  @ApiResponse({
+    description: "Genre backfill job enqueued",
+    status: 200,
+    type: BackfillTriggerResponseDto,
+  })
+  @Post("backfill/genres")
+  async triggerGenreBackfill(): Promise<BackfillTriggerResponseDto> {
+    try {
+      this.logger.log("Admin triggered global genre backfill");
+
+      await this.genreQueueService.enqueueBackfill();
+
+      const status = await this.genreEnrichmentService.getGenreBackfillStatus();
+
+      return plainToInstance(
+        BackfillTriggerResponseDto,
+        {
+          jobId: "backfill",
+          message: `Genre backfill job enqueued for ${status.pending} tracks`,
+        },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      this.logger.error("Failed to enqueue genre backfill", error);
+      throw new HttpException(
+        "Failed to enqueue genre backfill",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
