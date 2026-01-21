@@ -382,15 +382,21 @@ export class TrackService {
       }
     }
 
-    // Apply genre filter
-    if (where.spotifyTrack?.artist?.genres?.hasSome) {
-      const genres = where.spotifyTrack.artist.genres.hasSome as string[];
+    // Apply genre filter (using TrackGenre table)
+    const genreNameFilter = where.spotifyTrack?.genres?.some?.genre?.name;
+    if (
+      genreNameFilter &&
+      typeof genreNameFilter === "object" &&
+      "in" in genreNameFilter
+    ) {
+      const genres = genreNameFilter.in as string[];
       query = query.where(({ eb }) =>
         eb(
           sql`EXISTS (
-            SELECT 1 FROM "SpotifyArtist" sar
-            WHERE sar.id = st."artistId"
-            AND sar.genres && ARRAY[${sql.join(genres.map((g) => sql.lit(g)))}]::text[]
+            SELECT 1 FROM "TrackGenre" tg
+            INNER JOIN "Genre" g ON tg."genreId" = g.id
+            WHERE tg."trackId" = st.id
+            AND LOWER(g.name) IN (${sql.join(genres.map((g) => sql.lit(g.toLowerCase())))})
           )`,
           "=",
           sql`true`,
@@ -1161,15 +1167,21 @@ export class TrackService {
       }
     }
 
-    // Handle genre filter
-    if (where.spotifyTrack?.artist?.genres?.hasSome) {
-      const genres = where.spotifyTrack.artist.genres.hasSome as string[];
+    // Handle genre filter (using TrackGenre table)
+    const genreNameFilterTwo = where.spotifyTrack?.genres?.some?.genre?.name;
+    if (
+      genreNameFilterTwo &&
+      typeof genreNameFilterTwo === "object" &&
+      "in" in genreNameFilterTwo
+    ) {
+      const genres = genreNameFilterTwo.in as string[];
       query = query.where(({ eb }) =>
         eb(
           sql`EXISTS (
-            SELECT 1 FROM "SpotifyArtist" sar
-            WHERE sar.id = st."artistId"
-            AND sar.genres && ARRAY[${sql.join(genres.map((g) => sql.lit(g)))}]::text[]
+            SELECT 1 FROM "TrackGenre" tg
+            INNER JOIN "Genre" g ON tg."genreId" = g.id
+            WHERE tg."trackId" = st.id
+            AND LOWER(g.name) IN (${sql.join(genres.map((g) => sql.lit(g.toLowerCase())))})
           )`,
           "=",
           sql`true`,
@@ -1336,7 +1348,7 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        "sar.genres as artistGenres",
+        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
         // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
@@ -1399,7 +1411,6 @@ export class TrackService {
         "sa.name",
         "sa.imageUrl",
         "sar.name",
-        "sar.genres",
       ]);
 
     // Apply sorting
@@ -1539,7 +1550,7 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        "sar.genres as artistGenres",
+        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -1599,7 +1610,6 @@ export class TrackService {
         "sa.name",
         "sa.imageUrl",
         "sar.name",
-        "sar.genres",
       ]);
 
     // Apply sorting
@@ -2056,7 +2066,7 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        "sar.genres as artistGenres",
+        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
         // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
@@ -2097,7 +2107,6 @@ export class TrackService {
         "sa.name",
         "sa.imageUrl",
         "sar.name",
-        "sar.genres",
         "ts.createdAt",
       ]);
 
@@ -2254,7 +2263,7 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        "sar.genres as artistGenres",
+        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -2311,7 +2320,6 @@ export class TrackService {
         "sa.name",
         "sa.imageUrl",
         "sar.name",
-        "sar.genres",
       ])
       .orderBy(sql`RANDOM()`)
       .limit(limit)
@@ -2382,7 +2390,7 @@ export class TrackService {
       albumArt: track.spotifyTrack.album?.imageUrl || null,
       albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
-      artistGenres: track.spotifyTrack.artist.genres,
+      artistGenres: [],
       artistId: track.spotifyTrack.artistId,
       danceability: track.spotifyTrack.danceability,
       duration: track.spotifyTrack.duration,
@@ -2442,7 +2450,7 @@ export class TrackService {
       albumArt: track.spotifyTrack.album?.imageUrl || null,
       albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
-      artistGenres: track.spotifyTrack.artist.genres,
+      artistGenres: [],
       artistId: track.spotifyTrack.artistId,
       danceability: track.spotifyTrack.danceability,
       duration: track.spotifyTrack.duration,
@@ -2518,11 +2526,16 @@ export class TrackService {
       );
     }
 
-    // Apply genre filter
+    // Apply genre filter (using TrackGenre table)
     if (filter.genres && filter.genres.length > 0) {
       query = query.where(({ eb }) =>
         eb(
-          sql`sar.genres && ARRAY[${sql.join(filter.genres!.map((g) => sql.lit(g)))}]::text[]`,
+          sql`EXISTS (
+            SELECT 1 FROM "TrackGenre" tg
+            INNER JOIN "Genre" g ON tg."genreId" = g.id
+            WHERE tg."trackId" = st.id
+            AND LOWER(g.name) IN (${sql.join(filter.genres!.map((g) => sql.lit(g.toLowerCase())))})
+          )`,
           "=",
           sql`true`,
         ),
@@ -2627,7 +2640,15 @@ export class TrackService {
 
     if (trackQuery.genres && trackQuery.genres.length > 0) {
       const genreFilter: Prisma.UserTrackWhereInput = {
-        spotifyTrack: { artist: { genres: { hasSome: trackQuery.genres } } },
+        spotifyTrack: {
+          genres: {
+            some: {
+              genre: {
+                name: { in: trackQuery.genres.map((g) => g.toLowerCase()) },
+              },
+            },
+          },
+        },
       };
 
       if (where.OR) {
@@ -2875,10 +2896,22 @@ export class TrackService {
       ];
     }
 
-    // Add genre filter
+    // Add genre filter (filter albums that have tracks with these genres)
     if (options.genres && options.genres.length > 0) {
       const genreFilter: Prisma.UserAlbumWhereInput = {
-        album: { artist: { genres: { hasSome: options.genres } } },
+        album: {
+          tracks: {
+            some: {
+              genres: {
+                some: {
+                  genre: {
+                    name: { in: options.genres.map((g) => g.toLowerCase()) },
+                  },
+                },
+              },
+            },
+          },
+        },
       };
 
       if (where.OR) {
@@ -2936,7 +2969,7 @@ export class TrackService {
         {
           albumArt: userAlbum.album.imageUrl,
           artist: userAlbum.album.artist.name,
-          artistGenres: userAlbum.album.artist.genres,
+          artistGenres: [],
           avgRating: userAlbum.avgRating,
           firstAdded: userAlbum.firstAddedAt,
           lastPlayed: userAlbum.lastPlayedAt,
@@ -2991,19 +3024,33 @@ export class TrackService {
       };
     }
 
-    // Add genre filter
+    // Add genre filter (filter artists that have tracks with these genres)
     if (options.genres && options.genres.length > 0) {
+      const genreCondition: Prisma.SpotifyArtistWhereInput = {
+        tracks: {
+          some: {
+            genres: {
+              some: {
+                genre: {
+                  name: { in: options.genres.map((g) => g.toLowerCase()) },
+                },
+              },
+            },
+          },
+        },
+      };
+
       if (options.search) {
         // If we have both search and genre filter, we need to combine them
         where.artist = {
           AND: [
             { name: { contains: options.search, mode: "insensitive" } },
-            { genres: { hasSome: options.genres } },
+            genreCondition,
           ],
         };
       } else {
         // Just genre filter
-        where.artist = { genres: { hasSome: options.genres } };
+        where.artist = genreCondition;
       }
     }
 
@@ -3054,7 +3101,7 @@ export class TrackService {
           artistImage: userArtist.artist.imageUrl,
           avgRating: userArtist.avgRating,
           firstAdded: userArtist.firstAddedAt,
-          genres: userArtist.artist.genres,
+          genres: [],
           lastPlayed: userArtist.lastPlayedAt,
           name: userArtist.artist.name,
           totalDuration: userArtist.totalDuration,
@@ -3081,20 +3128,19 @@ export class TrackService {
   }
 
   async getUserGenres(userId: string): Promise<string[]> {
-    // Get all unique genres from artists in user's library
-    const userArtists = await this.databaseService.userArtist.findMany({
-      include: { artist: { select: { genres: true } } },
-      where: { userId },
-    });
+    // Get all unique genres from tracks in user's library
+    const genres = await this.kyselyService.database
+      .selectFrom("TrackGenre as tg")
+      .innerJoin("SpotifyTrack as st", "tg.trackId", "st.id")
+      .innerJoin("UserTrack as ut", "ut.spotifyTrackId", "st.id")
+      .innerJoin("Genre as g", "tg.genreId", "g.id")
+      .select("g.displayName")
+      .where("ut.userId", "=", userId)
+      .where("ut.addedToLibrary", "=", true)
+      .distinct()
+      .execute();
 
-    // Extract and flatten all genres
-    const allGenres = userArtists
-      .map((ua) => ua.artist.genres)
-      .flat()
-      .filter((genre) => genre && genre.length > 0);
-
-    // Return unique genres sorted alphabetically
-    return [...new Set(allGenres)].sort();
+    return genres.map((g) => g.displayName).sort();
   }
 
   async getUserPlaylists(
@@ -3252,10 +3298,16 @@ export class TrackService {
       where.sources = { some: { sourceType: { in: sourceTypes } } };
     }
 
-    // Add genre filter
+    // Add genre filter (using TrackGenre table)
     if (genres && genres.length > 0) {
       const genreFilter: Prisma.UserTrackWhereInput = {
-        spotifyTrack: { artist: { genres: { hasSome: genres } } },
+        spotifyTrack: {
+          genres: {
+            some: {
+              genre: { name: { in: genres.map((g) => g.toLowerCase()) } },
+            },
+          },
+        },
       };
 
       if (where.OR) {
@@ -3386,7 +3438,7 @@ export class TrackService {
         albumArt: track.spotifyTrack.album.imageUrl || null,
         albumId: track.spotifyTrack.albumId,
         artist: track.spotifyTrack.artist.name,
-        artistGenres: track.spotifyTrack.artist.genres,
+        artistGenres: [],
         artistId: track.spotifyTrack.artistId,
         danceability: track.spotifyTrack.danceability,
         duration: track.spotifyTrack.duration,
@@ -3513,11 +3565,16 @@ export class TrackService {
       );
     }
 
-    // Apply genre filter
+    // Apply genre filter (using TrackGenre table)
     if (query.genres && query.genres.length > 0) {
       baseQuery = baseQuery.where(({ eb }) =>
         eb(
-          sql`sar.genres && ARRAY[${sql.join(query.genres.map((g) => sql.lit(g)))}]::text[]`,
+          sql`EXISTS (
+            SELECT 1 FROM "TrackGenre" tg
+            INNER JOIN "Genre" g ON tg."genreId" = g.id
+            WHERE tg."trackId" = st.id
+            AND LOWER(g.name) IN (${sql.join(query.genres.map((g) => sql.lit(g.toLowerCase())))})
+          )`,
           "=",
           sql`true`,
         ),
@@ -3576,7 +3633,7 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        "sar.genres as artistGenres",
+        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -3633,7 +3690,6 @@ export class TrackService {
         "sa.name",
         "sa.imageUrl",
         "sar.name",
-        "sar.genres",
       ]);
 
     // Apply ordering with NULLS LAST for nullable fields

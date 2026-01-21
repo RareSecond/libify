@@ -155,7 +155,7 @@ export class PlaylistsService {
       albumArt: track.spotifyTrack.album.imageUrl || null,
       albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
-      artistGenres: track.spotifyTrack.artist.genres || [],
+      artistGenres: [],
       artistId: track.spotifyTrack.artistId,
       danceability: track.spotifyTrack.danceability ?? undefined,
       duration: track.spotifyTrack.duration,
@@ -424,6 +424,37 @@ export class PlaylistsService {
     }
   }
 
+  private buildGenreCondition(
+    rule: PlaylistRuleDto,
+  ): Prisma.UserTrackWhereInput {
+    const normalizedGenre = rule.value?.toLowerCase();
+
+    switch (rule.operator) {
+      case PlaylistRuleOperator.HAS_ANY_TAG:
+        return { spotifyTrack: { genres: { some: {} } } };
+
+      case PlaylistRuleOperator.HAS_NO_TAGS:
+        return { spotifyTrack: { genres: { none: {} } } };
+
+      case PlaylistRuleOperator.HAS_TAG:
+        return {
+          spotifyTrack: {
+            genres: { some: { genre: { name: normalizedGenre } } },
+          },
+        };
+
+      case PlaylistRuleOperator.NOT_HAS_TAG:
+        return {
+          spotifyTrack: {
+            genres: { none: { genre: { name: normalizedGenre } } },
+          },
+        };
+
+      default:
+        return {};
+    }
+  }
+
   private buildNumberCondition(
     field: string,
     rule: PlaylistRuleDto,
@@ -627,6 +658,9 @@ export class PlaylistsService {
 
       case PlaylistRuleField.ENERGY:
         return { spotifyTrack: this.buildFloatCondition("energy", rule) };
+
+      case PlaylistRuleField.GENRE:
+        return this.buildGenreCondition(rule);
 
       case PlaylistRuleField.INSTRUMENTALNESS:
         return {

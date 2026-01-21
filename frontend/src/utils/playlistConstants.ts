@@ -9,6 +9,7 @@ export const fieldOptions = [
   { label: "Title", value: PlaylistRuleDtoField.title },
   { label: "Artist", value: PlaylistRuleDtoField.artist },
   { label: "Album", value: PlaylistRuleDtoField.album },
+  { label: "Genre", value: PlaylistRuleDtoField.genre },
   { label: "Rating", value: PlaylistRuleDtoField.rating },
   { label: "Play Count", value: PlaylistRuleDtoField.playCount },
   { label: "Last Played", value: PlaylistRuleDtoField.lastPlayed },
@@ -69,6 +70,12 @@ export const operatorsByField: Record<
     { label: "less than", value: PlaylistRuleDtoOperator.lessThan },
   ],
   [PlaylistRuleDtoField.energy]: audioFeatureOperators,
+  [PlaylistRuleDtoField.genre]: [
+    { label: "has genre", value: PlaylistRuleDtoOperator.hasTag },
+    { label: "does not have genre", value: PlaylistRuleDtoOperator.notHasTag },
+    { label: "has any genre", value: PlaylistRuleDtoOperator.hasAnyTag },
+    { label: "has no genres", value: PlaylistRuleDtoOperator.hasNoTags },
+  ],
   [PlaylistRuleDtoField.instrumentalness]: audioFeatureOperators,
   [PlaylistRuleDtoField.lastPlayed]: [
     { label: "in the last", value: PlaylistRuleDtoOperator.inLast },

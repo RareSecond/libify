@@ -4540,6 +4540,7 @@
               "dateAdded",
               "duration",
               "energy",
+              "genre",
               "instrumentalness",
               "lastPlayed",
               "liveness",

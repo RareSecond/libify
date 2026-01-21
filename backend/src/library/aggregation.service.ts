@@ -187,7 +187,6 @@ export class AggregationService {
     artistMap: Map<
       string,
       {
-        genres: string[];
         id: string;
         images: Array<{ url: string }>;
         name: string;
@@ -205,14 +204,12 @@ export class AggregationService {
 
     // Get artist data from the pre-fetched map
     let artistImageUrl: null | string = null;
-    let genres: string[] = [];
     let popularity: null | number = null;
     const artistData = artistMap.get(primaryArtist.id);
     if (artistData) {
       if (artistData.images.length > 0) {
         artistImageUrl = artistData.images[0].url;
       }
-      genres = artistData.genres || [];
       popularity = artistData.popularity;
     }
 
@@ -224,7 +221,6 @@ export class AggregationService {
     if (!artist) {
       artist = await this.databaseService.spotifyArtist.create({
         data: {
-          genres,
           imageUrl: artistImageUrl,
           name: primaryArtist.name,
           popularity,
@@ -317,7 +313,6 @@ export class AggregationService {
     artistMap: Map<
       string,
       {
-        genres: string[];
         id: string;
         images: Array<{ url: string }>;
         name: string;
@@ -333,18 +328,13 @@ export class AggregationService {
 
     // Get artist data from the pre-fetched map
     let artistImageUrl: null | string = null;
-    let genres: string[] = [];
     let popularity: null | number = null;
     const artistData = artistMap.get(primaryArtist.id);
     if (artistData) {
       if (artistData.images.length > 0) {
         artistImageUrl = artistData.images[0].url;
       }
-      genres = artistData.genres || [];
       popularity = artistData.popularity;
-      this.logger.debug(
-        `Artist ${primaryArtist.name} has ${genres.length} genres: ${genres.join(", ")}`,
-      );
     } else {
       this.logger.warn(
         `No artist data found for ${primaryArtist.name} (${primaryArtist.id}) in pre-fetched map`,
@@ -359,7 +349,6 @@ export class AggregationService {
     if (!artist) {
       artist = await this.databaseService.spotifyArtist.create({
         data: {
-          genres,
           imageUrl: artistImageUrl,
           name: primaryArtist.name,
           popularity,

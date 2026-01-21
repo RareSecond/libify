@@ -4,6 +4,9 @@ import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { DatabaseModule } from "../database/database.module";
 import { AggregationService } from "./aggregation.service";
+import { GenreEnrichmentService } from "./genre-enrichment.service";
+import { GenreQueueService } from "./genre-queue.service";
+import { LastFmService } from "./lastfm.service";
 import { LibrarySyncService } from "./library-sync.service";
 import { LibraryController } from "./library.controller";
 import { PlaySyncService } from "./play-sync.service";
@@ -23,6 +26,9 @@ import { TrackService } from "./track.service";
     PlaySyncService,
     PlaylistSyncService,
     TrackService,
+    LastFmService,
+    GenreEnrichmentService,
+    GenreQueueService,
   ],
   imports: [
     DatabaseModule,
@@ -30,6 +36,7 @@ import { TrackService } from "./track.service";
     BullModule.registerQueue({ name: "sync" }),
     BullModule.registerQueue({ name: "play-sync" }),
     BullModule.registerQueue({ name: "playlist-sync" }),
+    BullModule.registerQueue({ name: "genre-enrichment" }),
   ],
   providers: [
     SpotifyService,
@@ -41,6 +48,9 @@ import { TrackService } from "./track.service";
     SyncProgressGateway,
     PlaySyncService,
     PlaylistSyncService,
+    LastFmService,
+    GenreEnrichmentService,
+    GenreQueueService,
   ],
 })
 export class LibraryModule {}

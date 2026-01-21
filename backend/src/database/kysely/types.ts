@@ -1,11 +1,13 @@
 import type { ColumnType } from "kysely";
 export type DB = {
+  Genre: Genre;
   PlayHistory: PlayHistory;
   SmartPlaylist: SmartPlaylist;
   SpotifyAlbum: SpotifyAlbum;
   SpotifyArtist: SpotifyArtist;
   SpotifyTrack: SpotifyTrack;
   Tag: Tag;
+  TrackGenre: TrackGenre;
   TrackSource: TrackSource;
   TrackTag: TrackTag;
   User: User;
@@ -21,6 +23,12 @@ export type Generated<T> =
 
 import type { SourceType } from "./enums";
 
+export type Genre = {
+  createdAt: Generated<Timestamp>;
+  displayName: string;
+  id: string;
+  name: string;
+};
 export type PlayHistory = {
   duration: null | number;
   id: string;
@@ -54,7 +62,6 @@ export type SpotifyAlbum = {
   totalTracks: null | number;
 };
 export type SpotifyArtist = {
-  genres: string[];
   id: string;
   imageUrl: null | string;
   lastUpdated: Generated<Timestamp>;
@@ -72,6 +79,7 @@ export type SpotifyTrack = {
   duration: number;
   energy: null | number;
   explicit: Generated<boolean>;
+  genresUpdatedAt: null | Timestamp;
   id: string;
   instrumentalness: null | number;
   isrc: null | string;
@@ -98,6 +106,12 @@ export type Tag = {
   userId: string;
 };
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+export type TrackGenre = {
+  createdAt: Generated<Timestamp>;
+  genreId: string;
+  trackId: string;
+  weight: number;
+};
 export type TrackSource = {
   createdAt: Generated<Timestamp>;
   id: string;

@@ -9,6 +9,7 @@ export enum PlaylistRuleField {
   DATE_ADDED = "dateAdded",
   DURATION = "duration",
   ENERGY = "energy",
+  GENRE = "genre",
   INSTRUMENTALNESS = "instrumentalness",
   LAST_PLAYED = "lastPlayed",
   LIVENESS = "liveness",
