@@ -23,9 +23,10 @@ interface LastFmTrackTopTagsResponse {
 export class LastFmService {
   private readonly api: AxiosInstance;
   private readonly apiKey: string;
-  private lastRequestTime = 0;
   private readonly logger = new Logger(LastFmService.name);
   private readonly minRequestInterval = 200; // 200ms between requests (5 req/sec)
+  // Chained promise to serialize rate limiting - concurrent callers wait in sequence
+  private rateLimitChain: Promise<void> = Promise.resolve();
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>("LASTFM_API_KEY") || "";
@@ -151,17 +152,17 @@ export class LastFmService {
   }
 
   /**
-   * Ensures rate limiting by waiting if necessary
+   * Ensures rate limiting by serializing requests through a chained promise.
+   * Concurrent callers wait in sequence rather than sleeping in parallel.
    */
-  private async rateLimit(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-
-    if (timeSinceLastRequest < this.minRequestInterval) {
-      const waitTime = this.minRequestInterval - timeSinceLastRequest;
-      await new Promise((resolve) => setTimeout(resolve, waitTime));
-    }
-
-    this.lastRequestTime = Date.now();
+  private rateLimit(): Promise<void> {
+    // Chain this request after any pending requests
+    this.rateLimitChain = this.rateLimitChain.then(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, this.minRequestInterval);
+        }),
+    );
+    return this.rateLimitChain;
   }
 }
