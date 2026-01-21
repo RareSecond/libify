@@ -49,7 +49,6 @@ export class LibrarySyncService {
   private syncArtistCache = new Map<
     string,
     {
-      genres: string[];
       id: string;
       images: Array<{ url: string }>;
       name: string;
@@ -1169,7 +1168,6 @@ export class LibrarySyncService {
     Map<
       string,
       {
-        genres: string[];
         id: string;
         images: Array<{ url: string }>;
         name: string;
@@ -1204,14 +1202,13 @@ export class LibrarySyncService {
     // Step 2: Check database for remaining artists
     const existingArtists = await db
       .selectFrom("SpotifyArtist")
-      .select(["spotifyId", "name", "genres", "popularity", "imageUrl"])
+      .select(["spotifyId", "name", "popularity", "imageUrl"])
       .where("spotifyId", "in", uncachedArtistIds)
       .execute();
 
     const foundInDb = new Set<string>();
     for (const artist of existingArtists) {
       const artistData = {
-        genres: artist.genres,
         id: artist.spotifyId,
         images: artist.imageUrl ? [{ url: artist.imageUrl }] : [],
         name: artist.name,

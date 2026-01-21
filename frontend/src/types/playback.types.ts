@@ -10,6 +10,7 @@ export interface PlayContext {
     | "smart_playlist"
     | "top_tracks"
     | "track";
+  genres?: string[];
   pageNumber?: number;
   pageSize?: number;
   search?: string;

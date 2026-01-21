@@ -20,6 +20,7 @@ interface TracksTableProps {
   columnVisibility?: VisibilityState;
   contextId?: string;
   contextType?: "album" | "artist" | "library" | "playlist" | "smart_playlist";
+  genres?: string[];
   isAllOnPageSelected?: boolean;
   isLoading?: boolean;
   isSomeOnPageSelected?: boolean;
@@ -43,6 +44,7 @@ export function TracksTable({
   columnVisibility,
   contextId,
   contextType,
+  genres,
   isAllOnPageSelected,
   isLoading,
   isSomeOnPageSelected,
@@ -79,6 +81,7 @@ export function TracksTable({
                 clickedIndex: trackIndex,
                 contextId,
                 contextType,
+                genres,
                 pageNumber: page,
                 pageSize,
                 search,

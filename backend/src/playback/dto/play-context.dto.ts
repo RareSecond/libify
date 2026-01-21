@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Expose } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -48,6 +49,17 @@ export class PlayContextDto {
   @IsOptional()
   @IsString()
   deviceId?: string;
+
+  @ApiPropertyOptional({
+    description: "Filter by genres",
+    example: ["rock", "pop"],
+    type: [String],
+  })
+  @Expose()
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  genres?: string[];
 
   @ApiPropertyOptional({
     description: "Current page number (1-based)",

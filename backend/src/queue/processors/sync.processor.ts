@@ -5,6 +5,7 @@ import { Job } from "bullmq";
 import { AuthService } from "../../auth/auth.service";
 import { SyncOptionsDto } from "../../library/dto/sync-options.dto";
 import { SyncProgressDto } from "../../library/dto/sync-progress-base.dto";
+import { GenreQueueService } from "../../library/genre-queue.service";
 import { LibrarySyncService } from "../../library/library-sync.service";
 import { PlaySyncService } from "../../library/play-sync.service";
 import { PlaylistSyncService } from "../../library/playlist-sync.service";
@@ -109,6 +110,7 @@ export class SyncProcessor extends WorkerHost {
     private authService: AuthService,
     private playlistSyncService: PlaylistSyncService,
     private playSyncService: PlaySyncService,
+    private genreQueueService: GenreQueueService,
   ) {
     super();
   }
@@ -193,6 +195,20 @@ export class SyncProcessor extends WorkerHost {
             `Failed to enqueue play history sync for user ${userId}: ${error.message}`,
           );
         }
+      }
+
+      // Trigger genre enrichment for unenriched tracks
+      // This fetches genre data from Last.fm for tracks that don't have genres yet
+      try {
+        await this.genreQueueService.enqueueUnenrichedTracksForUser(userId);
+        this.logger.log(
+          `Enqueued genre enrichment for user ${userId} after sync`,
+        );
+      } catch (error) {
+        // Log but don't fail the sync job if genre enrichment enqueue fails
+        this.logger.warn(
+          `Failed to enqueue genre enrichment for user ${userId}: ${error.message}`,
+        );
       }
 
       return result;

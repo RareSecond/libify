@@ -7,6 +7,7 @@ import { DatabaseModule } from "../database/database.module";
 import { LibraryModule } from "../library/library.module";
 import { PlaylistsModule } from "../playlists/playlists.module";
 import { REDIS_CLIENT, RedisModule } from "../redis/redis.module";
+import { GenreEnrichmentProcessor } from "./processors/genre-enrichment.processor";
 import { PlaySyncProcessor } from "./processors/play-sync.processor";
 import { PlaylistSyncProcessor } from "./processors/playlist-sync.processor";
 import { SyncProcessor } from "./processors/sync.processor";
@@ -85,11 +86,34 @@ import { SyncProcessor } from "./processors/sync.processor";
       },
       name: "playlist-sync",
     }),
+    BullModule.registerQueue({
+      defaultJobOptions: {
+        attempts: 3, // Retry up to 3 times
+        backoff: {
+          delay: 60000, // 1 minute
+          type: "exponential",
+        },
+        removeOnComplete: {
+          age: 3600, // Keep completed jobs for 1 hour
+          count: 50,
+        },
+        removeOnFail: {
+          age: 86400, // Keep failed jobs for 24 hours
+          count: 100,
+        },
+      },
+      name: "genre-enrichment",
+    }),
     DatabaseModule,
     forwardRef(() => AuthModule),
     forwardRef(() => LibraryModule),
     forwardRef(() => PlaylistsModule),
   ],
-  providers: [SyncProcessor, PlaySyncProcessor, PlaylistSyncProcessor],
+  providers: [
+    SyncProcessor,
+    PlaySyncProcessor,
+    PlaylistSyncProcessor,
+    GenreEnrichmentProcessor,
+  ],
 })
 export class QueueModule {}
