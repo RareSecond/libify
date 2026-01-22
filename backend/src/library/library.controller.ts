@@ -51,6 +51,7 @@ import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
 import { GetAlbumsQueryDto } from "./dto/get-albums-query.dto";
 import { GetArtistsQueryDto } from "./dto/get-artists-query.dto";
 import { GetPlaylistsQueryDto } from "./dto/get-playlists-query.dto";
+import { LibraryInsightsDto } from "./dto/library-insights.dto";
 import {
   GetPlayHistoryQueryDto,
   PaginatedPlayHistoryDto,
@@ -80,6 +81,7 @@ import {
   PaginatedTracksDto,
   TrackDto,
 } from "./dto/track.dto";
+import { InsightsService } from "./insights.service";
 import { LibrarySyncService } from "./library-sync.service";
 import { PlaySyncService } from "./play-sync.service";
 import { PlaylistSyncService } from "./playlist-sync.service";
@@ -106,6 +108,7 @@ export class LibraryController {
     private tagService: TagService,
     private playSyncService: PlaySyncService,
     private playlistSyncService: PlaylistSyncService,
+    private insightsService: InsightsService,
     @InjectQueue("sync") private syncQueue: Queue,
     @InjectQueue("play-sync") private playSyncQueue: Queue,
   ) {}
@@ -356,6 +359,22 @@ export class LibraryController {
   @Get("genres")
   async getGenres(@Req() req: AuthenticatedRequest): Promise<string[]> {
     return this.trackService.getUserGenres(req.user.id);
+  }
+
+  @ApiOperation({ summary: "Get library insights and statistics" })
+  @ApiResponse({
+    description: "Library insights retrieved",
+    status: 200,
+    type: LibraryInsightsDto,
+  })
+  @Get("insights")
+  async getLibraryInsights(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<LibraryInsightsDto> {
+    const insights = await this.insightsService.getLibraryInsights(req.user.id);
+    return plainToInstance(LibraryInsightsDto, insights, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Get user play history" })

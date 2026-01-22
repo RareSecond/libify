@@ -1000,6 +1000,33 @@
         ]
       }
     },
+    "/library/insights": {
+      "get": {
+        "operationId": "LibraryController_getLibraryInsights",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Library insights retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryInsightsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get library insights and statistics",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/play-history": {
       "get": {
         "operationId": "LibraryController_getPlayHistory",
@@ -2638,6 +2665,43 @@
         ]
       }
     },
+    "/playlists/quick-create": {
+      "post": {
+        "operationId": "PlaylistsController_quickCreate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickCreatePlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickCreatePlaylistResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Quick create a smart playlist from a preset",
+        "tags": [
+          "playlists"
+        ]
+      }
+    },
     "/playlists/{id}/sync": {
       "post": {
         "description": "Syncs the smart playlist to Spotify. Creates a new Spotify playlist if one doesn't exist, or updates the existing one. The Spotify playlist name will be prefixed with [Codex.fm].",
@@ -3746,6 +3810,265 @@
           "tagStats",
           "topArtistsThisWeek",
           "topTracksThisWeek",
+          "totalAlbums",
+          "totalArtists",
+          "totalTracks"
+        ]
+      },
+      "DistributionBucketsDto": {
+        "type": "object",
+        "properties": {
+          "high": {
+            "type": "number",
+            "description": "High bucket count"
+          },
+          "low": {
+            "type": "number",
+            "description": "Low bucket count"
+          },
+          "medium": {
+            "type": "number",
+            "description": "Medium bucket count"
+          }
+        },
+        "required": [
+          "high",
+          "low",
+          "medium"
+        ]
+      },
+      "TempoDistributionDto": {
+        "type": "object",
+        "properties": {
+          "fast": {
+            "type": "number",
+            "description": "Fast tempo count (> 130 BPM)"
+          },
+          "medium": {
+            "type": "number",
+            "description": "Medium tempo count (100-130 BPM)"
+          },
+          "slow": {
+            "type": "number",
+            "description": "Slow tempo count (< 100 BPM)"
+          }
+        },
+        "required": [
+          "fast",
+          "medium",
+          "slow"
+        ]
+      },
+      "AudioProfileDto": {
+        "type": "object",
+        "properties": {
+          "averageEnergy": {
+            "type": "number",
+            "description": "Average energy (0-1)"
+          },
+          "averageTempo": {
+            "type": "number",
+            "description": "Average tempo in BPM"
+          },
+          "averageValence": {
+            "type": "number",
+            "description": "Average valence (0-1)"
+          },
+          "energyDistribution": {
+            "description": "Energy distribution (low/medium/high)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DistributionBucketsDto"
+              }
+            ]
+          },
+          "tempoDistribution": {
+            "description": "Tempo distribution (slow/medium/fast)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TempoDistributionDto"
+              }
+            ]
+          },
+          "valenceDistribution": {
+            "description": "Valence distribution (low/medium/high)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DistributionBucketsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "averageEnergy",
+          "averageTempo",
+          "averageValence",
+          "energyDistribution",
+          "tempoDistribution",
+          "valenceDistribution"
+        ]
+      },
+      "DecadeDistributionDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "Number of tracks from this decade"
+          },
+          "decade": {
+            "type": "string",
+            "description": "Decade (e.g., '1980s', '2010s')"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of total tracks"
+          }
+        },
+        "required": [
+          "count",
+          "decade",
+          "percentage"
+        ]
+      },
+      "EnrichmentProgressDto": {
+        "type": "object",
+        "properties": {
+          "totalTracks": {
+            "type": "number",
+            "description": "Total number of tracks"
+          },
+          "tracksWithAudioFeatures": {
+            "type": "number",
+            "description": "Number of tracks with audio features"
+          },
+          "tracksWithGenres": {
+            "type": "number",
+            "description": "Number of tracks with genres"
+          }
+        },
+        "required": [
+          "totalTracks",
+          "tracksWithAudioFeatures",
+          "tracksWithGenres"
+        ]
+      },
+      "GenreDistributionDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "Number of tracks in this genre"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Genre display name"
+          },
+          "genre": {
+            "type": "string",
+            "description": "Genre name (normalized)"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of total tracks"
+          }
+        },
+        "required": [
+          "count",
+          "displayName",
+          "genre",
+          "percentage"
+        ]
+      },
+      "TopArtistDto": {
+        "type": "object",
+        "properties": {
+          "imageUrl": {
+            "type": "string",
+            "description": "Artist image URL"
+          },
+          "name": {
+            "type": "string",
+            "description": "Artist name"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks by this artist"
+          }
+        },
+        "required": [
+          "name",
+          "trackCount"
+        ]
+      },
+      "LibraryInsightsDto": {
+        "type": "object",
+        "properties": {
+          "audioProfile": {
+            "description": "Audio profile with energy, valence, and tempo distributions",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AudioProfileDto"
+              }
+            ]
+          },
+          "decadeDistribution": {
+            "description": "Decade distribution",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecadeDistributionDto"
+            }
+          },
+          "enrichmentProgress": {
+            "description": "Enrichment progress stats",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EnrichmentProgressDto"
+              }
+            ]
+          },
+          "genreDistribution": {
+            "description": "Genre distribution",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GenreDistributionDto"
+            }
+          },
+          "newestTrackYear": {
+            "type": "number",
+            "nullable": true,
+            "description": "Newest track year in library"
+          },
+          "oldestTrackYear": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest track year in library"
+          },
+          "topArtists": {
+            "description": "Top artists by track count",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopArtistDto"
+            }
+          },
+          "totalAlbums": {
+            "type": "number",
+            "description": "Total number of albums in library"
+          },
+          "totalArtists": {
+            "type": "number",
+            "description": "Total number of artists in library"
+          },
+          "totalTracks": {
+            "type": "number",
+            "description": "Total number of tracks in library"
+          }
+        },
+        "required": [
+          "audioProfile",
+          "decadeDistribution",
+          "enrichmentProgress",
+          "genreDistribution",
+          "topArtists",
           "totalAlbums",
           "totalArtists",
           "totalTracks"
@@ -4938,6 +5261,57 @@
           "id",
           "isActive",
           "lastUpdated",
+          "name",
+          "trackCount"
+        ]
+      },
+      "QuickCreatePlaylistDto": {
+        "type": "object",
+        "properties": {
+          "decade": {
+            "type": "string",
+            "description": "Decade string e.g. '1980s' (required for DECADE preset)"
+          },
+          "genreName": {
+            "type": "string",
+            "description": "Genre name (required for GENRE preset)"
+          },
+          "preset": {
+            "enum": [
+              "CHILL",
+              "DECADE",
+              "DEEP_CUTS",
+              "FEEL_GOOD",
+              "FOCUS",
+              "GENRE",
+              "GYM"
+            ],
+            "type": "string",
+            "description": "The preset type for the playlist"
+          }
+        },
+        "required": [
+          "preset"
+        ]
+      },
+      "QuickCreatePlaylistResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The created playlist ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "The playlist name"
+          },
+          "trackCount": {
+            "type": "number",
+            "description": "Number of tracks in the playlist"
+          }
+        },
+        "required": [
+          "id",
           "name",
           "trackCount"
         ]

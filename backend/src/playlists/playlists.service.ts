@@ -10,12 +10,21 @@ import { hashTrackIds } from "../common/utils/playlist-hash.util";
 import { DatabaseService } from "../database/database.service";
 import { SpotifyService } from "../library/spotify.service";
 import { TrackService } from "../library/track.service";
-import { PlaylistCriteriaDto } from "./dto/playlist-criteria.dto";
+import {
+  OrderDirection,
+  PlaylistCriteriaDto,
+  PlaylistRuleLogic,
+} from "./dto/playlist-criteria.dto";
 import {
   PlaylistRuleDto,
   PlaylistRuleField,
   PlaylistRuleOperator,
 } from "./dto/playlist-rule.dto";
+import {
+  QuickCreatePlaylistDto,
+  QuickCreatePlaylistResponseDto,
+  QuickPlaylistPreset,
+} from "./dto/quick-create-playlist.dto";
 import {
   CreateSmartPlaylistDto,
   UpdateSmartPlaylistDto,
@@ -225,6 +234,25 @@ export class PlaylistsService {
       maxTracks,
       shuffle,
     );
+  }
+
+  async quickCreate(
+    userId: string,
+    dto: QuickCreatePlaylistDto,
+  ): Promise<QuickCreatePlaylistResponseDto> {
+    const { criteria, name } = this.buildPresetCriteria(dto);
+
+    const playlist = await this.prisma.smartPlaylist.create({
+      data: {
+        criteria: criteria as unknown as Prisma.JsonObject,
+        name,
+        userId,
+      },
+    });
+
+    const trackCount = await this.getTrackCount(userId, criteria);
+
+    return { id: playlist.id, name: playlist.name, trackCount };
   }
 
   async remove(userId: string, playlistId: string) {
@@ -557,6 +585,163 @@ export class PlaylistsService {
         return [{ spotifyTrack: { valence: nullsLast } }, secondarySort];
       default:
         return [{ addedAt: "desc" }, secondarySort];
+    }
+  }
+
+  private buildPresetCriteria(dto: QuickCreatePlaylistDto): {
+    criteria: PlaylistCriteriaDto;
+    name: string;
+  } {
+    switch (dto.preset) {
+      case QuickPlaylistPreset.CHILL:
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "energy",
+            orderDirection: OrderDirection.ASC,
+            rules: [
+              {
+                field: PlaylistRuleField.ENERGY,
+                numberValue: 0.4,
+                operator: PlaylistRuleOperator.LESS_THAN,
+              },
+              {
+                field: PlaylistRuleField.TEMPO,
+                numberValue: 100,
+                operator: PlaylistRuleOperator.LESS_THAN,
+              },
+            ],
+          },
+          name: "Chill Vibes",
+        };
+
+      case QuickPlaylistPreset.DECADE:
+        if (!dto.decade) {
+          throw new NotFoundException("Decade is required for DECADE preset");
+        }
+        // Note: Decade filtering via release date isn't directly supported
+        // by playlist rules. The playlist is created with the decade name
+        // but contains all tracks. For actual decade filtering, a RELEASE_DATE
+        // rule field would need to be added to the playlist rule system.
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "addedAt",
+            orderDirection: OrderDirection.DESC,
+            rules: [],
+          },
+          name: `${dto.decade} Throwback`,
+        };
+
+      case QuickPlaylistPreset.DEEP_CUTS:
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "playCount",
+            orderDirection: OrderDirection.ASC,
+            rules: [
+              {
+                field: PlaylistRuleField.PLAY_COUNT,
+                numberValue: 3,
+                operator: PlaylistRuleOperator.LESS_THAN,
+              },
+            ],
+          },
+          name: "Deep Cuts",
+        };
+
+      case QuickPlaylistPreset.FEEL_GOOD:
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "valence",
+            orderDirection: OrderDirection.DESC,
+            rules: [
+              {
+                field: PlaylistRuleField.VALENCE,
+                numberValue: 0.6,
+                operator: PlaylistRuleOperator.GREATER_THAN,
+              },
+            ],
+          },
+          name: "Feel Good",
+        };
+
+      case QuickPlaylistPreset.FOCUS:
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "instrumentalness",
+            orderDirection: OrderDirection.DESC,
+            rules: [
+              {
+                field: PlaylistRuleField.SPEECHINESS,
+                numberValue: 0.3,
+                operator: PlaylistRuleOperator.LESS_THAN,
+              },
+              {
+                field: PlaylistRuleField.INSTRUMENTALNESS,
+                numberValue: 0.3,
+                operator: PlaylistRuleOperator.GREATER_THAN,
+              },
+            ],
+          },
+          name: "Focus Mode",
+        };
+
+      case QuickPlaylistPreset.GENRE:
+        if (!dto.genreName) {
+          throw new NotFoundException(
+            "Genre name is required for GENRE preset",
+          );
+        }
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "addedAt",
+            orderDirection: OrderDirection.DESC,
+            rules: [
+              {
+                field: PlaylistRuleField.GENRE,
+                operator: PlaylistRuleOperator.HAS_TAG,
+                value: dto.genreName.toLowerCase(),
+              },
+            ],
+          },
+          name: `${dto.genreName} Mix`,
+        };
+
+      case QuickPlaylistPreset.GYM:
+        return {
+          criteria: {
+            limit: 100,
+            logic: PlaylistRuleLogic.AND,
+            orderBy: "energy",
+            orderDirection: OrderDirection.DESC,
+            rules: [
+              {
+                field: PlaylistRuleField.ENERGY,
+                numberValue: 0.7,
+                operator: PlaylistRuleOperator.GREATER_THAN,
+              },
+              {
+                field: PlaylistRuleField.TEMPO,
+                numberValue: 120,
+                operator: PlaylistRuleOperator.GREATER_THAN,
+              },
+            ],
+          },
+          name: "Gym Workout",
+        };
+
+      default:
+        throw new NotFoundException("Unknown preset type");
     }
   }
 

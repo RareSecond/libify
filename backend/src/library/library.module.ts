@@ -6,6 +6,7 @@ import { DatabaseModule } from "../database/database.module";
 import { AggregationService } from "./aggregation.service";
 import { GenreEnrichmentService } from "./genre-enrichment.service";
 import { GenreQueueService } from "./genre-queue.service";
+import { InsightsService } from "./insights.service";
 import { LastFmService } from "./lastfm.service";
 import { LibrarySyncService } from "./library-sync.service";
 import { LibraryController } from "./library.controller";
@@ -51,6 +52,7 @@ import { TrackService } from "./track.service";
     LastFmService,
     GenreEnrichmentService,
     GenreQueueService,
+    InsightsService,
   ],
 })
 export class LibraryModule {}
