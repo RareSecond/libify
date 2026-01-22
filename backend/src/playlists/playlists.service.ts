@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
+  NotImplementedException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
@@ -618,22 +620,11 @@ export class PlaylistsService {
 
       case QuickPlaylistPreset.DECADE:
         if (!dto.decade) {
-          throw new NotFoundException("Decade is required for DECADE preset");
+          throw new BadRequestException("Decade is required for DECADE preset");
         }
-        // Note: Decade filtering via release date isn't directly supported
-        // by playlist rules. The playlist is created with the decade name
-        // but contains all tracks. For actual decade filtering, a RELEASE_DATE
-        // rule field would need to be added to the playlist rule system.
-        return {
-          criteria: {
-            limit: 100,
-            logic: PlaylistRuleLogic.AND,
-            orderBy: "addedAt",
-            orderDirection: OrderDirection.DESC,
-            rules: [],
-          },
-          name: `${dto.decade} Throwback`,
-        };
+        // TODO: Implement RELEASE_DATE rule field to support decade filtering.
+        // The dto.decade value (e.g., "1980s") should filter tracks by release year.
+        throw new NotImplementedException("DECADE preset not supported yet");
 
       case QuickPlaylistPreset.DEEP_CUTS:
         return {
@@ -696,7 +687,7 @@ export class PlaylistsService {
 
       case QuickPlaylistPreset.GENRE:
         if (!dto.genreName) {
-          throw new NotFoundException(
+          throw new BadRequestException(
             "Genre name is required for GENRE preset",
           );
         }

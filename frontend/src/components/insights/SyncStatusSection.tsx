@@ -1,5 +1,5 @@
 import { Group, Paper, Progress, Text } from "@mantine/core";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface SyncStatusSectionProps {
   totalTracks: number;
@@ -28,11 +28,7 @@ export function SyncStatusSection({
   return (
     <Paper className="bg-dark-7 border border-dark-5 p-4" radius="md">
       <Group className="mb-2" gap="md">
-        {isFullyEnriched ? (
-          <CheckCircle className="text-green-5" size={20} />
-        ) : (
-          <AlertCircle className="text-orange-5" size={20} />
-        )}
+        <AlertCircle className="text-orange-5" size={20} />
         <Text className="font-medium" size="sm">
           Library Enrichment Progress
         </Text>

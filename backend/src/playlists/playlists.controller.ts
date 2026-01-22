@@ -22,6 +22,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { User } from "@prisma/client";
+import { plainToInstance } from "class-transformer";
 import { Request } from "express";
 
 import { CompositeAuthGuard } from "../auth/composite-auth.guard";
@@ -185,7 +186,13 @@ export class PlaylistsController {
     @Req() req: AuthenticatedRequest,
     @Body() quickCreateDto: QuickCreatePlaylistDto,
   ): Promise<QuickCreatePlaylistResponseDto> {
-    return this.playlistsService.quickCreate(req.user.id, quickCreateDto);
+    const result = await this.playlistsService.quickCreate(
+      req.user.id,
+      quickCreateDto,
+    );
+    return plainToInstance(QuickCreatePlaylistResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Delete a smart playlist" })
