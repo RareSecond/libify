@@ -17,12 +17,14 @@ import { Route as SmartPlaylistsImport } from "./routes/~smart-playlists";
 import { Route as SettingsImport } from "./routes/~settings";
 import { Route as PlaylistsImport } from "./routes/~playlists";
 import { Route as PlayHistoryImport } from "./routes/~play-history";
+import { Route as InsightsImport } from "./routes/~insights";
 import { Route as FullscreenImport } from "./routes/~fullscreen";
 import { Route as ArtistsImport } from "./routes/~artists";
 import { Route as AlbumsImport } from "./routes/~albums";
 import { Route as IndexImport } from "./routes/~index";
 import { Route as SmartPlaylistsIndexImport } from "./routes/~smart-playlists.index";
 import { Route as PlaylistsIndexImport } from "./routes/~playlists.index";
+import { Route as InsightsIndexImport } from "./routes/~insights.index";
 import { Route as ArtistsIndexImport } from "./routes/~artists.index";
 import { Route as AlbumsIndexImport } from "./routes/~albums.index";
 import { Route as SmartPlaylistsIdImport } from "./routes/~smart-playlists.$id";
@@ -70,6 +72,12 @@ const PlayHistoryRoute = PlayHistoryImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
+const InsightsRoute = InsightsImport.update({
+  id: "/insights",
+  path: "/insights",
+  getParentRoute: () => rootRoute,
+} as any);
+
 const FullscreenRoute = FullscreenImport.update({
   id: "/fullscreen",
   path: "/fullscreen",
@@ -104,6 +112,12 @@ const PlaylistsIndexRoute = PlaylistsIndexImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => PlaylistsRoute,
+} as any);
+
+const InsightsIndexRoute = InsightsIndexImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => InsightsRoute,
 } as any);
 
 const ArtistsIndexRoute = ArtistsIndexImport.update({
@@ -184,6 +198,13 @@ declare module "@tanstack/react-router" {
       path: "/fullscreen";
       fullPath: "/fullscreen";
       preLoaderRoute: typeof FullscreenImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/insights": {
+      id: "/insights";
+      path: "/insights";
+      fullPath: "/insights";
+      preLoaderRoute: typeof InsightsImport;
       parentRoute: typeof rootRoute;
     };
     "/play-history": {
@@ -277,6 +298,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ArtistsIndexImport;
       parentRoute: typeof ArtistsImport;
     };
+    "/insights/": {
+      id: "/insights/";
+      path: "/";
+      fullPath: "/insights/";
+      preLoaderRoute: typeof InsightsIndexImport;
+      parentRoute: typeof InsightsImport;
+    };
     "/playlists/": {
       id: "/playlists/";
       path: "/";
@@ -329,6 +357,18 @@ const ArtistsRouteChildren: ArtistsRouteChildren = {
 const ArtistsRouteWithChildren =
   ArtistsRoute._addFileChildren(ArtistsRouteChildren);
 
+interface InsightsRouteChildren {
+  InsightsIndexRoute: typeof InsightsIndexRoute;
+}
+
+const InsightsRouteChildren: InsightsRouteChildren = {
+  InsightsIndexRoute: InsightsIndexRoute,
+};
+
+const InsightsRouteWithChildren = InsightsRoute._addFileChildren(
+  InsightsRouteChildren,
+);
+
 interface PlaylistsRouteChildren {
   PlaylistsIdRoute: typeof PlaylistsIdRoute;
   PlaylistsIndexRoute: typeof PlaylistsIndexRoute;
@@ -362,6 +402,7 @@ export interface FileRoutesByFullPath {
   "/albums": typeof AlbumsRouteWithChildren;
   "/artists": typeof ArtistsRouteWithChildren;
   "/fullscreen": typeof FullscreenRoute;
+  "/insights": typeof InsightsRouteWithChildren;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
   "/settings": typeof SettingsRoute;
@@ -375,6 +416,7 @@ export interface FileRoutesByFullPath {
   "/smart-playlists/$id": typeof SmartPlaylistsIdRoute;
   "/albums/": typeof AlbumsIndexRoute;
   "/artists/": typeof ArtistsIndexRoute;
+  "/insights/": typeof InsightsIndexRoute;
   "/playlists/": typeof PlaylistsIndexRoute;
   "/smart-playlists/": typeof SmartPlaylistsIndexRoute;
   "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
@@ -394,6 +436,7 @@ export interface FileRoutesByTo {
   "/smart-playlists/$id": typeof SmartPlaylistsIdRoute;
   "/albums": typeof AlbumsIndexRoute;
   "/artists": typeof ArtistsIndexRoute;
+  "/insights": typeof InsightsIndexRoute;
   "/playlists": typeof PlaylistsIndexRoute;
   "/smart-playlists": typeof SmartPlaylistsIndexRoute;
   "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
@@ -405,6 +448,7 @@ export interface FileRoutesById {
   "/albums": typeof AlbumsRouteWithChildren;
   "/artists": typeof ArtistsRouteWithChildren;
   "/fullscreen": typeof FullscreenRoute;
+  "/insights": typeof InsightsRouteWithChildren;
   "/play-history": typeof PlayHistoryRoute;
   "/playlists": typeof PlaylistsRouteWithChildren;
   "/settings": typeof SettingsRoute;
@@ -418,6 +462,7 @@ export interface FileRoutesById {
   "/smart-playlists/$id": typeof SmartPlaylistsIdRoute;
   "/albums/": typeof AlbumsIndexRoute;
   "/artists/": typeof ArtistsIndexRoute;
+  "/insights/": typeof InsightsIndexRoute;
   "/playlists/": typeof PlaylistsIndexRoute;
   "/smart-playlists/": typeof SmartPlaylistsIndexRoute;
   "/albums/$artist/$album": typeof AlbumsArtistAlbumRoute;
@@ -430,6 +475,7 @@ export interface FileRouteTypes {
     | "/albums"
     | "/artists"
     | "/fullscreen"
+    | "/insights"
     | "/play-history"
     | "/playlists"
     | "/settings"
@@ -443,6 +489,7 @@ export interface FileRouteTypes {
     | "/smart-playlists/$id"
     | "/albums/"
     | "/artists/"
+    | "/insights/"
     | "/playlists/"
     | "/smart-playlists/"
     | "/albums/$artist/$album";
@@ -461,6 +508,7 @@ export interface FileRouteTypes {
     | "/smart-playlists/$id"
     | "/albums"
     | "/artists"
+    | "/insights"
     | "/playlists"
     | "/smart-playlists"
     | "/albums/$artist/$album";
@@ -470,6 +518,7 @@ export interface FileRouteTypes {
     | "/albums"
     | "/artists"
     | "/fullscreen"
+    | "/insights"
     | "/play-history"
     | "/playlists"
     | "/settings"
@@ -483,6 +532,7 @@ export interface FileRouteTypes {
     | "/smart-playlists/$id"
     | "/albums/"
     | "/artists/"
+    | "/insights/"
     | "/playlists/"
     | "/smart-playlists/"
     | "/albums/$artist/$album";
@@ -494,6 +544,7 @@ export interface RootRouteChildren {
   AlbumsRoute: typeof AlbumsRouteWithChildren;
   ArtistsRoute: typeof ArtistsRouteWithChildren;
   FullscreenRoute: typeof FullscreenRoute;
+  InsightsRoute: typeof InsightsRouteWithChildren;
   PlayHistoryRoute: typeof PlayHistoryRoute;
   PlaylistsRoute: typeof PlaylistsRouteWithChildren;
   SettingsRoute: typeof SettingsRoute;
@@ -509,6 +560,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlbumsRoute: AlbumsRouteWithChildren,
   ArtistsRoute: ArtistsRouteWithChildren,
   FullscreenRoute: FullscreenRoute,
+  InsightsRoute: InsightsRouteWithChildren,
   PlayHistoryRoute: PlayHistoryRoute,
   PlaylistsRoute: PlaylistsRouteWithChildren,
   SettingsRoute: SettingsRoute,
@@ -533,6 +585,7 @@ export const routeTree = rootRoute
         "/albums",
         "/artists",
         "/fullscreen",
+        "/insights",
         "/play-history",
         "/playlists",
         "/settings",
@@ -562,6 +615,12 @@ export const routeTree = rootRoute
     },
     "/fullscreen": {
       "filePath": "~fullscreen.tsx"
+    },
+    "/insights": {
+      "filePath": "~insights.tsx",
+      "children": [
+        "/insights/"
+      ]
     },
     "/play-history": {
       "filePath": "~play-history.tsx"
@@ -614,6 +673,10 @@ export const routeTree = rootRoute
     "/artists/": {
       "filePath": "~artists.index.tsx",
       "parent": "/artists"
+    },
+    "/insights/": {
+      "filePath": "~insights.index.tsx",
+      "parent": "/insights"
     },
     "/playlists/": {
       "filePath": "~playlists.index.tsx",

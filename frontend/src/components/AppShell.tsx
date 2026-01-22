@@ -2,6 +2,7 @@ import { AppShell, Burger, Group, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  BarChart3,
   Disc,
   Filter,
   History,
@@ -24,6 +25,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
 
   const navItems = [
     { icon: Home, label: "Home", to: "/" },
+    { icon: BarChart3, label: "Insights", to: "/insights" },
     { icon: Library, label: "My Library", to: "/tracks" },
     { icon: Disc, label: "Albums", to: "/albums" },
     { icon: User, label: "Artists", to: "/artists" },

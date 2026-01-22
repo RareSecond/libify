@@ -22,11 +22,16 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { User } from "@prisma/client";
+import { plainToInstance } from "class-transformer";
 import { Request } from "express";
 
 import { CompositeAuthGuard } from "../auth/composite-auth.guard";
 import { PaginatedTracksDto } from "../library/dto/track.dto";
 import { PlaylistCriteriaDto } from "./dto/playlist-criteria.dto";
+import {
+  QuickCreatePlaylistDto,
+  QuickCreatePlaylistResponseDto,
+} from "./dto/quick-create-playlist.dto";
 import {
   CreateSmartPlaylistDto,
   SmartPlaylistDto,
@@ -172,6 +177,22 @@ export class PlaylistsController {
     shuffle: boolean,
   ): Promise<string[]> {
     return this.playlistsService.getTracksForPlay(req.user.id, id, shuffle);
+  }
+
+  @ApiOperation({ summary: "Quick create a smart playlist from a preset" })
+  @ApiResponse({ status: 201, type: QuickCreatePlaylistResponseDto })
+  @Post("quick-create")
+  async quickCreate(
+    @Req() req: AuthenticatedRequest,
+    @Body() quickCreateDto: QuickCreatePlaylistDto,
+  ): Promise<QuickCreatePlaylistResponseDto> {
+    const result = await this.playlistsService.quickCreate(
+      req.user.id,
+      quickCreateDto,
+    );
+    return plainToInstance(QuickCreatePlaylistResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @ApiOperation({ summary: "Delete a smart playlist" })
