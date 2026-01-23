@@ -942,9 +942,14 @@ export class TrackService {
                 if (value.lt !== undefined) {
                   query = query.where(`st.${field}`, "<", value.lt);
                 }
-                if ("not" in value && value.not === null) {
-                  // "not: null" means IS NOT NULL (has a value)
-                  query = query.where(`st.${field}`, "is not", null);
+                if ("not" in value) {
+                  if (value.not === null) {
+                    // "not: null" means IS NOT NULL (has a value)
+                    query = query.where(`st.${field}`, "is not", null);
+                  } else if (typeof value.not === "number") {
+                    // Numeric NOT_EQUALS
+                    query = query.where(`st.${field}`, "!=", value.not);
+                  }
                 }
               } else if (value === null) {
                 // Direct null (IS NULL)
