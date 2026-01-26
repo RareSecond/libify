@@ -629,9 +629,10 @@ export class TrackService {
       for (const condition of where.AND) {
         const andCond = condition as Prisma.UserTrackWhereInput;
 
-        // Handle nested spotifyTrack conditions (title, artist, album, duration)
+        // Handle nested spotifyTrack conditions (title, artist, album, duration, audio features, genres)
         if (andCond.spotifyTrack) {
           const trackCond = andCond.spotifyTrack as {
+            acousticness?: number | { gt?: number; lt?: number; not?: null };
             album?: {
               name?: {
                 contains?: string;
@@ -652,6 +653,7 @@ export class TrackService {
                 startsWith?: string;
               };
             };
+            danceability?: number | { gt?: number; lt?: number; not?: null };
             duration?: {
               equals?: number;
               gt?: number;
@@ -659,6 +661,17 @@ export class TrackService {
               lt?: number;
               lte?: number;
             };
+            energy?: number | { gt?: number; lt?: number; not?: null };
+            genres?: {
+              none?: { genre?: { name?: string } };
+              some?: { genre?: { name?: string } };
+            };
+            instrumentalness?:
+              | number
+              | { gt?: number; lt?: number; not?: null };
+            liveness?: number | { gt?: number; lt?: number; not?: null };
+            speechiness?: number | { gt?: number; lt?: number; not?: null };
+            tempo?: number | { gt?: number; lt?: number; not?: null };
             title?: {
               contains?: string;
               endsWith?: string;
@@ -667,6 +680,7 @@ export class TrackService {
               NOT?: { contains?: string; mode?: string };
               startsWith?: string;
             };
+            valence?: number | { gt?: number; lt?: number; not?: null };
           };
 
           // Handle title filter
@@ -900,6 +914,116 @@ export class TrackService {
                   trackCond.duration.equals,
                 );
               }
+            }
+          }
+
+          // Handle audio feature filters (energy, danceability, tempo, etc.)
+          const audioFeatureFields = [
+            "acousticness",
+            "danceability",
+            "energy",
+            "instrumentalness",
+            "liveness",
+            "speechiness",
+            "tempo",
+            "valence",
+          ] as const;
+
+          for (const field of audioFeatureFields) {
+            const value = trackCond[field];
+            if (value !== undefined) {
+              if (typeof value === "number") {
+                // Direct value (from EQUALS operator)
+                query = query.where(`st.${field}`, "=", value);
+              } else if (typeof value === "object" && value !== null) {
+                if (value.gt !== undefined) {
+                  query = query.where(`st.${field}`, ">", value.gt);
+                }
+                if (value.lt !== undefined) {
+                  query = query.where(`st.${field}`, "<", value.lt);
+                }
+                if ("not" in value) {
+                  if (value.not === null) {
+                    // "not: null" means IS NOT NULL (has a value)
+                    query = query.where(`st.${field}`, "is not", null);
+                  } else if (typeof value.not === "number") {
+                    // Numeric NOT_EQUALS
+                    query = query.where(`st.${field}`, "!=", value.not);
+                  }
+                }
+              } else if (value === null) {
+                // Direct null (IS NULL)
+                query = query.where(`st.${field}`, "is", null);
+              }
+            }
+          }
+
+          // Handle genre filters
+          if (trackCond.genres) {
+            // Handle "has genre" (some with specific genre name)
+            if (trackCond.genres.some?.genre?.name) {
+              const genreName = trackCond.genres.some.genre.name;
+              query = query.where(({ eb }) =>
+                eb(
+                  sql`EXISTS (
+                    SELECT 1 FROM "TrackGenre" tg
+                    INNER JOIN "Genre" g ON tg."genreId" = g.id
+                    WHERE tg."trackId" = st.id
+                    AND LOWER(g.name) = ${genreName.toLowerCase()}
+                  )`,
+                  "=",
+                  sql`true`,
+                ),
+              );
+            }
+            // Handle "has any genre" (some with empty condition)
+            else if (
+              trackCond.genres.some &&
+              Object.keys(trackCond.genres.some).length === 0
+            ) {
+              query = query.where(({ eb }) =>
+                eb(
+                  sql`EXISTS (
+                    SELECT 1 FROM "TrackGenre" tg
+                    WHERE tg."trackId" = st.id
+                  )`,
+                  "=",
+                  sql`true`,
+                ),
+              );
+            }
+
+            // Handle "does not have genre" (none with specific genre name)
+            if (trackCond.genres.none?.genre?.name) {
+              const genreName = trackCond.genres.none.genre.name;
+              query = query.where(({ eb }) =>
+                eb(
+                  sql`NOT EXISTS (
+                    SELECT 1 FROM "TrackGenre" tg
+                    INNER JOIN "Genre" g ON tg."genreId" = g.id
+                    WHERE tg."trackId" = st.id
+                    AND LOWER(g.name) = ${genreName.toLowerCase()}
+                  )`,
+                  "=",
+                  sql`true`,
+                ),
+              );
+            }
+            // Handle "has no genres" (none with empty condition)
+            else if (
+              trackCond.genres.none &&
+              Object.keys(trackCond.genres.none).length === 0
+            ) {
+              query = query.where(({ eb }) =>
+                eb(
+                  sql`NOT EXISTS (
+                    SELECT 1 FROM "TrackGenre" tg
+                    WHERE tg."trackId" = st.id
+                  )`,
+                  "=",
+                  sql`true`,
+                ),
+              );
             }
           }
         }
