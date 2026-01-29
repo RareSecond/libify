@@ -12,6 +12,7 @@ const DEFAULT_VISIBILITY: VisibilityState = {
   danceability: false,
   duration: true,
   energy: false,
+  genres: true,
   instrumentalness: false,
   lastPlayedAt: true,
   liveness: false,

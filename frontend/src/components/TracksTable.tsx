@@ -130,6 +130,7 @@ export function TracksTable({
     "rating",
     "tags",
     "sources",
+    "genres",
     // Audio features (hidden by default)
     "tempo",
     "energy",

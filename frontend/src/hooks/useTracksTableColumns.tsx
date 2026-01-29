@@ -9,15 +9,14 @@ import {
 } from "../components/ClickableTableCells";
 import { InlineTagEditor } from "../components/InlineTagEditor";
 import { RatingSelector } from "../components/RatingSelector";
+import { TrackGenres } from "../components/TrackGenres";
 import { TrackSources } from "../components/TrackSources";
 import { TrackDto } from "../data/api";
 import { getAudioFeatureColumns } from "../utils/audioFeatureColumns";
 import { formatTime } from "../utils/format";
 
-const formatDate = (date: null | string | undefined) => {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString();
-};
+const formatDate = (date: null | string | undefined) =>
+  date ? new Date(date).toLocaleDateString() : "-";
 
 interface UseTracksTableColumnsOptions {
   currentTrack?: { id?: string };
@@ -220,7 +219,7 @@ export function useTracksTableColumns({
         enableSorting: false,
         header: "Tags",
         id: "tags",
-        size: 150,
+        size: 80,
       },
       {
         accessorKey: "sources",
@@ -228,7 +227,15 @@ export function useTracksTableColumns({
         enableSorting: false,
         header: "Sources",
         id: "sources",
-        size: 200,
+        size: 120,
+      },
+      {
+        accessorKey: "artistGenres",
+        cell: ({ row }) => <TrackGenres genres={row.original.artistGenres} />,
+        enableSorting: false,
+        header: "Genres",
+        id: "genres",
+        size: 80,
       },
       ...getAudioFeatureColumns(),
     );
