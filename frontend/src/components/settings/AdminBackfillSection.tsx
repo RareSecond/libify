@@ -16,6 +16,7 @@ import {
   Music,
   RefreshCw,
   Shield,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -24,6 +25,7 @@ import {
   useAudioFeaturesBackfill,
   useBackfillStatus,
   useGenreBackfill,
+  useGenreReset,
 } from "@/hooks/useAdminBackfill";
 
 export function AdminBackfillSection() {
@@ -31,11 +33,13 @@ export function AdminBackfillSection() {
   const audioFeaturesMutation = useAudioFeaturesBackfill();
   const genreMutation = useGenreBackfill();
   const allBackfillsMutation = useAllBackfills();
+  const genreResetMutation = useGenreReset();
 
   const isAnyMutationLoading =
     audioFeaturesMutation.isPending ||
     genreMutation.isPending ||
-    allBackfillsMutation.isPending;
+    allBackfillsMutation.isPending ||
+    genreResetMutation.isPending;
 
   // If there's a 403 error, user is not an admin - don't show the section
   if (error && isAxiosError(error) && error.response?.status === 403) {
@@ -153,6 +157,16 @@ export function AdminBackfillSection() {
             variant="light"
           >
             Backfill Genres
+          </Button>
+          <Button
+            color="red"
+            disabled={isAnyMutationLoading || status?.genres.completed === 0}
+            leftSection={<Trash2 size={16} />}
+            loading={genreResetMutation.isPending}
+            onClick={() => genreResetMutation.mutate()}
+            variant="light"
+          >
+            Reset Genres
           </Button>
         </Group>
 
