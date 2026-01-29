@@ -250,13 +250,12 @@ export class TrackService {
     orderBy:
       | Prisma.UserTrackOrderByWithRelationInput
       | Prisma.UserTrackOrderByWithRelationInput[],
-    maxTracks: number,
-    shuffle: boolean,
+    shuffle?: boolean,
     skip = 0,
   ): Promise<string[]> {
     // If shuffling, use random order regardless of provided orderBy
     if (shuffle) {
-      return this.fetchTracksForPlayWithRandomOrder(userId, where, maxTracks);
+      return this.fetchTracksForPlayWithRandomOrder(userId, where);
     }
 
     // Non-shuffle: use provided orderBy
@@ -264,7 +263,6 @@ export class TrackService {
       include: { spotifyTrack: { select: { spotifyId: true } } },
       orderBy,
       skip,
-      take: maxTracks,
       where: { ...where, userId },
     });
 
@@ -284,13 +282,12 @@ export class TrackService {
     where: Prisma.UserTrackWhereInput,
     sortBy: "lastPlayedAt" | "rating",
     sortOrder: "asc" | "desc",
-    maxTracks: number,
-    shuffle: boolean,
+    shuffle?: boolean,
     skip = 0,
   ): Promise<string[]> {
     // If shuffling, use random order regardless of sortBy
     if (shuffle) {
-      return this.fetchTracksForPlayWithRandomOrder(userId, where, maxTracks);
+      return this.fetchTracksForPlayWithRandomOrder(userId, where);
     }
 
     const db = this.kyselyService.database;
@@ -522,8 +519,7 @@ export class TrackService {
         .orderBy("ut.id", "asc");
     }
 
-    // Apply pagination (skip only applies to non-shuffle)
-    query = query.offset(skip).limit(maxTracks);
+    query = query.offset(skip);
 
     const tracks = await query.execute();
 
@@ -541,7 +537,6 @@ export class TrackService {
   async fetchTracksForPlayWithRandomOrder(
     userId: string,
     where: Prisma.UserTrackWhereInput,
-    maxTracks: number,
   ): Promise<string[]> {
     const db = this.kyselyService.database;
 
@@ -1416,7 +1411,7 @@ export class TrackService {
     }
 
     // Use PostgreSQL's RANDOM() for true random sampling at DB level
-    query = query.orderBy(sql`RANDOM()`).limit(maxTracks);
+    query = query.orderBy(sql`RANDOM()`);
 
     const tracks = await query.execute();
 
@@ -2812,7 +2807,7 @@ export class TrackService {
     // If shuffling, use random order to get truly random tracks from entire library
     if (shouldShuffle) {
       this.logger.log("Using random order for shuffle");
-      return this.fetchTracksForPlayWithRandomOrder(userId, where, 500);
+      return this.fetchTracksForPlayWithRandomOrder(userId, where);
     }
 
     // Build orderBy clause with secondary sort for deterministic ordering
@@ -2910,12 +2905,10 @@ export class TrackService {
 
     this.logger.log(`Final orderBy:`, JSON.stringify(orderBy, null, 2));
 
-    // Get tracks up to 500 max for Spotify API compatibility
     const trackUris = await this.fetchTracksForPlay(
       userId,
       where,
       orderBy,
-      500,
       shouldShuffle,
       skip,
     );

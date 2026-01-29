@@ -225,31 +225,21 @@ export class PlaylistsService {
       ? this.buildOrderByClause(sortBy, sortOrder || "desc")
       : this.buildOrderBy(criteria);
 
-    // Get all tracks up to playlist limit (or 500 max for Spotify API compatibility)
-    const maxTracks = criteria.limit ? Math.min(criteria.limit, 500) : 500;
-
-    // When there's a limit AND shuffle: first get the deterministic limited set
-    // (same tracks the UI shows), then shuffle at DB level
-    if (shuffle && criteria.limit) {
-      const limitedTracks = await this.trackService.fetchTracksForPlay(
-        userId,
-        where,
-        orderBy,
-        maxTracks,
-        false,
-      );
-      return this.trackService.shuffleTrackUris(limitedTracks);
-    }
-
-    // No limit: shuffle from entire matching set (existing behavior, correct)
-    // Or non-shuffle: use provided orderBy
-    return this.trackService.fetchTracksForPlay(
+    const allTracks = await this.trackService.fetchTracksForPlay(
       userId,
       where,
       orderBy,
-      maxTracks,
-      shuffle,
     );
+
+    const tracks = criteria.limit
+      ? allTracks.slice(0, criteria.limit)
+      : allTracks;
+
+    if (shuffle) {
+      return this.trackService.shuffleTrackUris(tracks);
+    }
+
+    return tracks;
   }
 
   async quickCreate(
