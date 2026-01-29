@@ -12,6 +12,8 @@ interface EnrichmentResult {
 export class GenreEnrichmentService {
   private genreCache: Map<string, string> | null = null; // name -> id
   private readonly logger = new Logger(GenreEnrichmentService.name);
+  // Minimum Last.fm tag weight (0-100 relative scale) to consider a tag relevant
+  private readonly minTagWeight = 5;
 
   constructor(
     private readonly lastFmService: LastFmService,
@@ -158,6 +160,22 @@ export class GenreEnrichmentService {
   }
 
   /**
+   * Reset all genre data — deletes all TrackGenre records and nulls genresUpdatedAt
+   */
+  async resetAllGenres(): Promise<{ tracksReset: number }> {
+    const [, updateResult] = await this.databaseService.$transaction([
+      this.databaseService.trackGenre.deleteMany(),
+      this.databaseService.spotifyTrack.updateMany({
+        data: { genresUpdatedAt: null },
+        where: { genresUpdatedAt: { not: null } },
+      }),
+    ]);
+
+    this.logger.log(`Reset genres for ${updateResult.count} tracks`);
+    return { tracksReset: updateResult.count };
+  }
+
+  /**
    * Load genre whitelist into cache
    */
   private async loadGenreCache(): Promise<Map<string, string>> {
@@ -186,6 +204,10 @@ export class GenreEnrichmentService {
       [];
 
     for (const tag of tags) {
+      if (tag.count < this.minTagWeight) {
+        continue;
+      }
+
       const normalizedName = tag.name.toLowerCase().trim();
       const genreId = genreMap.get(normalizedName);
 

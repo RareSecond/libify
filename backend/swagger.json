@@ -2776,6 +2776,43 @@
         ]
       }
     },
+    "/admin/backfill/genres/reset": {
+      "post": {
+        "operationId": "AdminController_resetGenres",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All genre data has been reset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reset all genre data to allow fresh re-import",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/backfill/all": {
       "post": {
         "operationId": "AdminController_triggerAllBackfills",

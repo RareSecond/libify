@@ -88,6 +88,35 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: "Reset all genre data to allow fresh re-import" })
+  @ApiResponse({
+    description: "All genre data has been reset",
+    status: 200,
+    type: BackfillTriggerResponseDto,
+  })
+  @Post("backfill/genres/reset")
+  async resetGenres(): Promise<BackfillTriggerResponseDto> {
+    try {
+      this.logger.log("Admin triggered genre reset");
+
+      const result = await this.genreEnrichmentService.resetAllGenres();
+
+      return plainToInstance(
+        BackfillTriggerResponseDto,
+        {
+          message: `Genre data reset for ${result.tracksReset} tracks. You can now run a fresh genre backfill.`,
+        },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      this.logger.error("Failed to reset genres", error);
+      throw new HttpException(
+        "Failed to reset genre data",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @ApiOperation({ summary: "Trigger both audio features and genre backfill" })
   @ApiResponse({
     description: "Both backfill jobs started",

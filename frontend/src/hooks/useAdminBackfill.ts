@@ -43,6 +43,10 @@ export function useGenreBackfill() {
   return useBackfillMutation(triggerGenreBackfill, "genre backfill");
 }
 
+export function useGenreReset() {
+  return useBackfillMutation(triggerGenreReset, "genre reset");
+}
+
 function getBackfillStatus() {
   return customInstance<CombinedBackfillStatus>({
     method: "GET",
@@ -68,6 +72,13 @@ function triggerGenreBackfill() {
   return customInstance<BackfillTriggerResponse>({
     method: "POST",
     url: "/admin/backfill/genres",
+  });
+}
+
+function triggerGenreReset() {
+  return customInstance<BackfillTriggerResponse>({
+    method: "POST",
+    url: "/admin/backfill/genres/reset",
   });
 }
 
