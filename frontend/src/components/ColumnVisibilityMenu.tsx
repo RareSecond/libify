@@ -11,6 +11,7 @@ const COLUMN_LABELS: Record<string, string> = {
   danceability: "Danceability",
   duration: "Duration",
   energy: "Energy",
+  genres: "Genres",
   instrumentalness: "Instrumental",
   lastPlayedAt: "Last Played",
   liveness: "Liveness",

@@ -1467,7 +1467,16 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
+        sql<string[]>`
+          COALESCE(
+            ARRAY(
+              SELECT g2."displayName" FROM "TrackGenre" tg2
+              INNER JOIN "Genre" g2 ON tg2."genreId" = g2.id
+              WHERE tg2."trackId" = st.id
+              ORDER BY tg2.weight DESC
+            ),
+            ARRAY[]::text[]
+          )`.as("artistGenres"),
         // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
@@ -1669,7 +1678,16 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
+        sql<string[]>`
+          COALESCE(
+            ARRAY(
+              SELECT g2."displayName" FROM "TrackGenre" tg2
+              INNER JOIN "Genre" g2 ON tg2."genreId" = g2.id
+              WHERE tg2."trackId" = st.id
+              ORDER BY tg2.weight DESC
+            ),
+            ARRAY[]::text[]
+          )`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -2211,7 +2229,16 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
+        sql<string[]>`
+          COALESCE(
+            ARRAY(
+              SELECT g2."displayName" FROM "TrackGenre" tg2
+              INNER JOIN "Genre" g2 ON tg2."genreId" = g2.id
+              WHERE tg2."trackId" = st.id
+              ORDER BY tg2.weight DESC
+            ),
+            ARRAY[]::text[]
+          )`.as("artistGenres"),
         // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
@@ -2408,7 +2435,16 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
+        sql<string[]>`
+          COALESCE(
+            ARRAY(
+              SELECT g2."displayName" FROM "TrackGenre" tg2
+              INNER JOIN "Genre" g2 ON tg2."genreId" = g2.id
+              WHERE tg2."trackId" = st.id
+              ORDER BY tg2.weight DESC
+            ),
+            ARRAY[]::text[]
+          )`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
@@ -2517,7 +2553,11 @@ export class TrackService {
       include: {
         sources: true,
         spotifyTrack: {
-          include: { album: { include: { artist: true } }, artist: true },
+          include: {
+            album: { include: { artist: true } },
+            artist: true,
+            genres: { include: { genre: true }, orderBy: { weight: "desc" } },
+          },
         },
         tags: { include: { tag: true } },
       },
@@ -2535,7 +2575,7 @@ export class TrackService {
       albumArt: track.spotifyTrack.album?.imageUrl || null,
       albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
-      artistGenres: [],
+      artistGenres: track.spotifyTrack.genres.map((g) => g.genre.displayName),
       artistId: track.spotifyTrack.artistId,
       danceability: track.spotifyTrack.danceability,
       duration: track.spotifyTrack.duration,
@@ -2577,7 +2617,11 @@ export class TrackService {
       include: {
         sources: true,
         spotifyTrack: {
-          include: { album: { include: { artist: true } }, artist: true },
+          include: {
+            album: { include: { artist: true } },
+            artist: true,
+            genres: { include: { genre: true }, orderBy: { weight: "desc" } },
+          },
         },
         tags: { include: { tag: true } },
       },
@@ -2595,7 +2639,7 @@ export class TrackService {
       albumArt: track.spotifyTrack.album?.imageUrl || null,
       albumId: track.spotifyTrack.albumId,
       artist: track.spotifyTrack.artist.name,
-      artistGenres: [],
+      artistGenres: track.spotifyTrack.genres.map((g) => g.genre.displayName),
       artistId: track.spotifyTrack.artistId,
       danceability: track.spotifyTrack.danceability,
       duration: track.spotifyTrack.duration,
@@ -3560,7 +3604,11 @@ export class TrackService {
         include: {
           sources: true,
           spotifyTrack: {
-            include: { album: { include: { artist: true } }, artist: true },
+            include: {
+              album: { include: { artist: true } },
+              artist: true,
+              genres: { include: { genre: true }, orderBy: { weight: "desc" } },
+            },
           },
           tags: { include: { tag: true } },
         },
@@ -3581,7 +3629,7 @@ export class TrackService {
         albumArt: track.spotifyTrack.album.imageUrl || null,
         albumId: track.spotifyTrack.albumId,
         artist: track.spotifyTrack.artist.name,
-        artistGenres: [],
+        artistGenres: track.spotifyTrack.genres.map((g) => g.genre.displayName),
         artistId: track.spotifyTrack.artistId,
         danceability: track.spotifyTrack.danceability,
         duration: track.spotifyTrack.duration,
@@ -3800,7 +3848,16 @@ export class TrackService {
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
         "sar.name as artistName",
-        sql<string[]>`ARRAY[]::text[]`.as("artistGenres"),
+        sql<string[]>`
+          COALESCE(
+            ARRAY(
+              SELECT g2."displayName" FROM "TrackGenre" tg2
+              INNER JOIN "Genre" g2 ON tg2."genreId" = g2.id
+              WHERE tg2."trackId" = st.id
+              ORDER BY tg2.weight DESC
+            ),
+            ARRAY[]::text[]
+          )`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
             json_agg(
