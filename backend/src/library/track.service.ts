@@ -3630,6 +3630,30 @@ export class TrackService {
     );
   }
 
+  /**
+   * Shuffle a list of Spotify URIs using database-level randomization.
+   * Used to shuffle a pre-filtered set of tracks (e.g., limited smart playlist tracks).
+   */
+  async shuffleTrackUris(spotifyUris: string[]): Promise<string[]> {
+    if (spotifyUris.length === 0) return [];
+
+    const spotifyIds = spotifyUris.map((uri) =>
+      uri.replace("spotify:track:", ""),
+    );
+    const db = this.kyselyService.database;
+
+    const tracks = await db
+      .selectFrom("SpotifyTrack")
+      .select("spotifyId")
+      .where("spotifyId", "in", spotifyIds)
+      .orderBy(sql`RANDOM()`)
+      .execute();
+
+    return tracks
+      .filter((t) => t.spotifyId)
+      .map((t) => `spotify:track:${t.spotifyId}`);
+  }
+
   async updateTrackRating(
     userId: string,
     trackId: string,
