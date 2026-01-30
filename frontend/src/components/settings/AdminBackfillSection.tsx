@@ -11,6 +11,7 @@ import {
 import { AxiosError } from "axios";
 import {
   AlertTriangle,
+  Calendar,
   Database,
   type LucideIcon,
   Music,
@@ -21,6 +22,7 @@ import {
 
 import {
   type BackfillStatus,
+  useAlbumReleaseDateBackfill,
   useAllBackfills,
   useAudioFeaturesBackfill,
   useBackfillStatus,
@@ -34,12 +36,14 @@ export function AdminBackfillSection() {
   const genreMutation = useGenreBackfill();
   const allBackfillsMutation = useAllBackfills();
   const genreResetMutation = useGenreReset();
+  const albumReleaseDateMutation = useAlbumReleaseDateBackfill();
 
   const isAnyMutationLoading =
     audioFeaturesMutation.isPending ||
     genreMutation.isPending ||
     allBackfillsMutation.isPending ||
-    genreResetMutation.isPending;
+    genreResetMutation.isPending ||
+    albumReleaseDateMutation.isPending;
 
   // If there's a 403 error, user is not an admin - don't show the section
   if (error && isAxiosError(error) && error.response?.status === 403) {
@@ -157,6 +161,16 @@ export function AdminBackfillSection() {
             variant="light"
           >
             Backfill Genres
+          </Button>
+          <Button
+            color="orange"
+            disabled={isAnyMutationLoading}
+            leftSection={<Calendar size={16} />}
+            loading={albumReleaseDateMutation.isPending}
+            onClick={() => albumReleaseDateMutation.mutate()}
+            variant="light"
+          >
+            Backfill Release Dates
           </Button>
           <Button
             color="red"

@@ -1,5 +1,12 @@
-import { BarChart } from "@mantine/charts";
-import { Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Paper,
+  Progress,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import { ListMusic } from "lucide-react";
 
 interface GenreBreakdownSectionProps {
@@ -32,9 +39,8 @@ export function GenreBreakdownSection({
     );
   }
 
-  const chartData = genreDistribution
-    .slice(0, 10)
-    .map((g) => ({ count: g.count, genre: g.displayName }));
+  const topGenres = genreDistribution.slice(0, 10);
+  const maxCount = topGenres[0]?.count ?? 0;
 
   return (
     <Paper className="bg-dark-7 border border-dark-5 p-6" radius="md">
@@ -42,16 +48,33 @@ export function GenreBreakdownSection({
         Genre Distribution
       </Title>
 
-      <BarChart
-        className="h-[300px]"
-        data={chartData}
-        dataKey="genre"
-        gridColor="var(--mantine-color-dark-5)"
-        orientation="vertical"
-        series={[{ color: "orange.6", name: "count" }]}
-        tickLine="none"
-        withLegend={false}
-      />
+      <Stack gap="xs">
+        {topGenres.map((g, index) => (
+          <div key={g.genre}>
+            <div className="flex items-center gap-3 mb-1">
+              <Text className="text-dark-3 w-5 shrink-0 text-right" size="sm">
+                {index + 1}
+              </Text>
+              <Text
+                className="text-dark-0 flex-1 truncate font-medium"
+                size="sm"
+              >
+                {g.displayName}
+              </Text>
+              <Text className="text-dark-3 shrink-0" size="xs">
+                {g.count.toLocaleString()}
+              </Text>
+            </div>
+            <div className="pl-8">
+              <Progress
+                color="orange.6"
+                size="xs"
+                value={(g.count / maxCount) * 100}
+              />
+            </div>
+          </div>
+        ))}
+      </Stack>
 
       <Stack className="mt-6" gap="xs">
         <Text className="text-dark-2" size="sm">

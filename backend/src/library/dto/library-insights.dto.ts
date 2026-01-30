@@ -47,20 +47,6 @@ export class AudioProfileDto {
   valenceDistribution: DistributionBucketsDto;
 }
 
-export class DecadeDistributionDto {
-  @ApiProperty({ description: "Number of tracks from this decade" })
-  @Expose()
-  count: number;
-
-  @ApiProperty({ description: "Decade (e.g., '1980s', '2010s')" })
-  @Expose()
-  decade: string;
-
-  @ApiProperty({ description: "Percentage of total tracks" })
-  @Expose()
-  percentage: number;
-}
-
 export class EnrichmentProgressDto {
   @ApiProperty({ description: "Total number of tracks" })
   @Expose()
@@ -101,14 +87,6 @@ export class LibraryInsightsDto {
   @Expose()
   @Type(() => AudioProfileDto)
   audioProfile: AudioProfileDto;
-
-  @ApiProperty({
-    description: "Decade distribution",
-    type: [DecadeDistributionDto],
-  })
-  @Expose()
-  @Type(() => DecadeDistributionDto)
-  decadeDistribution: DecadeDistributionDto[];
 
   @ApiProperty({
     description: "Enrichment progress stats",
@@ -161,4 +139,26 @@ export class LibraryInsightsDto {
   @ApiProperty({ description: "Total number of tracks in library" })
   @Expose()
   totalTracks: number;
+
+  @ApiProperty({
+    description: "Year distribution",
+    type: () => [YearDistributionDto],
+  })
+  @Expose()
+  @Type(() => YearDistributionDto)
+  yearDistribution: YearDistributionDto[];
+}
+
+export class YearDistributionDto {
+  @ApiProperty({ description: "Number of tracks from this year" })
+  @Expose()
+  count: number;
+
+  @ApiProperty({ description: "Percentage of total tracks" })
+  @Expose()
+  percentage: number;
+
+  @ApiProperty({ description: "Release year" })
+  @Expose()
+  year: number;
 }

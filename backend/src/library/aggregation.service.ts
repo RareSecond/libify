@@ -302,7 +302,12 @@ export class AggregationService {
 
   async createOrUpdateSpotifyEntities(
     spotifyTrackData: {
-      album: { id: string; images: Array<{ url: string }>; name: string };
+      album: {
+        id: string;
+        images: Array<{ url: string }>;
+        name: string;
+        release_date?: string;
+      };
       artists: Array<{ id: string; name: string }>;
       duration_ms: number;
       external_ids?: { isrc?: string };
@@ -363,6 +368,17 @@ export class AggregationService {
     });
 
     if (!album) {
+      let releaseDate: Date | null = null;
+      if (spotifyTrackData.album.release_date) {
+        try {
+          releaseDate = new Date(spotifyTrackData.album.release_date);
+        } catch {
+          this.logger.warn(
+            `Failed to parse release date for album ${spotifyTrackData.album.id}: ${spotifyTrackData.album.release_date}`,
+          );
+        }
+      }
+
       album = await this.databaseService.spotifyAlbum.create({
         data: {
           artistId: artist.id,
@@ -371,6 +387,7 @@ export class AggregationService {
               ? spotifyTrackData.album.images[0].url
               : null,
           name: spotifyTrackData.album.name,
+          releaseDate,
           spotifyId: spotifyTrackData.album.id,
         },
       });

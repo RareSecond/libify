@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Logger,
   Post,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -14,8 +15,10 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { plainToInstance } from "class-transformer";
+import { Request } from "express";
 
 import { AdminGuard } from "../auth/admin.guard";
+import { AuthService } from "../auth/auth.service";
 import { CompositeAuthGuard } from "../auth/composite-auth.guard";
 import { GenreEnrichmentService } from "../library/genre-enrichment.service";
 import { GenreQueueService } from "../library/genre-queue.service";
@@ -25,6 +28,10 @@ import {
   BackfillTriggerResponseDto,
   CombinedBackfillStatusDto,
 } from "./dto/backfill-status.dto";
+
+interface AuthenticatedRequest extends Request {
+  user: { id: string };
+}
 
 @ApiBearerAuth()
 @ApiTags("admin")
@@ -37,6 +44,7 @@ export class AdminController {
     private readonly librarySyncService: LibrarySyncService,
     private readonly genreEnrichmentService: GenreEnrichmentService,
     private readonly genreQueueService: GenreQueueService,
+    private readonly authService: AuthService,
   ) {}
 
   @ApiOperation({
@@ -112,6 +120,79 @@ export class AdminController {
       this.logger.error("Failed to reset genres", error);
       throw new HttpException(
         "Failed to reset genre data",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @ApiOperation({ summary: "Backfill album release dates from Spotify" })
+  @ApiResponse({
+    description: "Album release date backfill started",
+    status: 200,
+    type: BackfillTriggerResponseDto,
+  })
+  @ApiResponse({
+    description: "Album release date backfill already in progress",
+    status: 409,
+  })
+  @Post("backfill/album-release-dates")
+  async triggerAlbumReleaseDateBackfill(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<BackfillTriggerResponseDto> {
+    if (this.librarySyncService.isAlbumReleaseDateBackfillInProgress()) {
+      throw new HttpException(
+        "Album release date backfill is already in progress. Please wait for it to complete.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    try {
+      this.logger.log("Admin triggered album release date backfill");
+
+      const accessToken = await this.authService.getSpotifyAccessToken(
+        req.user.id,
+      );
+
+      if (!accessToken) {
+        throw new HttpException(
+          "Could not obtain Spotify access token",
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // Run in background
+      this.librarySyncService
+        .backfillAlbumReleaseDates(accessToken, (processed, total) => {
+          this.logger.log(
+            `Album release date backfill progress: ${processed}/${total}`,
+          );
+        })
+        .then((result) => {
+          this.logger.log(
+            `Album release date backfill completed: ${result.totalUpdated}/${result.totalProcessed} updated`,
+          );
+        })
+        .catch((error) => {
+          this.logger.error("Album release date backfill failed", error);
+        });
+
+      const pendingCount =
+        await this.librarySyncService.getAlbumReleaseDateBackfillCount();
+
+      return plainToInstance(
+        BackfillTriggerResponseDto,
+        {
+          message: `Album release date backfill started for ${pendingCount} albums`,
+        },
+        { excludeExtraneousValues: true },
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error("Failed to start album release date backfill", error);
+      throw new HttpException(
+        "Failed to start album release date backfill",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
