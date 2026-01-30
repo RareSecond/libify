@@ -56,7 +56,7 @@ export function YearBreakdownSection({
         data={chartData}
         dataKey="year"
         gridAxis="none"
-        series={[{ color: "violet.6", name: "count" }]}
+        series={[{ color: "orange.6", name: "count" }]}
         tickLine="none"
         tooltipProps={{
           content: ({ label, payload }) => YearTooltip({ label, payload }),
