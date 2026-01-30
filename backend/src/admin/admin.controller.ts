@@ -131,10 +131,21 @@ export class AdminController {
     status: 200,
     type: BackfillTriggerResponseDto,
   })
+  @ApiResponse({
+    description: "Album release date backfill already in progress",
+    status: 409,
+  })
   @Post("backfill/album-release-dates")
   async triggerAlbumReleaseDateBackfill(
     @Req() req: AuthenticatedRequest,
   ): Promise<BackfillTriggerResponseDto> {
+    if (this.librarySyncService.isAlbumReleaseDateBackfillInProgress()) {
+      throw new HttpException(
+        "Album release date backfill is already in progress. Please wait for it to complete.",
+        HttpStatus.CONFLICT,
+      );
+    }
+
     try {
       this.logger.log("Admin triggered album release date backfill");
 

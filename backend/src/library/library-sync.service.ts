@@ -45,6 +45,7 @@ interface WeightedSyncCounts {
 
 @Injectable()
 export class LibrarySyncService {
+  private albumReleaseDateBackfillInProgress = false;
   private audioFeaturesBackfillInProgress = false;
   private readonly logger = new Logger(LibrarySyncService.name);
   private syncArtistCache = new Map<
@@ -85,51 +86,57 @@ export class LibrarySyncService {
       `Backfilling release dates for ${albumsWithoutDates.length} albums`,
     );
 
+    this.albumReleaseDateBackfillInProgress = true;
+
     let totalUpdated = 0;
     const batchSize = 20;
 
-    for (let i = 0; i < albumsWithoutDates.length; i += batchSize) {
-      const batch = albumsWithoutDates.slice(i, i + batchSize);
-      const spotifyIds = batch.map((a) => a.spotifyId);
+    try {
+      for (let i = 0; i < albumsWithoutDates.length; i += batchSize) {
+        const batch = albumsWithoutDates.slice(i, i + batchSize);
+        const spotifyIds = batch.map((a) => a.spotifyId);
 
-      const spotifyAlbums = await this.spotifyService.getMultipleAlbums(
-        accessToken,
-        spotifyIds,
-      );
+        const spotifyAlbums = await this.spotifyService.getMultipleAlbums(
+          accessToken,
+          spotifyIds,
+        );
 
-      for (const spotifyAlbum of spotifyAlbums) {
-        if (!spotifyAlbum?.release_date) continue;
+        for (const spotifyAlbum of spotifyAlbums) {
+          if (!spotifyAlbum?.release_date) continue;
 
-        try {
-          const releaseDate = new Date(spotifyAlbum.release_date);
-          const dbAlbum = batch.find((a) => a.spotifyId === spotifyAlbum.id);
-          if (dbAlbum) {
-            await this.databaseService.spotifyAlbum.update({
-              data: { releaseDate },
-              where: { id: dbAlbum.id },
-            });
-            totalUpdated++;
+          try {
+            const releaseDate = new Date(spotifyAlbum.release_date);
+            const dbAlbum = batch.find((a) => a.spotifyId === spotifyAlbum.id);
+            if (dbAlbum) {
+              await this.databaseService.spotifyAlbum.update({
+                data: { releaseDate },
+                where: { id: dbAlbum.id },
+              });
+              totalUpdated++;
+            }
+          } catch {
+            this.logger.warn(
+              `Failed to parse release date for album ${spotifyAlbum.id}: ${spotifyAlbum.release_date}`,
+            );
           }
-        } catch {
-          this.logger.warn(
-            `Failed to parse release date for album ${spotifyAlbum.id}: ${spotifyAlbum.release_date}`,
+        }
+
+        if (onProgress) {
+          onProgress(
+            Math.min(i + batchSize, albumsWithoutDates.length),
+            albumsWithoutDates.length,
           );
         }
       }
 
-      if (onProgress) {
-        onProgress(
-          Math.min(i + batchSize, albumsWithoutDates.length),
-          albumsWithoutDates.length,
-        );
-      }
+      this.logger.log(
+        `Album release date backfill complete: ${totalUpdated}/${albumsWithoutDates.length} updated`,
+      );
+
+      return { totalProcessed: albumsWithoutDates.length, totalUpdated };
+    } finally {
+      this.albumReleaseDateBackfillInProgress = false;
     }
-
-    this.logger.log(
-      `Album release date backfill complete: ${totalUpdated}/${albumsWithoutDates.length} updated`,
-    );
-
-    return { totalProcessed: albumsWithoutDates.length, totalUpdated };
   }
 
   async countSyncItems(
@@ -261,9 +268,10 @@ export class LibrarySyncService {
     );
   }
 
-  /**
-   * Check if an audio features backfill is currently in progress.
-   */
+  isAlbumReleaseDateBackfillInProgress(): boolean {
+    return this.albumReleaseDateBackfillInProgress;
+  }
+
   isAudioFeaturesBackfillInProgress(): boolean {
     return this.audioFeaturesBackfillInProgress;
   }

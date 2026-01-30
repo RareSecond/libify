@@ -2837,6 +2837,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Album release date backfill already in progress"
           }
         },
         "security": [

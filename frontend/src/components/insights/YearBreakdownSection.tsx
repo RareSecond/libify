@@ -35,8 +35,13 @@ export function YearBreakdownSection({
     year: String(d.year),
   }));
 
-  const playlistYears = yearDistribution
-    .filter((d) => d.count >= 10)
+  const playlistDecades = [
+    ...new Map(
+      yearDistribution
+        .filter((d) => d.count >= 10)
+        .map((d) => [`${Math.floor(d.year / 10) * 10}s`, d] as const),
+    ).keys(),
+  ]
     .slice(-5)
     .reverse();
 
@@ -59,26 +64,23 @@ export function YearBreakdownSection({
         withLegend={false}
       />
 
-      {playlistYears.length > 0 && (
+      {playlistDecades.length > 0 && (
         <Stack className="mt-6" gap="xs">
           <Text className="text-dark-2" size="sm">
             Create a throwback playlist:
           </Text>
           <Group gap="xs">
-            {playlistYears.map((d) => {
-              const decade = `${Math.floor(d.year / 10) * 10}s`;
-              return (
-                <Button
-                  key={d.year}
-                  leftSection={<ListMusic size={14} />}
-                  onClick={() => onCreateYearPlaylist(decade)}
-                  size="xs"
-                  variant="light"
-                >
-                  {d.year}
-                </Button>
-              );
-            })}
+            {playlistDecades.map((decade) => (
+              <Button
+                key={decade}
+                leftSection={<ListMusic size={14} />}
+                onClick={() => onCreateYearPlaylist(decade)}
+                size="xs"
+                variant="light"
+              >
+                {decade}
+              </Button>
+            ))}
           </Group>
         </Stack>
       )}
