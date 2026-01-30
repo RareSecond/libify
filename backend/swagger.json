@@ -2813,6 +2813,43 @@
         ]
       }
     },
+    "/admin/backfill/album-release-dates": {
+      "post": {
+        "operationId": "AdminController_triggerAlbumReleaseDateBackfill",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Album release date backfill started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillTriggerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Backfill album release dates from Spotify",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/backfill/all": {
       "post": {
         "operationId": "AdminController_triggerAllBackfills",
@@ -3945,28 +3982,6 @@
           "valenceDistribution"
         ]
       },
-      "DecadeDistributionDto": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "number",
-            "description": "Number of tracks from this decade"
-          },
-          "decade": {
-            "type": "string",
-            "description": "Decade (e.g., '1980s', '2010s')"
-          },
-          "percentage": {
-            "type": "number",
-            "description": "Percentage of total tracks"
-          }
-        },
-        "required": [
-          "count",
-          "decade",
-          "percentage"
-        ]
-      },
       "EnrichmentProgressDto": {
         "type": "object",
         "properties": {
@@ -4037,6 +4052,28 @@
           "trackCount"
         ]
       },
+      "YearDistributionDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "Number of tracks from this year"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of total tracks"
+          },
+          "year": {
+            "type": "number",
+            "description": "Release year"
+          }
+        },
+        "required": [
+          "count",
+          "percentage",
+          "year"
+        ]
+      },
       "LibraryInsightsDto": {
         "type": "object",
         "properties": {
@@ -4047,13 +4084,6 @@
                 "$ref": "#/components/schemas/AudioProfileDto"
               }
             ]
-          },
-          "decadeDistribution": {
-            "description": "Decade distribution",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DecadeDistributionDto"
-            }
           },
           "enrichmentProgress": {
             "description": "Enrichment progress stats",
@@ -4098,17 +4128,24 @@
           "totalTracks": {
             "type": "number",
             "description": "Total number of tracks in library"
+          },
+          "yearDistribution": {
+            "description": "Year distribution",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearDistributionDto"
+            }
           }
         },
         "required": [
           "audioProfile",
-          "decadeDistribution",
           "enrichmentProgress",
           "genreDistribution",
           "topArtists",
           "totalAlbums",
           "totalArtists",
-          "totalTracks"
+          "totalTracks",
+          "yearDistribution"
         ]
       },
       "PlayHistoryTagDto": {

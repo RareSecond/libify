@@ -43,7 +43,12 @@ export interface SpotifyRecentlyPlayedResponse {
 
 export interface SpotifyTrackData {
   added_at?: string;
-  album: { id: string; images: Array<{ url: string }>; name: string };
+  album: {
+    id: string;
+    images: Array<{ url: string }>;
+    name: string;
+    release_date?: string;
+  };
   artists: Array<{ id: string; name: string }>;
   duration_ms: number;
   external_ids?: { isrc?: string };
@@ -287,6 +292,39 @@ export class SpotifyService {
     } catch (error) {
       this.logger.error("Failed to get current user profile", error);
       throw error;
+    }
+  }
+
+  async getMultipleAlbums(
+    accessToken: string,
+    albumIds: string[],
+  ): Promise<
+    Array<{ id: string; release_date: string; release_date_precision: string }>
+  > {
+    try {
+      // Spotify API allows up to 20 albums per request
+      const chunks: string[][] = [];
+      for (let i = 0; i < albumIds.length; i += 20) {
+        chunks.push(albumIds.slice(i, i + 20));
+      }
+
+      const allAlbums = [];
+      for (const chunk of chunks) {
+        const response = await this.spotifyApi.get("/albums", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: { ids: chunk.join(",") },
+        });
+        allAlbums.push(...(response.data.albums || []));
+        // Rate limit: small delay between batches
+        if (chunks.length > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
+      return allAlbums;
+    } catch (error) {
+      this.logger.error("Failed to get multiple albums", error);
+      return [];
     }
   }
 

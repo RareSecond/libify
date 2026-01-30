@@ -20,6 +20,13 @@ interface BackfillTriggerResponse {
   message: string;
 }
 
+export function useAlbumReleaseDateBackfill() {
+  return useBackfillMutation(
+    triggerAlbumReleaseDateBackfill,
+    "album release date backfill",
+  );
+}
+
 export function useAllBackfills() {
   return useBackfillMutation(triggerAllBackfills, "backfills");
 }
@@ -51,6 +58,13 @@ function getBackfillStatus() {
   return customInstance<CombinedBackfillStatus>({
     method: "GET",
     url: "/admin/backfill/status",
+  });
+}
+
+function triggerAlbumReleaseDateBackfill() {
+  return customInstance<BackfillTriggerResponse>({
+    method: "POST",
+    url: "/admin/backfill/album-release-dates",
   });
 }
 

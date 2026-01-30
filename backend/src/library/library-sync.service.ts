@@ -65,6 +65,73 @@ export class LibrarySyncService {
     private aggregationService: AggregationService,
   ) {}
 
+  /**
+   * Get count of tracks missing audio features (for admin status)
+   */
+  async backfillAlbumReleaseDates(
+    accessToken: string,
+    onProgress?: (processed: number, total: number) => void,
+  ): Promise<{ totalProcessed: number; totalUpdated: number }> {
+    const albumsWithoutDates = await this.databaseService.spotifyAlbum.findMany(
+      { select: { id: true, spotifyId: true }, where: { releaseDate: null } },
+    );
+
+    if (albumsWithoutDates.length === 0) {
+      this.logger.log("All albums already have release dates");
+      return { totalProcessed: 0, totalUpdated: 0 };
+    }
+
+    this.logger.log(
+      `Backfilling release dates for ${albumsWithoutDates.length} albums`,
+    );
+
+    let totalUpdated = 0;
+    const batchSize = 20;
+
+    for (let i = 0; i < albumsWithoutDates.length; i += batchSize) {
+      const batch = albumsWithoutDates.slice(i, i + batchSize);
+      const spotifyIds = batch.map((a) => a.spotifyId);
+
+      const spotifyAlbums = await this.spotifyService.getMultipleAlbums(
+        accessToken,
+        spotifyIds,
+      );
+
+      for (const spotifyAlbum of spotifyAlbums) {
+        if (!spotifyAlbum?.release_date) continue;
+
+        try {
+          const releaseDate = new Date(spotifyAlbum.release_date);
+          const dbAlbum = batch.find((a) => a.spotifyId === spotifyAlbum.id);
+          if (dbAlbum) {
+            await this.databaseService.spotifyAlbum.update({
+              data: { releaseDate },
+              where: { id: dbAlbum.id },
+            });
+            totalUpdated++;
+          }
+        } catch {
+          this.logger.warn(
+            `Failed to parse release date for album ${spotifyAlbum.id}: ${spotifyAlbum.release_date}`,
+          );
+        }
+      }
+
+      if (onProgress) {
+        onProgress(
+          Math.min(i + batchSize, albumsWithoutDates.length),
+          albumsWithoutDates.length,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Album release date backfill complete: ${totalUpdated}/${albumsWithoutDates.length} updated`,
+    );
+
+    return { totalProcessed: albumsWithoutDates.length, totalUpdated };
+  }
+
   async countSyncItems(
     userId: string,
     accessToken: string,
@@ -125,9 +192,12 @@ export class LibrarySyncService {
     }
   }
 
-  /**
-   * Get count of tracks missing audio features (for admin status)
-   */
+  async getAlbumReleaseDateBackfillCount(): Promise<number> {
+    return this.databaseService.spotifyAlbum.count({
+      where: { releaseDate: null },
+    });
+  }
+
   async getAudioFeaturesBackfillStatus(): Promise<{
     completed: number;
     pending: number;

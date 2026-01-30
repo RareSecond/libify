@@ -3,12 +3,12 @@ import { notifications } from "@mantine/notifications";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { AudioProfileSection } from "@/components/insights/AudioProfileSection";
-import { DecadeBreakdownSection } from "@/components/insights/DecadeBreakdownSection";
 import { GenreBreakdownSection } from "@/components/insights/GenreBreakdownSection";
 import { InsightsPageSkeleton } from "@/components/insights/InsightsPageSkeleton";
 import { LibraryOverviewSection } from "@/components/insights/LibraryOverviewSection";
 import { QuickPlaylistSection } from "@/components/insights/QuickPlaylistSection";
 import { SyncStatusSection } from "@/components/insights/SyncStatusSection";
+import { YearBreakdownSection } from "@/components/insights/YearBreakdownSection";
 import { PageTitle } from "@/components/PageTitle";
 import {
   QuickCreatePlaylistDtoPreset,
@@ -66,7 +66,7 @@ function InsightsPage() {
     }
   };
 
-  const handleCreateDecadePlaylist = async (decade: string) => {
+  const handleCreateYearPlaylist = async (decade: string) => {
     try {
       const result = await quickCreateMutation.mutateAsync({
         data: { decade, preset: QuickCreatePlaylistDtoPreset.DECADE },
@@ -148,10 +148,10 @@ function InsightsPage() {
           </Grid.Col>
         </Grid>
 
-        {/* Decade Distribution */}
-        <DecadeBreakdownSection
-          decadeDistribution={insights.decadeDistribution}
-          onCreateDecadePlaylist={handleCreateDecadePlaylist}
+        {/* Year Distribution */}
+        <YearBreakdownSection
+          onCreateYearPlaylist={handleCreateYearPlaylist}
+          yearDistribution={insights.yearDistribution}
         />
 
         {/* Quick Playlist Section */}
