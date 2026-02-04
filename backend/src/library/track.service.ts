@@ -2379,6 +2379,7 @@ export class TrackService {
         liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        releaseDate: track.releaseDate,
         sources: [],
         speechiness: track.speechiness,
         spotifyId: track.spotifyId,

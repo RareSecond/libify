@@ -177,6 +177,7 @@ export class PlaylistsService {
       liveness: track.spotifyTrack.liveness ?? undefined,
       ratedAt: track.ratedAt || null,
       rating: track.rating || null,
+      releaseDate: track.spotifyTrack.album.releaseDate,
       sources: track.sources.map((s) => ({
         createdAt: s.createdAt,
         id: s.id,
@@ -579,6 +580,11 @@ export class PlaylistsService {
         return [{ spotifyTrack: { liveness: nullsLast } }, secondarySort];
       case "rating":
         return [{ rating: nullsLast }, secondarySort];
+      case "releaseDate":
+        return [
+          { spotifyTrack: { album: { releaseDate: nullsLast } } },
+          secondarySort,
+        ];
       case "speechiness":
         return [{ spotifyTrack: { speechiness: nullsLast } }, secondarySort];
       case "tempo":
