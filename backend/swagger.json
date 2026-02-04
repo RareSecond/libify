@@ -713,6 +713,7 @@
                 "totalPlayCount",
                 "rating",
                 "duration",
+                "releaseDate",
                 "tempo",
                 "energy",
                 "danceability",
@@ -894,6 +895,7 @@
                 "totalPlayCount",
                 "rating",
                 "duration",
+                "releaseDate",
                 "tempo",
                 "energy",
                 "danceability",
@@ -1247,6 +1249,7 @@
                 "totalPlayCount",
                 "rating",
                 "duration",
+                "releaseDate",
                 "tempo",
                 "energy",
                 "danceability",
@@ -1546,6 +1549,7 @@
                 "totalPlayCount",
                 "rating",
                 "duration",
+                "releaseDate",
                 "tempo",
                 "energy",
                 "danceability",
@@ -1712,6 +1716,7 @@
                 "totalPlayCount",
                 "rating",
                 "duration",
+                "releaseDate",
                 "tempo",
                 "energy",
                 "danceability",
@@ -3516,6 +3521,11 @@
             "type": "number",
             "maximum": 5,
             "minimum": 1
+          },
+          "releaseDate": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Album release date"
           },
           "sources": {
             "type": "array",

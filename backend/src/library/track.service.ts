@@ -1466,6 +1466,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -1581,6 +1582,9 @@ export class TrackService {
       case "rating":
         query = query.orderBy(sql`ut.rating ${nullsOrder}`);
         break;
+      case "releaseDate":
+        query = query.orderBy(sql`sa."releaseDate" ${nullsOrder}`);
+        break;
       case "speechiness":
         query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
         break;
@@ -1624,6 +1628,7 @@ export class TrackService {
         liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        releaseDate: track.releaseDate,
         sources: track.sources,
         speechiness: track.speechiness,
         spotifyId: track.spotifyId,
@@ -1677,6 +1682,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -1789,6 +1795,9 @@ export class TrackService {
       case "rating":
         query = query.orderBy(sql`ut.rating ${nullsOrder}`);
         break;
+      case "releaseDate":
+        query = query.orderBy(sql`sa."releaseDate" ${nullsOrder}`);
+        break;
       case "speechiness":
         query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
         break;
@@ -1831,6 +1840,7 @@ export class TrackService {
         liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        releaseDate: track.releaseDate,
         sources: track.sources,
         speechiness: track.speechiness,
         spotifyId: track.spotifyId,
@@ -2228,6 +2238,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -2321,6 +2332,9 @@ export class TrackService {
         break;
       case "rating":
         query = query.orderBy(sql`ut.rating ${nullsOrder}`);
+        break;
+      case "releaseDate":
+        query = query.orderBy(sql`sa."releaseDate" ${nullsOrder}`);
         break;
       case "speechiness":
         query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
@@ -2434,6 +2448,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -2526,6 +2541,7 @@ export class TrackService {
         liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        releaseDate: track.releaseDate,
         sources: track.sources,
         speechiness: track.speechiness,
         spotifyId: track.spotifyId,
@@ -2586,6 +2602,7 @@ export class TrackService {
       liveness: track.spotifyTrack.liveness,
       ratedAt: track.ratedAt,
       rating: track.rating,
+      releaseDate: track.spotifyTrack.album?.releaseDate || null,
       sources: track.sources.map((s) => ({
         createdAt: s.createdAt,
         id: s.id,
@@ -2650,6 +2667,7 @@ export class TrackService {
       liveness: track.spotifyTrack.liveness,
       ratedAt: track.ratedAt,
       rating: track.rating,
+      releaseDate: track.spotifyTrack.album?.releaseDate || null,
       sources: track.sources.map((s) => ({
         createdAt: s.createdAt,
         id: s.id,
@@ -2926,6 +2944,12 @@ export class TrackService {
       case "rating":
         orderBy = [{ rating: nullsLast }, { addedAt: "desc" }, { id: "asc" }];
         break;
+      case "releaseDate":
+        orderBy = [
+          { spotifyTrack: { album: { releaseDate: nullsLast } } },
+          { id: "asc" },
+        ];
+        break;
       case "speechiness":
         orderBy = [{ spotifyTrack: { speechiness: nullsLast } }, { id: "asc" }];
         break;
@@ -2993,6 +3017,7 @@ export class TrackService {
         "st.duration",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
       ])
       .where("ut.userId", "=", userId)
@@ -3040,6 +3065,7 @@ export class TrackService {
             lastPlayedAt: track.lastPlayedAt,
             ratedAt: track.ratedAt,
             rating: track.rating,
+            releaseDate: track.releaseDate,
             spotifyId: track.spotifyId,
             title: track.title,
             totalPlayCount: track.totalPlayCount,
@@ -3574,6 +3600,12 @@ export class TrackService {
       case "rating":
         orderBy = [{ rating: nullsLast }, { addedAt: "desc" }, { id: "asc" }];
         break;
+      case "releaseDate":
+        orderBy = [
+          { spotifyTrack: { album: { releaseDate: nullsLast } } },
+          { id: "asc" },
+        ];
+        break;
       case "speechiness":
         orderBy = [{ spotifyTrack: { speechiness: nullsLast } }, { id: "asc" }];
         break;
@@ -3640,6 +3672,7 @@ export class TrackService {
         liveness: track.spotifyTrack.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        releaseDate: track.spotifyTrack.album.releaseDate,
         sources: track.sources.map((s) => ({
           createdAt: s.createdAt,
           id: s.id,
@@ -3847,6 +3880,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -3956,6 +3990,7 @@ export class TrackService {
         liveness: track.liveness,
         ratedAt: track.ratedAt,
         rating: track.rating,
+        releaseDate: track.releaseDate,
         sources: track.sources,
         speechiness: track.speechiness,
         spotifyId: track.spotifyId,

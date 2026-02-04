@@ -13,6 +13,7 @@ export const TRACK_SORT_FIELDS = [
   "totalPlayCount",
   "rating",
   "duration",
+  "releaseDate",
   // Audio features
   "tempo",
   "energy",

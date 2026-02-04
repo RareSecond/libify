@@ -17,6 +17,7 @@ const DEFAULT_VISIBILITY: VisibilityState = {
   lastPlayedAt: true,
   liveness: false,
   rating: true,
+  releaseDate: true,
   sources: true,
   speechiness: false,
   tags: true,

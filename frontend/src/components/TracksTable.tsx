@@ -127,6 +127,7 @@ export function TracksTable({
     "totalPlayCount",
     "lastPlayedAt",
     "addedAt",
+    "releaseDate",
     "rating",
     "tags",
     "sources",

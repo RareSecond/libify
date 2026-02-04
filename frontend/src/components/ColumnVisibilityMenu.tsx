@@ -16,6 +16,7 @@ const COLUMN_LABELS: Record<string, string> = {
   lastPlayedAt: "Last Played",
   liveness: "Liveness",
   rating: "Rating",
+  releaseDate: "Released",
   sources: "Sources",
   speechiness: "Speechiness",
   tags: "Tags",

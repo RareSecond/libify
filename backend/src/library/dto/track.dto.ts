@@ -255,6 +255,10 @@ export class TrackDto {
   @Expose()
   rating?: number;
 
+  @ApiPropertyOptional({ description: "Album release date" })
+  @Expose()
+  releaseDate?: Date;
+
   @ApiProperty({ type: [TrackSourceDto] })
   @Expose()
   @Type(() => TrackSourceDto)
