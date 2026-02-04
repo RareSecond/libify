@@ -240,11 +240,3 @@ export const COLUMN_LABELS: Record<string, string> =
 export const REQUIRED_COLUMNS: string[] = TRACK_COLUMN_CONFIGS.filter(
   (col) => col.required,
 ).map((col) => col.id);
-
-/**
- * Sortable columns.
- * Derived from TRACK_COLUMN_CONFIGS.
- */
-export const SORTABLE_COLUMNS: string[] = TRACK_COLUMN_CONFIGS.filter(
-  (col) => col.sortable,
-).map((col) => col.id);
