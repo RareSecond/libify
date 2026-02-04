@@ -115,28 +115,31 @@ export class LibrarySyncService {
             continue;
           }
 
-          try {
-            const releaseDate = new Date(spotifyAlbum.release_date);
-            // Additional safety: ensure the year is valid (> 0)
-            if (releaseDate.getFullYear() <= 0) {
-              this.logger.debug(
-                `Skipping album ${spotifyAlbum.id} with invalid release year: ${spotifyAlbum.release_date}`,
-              );
-              continue;
-            }
+          const releaseDate = new Date(spotifyAlbum.release_date);
 
-            const dbAlbum = batch.find((a) => a.spotifyId === spotifyAlbum.id);
-            if (dbAlbum) {
-              await this.databaseService.spotifyAlbum.update({
-                data: { releaseDate },
-                where: { id: dbAlbum.id },
-              });
-              totalUpdated++;
-            }
-          } catch {
+          // Check for Invalid Date (new Date() doesn't throw, it returns Invalid Date)
+          if (Number.isNaN(releaseDate.getTime())) {
             this.logger.warn(
               `Failed to parse release date for album ${spotifyAlbum.id}: ${spotifyAlbum.release_date}`,
             );
+            continue;
+          }
+
+          // Ensure the year is valid (> 0)
+          if (releaseDate.getFullYear() <= 0) {
+            this.logger.debug(
+              `Skipping album ${spotifyAlbum.id} with invalid release year: ${spotifyAlbum.release_date}`,
+            );
+            continue;
+          }
+
+          const dbAlbum = batch.find((a) => a.spotifyId === spotifyAlbum.id);
+          if (dbAlbum) {
+            await this.databaseService.spotifyAlbum.update({
+              data: { releaseDate },
+              where: { id: dbAlbum.id },
+            });
+            totalUpdated++;
           }
         }
 

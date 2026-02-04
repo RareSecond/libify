@@ -745,21 +745,24 @@ export class AggregationService {
       return null;
     }
 
-    try {
-      const parsed = new Date(releaseDate);
-      // Additional safety: ensure the year is valid (> 0)
-      if (parsed.getFullYear() <= 0) {
-        this.logger.debug(
-          `Album ${albumId} has invalid release year: ${releaseDate}`,
-        );
-        return null;
-      }
-      return parsed;
-    } catch {
+    const parsed = new Date(releaseDate);
+
+    // Check for Invalid Date (new Date() doesn't throw, it returns Invalid Date)
+    if (Number.isNaN(parsed.getTime())) {
       this.logger.warn(
         `Failed to parse release date for album ${albumId}: ${releaseDate}`,
       );
       return null;
     }
+
+    // Ensure the year is valid (> 0)
+    if (parsed.getFullYear() <= 0) {
+      this.logger.debug(
+        `Album ${albumId} has invalid release year: ${releaseDate}`,
+      );
+      return null;
+    }
+
+    return parsed;
   }
 }
