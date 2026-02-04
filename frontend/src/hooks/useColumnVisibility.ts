@@ -1,31 +1,9 @@
 import { Updater, VisibilityState } from "@tanstack/react-table";
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "tracks-table-column-visibility";
+import { DEFAULT_COLUMN_VISIBILITY } from "../constants/trackColumns";
 
-const DEFAULT_VISIBILITY: VisibilityState = {
-  acousticness: false,
-  addedAt: true,
-  album: true,
-  albumArt: true,
-  artist: true,
-  danceability: false,
-  duration: true,
-  energy: false,
-  genres: true,
-  instrumentalness: false,
-  lastPlayedAt: true,
-  liveness: false,
-  rating: true,
-  releaseDate: true,
-  sources: true,
-  speechiness: false,
-  tags: true,
-  tempo: false,
-  title: true,
-  totalPlayCount: true,
-  valence: false,
-};
+const STORAGE_KEY = "tracks-table-column-visibility";
 
 export function useColumnVisibility() {
   const [columnVisibility, setColumnVisibilityState] =
@@ -35,12 +13,12 @@ export function useColumnVisibility() {
         if (stored) {
           const parsed = JSON.parse(stored);
           // Merge with defaults to handle new columns
-          return { ...DEFAULT_VISIBILITY, ...parsed };
+          return { ...DEFAULT_COLUMN_VISIBILITY, ...parsed };
         }
       } catch {
         // Silently fallback to default visibility
       }
-      return DEFAULT_VISIBILITY;
+      return DEFAULT_COLUMN_VISIBILITY;
     });
 
   useEffect(() => {
@@ -64,7 +42,7 @@ export function useColumnVisibility() {
   );
 
   const resetColumnVisibility = useCallback(() => {
-    setColumnVisibilityState(DEFAULT_VISIBILITY);
+    setColumnVisibilityState(DEFAULT_COLUMN_VISIBILITY);
   }, []);
 
   const toggleColumnVisibility = useCallback((columnId: string) => {
