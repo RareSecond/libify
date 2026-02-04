@@ -104,8 +104,27 @@ export class LibrarySyncService {
         for (const spotifyAlbum of spotifyAlbums) {
           if (!spotifyAlbum?.release_date) continue;
 
+          // Skip albums with unknown release dates ("0000")
+          if (
+            spotifyAlbum.release_date === "0000" ||
+            spotifyAlbum.release_date.startsWith("0000-")
+          ) {
+            this.logger.debug(
+              `Skipping album ${spotifyAlbum.id} with unknown release date: ${spotifyAlbum.release_date}`,
+            );
+            continue;
+          }
+
           try {
             const releaseDate = new Date(spotifyAlbum.release_date);
+            // Additional safety: ensure the year is valid (> 0)
+            if (releaseDate.getFullYear() <= 0) {
+              this.logger.debug(
+                `Skipping album ${spotifyAlbum.id} with invalid release year: ${spotifyAlbum.release_date}`,
+              );
+              continue;
+            }
+
             const dbAlbum = batch.find((a) => a.spotifyId === spotifyAlbum.id);
             if (dbAlbum) {
               await this.databaseService.spotifyAlbum.update({

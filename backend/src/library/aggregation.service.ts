@@ -229,17 +229,11 @@ export class AggregationService {
       });
     }
 
-    // Parse release date
-    let releaseDate: Date | null = null;
-    if (albumData.release_date) {
-      try {
-        releaseDate = new Date(albumData.release_date);
-      } catch {
-        this.logger.warn(
-          `Failed to parse release date for album ${albumData.id}: ${albumData.release_date}`,
-        );
-      }
-    }
+    // Parse release date (treat "0000" as unknown/null)
+    const releaseDate = this.parseReleaseDate(
+      albumData.release_date,
+      albumData.id,
+    );
 
     // Create or update album
     const album = await this.databaseService.spotifyAlbum.upsert({
@@ -368,16 +362,11 @@ export class AggregationService {
     });
 
     if (!album) {
-      let releaseDate: Date | null = null;
-      if (spotifyTrackData.album.release_date) {
-        try {
-          releaseDate = new Date(spotifyTrackData.album.release_date);
-        } catch {
-          this.logger.warn(
-            `Failed to parse release date for album ${spotifyTrackData.album.id}: ${spotifyTrackData.album.release_date}`,
-          );
-        }
-      }
+      // Parse release date (treat "0000" as unknown/null)
+      const releaseDate = this.parseReleaseDate(
+        spotifyTrackData.album.release_date,
+        spotifyTrackData.album.id,
+      );
 
       album = await this.databaseService.spotifyAlbum.create({
         data: {
@@ -734,5 +723,43 @@ export class AggregationService {
     linked_from?: { id: string; uri?: string };
   }): string {
     return track.linked_from?.id || track.id;
+  }
+
+  /**
+   * Parse release date from Spotify API, treating invalid dates as null.
+   * Spotify returns "0000" for albums with unknown release dates.
+   */
+  private parseReleaseDate(
+    releaseDate: string | undefined,
+    albumId: string,
+  ): Date | null {
+    if (!releaseDate) {
+      return null;
+    }
+
+    // Spotify returns "0000" for unknown release dates
+    if (releaseDate === "0000" || releaseDate.startsWith("0000-")) {
+      this.logger.debug(
+        `Album ${albumId} has unknown release date: ${releaseDate}`,
+      );
+      return null;
+    }
+
+    try {
+      const parsed = new Date(releaseDate);
+      // Additional safety: ensure the year is valid (> 0)
+      if (parsed.getFullYear() <= 0) {
+        this.logger.debug(
+          `Album ${albumId} has invalid release year: ${releaseDate}`,
+        );
+        return null;
+      }
+      return parsed;
+    } catch {
+      this.logger.warn(
+        `Failed to parse release date for album ${albumId}: ${releaseDate}`,
+      );
+      return null;
+    }
   }
 }
