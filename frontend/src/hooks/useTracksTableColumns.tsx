@@ -1,8 +1,8 @@
-import { Box, Center, Checkbox, Group, Text } from "@mantine/core";
+import { Checkbox, Text } from "@mantine/core";
 import { ColumnDef } from "@tanstack/react-table";
-import { Music, Volume2 } from "lucide-react";
 import { useMemo } from "react";
 
+import { AlbumArtCell } from "../components/AlbumArtCell";
 import {
   ClickableAlbumCell,
   ClickableArtistCell,
@@ -17,6 +17,70 @@ import { formatTime } from "../utils/format";
 
 const formatDate = (date: null | string | undefined) =>
   date ? new Date(date).toLocaleDateString() : "-";
+
+const dateColumn = (
+  id: string,
+  header: string,
+  key: keyof TrackDto,
+): ColumnDef<TrackDto> => ({
+  accessorKey: key,
+  cell: ({ getValue }) => (
+    <Text className="text-gray-600" size="xs">
+      {formatDate(getValue() as string | undefined)}
+    </Text>
+  ),
+  header,
+  id,
+  size: 100,
+});
+
+const staticColumns: ColumnDef<TrackDto>[] = [
+  {
+    accessorKey: "duration",
+    cell: ({ getValue }) => (
+      <Text className="text-gray-600" size="sm">
+        {formatTime(getValue() as number)}
+      </Text>
+    ),
+    header: "Duration",
+    id: "duration",
+    size: 80,
+  },
+  {
+    accessorKey: "totalPlayCount",
+    cell: ({ getValue }) => (
+      <Text className="text-center" size="sm">
+        {getValue() as number}
+      </Text>
+    ),
+    header: "Plays",
+    id: "totalPlayCount",
+    size: 60,
+  },
+  dateColumn("lastPlayedAt", "Last Played", "lastPlayedAt"),
+  dateColumn("addedAt", "Added", "addedAt"),
+  dateColumn("releaseDate", "Released", "releaseDate"),
+];
+
+const endColumns: ColumnDef<TrackDto>[] = [
+  {
+    accessorKey: "sources",
+    cell: ({ row }) => <TrackSources sources={row.original.sources} />,
+    enableSorting: false,
+    header: "Sources",
+    id: "sources",
+    size: 120,
+  },
+  {
+    accessorKey: "artistGenres",
+    cell: ({ row }) => <TrackGenres genres={row.original.artistGenres} />,
+    enableSorting: false,
+    header: "Genres",
+    id: "genres",
+    size: 80,
+  },
+  ...getAudioFeatureColumns(),
+];
 
 interface UseTracksTableColumnsOptions {
   currentTrack?: { id?: string };
@@ -76,36 +140,15 @@ export function useTracksTableColumns({
 
     columns.push(
       {
-        cell: ({ row }) => {
-          const isCurrentTrack = currentTrack?.id === row.original.spotifyId;
-          return (
-            <Group gap="xs" wrap="nowrap">
-              {row.original.albumArt ? (
-                <Box className="h-9 w-9 rounded overflow-hidden relative">
-                  <img
-                    alt={row.original.album || row.original.title}
-                    className="h-9 w-9 object-cover"
-                    loading="lazy"
-                    src={row.original.albumArt}
-                  />
-                  {isCurrentTrack && isPlaying && (
-                    <Center className="absolute inset-0 bg-black/60 text-white">
-                      <Volume2 size={20} />
-                    </Center>
-                  )}
-                </Box>
-              ) : (
-                <Center className="h-9 w-9 rounded bg-gray-200">
-                  {isCurrentTrack && isPlaying ? (
-                    <Volume2 size={18} />
-                  ) : (
-                    <Music color="gray" size={18} />
-                  )}
-                </Center>
-              )}
-            </Group>
-          );
-        },
+        cell: ({ row }) => (
+          <AlbumArtCell
+            album={row.original.album}
+            albumArt={row.original.albumArt}
+            isCurrentTrack={currentTrack?.id === row.original.spotifyId}
+            isPlaying={isPlaying}
+            title={row.original.title}
+          />
+        ),
         enableSorting: false,
         header: "",
         id: "albumArt",
@@ -150,50 +193,7 @@ export function useTracksTableColumns({
         id: "album",
         size: 150,
       },
-      {
-        accessorKey: "duration",
-        cell: ({ getValue }) => (
-          <Text className="text-gray-600" size="sm">
-            {formatTime(getValue() as number)}
-          </Text>
-        ),
-        header: "Duration",
-        id: "duration",
-        size: 80,
-      },
-      {
-        accessorKey: "totalPlayCount",
-        cell: ({ getValue }) => (
-          <Text className="text-center" size="sm">
-            {getValue() as number}
-          </Text>
-        ),
-        header: "Plays",
-        id: "totalPlayCount",
-        size: 60,
-      },
-      {
-        accessorKey: "lastPlayedAt",
-        cell: ({ getValue }) => (
-          <Text className="text-gray-600" size="xs">
-            {formatDate(getValue() as string | undefined)}
-          </Text>
-        ),
-        header: "Last Played",
-        id: "lastPlayedAt",
-        size: 100,
-      },
-      {
-        accessorKey: "addedAt",
-        cell: ({ getValue }) => (
-          <Text className="text-gray-600" size="xs">
-            {formatDate(getValue() as string | undefined)}
-          </Text>
-        ),
-        header: "Added",
-        id: "addedAt",
-        size: 100,
-      },
+      ...staticColumns,
       {
         accessorKey: "rating",
         cell: ({ row }) => (
@@ -221,23 +221,7 @@ export function useTracksTableColumns({
         id: "tags",
         size: 80,
       },
-      {
-        accessorKey: "sources",
-        cell: ({ row }) => <TrackSources sources={row.original.sources} />,
-        enableSorting: false,
-        header: "Sources",
-        id: "sources",
-        size: 120,
-      },
-      {
-        accessorKey: "artistGenres",
-        cell: ({ row }) => <TrackGenres genres={row.original.artistGenres} />,
-        enableSorting: false,
-        header: "Genres",
-        id: "genres",
-        size: 80,
-      },
-      ...getAudioFeatureColumns(),
+      ...endColumns,
     );
 
     return columns;

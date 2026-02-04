@@ -13,6 +13,10 @@ import { DatabaseService } from "../database/database.service";
 import { SpotifyService } from "../library/spotify.service";
 import { TrackService } from "../library/track.service";
 import {
+  mapPrismaTrackToDto,
+  PrismaTrackData,
+} from "../library/utils/track-dto.mapper";
+import {
   OrderDirection,
   PlaylistCriteriaDto,
   PlaylistRuleLogic,
@@ -147,7 +151,11 @@ export class PlaylistsService {
         include: {
           sources: true,
           spotifyTrack: {
-            include: { album: { include: { artist: true } }, artist: true },
+            include: {
+              album: { include: { artist: true } },
+              artist: true,
+              genres: { include: { genre: true }, orderBy: { weight: "desc" } },
+            },
           },
           tags: { include: { tag: true } },
         },
@@ -159,43 +167,9 @@ export class PlaylistsService {
       this.prisma.userTrack.count({ where }),
     ]);
 
-    const formattedTracks = tracks.map((track) => ({
-      acousticness: track.spotifyTrack.acousticness ?? undefined,
-      addedAt: track.addedAt,
-      album: track.spotifyTrack.album.name,
-      albumArt: track.spotifyTrack.album.imageUrl || null,
-      albumId: track.spotifyTrack.albumId,
-      artist: track.spotifyTrack.artist.name,
-      artistGenres: [],
-      artistId: track.spotifyTrack.artistId,
-      danceability: track.spotifyTrack.danceability ?? undefined,
-      duration: track.spotifyTrack.duration,
-      energy: track.spotifyTrack.energy ?? undefined,
-      id: track.id,
-      instrumentalness: track.spotifyTrack.instrumentalness ?? undefined,
-      lastPlayedAt: track.lastPlayedAt || null,
-      liveness: track.spotifyTrack.liveness ?? undefined,
-      ratedAt: track.ratedAt || null,
-      rating: track.rating || null,
-      sources: track.sources.map((s) => ({
-        createdAt: s.createdAt,
-        id: s.id,
-        sourceId: s.sourceId,
-        sourceName: s.sourceName,
-        sourceType: s.sourceType,
-      })),
-      speechiness: track.spotifyTrack.speechiness ?? undefined,
-      spotifyId: track.spotifyTrack.spotifyId,
-      tags: track.tags.map((tt) => ({
-        color: tt.tag.color,
-        id: tt.tag.id,
-        name: tt.tag.name,
-      })),
-      tempo: track.spotifyTrack.tempo ?? undefined,
-      title: track.spotifyTrack.title,
-      totalPlayCount: track.totalPlayCount,
-      valence: track.spotifyTrack.valence ?? undefined,
-    }));
+    const formattedTracks = tracks.map((track) =>
+      mapPrismaTrackToDto(track as unknown as PrismaTrackData),
+    );
 
     const totalToReturn = criteria.limit
       ? Math.min(total, criteria.limit)
@@ -579,6 +553,11 @@ export class PlaylistsService {
         return [{ spotifyTrack: { liveness: nullsLast } }, secondarySort];
       case "rating":
         return [{ rating: nullsLast }, secondarySort];
+      case "releaseDate":
+        return [
+          { spotifyTrack: { album: { releaseDate: nullsLast } } },
+          secondarySort,
+        ];
       case "speechiness":
         return [{ spotifyTrack: { speechiness: nullsLast } }, secondarySort];
       case "tempo":

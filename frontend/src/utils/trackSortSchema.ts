@@ -1,38 +1,42 @@
 import { z } from "zod";
 
+import {
+  LibraryControllerGetTracksSortBy,
+  LibraryControllerGetTracksSortOrder,
+} from "../data/api";
+
+/**
+ * Re-export the sort field type from the generated API.
+ * This ensures type compatibility with API hooks.
+ */
+export type TrackSortField = LibraryControllerGetTracksSortBy;
+
 /**
  * Valid sort fields for track tables.
- * Used across all route schemas to ensure consistency.
+ * Derived from the generated API types to ensure consistency with backend.
  */
-export const TRACK_SORT_FIELDS = [
-  "title",
-  "artist",
-  "album",
-  "addedAt",
-  "lastPlayedAt",
-  "totalPlayCount",
-  "rating",
-  "duration",
-  // Audio features
-  "tempo",
-  "energy",
-  "danceability",
-  "valence",
-  "acousticness",
-  "instrumentalness",
-  "speechiness",
-  "liveness",
-] as const;
-
-export type TrackSortField = (typeof TRACK_SORT_FIELDS)[number];
+const TRACK_SORT_FIELDS_VALUES = Object.values(
+  LibraryControllerGetTracksSortBy,
+);
 
 /**
  * Zod schema for track sortBy field validation.
- * Use in route search schemas.
+ * Derived from the generated API types.
  */
-export const trackSortBySchema = z.enum(TRACK_SORT_FIELDS);
+export const trackSortBySchema = z.enum(
+  TRACK_SORT_FIELDS_VALUES as [
+    LibraryControllerGetTracksSortBy,
+    ...LibraryControllerGetTracksSortBy[],
+  ],
+);
 
 /**
  * Zod schema for sort order validation.
+ * Derived from the generated API types.
  */
-export const sortOrderSchema = z.enum(["asc", "desc"]);
+export const sortOrderSchema = z.enum(
+  Object.values(LibraryControllerGetTracksSortOrder) as [
+    LibraryControllerGetTracksSortOrder,
+    ...LibraryControllerGetTracksSortOrder[],
+  ],
+);

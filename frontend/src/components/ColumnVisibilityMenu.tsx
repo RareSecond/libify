@@ -2,31 +2,7 @@ import { ActionIcon, Checkbox, Menu, Stack, Text } from "@mantine/core";
 import { VisibilityState } from "@tanstack/react-table";
 import { Columns3 } from "lucide-react";
 
-const COLUMN_LABELS: Record<string, string> = {
-  acousticness: "Acoustic",
-  addedAt: "Added",
-  album: "Album",
-  albumArt: "Album Art",
-  artist: "Artist",
-  danceability: "Danceability",
-  duration: "Duration",
-  energy: "Energy",
-  genres: "Genres",
-  instrumentalness: "Instrumental",
-  lastPlayedAt: "Last Played",
-  liveness: "Liveness",
-  rating: "Rating",
-  sources: "Sources",
-  speechiness: "Speechiness",
-  tags: "Tags",
-  tempo: "BPM",
-  title: "Title",
-  totalPlayCount: "Plays",
-  valence: "Mood",
-};
-
-// Columns that should always be visible and cannot be hidden
-const REQUIRED_COLUMNS = ["albumArt", "title"];
+import { COLUMN_LABELS, REQUIRED_COLUMNS } from "../constants/trackColumns";
 
 interface ColumnVisibilityMenuProps {
   columnVisibility: VisibilityState;

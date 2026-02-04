@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 
+import { DEFAULT_COLUMN_ORDER } from "../constants/trackColumns";
 import { TrackDto } from "../data/api";
 import { useColumnOrder } from "../hooks/useColumnOrder";
 import { useColumnSizing } from "../hooks/useColumnSizing";
@@ -119,27 +120,7 @@ export function TracksTable({
 
   const defaultColumnOrder = [
     ...(showSelection ? ["select"] : []),
-    "albumArt",
-    "title",
-    "artist",
-    "album",
-    "duration",
-    "totalPlayCount",
-    "lastPlayedAt",
-    "addedAt",
-    "rating",
-    "tags",
-    "sources",
-    "genres",
-    // Audio features (hidden by default)
-    "tempo",
-    "energy",
-    "danceability",
-    "valence",
-    "acousticness",
-    "instrumentalness",
-    "speechiness",
-    "liveness",
+    ...DEFAULT_COLUMN_ORDER,
   ];
 
   const { columnOrder, setColumnOrder } = useColumnOrder(defaultColumnOrder);

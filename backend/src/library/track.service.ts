@@ -31,6 +31,12 @@ import {
   PaginatedTracksDto,
   TrackDto,
 } from "./dto/track.dto";
+import {
+  KyselyTrackData,
+  mapKyselyTracksToDto,
+  mapPrismaTrackToDto,
+  PrismaTrackData,
+} from "./utils/track-dto.mapper";
 
 // Interfaces removed - using direct database queries with UserAlbum and UserArtist models
 
@@ -1466,6 +1472,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -1581,6 +1588,9 @@ export class TrackService {
       case "rating":
         query = query.orderBy(sql`ut.rating ${nullsOrder}`);
         break;
+      case "releaseDate":
+        query = query.orderBy(sql`sa."releaseDate" ${nullsOrder}`);
+        break;
       case "speechiness":
         query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
         break;
@@ -1603,38 +1613,7 @@ export class TrackService {
     query = query.orderBy("ut.id", "asc"); // Stable sort tiebreaker
 
     const tracks = await query.execute();
-
-    // Transform to DTOs
-    const trackDtos = tracks.map((track) => {
-      const dto = {
-        acousticness: track.acousticness,
-        addedAt: track.addedAt,
-        album: track.albumName,
-        albumArt: track.albumImageUrl,
-        albumId: track.albumId,
-        artist: track.artistName,
-        artistGenres: track.artistGenres,
-        artistId: track.artistId,
-        danceability: track.danceability,
-        duration: track.duration,
-        energy: track.energy,
-        id: track.id,
-        instrumentalness: track.instrumentalness,
-        lastPlayedAt: track.lastPlayedAt,
-        liveness: track.liveness,
-        ratedAt: track.ratedAt,
-        rating: track.rating,
-        sources: track.sources,
-        speechiness: track.speechiness,
-        spotifyId: track.spotifyId,
-        tags: track.tags,
-        tempo: track.tempo,
-        title: track.title,
-        totalPlayCount: track.totalPlayCount,
-        valence: track.valence,
-      };
-      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
-    });
+    const trackDtos = mapKyselyTracksToDto(tracks as KyselyTrackData[]);
 
     return { tracks: trackDtos };
   }
@@ -1677,6 +1656,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -1789,6 +1769,9 @@ export class TrackService {
       case "rating":
         query = query.orderBy(sql`ut.rating ${nullsOrder}`);
         break;
+      case "releaseDate":
+        query = query.orderBy(sql`sa."releaseDate" ${nullsOrder}`);
+        break;
       case "speechiness":
         query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
         break;
@@ -1811,37 +1794,7 @@ export class TrackService {
     query = query.orderBy("ut.id", "asc"); // Stable sort tiebreaker
 
     const tracks = await query.execute();
-
-    const trackDtos = tracks.map((track) => {
-      const dto = {
-        acousticness: track.acousticness,
-        addedAt: track.addedAt,
-        album: track.albumName,
-        albumArt: track.albumImageUrl,
-        albumId: track.albumId,
-        artist: track.artistName,
-        artistGenres: track.artistGenres,
-        artistId: track.artistId,
-        danceability: track.danceability,
-        duration: track.duration,
-        energy: track.energy,
-        id: track.id,
-        instrumentalness: track.instrumentalness,
-        lastPlayedAt: track.lastPlayedAt,
-        liveness: track.liveness,
-        ratedAt: track.ratedAt,
-        rating: track.rating,
-        sources: track.sources,
-        speechiness: track.speechiness,
-        spotifyId: track.spotifyId,
-        tags: track.tags,
-        tempo: track.tempo,
-        title: track.title,
-        totalPlayCount: track.totalPlayCount,
-        valence: track.valence,
-      };
-      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
-    });
+    const trackDtos = mapKyselyTracksToDto(tracks as KyselyTrackData[]);
 
     return { tracks: trackDtos };
   }
@@ -2228,6 +2181,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -2322,6 +2276,9 @@ export class TrackService {
       case "rating":
         query = query.orderBy(sql`ut.rating ${nullsOrder}`);
         break;
+      case "releaseDate":
+        query = query.orderBy(sql`sa."releaseDate" ${nullsOrder}`);
+        break;
       case "speechiness":
         query = query.orderBy(sql`st.speechiness ${nullsOrder}`);
         break;
@@ -2344,38 +2301,10 @@ export class TrackService {
     query = query.orderBy("ut.id", "asc"); // Stable sort tiebreaker
 
     const tracks = await query.offset(offset).limit(pageSize).execute();
-
-    // Transform to DTOs
-    const trackDtos = tracks.map((track) => {
-      const dto = {
-        acousticness: track.acousticness,
-        addedAt: track.addedAt,
-        album: track.albumName,
-        albumArt: track.albumImageUrl,
-        albumId: track.albumId,
-        artist: track.artistName,
-        artistGenres: track.artistGenres,
-        artistId: track.artistId,
-        danceability: track.danceability,
-        duration: track.duration,
-        energy: track.energy,
-        id: track.id,
-        instrumentalness: track.instrumentalness,
-        lastPlayedAt: track.lastPlayedAt,
-        liveness: track.liveness,
-        ratedAt: track.ratedAt,
-        rating: track.rating,
-        sources: [],
-        speechiness: track.speechiness,
-        spotifyId: track.spotifyId,
-        tags: track.tags,
-        tempo: track.tempo,
-        title: track.title,
-        totalPlayCount: track.totalPlayCount,
-        valence: track.valence,
-      };
-      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
-    });
+    // Sources are not fetched for playlist tracks - they come from the playlist context
+    const trackDtos = mapKyselyTracksToDto(
+      tracks.map((t) => ({ ...t, sources: [] })) as KyselyTrackData[],
+    );
 
     return {
       description: playlist.description,
@@ -2434,6 +2363,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -2506,37 +2436,7 @@ export class TrackService {
       .limit(limit)
       .execute();
 
-    // Transform to DTOs
-    const trackDtos = tracks.map((track) => {
-      const dto = {
-        acousticness: track.acousticness,
-        addedAt: track.addedAt,
-        album: track.albumName,
-        albumArt: track.albumImageUrl,
-        albumId: track.albumId,
-        artist: track.artistName,
-        artistGenres: track.artistGenres,
-        artistId: track.artistId,
-        danceability: track.danceability,
-        duration: track.duration,
-        energy: track.energy,
-        id: track.id,
-        instrumentalness: track.instrumentalness,
-        lastPlayedAt: track.lastPlayedAt,
-        liveness: track.liveness,
-        ratedAt: track.ratedAt,
-        rating: track.rating,
-        sources: track.sources,
-        speechiness: track.speechiness,
-        spotifyId: track.spotifyId,
-        tags: track.tags,
-        tempo: track.tempo,
-        title: track.title,
-        totalPlayCount: track.totalPlayCount,
-        valence: track.valence,
-      };
-      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
-    });
+    const trackDtos = mapKyselyTracksToDto(tracks as KyselyTrackData[]);
 
     this.logger.log(
       `Fetched ${trackDtos.length} random unrated tracks for onboarding`,
@@ -2568,45 +2468,7 @@ export class TrackService {
       return null;
     }
 
-    const dto = {
-      acousticness: track.spotifyTrack.acousticness,
-      addedAt: track.addedAt,
-      album: track.spotifyTrack.album?.name || null,
-      albumArt: track.spotifyTrack.album?.imageUrl || null,
-      albumId: track.spotifyTrack.albumId,
-      artist: track.spotifyTrack.artist.name,
-      artistGenres: track.spotifyTrack.genres.map((g) => g.genre.displayName),
-      artistId: track.spotifyTrack.artistId,
-      danceability: track.spotifyTrack.danceability,
-      duration: track.spotifyTrack.duration,
-      energy: track.spotifyTrack.energy,
-      id: track.id,
-      instrumentalness: track.spotifyTrack.instrumentalness,
-      lastPlayedAt: track.lastPlayedAt,
-      liveness: track.spotifyTrack.liveness,
-      ratedAt: track.ratedAt,
-      rating: track.rating,
-      sources: track.sources.map((s) => ({
-        createdAt: s.createdAt,
-        id: s.id,
-        sourceId: s.sourceId,
-        sourceName: s.sourceName,
-        sourceType: s.sourceType,
-      })),
-      speechiness: track.spotifyTrack.speechiness,
-      spotifyId: track.spotifyTrack.spotifyId,
-      tags: track.tags.map((t) => ({
-        color: t.tag.color,
-        id: t.tag.id,
-        name: t.tag.name,
-      })),
-      tempo: track.spotifyTrack.tempo,
-      title: track.spotifyTrack.title,
-      totalPlayCount: track.totalPlayCount,
-      valence: track.spotifyTrack.valence,
-    };
-
-    return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+    return mapPrismaTrackToDto(track as unknown as PrismaTrackData);
   }
 
   async getTrackBySpotifyId(
@@ -2632,45 +2494,7 @@ export class TrackService {
       return null;
     }
 
-    const dto = {
-      acousticness: track.spotifyTrack.acousticness,
-      addedAt: track.addedAt,
-      album: track.spotifyTrack.album?.name || null,
-      albumArt: track.spotifyTrack.album?.imageUrl || null,
-      albumId: track.spotifyTrack.albumId,
-      artist: track.spotifyTrack.artist.name,
-      artistGenres: track.spotifyTrack.genres.map((g) => g.genre.displayName),
-      artistId: track.spotifyTrack.artistId,
-      danceability: track.spotifyTrack.danceability,
-      duration: track.spotifyTrack.duration,
-      energy: track.spotifyTrack.energy,
-      id: track.id,
-      instrumentalness: track.spotifyTrack.instrumentalness,
-      lastPlayedAt: track.lastPlayedAt,
-      liveness: track.spotifyTrack.liveness,
-      ratedAt: track.ratedAt,
-      rating: track.rating,
-      sources: track.sources.map((s) => ({
-        createdAt: s.createdAt,
-        id: s.id,
-        sourceId: s.sourceId,
-        sourceName: s.sourceName,
-        sourceType: s.sourceType,
-      })),
-      speechiness: track.spotifyTrack.speechiness,
-      spotifyId: track.spotifyTrack.spotifyId,
-      tags: track.tags.map((t) => ({
-        color: t.tag.color,
-        id: t.tag.id,
-        name: t.tag.name,
-      })),
-      tempo: track.spotifyTrack.tempo,
-      title: track.spotifyTrack.title,
-      totalPlayCount: track.totalPlayCount,
-      valence: track.spotifyTrack.valence,
-    };
-
-    return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
+    return mapPrismaTrackToDto(track as unknown as PrismaTrackData);
   }
 
   /**
@@ -2926,6 +2750,12 @@ export class TrackService {
       case "rating":
         orderBy = [{ rating: nullsLast }, { addedAt: "desc" }, { id: "asc" }];
         break;
+      case "releaseDate":
+        orderBy = [
+          { spotifyTrack: { album: { releaseDate: nullsLast } } },
+          { id: "asc" },
+        ];
+        break;
       case "speechiness":
         orderBy = [{ spotifyTrack: { speechiness: nullsLast } }, { id: "asc" }];
         break;
@@ -2993,6 +2823,7 @@ export class TrackService {
         "st.duration",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
       ])
       .where("ut.userId", "=", userId)
@@ -3040,6 +2871,7 @@ export class TrackService {
             lastPlayedAt: track.lastPlayedAt,
             ratedAt: track.ratedAt,
             rating: track.rating,
+            releaseDate: track.releaseDate,
             spotifyId: track.spotifyId,
             title: track.title,
             totalPlayCount: track.totalPlayCount,
@@ -3574,6 +3406,12 @@ export class TrackService {
       case "rating":
         orderBy = [{ rating: nullsLast }, { addedAt: "desc" }, { id: "asc" }];
         break;
+      case "releaseDate":
+        orderBy = [
+          { spotifyTrack: { album: { releaseDate: nullsLast } } },
+          { id: "asc" },
+        ];
+        break;
       case "speechiness":
         orderBy = [{ spotifyTrack: { speechiness: nullsLast } }, { id: "asc" }];
         break;
@@ -3620,47 +3458,9 @@ export class TrackService {
       this.databaseService.userTrack.count({ where }),
     ]);
 
-    // Transform to DTOs
-    const trackDtos = tracks.map((track) => {
-      const dto = {
-        acousticness: track.spotifyTrack.acousticness,
-        addedAt: track.addedAt,
-        album: track.spotifyTrack.album.name,
-        albumArt: track.spotifyTrack.album.imageUrl || null,
-        albumId: track.spotifyTrack.albumId,
-        artist: track.spotifyTrack.artist.name,
-        artistGenres: track.spotifyTrack.genres.map((g) => g.genre.displayName),
-        artistId: track.spotifyTrack.artistId,
-        danceability: track.spotifyTrack.danceability,
-        duration: track.spotifyTrack.duration,
-        energy: track.spotifyTrack.energy,
-        id: track.id,
-        instrumentalness: track.spotifyTrack.instrumentalness,
-        lastPlayedAt: track.lastPlayedAt,
-        liveness: track.spotifyTrack.liveness,
-        ratedAt: track.ratedAt,
-        rating: track.rating,
-        sources: track.sources.map((s) => ({
-          createdAt: s.createdAt,
-          id: s.id,
-          sourceId: s.sourceId,
-          sourceName: s.sourceName,
-          sourceType: s.sourceType,
-        })),
-        speechiness: track.spotifyTrack.speechiness,
-        spotifyId: track.spotifyTrack.spotifyId,
-        tags: track.tags.map((t) => ({
-          color: t.tag.color,
-          id: t.tag.id,
-          name: t.tag.name,
-        })),
-        tempo: track.spotifyTrack.tempo,
-        title: track.spotifyTrack.title,
-        totalPlayCount: track.totalPlayCount,
-        valence: track.spotifyTrack.valence,
-      };
-      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
-    });
+    const trackDtos = tracks.map((track) =>
+      mapPrismaTrackToDto(track as unknown as PrismaTrackData),
+    );
 
     const totalPages = Math.ceil(total / pageSize);
 
@@ -3847,6 +3647,7 @@ export class TrackService {
         "st.liveness",
         "sa.name as albumName",
         "sa.imageUrl as albumImageUrl",
+        "sa.releaseDate",
         "sar.name as artistName",
         sql<string[]>`
           COALESCE(
@@ -3936,38 +3737,7 @@ export class TrackService {
     // Apply pagination
     const tracks = await tracksQuery.limit(pageSize).offset(skip).execute();
 
-    // Transform to DTOs
-    const trackDtos = tracks.map((track) => {
-      const dto = {
-        acousticness: track.acousticness,
-        addedAt: track.addedAt,
-        album: track.albumName,
-        albumArt: track.albumImageUrl,
-        albumId: track.albumId,
-        artist: track.artistName,
-        artistGenres: track.artistGenres,
-        artistId: track.artistId,
-        danceability: track.danceability,
-        duration: track.duration,
-        energy: track.energy,
-        id: track.id,
-        instrumentalness: track.instrumentalness,
-        lastPlayedAt: track.lastPlayedAt,
-        liveness: track.liveness,
-        ratedAt: track.ratedAt,
-        rating: track.rating,
-        sources: track.sources,
-        speechiness: track.speechiness,
-        spotifyId: track.spotifyId,
-        tags: track.tags,
-        tempo: track.tempo,
-        title: track.title,
-        totalPlayCount: track.totalPlayCount,
-        valence: track.valence,
-      };
-      return plainToInstance(TrackDto, dto, { excludeExtraneousValues: true });
-    });
-
+    const trackDtos = mapKyselyTracksToDto(tracks as KyselyTrackData[]);
     const totalPages = Math.ceil(total / pageSize);
 
     return plainToInstance(
