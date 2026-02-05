@@ -581,7 +581,6 @@ export class PlaylistsService {
       case QuickPlaylistPreset.CHILL:
         return {
           criteria: {
-            limit: 100,
             logic: PlaylistRuleLogic.AND,
             orderBy: "energy",
             orderDirection: OrderDirection.ASC,
@@ -612,7 +611,6 @@ export class PlaylistsService {
       case QuickPlaylistPreset.DEEP_CUTS:
         return {
           criteria: {
-            limit: 100,
             logic: PlaylistRuleLogic.AND,
             orderBy: "playCount",
             orderDirection: OrderDirection.ASC,
@@ -630,7 +628,6 @@ export class PlaylistsService {
       case QuickPlaylistPreset.FEEL_GOOD:
         return {
           criteria: {
-            limit: 100,
             logic: PlaylistRuleLogic.AND,
             orderBy: "valence",
             orderDirection: OrderDirection.DESC,
@@ -648,7 +645,6 @@ export class PlaylistsService {
       case QuickPlaylistPreset.FOCUS:
         return {
           criteria: {
-            limit: 100,
             logic: PlaylistRuleLogic.AND,
             orderBy: "instrumentalness",
             orderDirection: OrderDirection.DESC,
@@ -676,7 +672,6 @@ export class PlaylistsService {
         }
         return {
           criteria: {
-            limit: 100,
             logic: PlaylistRuleLogic.AND,
             orderBy: "addedAt",
             orderDirection: OrderDirection.DESC,
@@ -694,7 +689,6 @@ export class PlaylistsService {
       case QuickPlaylistPreset.GYM:
         return {
           criteria: {
-            limit: 100,
             logic: PlaylistRuleLogic.AND,
             orderBy: "energy",
             orderDirection: OrderDirection.DESC,
