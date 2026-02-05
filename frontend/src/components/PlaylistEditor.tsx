@@ -114,6 +114,7 @@ export function PlaylistEditor({
       const data = {
         criteria: {
           ...values.criteria,
+          limit: values.criteria.limit || undefined,
           orderDirection: values.criteria
             .orderDirection as unknown as PlaylistCriteriaDtoOrderDirection,
         },
