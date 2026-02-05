@@ -1447,9 +1447,6 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
-      .leftJoin("Tag as t", "tt.tagId", "t.id")
-      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .select([
         "ut.id",
         "ut.addedAt",
@@ -1484,19 +1481,14 @@ export class TrackService {
             ),
             ARRAY[]::text[]
           )`.as("artistGenres"),
-        // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', t.id,
-                'name', t.name,
-                'color', t.color
-              )
-            ) FILTER (WHERE t.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object('id', t.id, 'name', t.name, 'color', t.color))
+             FROM "TrackTag" tt
+             INNER JOIN "Tag" t ON tt."tagId" = t.id
+             WHERE tt."userTrackId" = ut.id),
             '[]'::json
           )`.as("tags"),
-        // Aggregate sources into array
         sql<
           Array<{
             createdAt: Date;
@@ -1507,46 +1499,22 @@ export class TrackService {
           }>
         >`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', ts.id,
-                'sourceType', ts."sourceType",
-                'sourceName', ts."sourceName",
-                'sourceId', ts."sourceId",
-                'createdAt', ts."createdAt"
-              )
-            ) FILTER (WHERE ts.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object(
+              'id', ts.id,
+              'sourceType', ts."sourceType",
+              'sourceName', ts."sourceName",
+              'sourceId', ts."sourceId",
+              'createdAt', ts."createdAt"
+            ))
+             FROM "TrackSource" ts
+             WHERE ts."userTrackId" = ut.id),
             '[]'::json
           )`.as("sources"),
       ])
       .where("ut.userId", "=", userId)
       .where("ut.addedToLibrary", "=", true)
       .where("sar.name", "=", artist)
-      .where("sa.name", "=", album)
-      .groupBy([
-        "ut.id",
-        "ut.addedAt",
-        "ut.lastPlayedAt",
-        "ut.totalPlayCount",
-        "ut.rating",
-        "ut.ratedAt",
-        "st.spotifyId",
-        "st.title",
-        "st.duration",
-        "st.albumId",
-        "st.artistId",
-        "st.tempo",
-        "st.energy",
-        "st.danceability",
-        "st.valence",
-        "st.acousticness",
-        "st.instrumentalness",
-        "st.speechiness",
-        "st.liveness",
-        "sa.name",
-        "sa.imageUrl",
-        "sar.name",
-      ]);
+      .where("sa.name", "=", album);
 
     // Apply sorting
     const order = sortOrder || "asc";
@@ -1631,9 +1599,6 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
-      .leftJoin("Tag as t", "tt.tagId", "t.id")
-      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .select([
         "ut.id",
         "ut.addedAt",
@@ -1670,13 +1635,10 @@ export class TrackService {
           )`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', t.id,
-                'name', t.name,
-                'color', t.color
-              )
-            ) FILTER (WHERE t.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object('id', t.id, 'name', t.name, 'color', t.color))
+             FROM "TrackTag" tt
+             INNER JOIN "Tag" t ON tt."tagId" = t.id
+             WHERE tt."userTrackId" = ut.id),
             '[]'::json
           )`.as("tags"),
         sql<
@@ -1689,45 +1651,21 @@ export class TrackService {
           }>
         >`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', ts.id,
-                'sourceType', ts."sourceType",
-                'sourceName', ts."sourceName",
-                'sourceId', ts."sourceId",
-                'createdAt', ts."createdAt"
-              )
-            ) FILTER (WHERE ts.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object(
+              'id', ts.id,
+              'sourceType', ts."sourceType",
+              'sourceName', ts."sourceName",
+              'sourceId', ts."sourceId",
+              'createdAt', ts."createdAt"
+            ))
+             FROM "TrackSource" ts
+             WHERE ts."userTrackId" = ut.id),
             '[]'::json
           )`.as("sources"),
       ])
       .where("ut.userId", "=", userId)
       .where("ut.addedToLibrary", "=", true)
-      .where("sar.name", "=", artist)
-      .groupBy([
-        "ut.id",
-        "ut.addedAt",
-        "ut.lastPlayedAt",
-        "ut.totalPlayCount",
-        "ut.rating",
-        "ut.ratedAt",
-        "st.spotifyId",
-        "st.title",
-        "st.duration",
-        "st.albumId",
-        "st.artistId",
-        "st.tempo",
-        "st.energy",
-        "st.danceability",
-        "st.valence",
-        "st.acousticness",
-        "st.instrumentalness",
-        "st.speechiness",
-        "st.liveness",
-        "sa.name",
-        "sa.imageUrl",
-        "sar.name",
-      ]);
+      .where("sar.name", "=", artist);
 
     // Apply sorting
     const order = sortOrder || "asc";
@@ -2157,8 +2095,6 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "st.id", "ut.spotifyTrackId")
       .innerJoin("SpotifyAlbum as sa", "sa.id", "st.albumId")
       .innerJoin("SpotifyArtist as sar", "sar.id", "st.artistId")
-      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
-      .leftJoin("Tag as t", "tt.tagId", "t.id")
       .select([
         "ut.id",
         "ut.addedAt",
@@ -2193,48 +2129,19 @@ export class TrackService {
             ),
             ARRAY[]::text[]
           )`.as("artistGenres"),
-        // Aggregate tags into array
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', t.id,
-                'name', t.name,
-                'color', t.color
-              )
-            ) FILTER (WHERE t.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object('id', t.id, 'name', t.name, 'color', t.color))
+             FROM "TrackTag" tt
+             INNER JOIN "Tag" t ON tt."tagId" = t.id
+             WHERE tt."userTrackId" = ut.id),
             '[]'::json
           )`.as("tags"),
       ])
       .where("ts.sourceType", "=", "PLAYLIST")
       .where("ts.sourceId", "=", playlist.spotifyId)
       .where("ut.userId", "=", userId)
-      .where("ut.addedToLibrary", "=", true)
-      .groupBy([
-        "ut.id",
-        "ut.addedAt",
-        "ut.lastPlayedAt",
-        "ut.totalPlayCount",
-        "ut.rating",
-        "ut.ratedAt",
-        "st.spotifyId",
-        "st.title",
-        "st.duration",
-        "st.albumId",
-        "st.artistId",
-        "st.tempo",
-        "st.energy",
-        "st.danceability",
-        "st.valence",
-        "st.acousticness",
-        "st.instrumentalness",
-        "st.speechiness",
-        "st.liveness",
-        "sa.name",
-        "sa.imageUrl",
-        "sar.name",
-        "ts.createdAt",
-      ]);
+      .where("ut.addedToLibrary", "=", true);
 
     // Apply sorting
     const order = sortOrder || "asc";
@@ -2335,9 +2242,6 @@ export class TrackService {
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
-      .leftJoin("Tag as t", "tt.tagId", "t.id")
-      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .where("ut.userId", "=", userId)
       .where("ut.addedToLibrary", "=", true)
       .where("ut.rating", "is", null) // Only unrated tracks
@@ -2377,13 +2281,10 @@ export class TrackService {
           )`.as("artistGenres"),
         sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', t.id,
-                'name', t.name,
-                'color', t.color
-              )
-            ) FILTER (WHERE t.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object('id', t.id, 'name', t.name, 'color', t.color))
+             FROM "TrackTag" tt
+             INNER JOIN "Tag" t ON tt."tagId" = t.id
+             WHERE tt."userTrackId" = ut.id),
             '[]'::json
           )`.as("tags"),
         sql<
@@ -2396,41 +2297,17 @@ export class TrackService {
           }>
         >`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', ts.id,
-                'sourceType', ts."sourceType",
-                'sourceName', ts."sourceName",
-                'sourceId', ts."sourceId",
-                'createdAt', ts."createdAt"
-              )
-            ) FILTER (WHERE ts.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object(
+              'id', ts.id,
+              'sourceType', ts."sourceType",
+              'sourceName', ts."sourceName",
+              'sourceId', ts."sourceId",
+              'createdAt', ts."createdAt"
+            ))
+             FROM "TrackSource" ts
+             WHERE ts."userTrackId" = ut.id),
             '[]'::json
           )`.as("sources"),
-      ])
-      .groupBy([
-        "ut.id",
-        "ut.addedAt",
-        "ut.lastPlayedAt",
-        "ut.totalPlayCount",
-        "ut.rating",
-        "ut.ratedAt",
-        "st.spotifyId",
-        "st.title",
-        "st.duration",
-        "st.albumId",
-        "st.artistId",
-        "st.tempo",
-        "st.energy",
-        "st.danceability",
-        "st.valence",
-        "st.acousticness",
-        "st.instrumentalness",
-        "st.speechiness",
-        "st.liveness",
-        "sa.name",
-        "sa.imageUrl",
-        "sar.name",
       ])
       .orderBy(sql`RANDOM()`)
       .limit(limit)
@@ -3557,15 +3434,12 @@ export class TrackService {
 
     const db = this.kyselyService.database;
 
-    // Build base query with all joins
+    // Build base query with joins
     let baseQuery = db
       .selectFrom("UserTrack as ut")
       .innerJoin("SpotifyTrack as st", "ut.spotifyTrackId", "st.id")
       .innerJoin("SpotifyAlbum as sa", "st.albumId", "sa.id")
       .innerJoin("SpotifyArtist as sar", "st.artistId", "sar.id")
-      .leftJoin("TrackTag as tt", "tt.userTrackId", "ut.id")
-      .leftJoin("Tag as t", "tt.tagId", "t.id")
-      .leftJoin("TrackSource as ts", "ut.id", "ts.userTrackId")
       .where("ut.userId", "=", userId)
       .where("ut.addedToLibrary", "=", true); // Only show tracks explicitly in library
 
@@ -3608,48 +3482,67 @@ export class TrackService {
 
     // Apply tag filter (if any tags, track must have at least one)
     if (query.tagIds && query.tagIds.length > 0) {
-      baseQuery = baseQuery.where("tt.tagId", "in", query.tagIds);
+      baseQuery = baseQuery.where(({ eb }) =>
+        eb(
+          sql`EXISTS (
+            SELECT 1 FROM "TrackTag" tt
+            WHERE tt."userTrackId" = ut.id
+            AND tt."tagId" IN (${sql.join(query.tagIds.map((id) => sql.lit(id)))})
+          )`,
+          "=",
+          sql`true`,
+        ),
+      );
     }
 
     // Apply source type filter
     if (query.sourceTypes && query.sourceTypes.length > 0) {
-      baseQuery = baseQuery.where("ts.sourceType", "in", query.sourceTypes);
+      baseQuery = baseQuery.where(({ eb }) =>
+        eb(
+          sql`EXISTS (
+            SELECT 1 FROM "TrackSource" ts
+            WHERE ts."userTrackId" = ut.id
+            AND ts."sourceType" IN (${sql.join(query.sourceTypes.map((st) => sql.lit(st)))})
+          )`,
+          "=",
+          sql`true`,
+        ),
+      );
     }
 
-    // Get total count (use DISTINCT to handle joins that create duplicates)
+    // Get total count
     const countResult = await baseQuery
-      .select((eb) => eb.fn.count<number>("ut.id").distinct().as("count"))
+      .select((eb) => eb.fn.count<number>("ut.id").as("count"))
       .executeTakeFirst();
 
     const total = Number(countResult?.count || 0);
 
-    // Build query with aggregations
-    let tracksQuery = baseQuery
-      .select([
-        "ut.id",
-        "ut.addedAt",
-        "ut.lastPlayedAt",
-        "ut.totalPlayCount",
-        "ut.rating",
-        "ut.ratedAt",
-        "st.spotifyId",
-        "st.title",
-        "st.duration",
-        "st.albumId",
-        "st.artistId",
-        "st.tempo",
-        "st.energy",
-        "st.danceability",
-        "st.valence",
-        "st.acousticness",
-        "st.instrumentalness",
-        "st.speechiness",
-        "st.liveness",
-        "sa.name as albumName",
-        "sa.imageUrl as albumImageUrl",
-        "sa.releaseDate",
-        "sar.name as artistName",
-        sql<string[]>`
+    // Build query with subqueries for tags, sources, and genres
+    let tracksQuery = baseQuery.select([
+      "ut.id",
+      "ut.addedAt",
+      "ut.lastPlayedAt",
+      "ut.totalPlayCount",
+      "ut.rating",
+      "ut.ratedAt",
+      "st.spotifyId",
+      "st.title",
+      "st.duration",
+      "st.albumId",
+      "st.artistId",
+      "st.tempo",
+      "st.energy",
+      "st.danceability",
+      "st.valence",
+      "st.acousticness",
+      "st.instrumentalness",
+      "st.speechiness",
+      "st.liveness",
+      "sa.name as albumName",
+      "sa.imageUrl as albumImageUrl",
+      "sa.releaseDate",
+      "sar.name as artistName",
+      sql<string[]>`
           COALESCE(
             ARRAY(
               SELECT g2."displayName" FROM "TrackGenre" tg2
@@ -3659,63 +3552,36 @@ export class TrackService {
             ),
             ARRAY[]::text[]
           )`.as("artistGenres"),
-        sql<Array<{ color: null | string; id: string; name: string }>>`
+      sql<Array<{ color: null | string; id: string; name: string }>>`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', t.id,
-                'name', t.name,
-                'color', t.color
-              )
-            ) FILTER (WHERE t.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object('id', t.id, 'name', t.name, 'color', t.color))
+             FROM "TrackTag" tt
+             INNER JOIN "Tag" t ON tt."tagId" = t.id
+             WHERE tt."userTrackId" = ut.id),
             '[]'::json
           )`.as("tags"),
-        sql<
-          Array<{
-            createdAt: Date;
-            id: string;
-            sourceId: null | string;
-            sourceName: null | string;
-            sourceType: string;
-          }>
-        >`
+      sql<
+        Array<{
+          createdAt: Date;
+          id: string;
+          sourceId: null | string;
+          sourceName: null | string;
+          sourceType: string;
+        }>
+      >`
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', ts.id,
-                'sourceType', ts."sourceType",
-                'sourceName', ts."sourceName",
-                'sourceId', ts."sourceId",
-                'createdAt', ts."createdAt"
-              )
-            ) FILTER (WHERE ts.id IS NOT NULL),
+            (SELECT json_agg(jsonb_build_object(
+              'id', ts.id,
+              'sourceType', ts."sourceType",
+              'sourceName', ts."sourceName",
+              'sourceId', ts."sourceId",
+              'createdAt', ts."createdAt"
+            ))
+             FROM "TrackSource" ts
+             WHERE ts."userTrackId" = ut.id),
             '[]'::json
           )`.as("sources"),
-      ])
-      .groupBy([
-        "ut.id",
-        "ut.addedAt",
-        "ut.lastPlayedAt",
-        "ut.totalPlayCount",
-        "ut.rating",
-        "ut.ratedAt",
-        "st.spotifyId",
-        "st.title",
-        "st.duration",
-        "st.albumId",
-        "st.artistId",
-        "st.tempo",
-        "st.energy",
-        "st.danceability",
-        "st.valence",
-        "st.acousticness",
-        "st.instrumentalness",
-        "st.speechiness",
-        "st.liveness",
-        "sa.name",
-        "sa.imageUrl",
-        "sar.name",
-      ]);
+    ]);
 
     // Apply ordering with NULLS LAST for nullable fields
     // MUST match the orderBy in getTracksForPlay() to ensure consistency
