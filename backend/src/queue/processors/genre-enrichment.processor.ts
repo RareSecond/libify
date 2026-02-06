@@ -6,9 +6,7 @@ import { GenreEnrichmentService } from "../../library/genre-enrichment.service";
 import { GenreQueueService } from "../../library/genre-queue.service";
 
 export interface GenreEnrichmentJobData {
-  all?: boolean; // Backfill all unenriched tracks
-  trackIds?: string[]; // Specific track IDs to enrich
-  userId?: string; // Enrich unenriched tracks for a specific user
+  all: true;
 }
 
 @Processor("genre-enrichment", { sharedConnection: true })
@@ -25,30 +23,11 @@ export class GenreEnrichmentProcessor extends WorkerHost {
   async process(
     job: Job<GenreEnrichmentJobData>,
   ): Promise<{ failed: number; success: number }> {
-    const { all, trackIds, userId } = job.data;
-
-    this.logger.log(
-      `🎵 Genre enrichment started (Job: ${job.id}, type: ${all ? "backfill" : userId ? "user" : "specific"})`,
-    );
+    this.logger.log(`Genre enrichment started (Job: ${job.id})`);
 
     try {
-      let idsToEnrich: string[] = [];
-
-      if (trackIds && trackIds.length > 0) {
-        // Enrich specific tracks
-        idsToEnrich = trackIds;
-      } else if (userId) {
-        // Enrich unenriched tracks for a user
-        idsToEnrich =
-          await this.genreEnrichmentService.getUnenrichedTrackIdsForUser(
-            userId,
-            1000,
-          );
-      } else if (all) {
-        // Backfill - get all unenriched tracks
-        idsToEnrich =
-          await this.genreEnrichmentService.getUnenrichedTrackIds(1000);
-      }
+      const idsToEnrich =
+        await this.genreEnrichmentService.getUnenrichedTrackIds(1000);
 
       if (idsToEnrich.length === 0) {
         this.logger.log("No tracks to enrich");
@@ -84,8 +63,8 @@ export class GenreEnrichmentProcessor extends WorkerHost {
         `Genre enrichment completed: ${success} success, ${failed} failed`,
       );
 
-      // If this was a backfill and there are more tracks, enqueue another job
-      if (all && success > 0) {
+      // Self-chain if more tracks remain
+      if (success > 0) {
         const remainingIds =
           await this.genreEnrichmentService.getUnenrichedTrackIds(1);
         if (remainingIds.length > 0) {

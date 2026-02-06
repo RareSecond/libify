@@ -3,6 +3,7 @@ import { Logger } from "@nestjs/common";
 import { Job } from "bullmq";
 
 import { AuthService } from "../../auth/auth.service";
+import { AudioFeaturesQueueService } from "../../library/audio-features-queue.service";
 import { SyncOptionsDto } from "../../library/dto/sync-options.dto";
 import { SyncProgressDto } from "../../library/dto/sync-progress-base.dto";
 import { GenreQueueService } from "../../library/genre-queue.service";
@@ -111,6 +112,7 @@ export class SyncProcessor extends WorkerHost {
     private playlistSyncService: PlaylistSyncService,
     private playSyncService: PlaySyncService,
     private genreQueueService: GenreQueueService,
+    private audioFeaturesQueueService: AudioFeaturesQueueService,
   ) {
     super();
   }
@@ -197,17 +199,15 @@ export class SyncProcessor extends WorkerHost {
         }
       }
 
-      // Trigger genre enrichment for unenriched tracks
-      // This fetches genre data from Last.fm for tracks that don't have genres yet
+      // Trigger global enrichment as safety net after sync completes
+      // This catches any tracks that might have been missed during progressive enrichment
       try {
-        await this.genreQueueService.enqueueUnenrichedTracksForUser(userId);
-        this.logger.log(
-          `Enqueued genre enrichment for user ${userId} after sync`,
-        );
+        await this.genreQueueService.enqueueBackfill();
+        await this.audioFeaturesQueueService.enqueueBackfill();
+        this.logger.log(`Enqueued enrichment safety net after sync`);
       } catch (error) {
-        // Log but don't fail the sync job if genre enrichment enqueue fails
         this.logger.warn(
-          `Failed to enqueue genre enrichment for user ${userId}: ${error.message}`,
+          `Failed to enqueue enrichment after sync: ${error.message}`,
         );
       }
 
