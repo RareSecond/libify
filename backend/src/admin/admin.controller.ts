@@ -20,6 +20,7 @@ import { Request } from "express";
 import { AdminGuard } from "../auth/admin.guard";
 import { AuthService } from "../auth/auth.service";
 import { CompositeAuthGuard } from "../auth/composite-auth.guard";
+import { AudioFeaturesQueueService } from "../library/audio-features-queue.service";
 import { GenreEnrichmentService } from "../library/genre-enrichment.service";
 import { GenreQueueService } from "../library/genre-queue.service";
 import { LibrarySyncService } from "../library/library-sync.service";
@@ -44,6 +45,7 @@ export class AdminController {
     private readonly librarySyncService: LibrarySyncService,
     private readonly genreEnrichmentService: GenreEnrichmentService,
     private readonly genreQueueService: GenreQueueService,
+    private readonly audioFeaturesQueueService: AudioFeaturesQueueService,
     private readonly authService: AuthService,
   ) {}
 
@@ -204,38 +206,13 @@ export class AdminController {
     status: 200,
     type: BackfillTriggerResponseDto,
   })
-  @ApiResponse({
-    description: "Audio features backfill already in progress",
-    status: 409,
-  })
   @Post("backfill/all")
   async triggerAllBackfills(): Promise<BackfillTriggerResponseDto> {
-    // Check if audio features backfill is already in progress
-    if (this.librarySyncService.isAudioFeaturesBackfillInProgress()) {
-      throw new HttpException(
-        "Audio features backfill is already in progress. Please wait for it to complete.",
-        HttpStatus.CONFLICT,
-      );
-    }
-
     try {
       this.logger.log("Admin triggered all backfills");
 
-      // Start audio features backfill (runs in background)
-      this.librarySyncService
-        .syncAllAudioFeaturesGlobal((processed, total) => {
-          this.logger.log(
-            `Audio features backfill progress: ${processed}/${total}`,
-          );
-        })
-        .then((result) => {
-          this.logger.log(
-            `Audio features backfill completed: ${result.totalProcessed} processed, ${result.totalUpdated} updated`,
-          );
-        })
-        .catch((error) => {
-          this.logger.error("Audio features backfill failed", error);
-        });
+      // Enqueue audio features backfill job
+      await this.audioFeaturesQueueService.enqueueBackfill();
 
       // Enqueue genre backfill job
       await this.genreQueueService.enqueueBackfill();
@@ -270,38 +247,12 @@ export class AdminController {
     status: 200,
     type: BackfillTriggerResponseDto,
   })
-  @ApiResponse({
-    description: "Audio features backfill already in progress",
-    status: 409,
-  })
   @Post("backfill/audio-features")
   async triggerAudioFeaturesBackfill(): Promise<BackfillTriggerResponseDto> {
-    // Check if audio features backfill is already in progress
-    if (this.librarySyncService.isAudioFeaturesBackfillInProgress()) {
-      throw new HttpException(
-        "Audio features backfill is already in progress. Please wait for it to complete.",
-        HttpStatus.CONFLICT,
-      );
-    }
-
     try {
       this.logger.log("Admin triggered global audio features backfill");
 
-      // Run in background - don't await completion
-      this.librarySyncService
-        .syncAllAudioFeaturesGlobal((processed, total) => {
-          this.logger.log(
-            `Audio features backfill progress: ${processed}/${total}`,
-          );
-        })
-        .then((result) => {
-          this.logger.log(
-            `Audio features backfill completed: ${result.totalProcessed} processed, ${result.totalUpdated} updated`,
-          );
-        })
-        .catch((error) => {
-          this.logger.error("Audio features backfill failed", error);
-        });
+      await this.audioFeaturesQueueService.enqueueBackfill();
 
       const status =
         await this.librarySyncService.getAudioFeaturesBackfillStatus();

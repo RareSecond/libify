@@ -4,12 +4,14 @@ import { SourceType } from "@prisma/client";
 import { DatabaseService } from "../database/database.service";
 import { KyselyService } from "../database/kysely/kysely.service";
 import { AggregationService } from "./aggregation.service";
+import { AudioFeaturesQueueService } from "./audio-features-queue.service";
 import { SpotifySavedAlbum } from "./dto/spotify-album.dto";
 import { SyncOptionsDto } from "./dto/sync-options.dto";
 import {
   SyncItemCountsDto,
   SyncProgressCallback,
 } from "./dto/sync-progress-base.dto";
+import { GenreQueueService } from "./genre-queue.service";
 import { ReccoBeatsService } from "./reccobeats.service";
 import {
   SpotifyPlaylist,
@@ -64,6 +66,8 @@ export class LibrarySyncService {
     private reccoBeatsService: ReccoBeatsService,
     private spotifyService: SpotifyService,
     private aggregationService: AggregationService,
+    private audioFeaturesQueueService: AudioFeaturesQueueService,
+    private genreQueueService: GenreQueueService,
   ) {}
 
   /**
@@ -871,31 +875,13 @@ export class LibrarySyncService {
 
       result.totalTracks = likedTracksPage.items.length;
 
-      // Sync audio features for the newly synced tracks
-      if (onProgress) {
-        await onProgress({
-          current: result.totalTracks,
-          errorCount: result.errors.length,
-          message: "Syncing audio features...",
-          percentage: 80,
-          phase: "tracks",
-          total: result.totalTracks,
-        });
-      }
-
+      // Trigger global enrichment after tracks are saved
+      // Jobs that find nothing complete quickly; jobs that find work process it
       try {
-        const audioFeaturesResult = await this.syncAudioFeatures(
-          userId,
-          QUICK_SYNC_TRACK_LIMIT,
-        );
-        this.logger.log(
-          `Quick sync audio features: ${audioFeaturesResult.tracksUpdated} tracks updated`,
-        );
+        await this.audioFeaturesQueueService.enqueueBackfill();
+        await this.genreQueueService.enqueueBackfill();
       } catch (error) {
-        this.logger.warn(
-          `Audio features sync failed (non-critical): ${error.message}`,
-        );
-        // Don't fail the quick sync if audio features fail
+        this.logger.warn(`Failed to enqueue enrichment: ${error.message}`);
       }
 
       if (onProgress) {
@@ -1275,42 +1261,8 @@ export class LibrarySyncService {
       await this.aggregationService.updateAllUserStats(userId);
 
       // Sync audio features for newly added tracks
-      if (onProgress) {
-        await onProgress({
-          breakdown: {
-            albums: {
-              processed: weightedCounts.processedAlbums,
-              total: weightedCounts.albums,
-            },
-            playlists: {
-              processed: weightedCounts.processedPlaylists,
-              total: weightedCounts.playlists,
-            },
-            tracks: {
-              processed: weightedCounts.processedTracks,
-              total: weightedCounts.tracks,
-            },
-          },
-          current: result.totalTracks,
-          errorCount: result.errors.length,
-          message: "Syncing audio features...",
-          percentage: 97,
-          phase: "playlists",
-          total: result.totalTracks,
-        });
-      }
-
-      try {
-        const audioFeaturesResult = await this.syncAllAudioFeatures(userId);
-        this.logger.log(
-          `Audio features sync: ${audioFeaturesResult.totalUpdated} tracks updated`,
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Audio features sync failed (non-critical): ${error.message}`,
-        );
-        // Don't fail the whole sync if audio features fail
-      }
+      // Audio features enrichment is now triggered at the start of sync
+      // and runs in parallel via the queue, so we skip the synchronous call here
 
       // Final progress
       if (onProgress) {
@@ -2103,6 +2055,15 @@ export class LibrarySyncService {
         );
         batch = []; // Clear batch to free memory
 
+        // Trigger global enrichment after each batch
+        // Jobs that find nothing complete quickly; jobs that find work process it
+        try {
+          await this.audioFeaturesQueueService.enqueueBackfill();
+          await this.genreQueueService.enqueueBackfill();
+        } catch (error) {
+          this.logger.warn(`Failed to enqueue enrichment: ${error.message}`);
+        }
+
         // Report progress if enough time has passed (time-based throttling)
         const now = Date.now();
         if (now - lastProgressUpdate >= progressThrottleMs) {
@@ -2129,6 +2090,14 @@ export class LibrarySyncService {
         accessToken,
         SourceType.LIKED_SONGS,
       );
+
+      // Trigger global enrichment for final batch
+      try {
+        await this.audioFeaturesQueueService.enqueueBackfill();
+        await this.genreQueueService.enqueueBackfill();
+      } catch (error) {
+        this.logger.warn(`Failed to enqueue enrichment: ${error.message}`);
+      }
     }
 
     // Always send final progress update
