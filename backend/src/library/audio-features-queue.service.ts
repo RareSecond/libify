@@ -14,14 +14,25 @@ export class AudioFeaturesQueueService {
   ) {}
 
   /**
-   * Start a backfill job to enrich all tracks without audio features
+   * Start a backfill job to enrich all tracks without audio features.
+   * Uses smart deduplication: skips if a job is already waiting,
+   * but allows enqueue if a job is active (for self-chaining).
    */
   async enqueueBackfill(): Promise<void> {
+    const waiting = await this.audioFeaturesQueue.getWaitingCount();
+
+    if (waiting > 0) {
+      this.logger.debug(
+        "Audio features backfill already queued, skipping enqueue",
+      );
+      return;
+    }
+
     await this.audioFeaturesQueue.add(
       "backfill",
       { all: true },
       {
-        jobId: `backfill-${Date.now()}`,
+        jobId: `audio-features-backfill-${Date.now()}`,
         removeOnComplete: true,
         removeOnFail: { age: 86400, count: 10 },
       },
